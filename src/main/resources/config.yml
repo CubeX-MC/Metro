@@ -1,0 +1,73 @@
+# Metro配置文件
+
+# Title 显示配置
+titles:
+  # 进入站台时显示的title
+  enter_stop:
+    enabled: true
+    title: "§6{line} - {stop_name}站"
+    subtitle: "§a上一站：{last_stop_name}|下一站：{next_stop_name}|终点站：{terminal_stop_name}"
+    fade_in: 10
+    stay: 40
+    fade_out: 10
+  
+  # 到达站台时显示的title
+  arrive_stop:
+    enabled: true
+    title: "§a已到站"
+    subtitle: "§6{stop_name}"
+    fade_in: 10
+    stay: 40
+    fade_out: 10
+    
+  # 终点站显示
+  terminal_stop:
+    enabled: true
+    title: "§c终点站 - {line}"
+    subtitle: "§6{stop_name} - 请下车"
+    fade_in: 10
+    stay: 60
+    fade_out: 10
+
+# 音乐配置
+sounds:
+  # 上车发车时播放的音乐
+  departure:
+    enabled: true
+    # 音符序列，格式为 "音符,音高,音量,音色"
+    # 音符可以是 NOTE (音符盒音符) 或 CUSTOM (自定义声音)
+    # 音高范围：0-24 (对应F#3到F#5)
+    # 音量范围：0.0-1.0
+    # 对于NOTE，音色可以是：PIANO, BASS, SNARE, CLICKS, BASS_DRUM, BELL, FLUTE, CHIME, GUITAR, XYLOPHONE, IRON_XYLOPHONE, COW_BELL, DIDGERIDOO, BIT, BANJO, PLING
+    notes:
+      - "NOTE,12,1.0,BELL,5" # 延迟5ticks
+      - "NOTE,14,1.0,BELL,5"
+      - "NOTE,16,1.0,BELL,5"
+      - "NOTE,19,1.0,BELL,5"
+  
+  # 到站时播放的音乐
+  arrival:
+    enabled: true
+    notes:
+      - "NOTE,19,1.0,BELL,5"
+      - "NOTE,16,1.0,BELL,5"
+      - "NOTE,14,1.0,BELL,5"
+      - "NOTE,12,1.0,BELL,5"
+
+# 计分板配置
+scoreboard:
+  # 站点显示样式
+  styles:
+    # 当前站点样式
+    current_stop: "§f● "
+    # 下一站样式
+    next_stop: "§a● "
+    # 其他站点样式
+    other_stops: "§7● "
+
+# 一般设置
+settings:
+  # 矿车移动速度
+  cart_speed: 0.3
+  # 注意：停靠区范围现在由每个停靠区的两个对角坐标点确定，此设置不再使用
+  # stop_range: 5.0 
