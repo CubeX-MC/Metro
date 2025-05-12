@@ -1,8 +1,11 @@
 package org.cubexmc.metro;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.cubexmc.metro.command.MetroAdminCommand;
+import org.cubexmc.metro.command.MetroAdminTabCompleter;
+import org.cubexmc.metro.lang.LanguageManager;
 import org.cubexmc.metro.listener.PlayerInteractListener;
 import org.cubexmc.metro.listener.PlayerMoveListener;
 import org.cubexmc.metro.listener.VehicleListener;
@@ -17,6 +20,7 @@ public final class Metro extends JavaPlugin {
 
     private LineManager lineManager;
     private StopManager stopManager;
+    private LanguageManager languageManager;
 
     @Override
     public void onEnable() {
@@ -30,6 +34,9 @@ public final class Metro extends JavaPlugin {
         
         // 初始化默认配置文件
         createDefaultConfigFiles();
+        
+        // 初始化语言管理器
+        this.languageManager = new LanguageManager(this);
 
         // 初始化管理器
         this.lineManager = new LineManager(this);
@@ -40,6 +47,7 @@ public final class Metro extends JavaPlugin {
 
         // 注册命令
         getCommand("m").setExecutor(new MetroAdminCommand(this));
+        getCommand("m").setTabCompleter(new MetroAdminTabCompleter(this));
 
         // 注册事件监听器
         Bukkit.getPluginManager().registerEvents(new PlayerInteractListener(this), this);
@@ -50,12 +58,28 @@ public final class Metro extends JavaPlugin {
         int pluginId = 25825; // <-- Replace with the id of your plugin!
         Metrics metrics = new Metrics(this, pluginId);
 
-        getLogger().info("Metro插件已启用!");
+        getLogger().info(languageManager.getMessage("plugin.enabled"));
     }
 
     @Override
     public void onDisable() {
-        getLogger().info("Metro插件已禁用!");
+        getLogger().info(languageManager.getMessage("plugin.disabled"));
+    }
+    
+    /**
+     * 重新创建默认配置文件（如果不存在）
+     * 此方法用于reload命令，确保所有配置文件都能够被重新生成
+     */
+    public void ensureDefaultConfigs() {
+        // 确保主配置文件存在
+        File configFile = new File(getDataFolder(), "config.yml");
+        if (!configFile.exists()) {
+            saveDefaultConfig();
+            getLogger().info("重新生成默认主配置文件");
+        }
+        
+        // 确保其他配置文件存在
+        createDefaultConfigFiles();
     }
     
     /**
@@ -98,6 +122,15 @@ public final class Metro extends JavaPlugin {
     }
     
     /**
+     * 获取语言管理器
+     * 
+     * @return 语言管理器
+     */
+    public LanguageManager getLanguageManager() {
+        return languageManager;
+    }
+    
+    /**
      * 获取进入停靠区Title配置
      */
     public boolean isEnterStopTitleEnabled() {
@@ -105,11 +138,13 @@ public final class Metro extends JavaPlugin {
     }
     
     public String getEnterStopTitle() {
-        return getConfig().getString("titles.enter_stop.title", "§6{line}");
+        String title = getConfig().getString("titles.enter_stop.title", "§6{line}");
+        return ChatColor.translateAlternateColorCodes('&', title);
     }
     
     public String getEnterStopSubtitle() {
-        return getConfig().getString("titles.enter_stop.subtitle", "§a{stop_name}");
+        String subtitle = getConfig().getString("titles.enter_stop.subtitle", "§a{stop_name}");
+        return ChatColor.translateAlternateColorCodes('&', subtitle);
     }
     
     public int getEnterStopFadeIn() {
@@ -132,11 +167,13 @@ public final class Metro extends JavaPlugin {
     }
     
     public String getArriveStopTitle() {
-        return getConfig().getString("titles.arrive_stop.title", "§a已到站");
+        String title = getConfig().getString("titles.arrive_stop.title", "§a已到站");
+        return ChatColor.translateAlternateColorCodes('&', title);
     }
     
     public String getArriveStopSubtitle() {
-        return getConfig().getString("titles.arrive_stop.subtitle", "§6{stop_name}");
+        String subtitle = getConfig().getString("titles.arrive_stop.subtitle", "§6{stop_name}");
+        return ChatColor.translateAlternateColorCodes('&', subtitle);
     }
     
     public int getArriveStopFadeIn() {
@@ -159,11 +196,13 @@ public final class Metro extends JavaPlugin {
     }
     
     public String getTerminalStopTitle() {
-        return getConfig().getString("titles.terminal_stop.title", "§c终点站");
+        String title = getConfig().getString("titles.terminal_stop.title", "§c终点站");
+        return ChatColor.translateAlternateColorCodes('&', title);
     }
     
     public String getTerminalStopSubtitle() {
-        return getConfig().getString("titles.terminal_stop.subtitle", "§6请下车");
+        String subtitle = getConfig().getString("titles.terminal_stop.subtitle", "§6请下车");
+        return ChatColor.translateAlternateColorCodes('&', subtitle);
     }
     
     public int getTerminalStopFadeIn() {
@@ -198,6 +237,17 @@ public final class Metro extends JavaPlugin {
     
     public List<String> getArrivalNotes() {
         return getConfig().getStringList("sounds.arrival.notes");
+    }
+    
+    /**
+     * 获取车辆到站音乐配置
+     */
+    public boolean isStationArrivalSoundEnabled() {
+        return getConfig().getBoolean("sounds.station_arrival.enabled", true);
+    }
+    
+    public List<String> getStationArrivalNotes() {
+        return getConfig().getStringList("sounds.station_arrival.notes");
     }
     
     /**

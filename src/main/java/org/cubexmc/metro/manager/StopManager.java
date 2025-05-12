@@ -253,6 +253,70 @@ public class StopManager {
     }
     
     /**
+     * 获取所有停靠区
+     * 
+     * @return 所有停靠区的列表
+     */
+    public List<Stop> getAllStops() {
+        return new ArrayList<>(stops.values());
+    }
+    
+    /**
+     * 添加可换乘线路到停靠区
+     * 
+     * @param stopId 停靠区ID
+     * @param lineId 可换乘的线路ID
+     * @return 是否成功添加
+     */
+    public boolean addTransferLine(String stopId, String lineId) {
+        Stop stop = stops.get(stopId);
+        if (stop == null) {
+            return false;
+        }
+        
+        boolean added = stop.addTransferableLine(lineId);
+        if (added) {
+            saveConfig();
+        }
+        return added;
+    }
+    
+    /**
+     * 从停靠区移除可换乘线路
+     * 
+     * @param stopId 停靠区ID
+     * @param lineId 要移除的可换乘线路ID
+     * @return 是否成功移除
+     */
+    public boolean removeTransferLine(String stopId, String lineId) {
+        Stop stop = stops.get(stopId);
+        if (stop == null) {
+            return false;
+        }
+        
+        boolean removed = stop.removeTransferableLine(lineId);
+        if (removed) {
+            saveConfig();
+        }
+        return removed;
+    }
+    
+    /**
+     * 获取停靠区可换乘的线路ID列表
+     * 
+     * @param stopId 停靠区ID
+     * @return 可换乘线路ID列表，如果停靠区不存在则返回空列表
+     */
+    public List<String> getTransferableLines(String stopId) {
+        Stop stop = stops.get(stopId);
+        if (stop == null) {
+            return new ArrayList<>();
+        }
+        
+        return stop.getTransferableLines();
+    }
+    
+    /**
      * 重新加载配置
      */
     public void reload() {

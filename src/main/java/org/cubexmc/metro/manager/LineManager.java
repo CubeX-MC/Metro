@@ -54,6 +54,17 @@ public class LineManager {
                     line.addStop(stopId, -1);
                 }
                 
+                // 加载颜色和终点站方向
+                String color = config.getString(lineId + ".color");
+                if (color != null) {
+                    line.setColor(color);
+                }
+                
+                String terminusName = config.getString(lineId + ".terminus_name");
+                if (terminusName != null) {
+                    line.setTerminusName(terminusName);
+                }
+                
                 lines.put(lineId, line);
             }
         }
@@ -66,6 +77,8 @@ public class LineManager {
                 String lineId = line.getId();
                 config.set(lineId + ".name", line.getName());
                 config.set(lineId + ".ordered_stop_ids", line.getOrderedStopIds());
+                config.set(lineId + ".color", line.getColor());
+                config.set(lineId + ".terminus_name", line.getTerminusName());
             }
             
             // 保存配置到文件
@@ -179,5 +192,39 @@ public class LineManager {
      */
     public void reload() {
         loadConfig();
+    }
+    
+    /**
+     * 设置线路颜色
+     * 
+     * @param lineId 线路ID
+     * @param color 颜色
+     * @return 是否成功
+     */
+    public boolean setLineColor(String lineId, String color) {
+        Line line = lines.get(lineId);
+        if (line == null) {
+            return false;
+        }
+        line.setColor(color);
+        saveConfig();
+        return true;
+    }
+    
+    /**
+     * 设置线路终点站方向
+     * 
+     * @param lineId 线路ID
+     * @param terminusName 终点站方向名称
+     * @return 是否成功
+     */
+    public boolean setLineTerminusName(String lineId, String terminusName) {
+        Line line = lines.get(lineId);
+        if (line == null) {
+            return false;
+        }
+        line.setTerminusName(terminusName);
+        saveConfig();
+        return true;
     }
 } 

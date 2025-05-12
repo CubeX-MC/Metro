@@ -3,6 +3,9 @@ package org.cubexmc.metro.model;
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * 代表地铁系统中的停靠区
  */
@@ -13,6 +16,7 @@ public class Stop {
     private Location corner2; // 区域第二个角点
     private Location stopPointLocation; // 停靠点位置，用于矿车生成位置
     private float launchYaw;
+    private List<String> transferableLines; // 可换乘的线路ID列表
     
     /**
      * 创建新停靠区
@@ -23,6 +27,7 @@ public class Stop {
     public Stop(String id, String name) {
         this.id = id;
         this.name = name;
+        this.transferableLines = new ArrayList<>();
     }
     
     /**
@@ -51,6 +56,12 @@ public class Stop {
         }
         
         this.launchYaw = (float) section.getDouble("launch_yaw", 0.0);
+        
+        // 加载可换乘线路ID列表
+        this.transferableLines = section.getStringList("transferable_lines");
+        if (this.transferableLines == null) {
+            this.transferableLines = new ArrayList<>();
+        }
     }
     
     /**
@@ -74,6 +85,9 @@ public class Stop {
         }
         
         section.set("launch_yaw", launchYaw);
+        
+        // 保存可换乘线路ID列表
+        section.set("transferable_lines", transferableLines);
     }
     
     /**
@@ -133,6 +147,38 @@ public class Stop {
         int z = location.getBlockZ();
         
         return x >= minX && x <= maxX && y >= minY && y <= maxY && z >= minZ && z <= maxZ;
+    }
+    
+    /**
+     * 获取可换乘线路ID列表
+     * 
+     * @return 可换乘线路ID列表
+     */
+    public List<String> getTransferableLines() {
+        return new ArrayList<>(transferableLines);
+    }
+    
+    /**
+     * 添加可换乘线路
+     * 
+     * @param lineId 线路ID
+     * @return 如果线路不存在于列表中并成功添加则返回true
+     */
+    public boolean addTransferableLine(String lineId) {
+        if (!transferableLines.contains(lineId)) {
+            return transferableLines.add(lineId);
+        }
+        return false;
+    }
+    
+    /**
+     * 移除可换乘线路
+     * 
+     * @param lineId 线路ID
+     * @return 如果线路存在于列表中并成功移除则返回true
+     */
+    public boolean removeTransferableLine(String lineId) {
+        return transferableLines.remove(lineId);
     }
     
     // Getters and Setters

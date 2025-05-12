@@ -1,5 +1,5 @@
 name: Metro
-version: '0.1-BETA'
+version: '1.0.0'
 main: org.cubexmc.metro.Metro
 api-version: '1.21'
 authors: [angushushu, elly]

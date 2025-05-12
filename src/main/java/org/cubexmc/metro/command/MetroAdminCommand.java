@@ -6,6 +6,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.StopManager;
@@ -14,6 +15,7 @@ import org.cubexmc.metro.model.Stop;
 import org.cubexmc.metro.util.LocationUtil;
 import org.cubexmc.metro.util.TextUtil;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -33,7 +35,7 @@ public class MetroAdminCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player)) {
-            sender.sendMessage(ChatColor.RED + "该命令仅限玩家使用。");
+            sender.sendMessage(plugin.getLanguageManager().getMessage("plugin.players_only"));
             return true;
         }
         
@@ -41,7 +43,7 @@ public class MetroAdminCommand implements CommandExecutor {
         
         // 检查权限
         if (!player.hasPermission("metro.admin")) {
-            player.sendMessage(ChatColor.RED + "你没有权限使用此命令。");
+            player.sendMessage(plugin.getLanguageManager().getMessage("plugin.no_permission"));
             return true;
         }
         
@@ -77,8 +79,8 @@ public class MetroAdminCommand implements CommandExecutor {
                 player.sendMessage(ChatColor.GREEN + "显示终点站提示: title=" + title + ", subtitle=" + subtitle);
                 
                 player.sendTitle(
-                    title,
-                    subtitle,
+                    ChatColor.translateAlternateColorCodes('&', title),
+                    ChatColor.translateAlternateColorCodes('&', subtitle),
                     plugin.getTerminalStopFadeIn(),
                     plugin.getTerminalStopStay(),
                     plugin.getTerminalStopFadeOut()
@@ -199,6 +201,55 @@ public class MetroAdminCommand implements CommandExecutor {
             
             String subCommand = args[1].toLowerCase();
             
+            // 设置线路颜色命令
+            if (subCommand.equals("setcolor")) {
+                if (args.length < 4) {
+                    player.sendMessage(ChatColor.RED + "用法: /m line setcolor <line_id> <颜色>");
+                    player.sendMessage(ChatColor.YELLOW + "颜色示例: &a, &b, &c, &9 等Minecraft颜色代码");
+                    return true;
+                }
+                
+                String lineId = args[2];
+                String color = args[3];
+                
+                Line line = lineManager.getLine(lineId);
+                if (line == null) {
+                    player.sendMessage(ChatColor.RED + "未找到线路: " + lineId);
+                    return true;
+                }
+                
+                lineManager.setLineColor(lineId, color);
+                player.sendMessage(ChatColor.GREEN + "成功设置线路 " + line.getName() + " 的颜色为: " + 
+                        ChatColor.translateAlternateColorCodes('&', color) + "示例文本");
+                return true;
+            }
+            
+            // 设置线路终点站方向名称命令
+            if (subCommand.equals("setterminus")) {
+                if (args.length < 4) {
+                    player.sendMessage(ChatColor.RED + "用法: /m line setterminus <line_id> <终点方向名称>");
+                    return true;
+                }
+                
+                String lineId = args[2];
+                // 拼接剩余参数作为终点站方向名称
+                StringBuilder terminusName = new StringBuilder();
+                for (int i = 3; i < args.length; i++) {
+                    if (i > 3) terminusName.append(" ");
+                    terminusName.append(args[i]);
+                }
+                
+                Line line = lineManager.getLine(lineId);
+                if (line == null) {
+                    player.sendMessage(ChatColor.RED + "未找到线路: " + lineId);
+                    return true;
+                }
+                
+                lineManager.setLineTerminusName(lineId, terminusName.toString());
+                player.sendMessage(ChatColor.GREEN + "成功设置线路 " + line.getName() + " 的终点方向名称为: " + terminusName);
+                return true;
+            }
+            
             switch (subCommand) {
                 case "create":
                     if (args.length < 3) {
@@ -301,6 +352,104 @@ public class MetroAdminCommand implements CommandExecutor {
             }
             
             String subCommand = args[1].toLowerCase();
+            
+            // 停靠区换乘管理命令
+            if (subCommand.equals("addtransfer")) {
+                if (args.length < 4) {
+                    player.sendMessage(ChatColor.RED + "用法: /m stop addtransfer <stop_id> <transfer_line_id>");
+                    return true;
+                }
+                
+                String stopId = args[2];
+                String transferLineId = args[3];
+                
+                Stop stop = stopManager.getStop(stopId);
+                if (stop == null) {
+                    player.sendMessage(ChatColor.RED + "未找到停靠区: " + stopId);
+                    return true;
+                }
+                
+                Line transferLine = lineManager.getLine(transferLineId);
+                if (transferLine == null) {
+                    player.sendMessage(ChatColor.RED + "未找到线路: " + transferLineId);
+                    return true;
+                }
+                
+                if (stopManager.addTransferLine(stopId, transferLineId)) {
+                    player.sendMessage(ChatColor.GREEN + "成功将线路 " + transferLine.getName() + 
+                            " 添加为停靠区 " + stop.getName() + " 的可换乘线路");
+                } else {
+                    player.sendMessage(ChatColor.YELLOW + "停靠区 " + stop.getName() + " 已存在可换乘线路 " + 
+                            transferLine.getName());
+                }
+                return true;
+            }
+            
+            if (subCommand.equals("deltransfer")) {
+                if (args.length < 4) {
+                    player.sendMessage(ChatColor.RED + "用法: /m stop deltransfer <stop_id> <transfer_line_id>");
+                    return true;
+                }
+                
+                String stopId = args[2];
+                String transferLineId = args[3];
+                
+                Stop stop = stopManager.getStop(stopId);
+                if (stop == null) {
+                    player.sendMessage(ChatColor.RED + "未找到停靠区: " + stopId);
+                    return true;
+                }
+                
+                Line transferLine = lineManager.getLine(transferLineId);
+                if (transferLine == null) {
+                    player.sendMessage(ChatColor.RED + "未找到线路: " + transferLineId);
+                    return true;
+                }
+                
+                if (stopManager.removeTransferLine(stopId, transferLineId)) {
+                    player.sendMessage(ChatColor.GREEN + "成功从停靠区 " + stop.getName() + 
+                            " 移除可换乘线路 " + transferLine.getName());
+                } else {
+                    player.sendMessage(ChatColor.YELLOW + "停靠区 " + stop.getName() + " 不存在可换乘线路 " + 
+                            transferLine.getName());
+                }
+                return true;
+            }
+            
+            if (subCommand.equals("listtransfers")) {
+                if (args.length < 3) {
+                    player.sendMessage(ChatColor.RED + "用法: /m stop listtransfers <stop_id>");
+                    return true;
+                }
+                
+                String stopId = args[2];
+                
+                Stop stop = stopManager.getStop(stopId);
+                if (stop == null) {
+                    player.sendMessage(ChatColor.RED + "未找到停靠区: " + stopId);
+                    return true;
+                }
+                
+                List<String> transferLineIds = stop.getTransferableLines();
+                if (transferLineIds.isEmpty()) {
+                    player.sendMessage(ChatColor.YELLOW + "停靠区 " + stop.getName() + " 没有可换乘线路");
+                    return true;
+                }
+                
+                player.sendMessage(ChatColor.GREEN + "停靠区 " + stop.getName() + " 的可换乘线路:");
+                for (String transferLineId : transferLineIds) {
+                    Line transferLine = lineManager.getLine(transferLineId);
+                    if (transferLine != null) {
+                        player.sendMessage(ChatColor.YELLOW + "- " + 
+                                ChatColor.translateAlternateColorCodes('&', transferLine.getColor()) + 
+                                transferLine.getName() + 
+                                ChatColor.GRAY + " (" + transferLineId + ")");
+                    } else {
+                        player.sendMessage(ChatColor.RED + "- " + transferLineId + " (无效线路)");
+                    }
+                }
+                return true;
+            }
             
             switch (subCommand) {
                 case "create":
@@ -426,10 +575,20 @@ public class MetroAdminCommand implements CommandExecutor {
             }
         } else if (mainCommand.equals("reload")) {
             // 重新加载配置
+            
+            // 确保所有默认配置文件存在
+            plugin.ensureDefaultConfigs();
+            
+            // 重新加载所有配置
             plugin.reloadConfig();
             lineManager.reload();
             stopManager.reload();
-            player.sendMessage(ChatColor.GREEN + "配置重新加载完成。");
+            
+            // 重新加载语言文件
+            plugin.getLanguageManager().loadLanguages();
+            
+            // 使用语言管理器发送消息
+            player.sendMessage(plugin.getLanguageManager().getMessage("plugin.reload"));
         } else {
             // 未知命令
             sendHelpMessage(player);
@@ -438,42 +597,46 @@ public class MetroAdminCommand implements CommandExecutor {
         return true;
     }
     
+    /**
+     * 发送帮助信息到玩家
+     */
     private void sendHelpMessage(Player player) {
-        player.sendMessage(ChatColor.GREEN + "===== Metro 管理员命令帮助 =====");
-        player.sendMessage(ChatColor.GOLD + "/m line create <line_id> <\"显示名称\">" + ChatColor.WHITE + ": 创建新线路");
-        player.sendMessage(ChatColor.GOLD + "/m line delete <line_id>" + ChatColor.WHITE + ": 删除线路");
-        player.sendMessage(ChatColor.GOLD + "/m line list" + ChatColor.WHITE + ": 列出所有线路");
-        player.sendMessage(ChatColor.GOLD + "/m line addstop <line_id> <stop_id> [顺序索引]" + ChatColor.WHITE + ": 将停靠区添加到线路");
-        player.sendMessage(ChatColor.GOLD + "/m line delstop <line_id> <stop_id>" + ChatColor.WHITE + ": 从线路移除停靠区");
-        
-        player.sendMessage(ChatColor.GOLD + "/m stop create <stop_id> <\"显示名称\">" + ChatColor.WHITE + ": 创建新停靠区");
-        player.sendMessage(ChatColor.GOLD + "/m stop delete <stop_id>" + ChatColor.WHITE + ": 删除停靠区");
-        player.sendMessage(ChatColor.GOLD + "/m stop list" + ChatColor.WHITE + ": 列出所有停靠区");
-        player.sendMessage(ChatColor.GOLD + "/m stop setcorner1 <stop_id>" + ChatColor.WHITE + ": 设置停靠区空间的第一个角点");
-        player.sendMessage(ChatColor.GOLD + "/m stop setcorner2 <stop_id>" + ChatColor.WHITE + ": 设置停靠区空间的第二个角点");
-        player.sendMessage(ChatColor.GOLD + "/m stop setpoint <stop_id> [yaw]" + ChatColor.WHITE + ": 设置停靠区内的精确停靠点和发车朝向");
-        
-        player.sendMessage(ChatColor.GOLD + "/m reload" + ChatColor.WHITE + ": 重新加载配置");
-        player.sendMessage(ChatColor.GOLD + "/m testendpoint" + ChatColor.WHITE + ": 测试终点站提示显示");
-        player.sendMessage(ChatColor.GOLD + "/m teststopinfo <line_id> [stop_id]" + ChatColor.WHITE + ": 测试线路站点信息");
+        player.sendMessage(plugin.getLanguageManager().getMessage("command.help_header"));
+        player.sendMessage(plugin.getLanguageManager().getMessage("command.help_line"));
+        player.sendMessage(plugin.getLanguageManager().getMessage("command.help_stop"));
+        player.sendMessage(plugin.getLanguageManager().getMessage("command.help_reload"));
+        player.sendMessage(plugin.getLanguageManager().getMessage("command.help_testendpoint"));
+        player.sendMessage(plugin.getLanguageManager().getMessage("command.help_teststopinfo"));
     }
     
+    /**
+     * 发送线路管理帮助信息
+     */
     private void sendLineHelpMessage(Player player) {
-        player.sendMessage(ChatColor.GREEN + "===== Metro 线路管理命令帮助 =====");
-        player.sendMessage(ChatColor.GOLD + "/m line create <line_id> <\"显示名称\">" + ChatColor.WHITE + ": 创建新线路");
-        player.sendMessage(ChatColor.GOLD + "/m line delete <line_id>" + ChatColor.WHITE + ": 删除线路");
-        player.sendMessage(ChatColor.GOLD + "/m line list" + ChatColor.WHITE + ": 列出所有线路");
-        player.sendMessage(ChatColor.GOLD + "/m line addstop <line_id> <stop_id> [顺序索引]" + ChatColor.WHITE + ": 将停靠区添加到线路");
-        player.sendMessage(ChatColor.GOLD + "/m line delstop <line_id> <stop_id>" + ChatColor.WHITE + ": 从线路移除停靠区");
+        player.sendMessage(plugin.getLanguageManager().getMessage("command.line.help_header"));
+        player.sendMessage(plugin.getLanguageManager().getMessage("command.line.help_create"));
+        player.sendMessage(plugin.getLanguageManager().getMessage("command.line.help_delete"));
+        player.sendMessage(plugin.getLanguageManager().getMessage("command.line.help_list"));
+        player.sendMessage(plugin.getLanguageManager().getMessage("command.line.help_setcolor"));
+        player.sendMessage(plugin.getLanguageManager().getMessage("command.line.help_setterminus"));
+        player.sendMessage(plugin.getLanguageManager().getMessage("command.line.help_addstop"));
+        player.sendMessage(plugin.getLanguageManager().getMessage("command.line.help_removestop"));
+        player.sendMessage(plugin.getLanguageManager().getMessage("command.line.help_stops"));
     }
     
+    /**
+     * 发送停靠区管理帮助信息
+     */
     private void sendStopHelpMessage(Player player) {
-        player.sendMessage(ChatColor.GREEN + "===== Metro 停靠区管理命令帮助 =====");
-        player.sendMessage(ChatColor.GOLD + "/m stop create <stop_id> <\"显示名称\">" + ChatColor.WHITE + ": 创建新停靠区");
-        player.sendMessage(ChatColor.GOLD + "/m stop delete <stop_id>" + ChatColor.WHITE + ": 删除停靠区");
-        player.sendMessage(ChatColor.GOLD + "/m stop list" + ChatColor.WHITE + ": 列出所有停靠区");
-        player.sendMessage(ChatColor.GOLD + "/m stop setcorner1 <stop_id>" + ChatColor.WHITE + ": 设置停靠区空间的第一个角点");
-        player.sendMessage(ChatColor.GOLD + "/m stop setcorner2 <stop_id>" + ChatColor.WHITE + ": 设置停靠区空间的第二个角点");
-        player.sendMessage(ChatColor.GOLD + "/m stop setpoint <stop_id> [yaw]" + ChatColor.WHITE + ": 设置停靠区内的精确停靠点和发车朝向");
+        player.sendMessage(plugin.getLanguageManager().getMessage("command.stop.help_header"));
+        player.sendMessage(plugin.getLanguageManager().getMessage("command.stop.help_create"));
+        player.sendMessage(plugin.getLanguageManager().getMessage("command.stop.help_delete"));
+        player.sendMessage(plugin.getLanguageManager().getMessage("command.stop.help_list"));
+        player.sendMessage(plugin.getLanguageManager().getMessage("command.stop.help_setcorner1"));
+        player.sendMessage(plugin.getLanguageManager().getMessage("command.stop.help_setcorner2"));
+        player.sendMessage(plugin.getLanguageManager().getMessage("command.stop.help_setpoint"));
+        player.sendMessage(plugin.getLanguageManager().getMessage("command.stop.help_addtransfer"));
+        player.sendMessage(plugin.getLanguageManager().getMessage("command.stop.help_deltransfer"));
+        player.sendMessage(plugin.getLanguageManager().getMessage("command.stop.help_listtransfers"));
     }
 }

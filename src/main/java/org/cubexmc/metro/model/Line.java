@@ -10,6 +10,8 @@ public class Line {
     private String id;
     private String name;
     private final List<String> orderedStopIds;
+    private String color; // 线路颜色
+    private String terminusName; // 终点站方向名称
     
     /**
      * 创建新线路
@@ -21,6 +23,8 @@ public class Line {
         this.id = id;
         this.name = name;
         this.orderedStopIds = new ArrayList<>();
+        this.color = "&f"; // 默认白色
+        this.terminusName = ""; // 默认空
     }
     
     /**
@@ -48,6 +52,42 @@ public class Line {
      */
     public void setName(String name) {
         this.name = name;
+    }
+    
+    /**
+     * 获取线路颜色
+     * 
+     * @return 线路颜色
+     */
+    public String getColor() {
+        return color;
+    }
+    
+    /**
+     * 设置线路颜色
+     * 
+     * @param color 新颜色
+     */
+    public void setColor(String color) {
+        this.color = color;
+    }
+    
+    /**
+     * 获取终点站方向名称
+     * 
+     * @return 终点站方向名称
+     */
+    public String getTerminusName() {
+        return terminusName;
+    }
+    
+    /**
+     * 设置终点站方向名称
+     * 
+     * @param terminusName 新终点站方向名称
+     */
+    public void setTerminusName(String terminusName) {
+        this.terminusName = terminusName;
     }
     
     /**

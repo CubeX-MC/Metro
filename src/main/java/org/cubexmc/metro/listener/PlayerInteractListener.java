@@ -2,6 +2,7 @@ package org.cubexmc.metro.listener;
 
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -15,6 +16,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.StopManager;
@@ -25,12 +27,21 @@ import org.cubexmc.metro.util.LocationUtil;
 import org.cubexmc.metro.util.SoundUtil;
 import org.cubexmc.metro.util.TextUtil;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
 /**
  * 处理玩家交互事件
  */
 public class PlayerInteractListener implements Listener {
     
     private final Metro plugin;
+    
+    // 用于防止短时间内多次点击触发多次调用
+    private final Map<UUID, Long> lastInteractTime = new HashMap<>();
+    private static final int INTERACT_COOLDOWN = 2000; // 点击冷却时间，单位毫秒
     
     public PlayerInteractListener(Metro plugin) {
         this.plugin = plugin;
@@ -52,16 +63,43 @@ public class PlayerInteractListener implements Listener {
             return;
         }
         
-        // 检查是否是停靠点
-        checkAndHandleStopPoint(player, clickedBlock.getLocation());
+        // 防止短时间内多次点击
+        UUID playerId = player.getUniqueId();
+        long currentTime = System.currentTimeMillis();
+        if (lastInteractTime.containsKey(playerId)) {
+            long lastTime = lastInteractTime.get(playerId);
+            if (currentTime - lastTime < INTERACT_COOLDOWN) {
+                // 如果冷却时间内再次点击，取消事件并返回
+                event.setCancelled(true);
+                return;
+            }
+        }
+        
+        // 检查是否是停靠点并处理
+        boolean handled = checkAndHandleStopPoint(player, clickedBlock.getLocation());
+        
+        // 如果成功处理了停靠点，更新点击时间并取消事件
+        if (handled) {
+            lastInteractTime.put(playerId, currentTime);
+            event.setCancelled(true);
+            
+            // 设置一个任务，在冷却时间后清除记录
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    lastInteractTime.remove(playerId);
+                }
+            }.runTaskLater(plugin, INTERACT_COOLDOWN / 50); // 转换为tick
+        }
     }
     
     /**
      * 检查并处理停靠点交互
+     * @return 是否成功处理了停靠点
      */
-    private void checkAndHandleStopPoint(Player player, Location location) {
+    private boolean checkAndHandleStopPoint(Player player, Location location) {
         if (!player.hasPermission("metro.use")) {
-            return;
+            return false;
         }
         
         StopManager stopManager = plugin.getStopManager();
@@ -78,10 +116,12 @@ public class PlayerInteractListener implements Listener {
                 if (locationStr.equals(stopPointStr)) {
                     // 找到匹配的停靠点
                     handleStopPoint(player, stop);
-                    return;
+                    return true;
                 }
             }
         }
+        
+        return false;
     }
     
     /**
@@ -156,20 +196,41 @@ public class PlayerInteractListener implements Listener {
             Location spawnLocation = location.clone();
             spawnLocation.setYaw(yaw);
             
-            // 生成矿车实体
-            Minecart minecart = (Minecart) location.getWorld().spawnEntity(spawnLocation, EntityType.MINECART);
+            // 获取矿车生成延迟
+            int spawnDelay = plugin.getConfig().getInt("settings.cart_spawn_delay", 20);
             
-            // 设置矿车没有碰撞体积
-            minecart.setCustomName("MetroMinecart");
-            minecart.setCustomNameVisible(false);
-            minecart.setPersistent(false);
+            // 显示等待信息
+            player.sendMessage(ChatColor.YELLOW + "列车即将进站，请稍候...");
+            plugin.getLogger().info("为玩家 " + player.getName() + " 生成矿车，位置: " + LocationUtil.locationToString(location));
             
-            // 将玩家放入矿车
-            minecart.addPassenger(player);
-            
-            // 启动矿车移动任务
-            new TrainMovementTask(plugin, minecart, player, line.getId(), stop.getId())
-                    .runTaskTimer(plugin, 20L, 1L); // 1秒后开始，每tick运行一次
+            // 延迟生成矿车
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    // 播放车辆到站音乐
+                    if (plugin.getConfig().getBoolean("sounds.station_arrival.enabled", true)) {
+                        List<String> stationArrivalNotes = plugin.getConfig().getStringList("sounds.station_arrival.notes");
+                        if (!stationArrivalNotes.isEmpty()) {
+                            SoundUtil.playNoteSequence(plugin, player, stationArrivalNotes);
+                        }
+                    }
+                    
+                    // 生成矿车实体
+                    Minecart minecart = (Minecart) location.getWorld().spawnEntity(spawnLocation, EntityType.MINECART);
+                    
+                    // 设置矿车没有碰撞体积
+                    minecart.setCustomName("MetroMinecart");
+                    minecart.setCustomNameVisible(false);
+                    minecart.setPersistent(false);
+                    
+                    // 将玩家放入矿车
+                    minecart.addPassenger(player);
+                    
+                    // 启动矿车移动任务，明确指定为停站状态
+                    new TrainMovementTask(plugin, minecart, player, line.getId(), stop.getId(), true)
+                            .runTaskTimer(plugin, 20L, 1L); // 1秒后开始，每tick运行一次
+                }
+            }.runTaskLater(plugin, spawnDelay);
         }
     }
 } 
