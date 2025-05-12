@@ -1,4 +1,4 @@
-# Minecraft "Metro" 地铁系统
+# Metro 地铁系统
 
 ## 插件概述
 
