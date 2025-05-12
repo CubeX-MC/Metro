@@ -1,6 +1,4 @@
-# Minecraft "Metro" 地铁系统插件技术报告
-
-**版本:** 1.4 (明确 "stop" 为空间区域，"stoppoint" 为精确交互点)
+# Minecraft "Metro" 地铁系统
 
 ## 插件概述
 
@@ -107,9 +105,3 @@ Metro是一个Minecraft服务器插件，为服务器提供一套精简且功能
 * **右键停靠点 (`stoppoint`):**
     * 通过监听 `PlayerInteractEvent`。
     * 当玩家右键点击的是一个已定义的 `stoppoint_location` 上的红石铁轨时，执行呼叫/上车逻辑。
-
-## 未来展望 (可选)
-
-* 更高级的到站检测机制。
-* 线路时刻表与自动循环发车。
-
