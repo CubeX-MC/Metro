@@ -4,7 +4,9 @@ import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 代表地铁系统中的停靠区
@@ -18,6 +20,9 @@ public class Stop {
     private float launchYaw;
     private List<String> transferableLines; // 可换乘的线路ID列表
     
+    // 自定义titles配置
+    private Map<String, Map<String, String>> customTitles;
+    
     /**
      * 创建新停靠区
      * 
@@ -28,6 +33,7 @@ public class Stop {
         this.id = id;
         this.name = name;
         this.transferableLines = new ArrayList<>();
+        this.customTitles = new HashMap<>();
     }
     
     /**
@@ -62,6 +68,22 @@ public class Stop {
         if (this.transferableLines == null) {
             this.transferableLines = new ArrayList<>();
         }
+        
+        // 加载自定义titles配置
+        this.customTitles = new HashMap<>();
+        ConfigurationSection customTitlesSection = section.getConfigurationSection("custom_titles");
+        if (customTitlesSection != null) {
+            for (String titleType : customTitlesSection.getKeys(false)) {
+                ConfigurationSection titleTypeSection = customTitlesSection.getConfigurationSection(titleType);
+                if (titleTypeSection != null) {
+                    Map<String, String> titleConfig = new HashMap<>();
+                    for (String key : titleTypeSection.getKeys(false)) {
+                        titleConfig.put(key, titleTypeSection.getString(key));
+                    }
+                    customTitles.put(titleType, titleConfig);
+                }
+            }
+        }
     }
     
     /**
@@ -88,6 +110,52 @@ public class Stop {
         
         // 保存可换乘线路ID列表
         section.set("transferable_lines", transferableLines);
+        
+        // 保存自定义titles配置
+        if (!customTitles.isEmpty()) {
+            ConfigurationSection customTitlesSection = section.createSection("custom_titles");
+            for (Map.Entry<String, Map<String, String>> entry : customTitles.entrySet()) {
+                String titleType = entry.getKey();
+                Map<String, String> titleConfig = entry.getValue();
+                
+                if (!titleConfig.isEmpty()) {
+                    ConfigurationSection titleTypeSection = customTitlesSection.createSection(titleType);
+                    for (Map.Entry<String, String> configEntry : titleConfig.entrySet()) {
+                        titleTypeSection.set(configEntry.getKey(), configEntry.getValue());
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * 获取站点自定义title配置
+     * 
+     * @param titleType title类型(stop_continuous, arrive_stop, terminal_stop, passenger_journey)
+     * @return 配置Map，如果不存在则返回null
+     */
+    public Map<String, String> getCustomTitle(String titleType) {
+        return customTitles.get(titleType);
+    }
+    
+    /**
+     * 设置站点自定义title配置
+     * 
+     * @param titleType title类型(stop_continuous, arrive_stop, terminal_stop, passenger_journey)
+     * @param config title配置
+     */
+    public void setCustomTitle(String titleType, Map<String, String> config) {
+        customTitles.put(titleType, config);
+    }
+    
+    /**
+     * 移除站点自定义title配置
+     * 
+     * @param titleType title类型(stop_continuous, arrive_stop, terminal_stop, passenger_journey)
+     * @return 是否成功移除
+     */
+    public boolean removeCustomTitle(String titleType) {
+        return customTitles.remove(titleType) != null;
     }
     
     /**

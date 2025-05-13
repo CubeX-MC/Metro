@@ -22,11 +22,23 @@ public class SoundUtil {
      * @param noteSequence 音符序列
      */
     public static void playNoteSequence(JavaPlugin plugin, Player player, List<String> noteSequence) {
+        playNoteSequence(plugin, player, noteSequence, 0);
+    }
+    
+    /**
+     * 为指定玩家播放音符序列，带初始延迟
+     * 
+     * @param plugin 插件实例
+     * @param player 目标玩家
+     * @param noteSequence 音符序列
+     * @param initialDelay 整个音符序列的初始延迟（ticks）
+     */
+    public static void playNoteSequence(JavaPlugin plugin, Player player, List<String> noteSequence, int initialDelay) {
         if (player == null || !player.isOnline() || noteSequence == null || noteSequence.isEmpty()) {
             return;
         }
         
-        long totalDelay = 0;
+        long totalDelay = initialDelay; // 加入初始延迟
         
         for (String noteData : noteSequence) {
             String[] parts = noteData.split(",");
@@ -73,11 +85,23 @@ public class SoundUtil {
      * @param noteSequence 音符序列
      */
     public static void playNoteSequenceAtLocation(JavaPlugin plugin, Location location, List<String> noteSequence) {
+        playNoteSequenceAtLocation(plugin, location, noteSequence, 0);
+    }
+    
+    /**
+     * 为特定位置播放音符序列（所有附近的玩家都能听到），带初始延迟
+     * 
+     * @param plugin 插件实例
+     * @param location 播放位置
+     * @param noteSequence 音符序列
+     * @param initialDelay 整个音符序列的初始延迟（ticks）
+     */
+    public static void playNoteSequenceAtLocation(JavaPlugin plugin, Location location, List<String> noteSequence, int initialDelay) {
         if (location == null || location.getWorld() == null || noteSequence == null || noteSequence.isEmpty()) {
             return;
         }
         
-        long totalDelay = 0;
+        long totalDelay = initialDelay; // 加入初始延迟
         
         for (String noteData : noteSequence) {
             String[] parts = noteData.split(",");

@@ -137,3 +137,15 @@ Metro是一个受到牛腩小镇服务器启发的Minecraft服务器插件，为
 * **换乘体验:**
     * 在站台、乘车期间和到站时，根据是否有可换乘线路智能显示换乘信息。
     * 计分板上使用颜色标识符显示可换乘线路，提供直观的换乘指引。
+
+## Folia支持
+
+从版本1.0.0起，Metro插件支持在Folia服务器上运行。Folia是一个基于区域线程化的高性能Minecraft服务器实现，可以更好地利用多核CPU。
+
+Metro插件通过以下方式实现对Folia的支持：
+
+1. 使用`folia-supported: true`标记在plugin.yml中声明支持
+2. 引入通用的调度器工具类`SchedulerUtil`，自动检测当前服务器是否为Folia并使用相应的API
+3. 所有涉及调度器的代码都使用SchedulerUtil进行封装，确保兼容性
+
+在普通的Paper/Spigot服务器上，插件会使用标准的Bukkit调度器。在Folia服务器上，插件会自动切换到Folia的区域化调度器，确保任务在正确的线程上执行。

@@ -45,7 +45,12 @@ public class ScoreboardManager {
      * @param title 计分板标题
      */
     public static void createScoreboard(Player player, String title) {
-        if (player == null || !player.isOnline()) {
+        if (player == null || !player.isOnline() || plugin == null) {
+            return;
+        }
+        
+        // 检查是否启用了计分板功能
+        if (!plugin.getConfig().getBoolean("scoreboard.enabled", true)) {
             return;
         }
         
@@ -93,18 +98,80 @@ public class ScoreboardManager {
     }
     
     /**
-     * 为乘客更新旅行信息计分板
+     * 为进入站点区域的乘客更新计分板
      * 
      * @param player 玩家
      * @param line 当前乘坐的线路
-     * @param targetStopId 目标停靠区ID（当前前往或已到达的站点）
-     * @param isAtStop 是否停靠在站点（true=停靠在站点，false=行驶中）
+     * @param currentStopId 当前进入的站点ID
      */
-    public static void updateTravelScoreboard(Player player, Line line, String targetStopId, boolean isAtStop) {
+    public static void updateEnteringStopScoreboard(Player player, Line line, String currentStopId) {
         if (player == null || !player.isOnline() || line == null || plugin == null) {
             return;
         }
         
+        // 检查是否启用了计分板功能
+        if (!plugin.getConfig().getBoolean("scoreboard.enabled", true)) {
+            return;
+        }
+        
+        // 获取下一站点ID
+        String nextStopId = line.getNextStopId(currentStopId);
+        
+        // 调用通用的更新方法，传入当前站和下一站信息
+        updateScoreboardInternal(player, line, currentStopId, nextStopId);
+    }
+    
+    /**
+     * 为行驶中的乘客更新计分板（离开站点后）
+     * 
+     * @param player 玩家
+     * @param line 当前乘坐的线路
+     * @param targetStopId 目标站点ID
+     */
+    public static void updateTravelingScoreboard(Player player, Line line, String targetStopId) {
+        if (player == null || !player.isOnline() || line == null || plugin == null) {
+            return;
+        }
+        
+        // 检查是否启用了计分板功能
+        if (!plugin.getConfig().getBoolean("scoreboard.enabled", true)) {
+            return;
+        }
+        
+        // 调用通用的更新方法，不传入当前站点信息
+        updateScoreboardInternal(player, line, null, targetStopId);
+    }
+    
+    /**
+     * 为到达终点站的乘客更新计分板
+     * 
+     * @param player 玩家
+     * @param line 当前乘坐的线路
+     * @param currentStopId 当前所在终点站ID
+     */
+    public static void updateTerminalScoreboard(Player player, Line line, String currentStopId) {
+        if (player == null || !player.isOnline() || line == null || plugin == null) {
+            return;
+        }
+        
+        // 检查是否启用了计分板功能
+        if (!plugin.getConfig().getBoolean("scoreboard.enabled", true)) {
+            return;
+        }
+        
+        // 调用通用的更新方法，传入终点站信息，没有下一站
+        updateScoreboardInternal(player, line, currentStopId, null);
+    }
+    
+    /**
+     * 内部方法：更新计分板核心逻辑
+     * 
+     * @param player 玩家
+     * @param line 当前乘坐的线路
+     * @param currentStopId 当前站点ID (可为null)
+     * @param nextStopId 下一站点ID (可为null)
+     */
+    private static void updateScoreboardInternal(Player player, Line line, String currentStopId, String nextStopId) {
         org.bukkit.scoreboard.ScoreboardManager manager = Bukkit.getScoreboardManager();
         if (manager == null) {
             return;
@@ -129,9 +196,14 @@ public class ScoreboardManager {
         LineManager lineManager = plugin.getLineManager();
         
         // 从配置文件中获取样式设置
-        String currentStopStyle = plugin.getConfig().getString("scoreboard.styles.current_stop", "§f● ");
-        String nextStopStyle = plugin.getConfig().getString("scoreboard.styles.next_stop", "§a● ");
-        String otherStopsStyle = plugin.getConfig().getString("scoreboard.styles.other_stops", "§7● ");
+        String currentStopStyle = plugin.getConfig().getString("scoreboard.styles.current_stop", "&f");
+        String nextStopStyle = plugin.getConfig().getString("scoreboard.styles.next_stop", "&a");
+        String otherStopsStyle = plugin.getConfig().getString("scoreboard.styles.other_stops", "&7");
+        
+        // 转换颜色代码
+        currentStopStyle = ChatColor.translateAlternateColorCodes('&', currentStopStyle);
+        nextStopStyle = ChatColor.translateAlternateColorCodes('&', nextStopStyle);
+        otherStopsStyle = ChatColor.translateAlternateColorCodes('&', otherStopsStyle);
         
         // 从配置文件中获取统一的线路标识符
         String lineSymbol = plugin.getConfig().getString("scoreboard.line_symbol", "■");
@@ -140,22 +212,14 @@ public class ScoreboardManager {
         int scoreValue = stopIds.size();
         Map<String, String> displayedStops = new HashMap<>(); // 用于跟踪已显示的停靠区
         
-        // 找到目标站点的索引
-        int targetIndex = stopIds.indexOf(targetStopId);
+        // 找到当前站点和下一站点的索引
+        int currentStopIndex = currentStopId != null ? stopIds.indexOf(currentStopId) : -1;
+        int nextStopIndex = nextStopId != null ? stopIds.indexOf(nextStopId) : -1;
         
-        // 计算实际显示的当前站和下一站索引
-        int currentStopIndex = -1;
-        int nextStopIndex = -1;
-        
-        if (isAtStop) {
-            // 在站点停靠时：当前站=目标站，下一站=目标站的下一站
-            currentStopIndex = targetIndex;
-            nextStopIndex = targetIndex + 1 < stopIds.size() ? targetIndex + 1 : -1;
-        } else {
-            // 在行驶中：当前站不显示，下一站=目标站（即正在前往的站台）
-            currentStopIndex = -1;
-            nextStopIndex = targetIndex;
-        }
+        // 记录日志
+        String statusDesc = currentStopId != null ? (nextStopId != null ? "进入站点" : "终点站") : "行驶中";
+        plugin.getLogger().info("计分板更新 - " + statusDesc + 
+            " - 当前站索引: " + currentStopIndex + ", 下一站索引: " + nextStopIndex);
         
         for (int i = 0; i < stopIds.size(); i++) {
             String stopId = stopIds.get(i);
@@ -218,18 +282,6 @@ public class ScoreboardManager {
         // 应用计分板
         player.setScoreboard(scoreboard);
         playerScoreboards.put(player.getUniqueId(), scoreboard);
-    }
-    
-    /**
-     * 为乘客更新旅行信息计分板 - 保持向后兼容的重载方法
-     * 
-     * @param player 玩家
-     * @param line 当前乘坐的线路
-     * @param targetStopId 目标停靠区ID
-     */
-    public static void updateTravelScoreboard(Player player, Line line, String targetStopId) {
-        // 默认不在站点，只在路上行驶
-        updateTravelScoreboard(player, line, targetStopId, false);
     }
     
     /**

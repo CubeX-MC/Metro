@@ -4,7 +4,6 @@ import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Minecart;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.manager.LineManager;
@@ -12,26 +11,31 @@ import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Stop;
 import org.cubexmc.metro.util.LocationUtil;
+import org.cubexmc.metro.util.SchedulerUtil;
 import org.cubexmc.metro.util.SoundUtil;
 import org.cubexmc.metro.util.TextUtil;
+import org.cubexmc.metro.train.ScoreboardManager;
 import org.bukkit.ChatColor;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 负责控制单个矿车从一个停靠区直接移动到下一个停靠区
  */
-public class TrainMovementTask extends BukkitRunnable {
+public class TrainMovementTask implements Runnable {
     
     private final Metro plugin;
     private final Minecart minecart;
     private final Player passenger;
     private final Line line;
     private final String currentStopId;
-    private final String targetStopId;
-    private boolean isMoving;
+    protected String targetStopId;
+    protected boolean isMoving;
+    private boolean hasNotifiedArrival = false; // 添加标记，表示是否已通知到站
+    private Object taskId; // 保存任务ID，可以是BukkitTask或Folia的ScheduledTask
     
     // 移动速度参数
     private static final double DEFAULT_SPEED = 0.3; // 矿车默认速度
@@ -63,6 +67,7 @@ public class TrainMovementTask extends BukkitRunnable {
         this.plugin = plugin;
         this.minecart = minecart;
         this.passenger = passenger;
+        this.hasNotifiedArrival = false; // 重置通知标记
         
         LineManager lineManager = plugin.getLineManager();
         this.line = lineManager.getLine(lineId);
@@ -79,16 +84,33 @@ public class TrainMovementTask extends BukkitRunnable {
         
         this.isMoving = true;
         
-        // 更新乘客的计分板 - 根据是否为停站状态决定显示方式
+        // 初始化计分板
         if (isAtStop) {
-            updateStoppedScoreboard();
+            // 在站点处于停车状态
+            ScoreboardManager.updateEnteringStopScoreboard(passenger, line, currentStopId);
         } else {
-            // 旅途中模式 - 立即显示为行驶中，下一站作为目标站
-            updateTravelingScoreboard();
+            // 行驶中状态
+            ScoreboardManager.updateTravelingScoreboard(passenger, line, targetStopId);
             
             // 显示行程开始信息 - 从config.yml中读取
             showJourneyStartInfo();
         }
+    }
+    
+    /**
+     * 设置任务ID
+     * 
+     * @param taskId 任务ID对象
+     */
+    public void setTaskId(Object taskId) {
+        this.taskId = taskId;
+    }
+    
+    /**
+     * 取消任务
+     */
+    public void cancel() {
+        SchedulerUtil.cancelTask(taskId);
     }
     
     @Override
@@ -118,7 +140,7 @@ public class TrainMovementTask extends BukkitRunnable {
             }
         }
         
-        // 直接前往目标停靠区
+        // 获取目标停靠区
         Stop targetStop = plugin.getStopManager().getStop(targetStopId);
         if (targetStop == null || targetStop.getStopPointLocation() == null) {
             // 目标停靠区无效或没有停靠点，取消任务
@@ -132,6 +154,20 @@ public class TrainMovementTask extends BukkitRunnable {
         // 计算当前位置到目标点的距离
         double distance = currentLocation.distance(targetLocation);
         
+        // 获取当前位置是否在停靠区区域内
+        boolean isInStopArea = targetStop.isInStop(currentLocation);
+        
+        // 如果进入停靠区区域且尚未通知到站，则触发到站提示
+        if (isInStopArea && isMoving && !hasNotifiedArrival) {
+            // 仅触发音效和提示，但继续移动直到精确到达停车点
+            notifyArrival();
+            hasNotifiedArrival = true; // 标记已通知到站
+            
+            // 当进入站点区域时，更新计分板显示
+            ScoreboardManager.updateEnteringStopScoreboard(passenger, line, targetStopId);
+        }
+        
+        // 仅当非常接近停车点的精确位置时才真正停车（距离小于0.3格）
         if (distance < 0.8) {
             // 已到达目标停靠区
             arrivedAtDestination();
@@ -147,7 +183,7 @@ public class TrainMovementTask extends BukkitRunnable {
             } else {
                 // 如果无法找到附近的铁轨，通知玩家
                 if (passenger != null) {
-                    passenger.sendMessage("§c铁路已损坏，行程已终止！");
+                    passenger.sendMessage(plugin.getLanguageManager().getMessage("passenger.train_derailed"));
                 }
                 // 强制下车并移除矿车
                 minecart.eject();
@@ -163,8 +199,10 @@ public class TrainMovementTask extends BukkitRunnable {
         // 设置矿车的速度
         minecart.setVelocity(direction.multiply(plugin.getCartSpeed()));
         
-        // 确保行驶中使用正确的计分板显示（目标站为绿色下一站）
-        updateTravelingScoreboard();
+        // 如果不在站点区域内，更新行驶中的计分板
+        if (!isInStopArea) {
+            ScoreboardManager.updateTravelingScoreboard(passenger, line, targetStopId);
+        }
     }
     
     /**
@@ -203,23 +241,8 @@ public class TrainMovementTask extends BukkitRunnable {
      * 处理乘客下车的情况
      */
     private void handlePassengerExit() {
-        // 取消当前任务
+        // 仅取消当前任务，其他工作（清除计分板、移除矿车）由VehicleListener完成
         cancel();
-        
-        // 清除计分板
-        if (passenger != null && passenger.isOnline()) {
-            ScoreboardManager.clearScoreboard(passenger);
-        }
-        
-        // 延迟移除矿车
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                if (minecart != null && !minecart.isDead()) {
-                    minecart.remove();
-                }
-            }
-        }.runTaskLater(plugin, 40L); // 2秒后移除
     }
     
     /**
@@ -239,64 +262,64 @@ public class TrainMovementTask extends BukkitRunnable {
             return;
         }
         
-        // 普通站点，通知玩家已到站
-        notifyArrival();
+        // 仅当尚未通知到站时才触发通知
+        if (!hasNotifiedArrival) {
+            notifyArrival();
+            hasNotifiedArrival = true;
+        }
         
         // 更新计分板显示当前站为目标站
-        updateStoppedScoreboard();
+        ScoreboardManager.updateEnteringStopScoreboard(passenger, line, targetStopId);
         
         // 添加调试日志
         if (passenger != null) {
             plugin.getLogger().info("矿车到达停靠点: " + targetStopId + ", 玩家: " + passenger.getName() + ", 5秒后检查是否自动发车");
         }
         
-        // 设置等待时间，如果玩家未下车则继续前往下一站
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                // 检查玩家是否仍在矿车中
-                if (isPassengerStillRiding()) {
-                    // 获取下一停靠区 - 当前所在站点是之前的目标站点
-                    String nextStopId = line.getNextStopId(targetStopId);
-                    if (nextStopId != null) {
-                        plugin.getLogger().info("自动发车: 从 " + targetStopId + " 前往 " + nextStopId + ", 玩家: " + passenger.getName());
-                        
-                        // 取消当前任务
-                        TrainMovementTask.this.cancel();
-                        
-                        // 启动前往下一站的任务，注意：当前站点现在是targetStopId
-                        // 参数isAtStop设为false，直接以旅途中模式显示，同时也会显示行程开始信息
-                        new TrainMovementTask(plugin, minecart, passenger, line.getId(), targetStopId, false)
-                                .runTaskTimer(plugin, 10L, 1L);
-                    } else {
-                        plugin.getLogger().info("已到达终点站: " + targetStopId + ", 玩家: " + passenger.getName());
-                        // 已经是终点站，处理终点站逻辑
-                        handleTerminalStation();
-                    }
-                } else {
-                    plugin.getLogger().info("玩家已下车，不会自动发车");
-                }
+        // 5秒后自动前往下一站
+        SchedulerUtil.runTaskLater(plugin, () -> {
+            // 确保玩家仍在矿车上
+            if (isPassengerStillRiding()) {
+                plugin.getLogger().info("5秒后自动前往下一站: " + nextStopId);
+                
+                // 添加调试日志，显示目标站和下一站信息
+                plugin.getLogger().info("当前站点ID: " + targetStopId + ", 下一站ID: " + nextStopId);
+                
+                // 播放发车音乐
+                playDepartureSound();
+                
+                // 创建新的移动任务（从当前站到下一站）
+                minecart.setVelocity(new Vector(0, 0, 0)); // 先确保矿车速度为0
+                
+                // 重要修改：直接使用当前站点ID和下一站ID，而不是依赖构造函数去查找
+                TrainMovementTask newTask = new TrainMovementTaskForNextStop(plugin, minecart, passenger, line.getId(), targetStopId, nextStopId);
+                Object newTaskId = SchedulerUtil.runTaskTimer(plugin, newTask, 1L, 1L);
+                newTask.setTaskId(newTaskId);
+                
+                // 取消当前任务
+                cancel();
+            } else {
+                // 玩家已下车，延迟移除矿车
+                handlePassengerExit();
             }
-        }.runTaskLater(plugin, 100L); // 5秒后检查
+        }, plugin.getCartDepartureDelay()); // 使用Metro类中的getter方法获取延迟值
     }
     
     /**
-     * 通知玩家已到达停靠区
+     * 通知玩家已到站
      */
     private void notifyArrival() {
-        if (passenger == null || !passenger.isOnline() || targetStopId == null) {
+        if (passenger == null || !passenger.isOnline()) {
             return;
         }
         
-        StopManager stopManager = plugin.getStopManager();
-        Stop stop = stopManager.getStop(targetStopId);
+        // 播放到站音乐
+        playArrivalSound();
         
+        // 显示到站提示
+        Stop stop = plugin.getStopManager().getStop(targetStopId);
         if (stop != null) {
-            // 显示自定义到站Title
             showArriveStopTitle(stop);
-            
-            // 播放到站音乐
-            playArrivalSound();
         }
     }
     
@@ -304,68 +327,104 @@ public class TrainMovementTask extends BukkitRunnable {
      * 显示到站Title
      */
     private void showArriveStopTitle(Stop stop) {
-        if (!plugin.isArriveStopTitleEnabled() || passenger == null || !passenger.isOnline()) {
-            return;
+        // 获取Title和Subtitle模板
+        String titleTemplate = plugin.getConfig().getString("titles.arrive_stop.title", "§b{stop_name} §f到了");
+        String subtitleTemplate = plugin.getConfig().getString("titles.arrive_stop.subtitle", "开往 &d{terminus_name} &f方向 | 下一站: &e{next_stop_name} | 当前可换乘: &a{stop_transfers} | 下一站可换乘: &6{next_stop_transfers}");
+        
+        // 检查站点是否有自定义title配置
+        Map<String, String> customTitle = stop.getCustomTitle("arrive_stop");
+        if (customTitle != null) {
+            if (customTitle.containsKey("title")) {
+                titleTemplate = customTitle.get("title");
+            }
+            
+            if (customTitle.containsKey("subtitle")) {
+                subtitleTemplate = customTitle.get("subtitle");
+            }
         }
         
-        // 获取前一站和下一站信息
-        String lastStopId = line.getPreviousStopId(stop.getId());
+        // 获取下一站信息
         String nextStopId = line.getNextStopId(stop.getId());
+        Stop nextStop = null;
+        if (nextStopId != null) {
+            nextStop = plugin.getStopManager().getStop(nextStopId);
+        }
         
-        StopManager stopManager = plugin.getStopManager();
-        Stop lastStop = lastStopId != null ? stopManager.getStop(lastStopId) : null;
-        Stop nextStop = nextStopId != null ? stopManager.getStop(nextStopId) : null;
-        
-        // 获取终点站信息
+        // 获取终点站
         List<String> stopIds = line.getOrderedStopIds();
-        Stop terminalStop = null;
+        Stop terminusStop = null;
         if (!stopIds.isEmpty()) {
-            String terminalStopId = stopIds.get(stopIds.size() - 1);
-            terminalStop = stopManager.getStop(terminalStopId);
+            String terminusId = stopIds.get(stopIds.size() - 1);
+            terminusStop = plugin.getStopManager().getStop(terminusId);
         }
         
-        String title = plugin.getArriveStopTitle();
+        // 获取LineManager
+        LineManager lineManager = plugin.getLineManager();
         
-        // 判断下一站是否有可换乘线路
-        boolean hasTransferableLines = false;
-        if (nextStop != null) {
-            List<String> transferLines = nextStop.getTransferableLines();
-            // 排除当前线路
-            transferLines.remove(line.getId());
-            hasTransferableLines = !transferLines.isEmpty();
-        }
-        
-        // 根据是否有可换乘线路选择subtitle模板
-        String subtitle;
-        if (hasTransferableLines) {
-            // 有换乘线路，使用包含换乘信息的模板
-            subtitle = plugin.getConfig().getString("titles.arrive_stop.subtitle_with_transfers", 
-                "开往 &d{terminus_name} &f方向 | 下一站: &e{next_stop_name} | 可换乘: &a{transfer_lines}");
+        // 添加调试日志
+        if (lineManager == null) {
+            plugin.getLogger().warning("showArriveStopTitle: LineManager为null，无法获取换乘信息");
         } else {
-            // 没有换乘线路，使用不含换乘信息的基本模板
-            subtitle = plugin.getConfig().getString("titles.arrive_stop.subtitle", 
-                "开往 &d{terminus_name} &f方向 | 下一站: &e{next_stop_name}");
+            // 检查当前站点的换乘信息
+            List<String> transfers = stop.getTransferableLines();
+            if (transfers == null || transfers.isEmpty()) {
+                plugin.getLogger().info("当前站点 " + stop.getName() + " 没有换乘线路");
+            } else {
+                plugin.getLogger().info("当前站点 " + stop.getName() + " 的换乘线路: " + String.join(", ", transfers));
+            }
+            
+            // 检查下一站的换乘信息
+            if (nextStop != null) {
+                List<String> nextTransfers = nextStop.getTransferableLines();
+                if (nextTransfers == null || nextTransfers.isEmpty()) {
+                    plugin.getLogger().info("下一站 " + nextStop.getName() + " 没有换乘线路");
+                } else {
+                    plugin.getLogger().info("下一站 " + nextStop.getName() + " 的换乘线路: " + String.join(", ", nextTransfers));
+                }
+            }
         }
         
-        // 替换占位符
-        title = TextUtil.replacePlaceholders(title, line, stop, lastStop, nextStop, terminalStop, plugin.getLineManager());
-        subtitle = TextUtil.replacePlaceholders(subtitle, line, stop, lastStop, nextStop, terminalStop, plugin.getLineManager());
+        // 使用TextUtil替换占位符，确保传递LineManager
+        String title = TextUtil.replacePlaceholders(titleTemplate, line, stop, null, nextStop, terminusStop, lineManager);
+        String subtitle = TextUtil.replacePlaceholders(subtitleTemplate, line, stop, null, nextStop, terminusStop, lineManager);
         
-        passenger.sendTitle(
-            ChatColor.translateAlternateColorCodes('&', title),
-            ChatColor.translateAlternateColorCodes('&', subtitle),
-            plugin.getArriveStopFadeIn(),
-            plugin.getArriveStopStay(),
-            plugin.getArriveStopFadeOut()
-        );
+        // 检查占位符是否被替换
+        if (subtitleTemplate.contains("{stop_transfers}") && subtitle.contains("{stop_transfers}")) {
+            plugin.getLogger().warning("stop_transfers占位符未被替换，可能是换乘信息获取失败");
+        }
+        
+        if (subtitleTemplate.contains("{next_stop_transfers}") && subtitle.contains("{next_stop_transfers}")) {
+            plugin.getLogger().warning("next_stop_transfers占位符未被替换，可能是换乘信息获取失败");
+        }
+        
+        // 设置淡入淡出时间
+        int fadeIn = plugin.getArriveStopFadeIn();
+        int stay = plugin.getArriveStopStay();
+        int fadeOut = plugin.getArriveStopFadeOut();
+        
+        // 转换颜色代码
+        title = ChatColor.translateAlternateColorCodes('&', title);
+        subtitle = ChatColor.translateAlternateColorCodes('&', subtitle);
+        
+        // 向玩家显示Title
+        passenger.sendTitle(title, subtitle, fadeIn, stay, fadeOut);
     }
     
     /**
      * 播放到站音乐
      */
     private void playArrivalSound() {
-        if (plugin.isArrivalSoundEnabled() && !plugin.getArrivalNotes().isEmpty() && passenger != null && passenger.isOnline()) {
-            SoundUtil.playNoteSequence(plugin, passenger, plugin.getArrivalNotes());
+        if (plugin.isArrivalSoundEnabled() && !plugin.getArrivalNotes().isEmpty() && passenger != null) {
+            SoundUtil.playNoteSequence(plugin, passenger, plugin.getArrivalNotes(), plugin.getArrivalInitialDelay());
+        }
+    }
+    
+    /**
+     * 播放发车音乐
+     */
+    private void playDepartureSound() {
+        if (plugin.isDepartureSoundEnabled() && !plugin.getDepartureNotes().isEmpty() && passenger != null) {
+            SoundUtil.playNoteSequence(plugin, passenger, plugin.getDepartureNotes(), plugin.getDepartureInitialDelay());
         }
     }
     
@@ -374,190 +433,228 @@ public class TrainMovementTask extends BukkitRunnable {
      */
     private void handleTerminalStation() {
         if (passenger == null || !passenger.isOnline()) {
-            plugin.getLogger().warning("终点站处理失败：玩家为null或不在线");
             return;
         }
         
-        plugin.getLogger().info("处理终点站，玩家: " + passenger.getName() + ", 终点站: " + targetStopId);
-        
-        // 获取终点站信息
-        StopManager stopManager = plugin.getStopManager();
-        Stop stop = stopManager.getStop(targetStopId);
-        
-        // 获取前一站信息（终点站没有下一站）
-        String lastStopId = line.getPreviousStopId(targetStopId);
-        Stop lastStop = lastStopId != null ? stopManager.getStop(lastStopId) : null;
-        
-        // 终点站信息 - 当前站就是终点站
-        Stop terminalStop = stop;
-        
-        // 更新计分板显示当前站为终点站
-        updateStoppedScoreboard();
+        // 仅当尚未通知到站时才播放到站音乐
+        if (!hasNotifiedArrival) {
+            playArrivalSound();
+            hasNotifiedArrival = true;
+        }
         
         // 显示终点站Title
         if (plugin.isTerminalStopTitleEnabled()) {
-            String title = plugin.getTerminalStopTitle();
-            
-            // 判断是否有可换乘线路
-            boolean hasTransferableLines = false;
+            Stop stop = plugin.getStopManager().getStop(targetStopId);
             if (stop != null) {
-                List<String> transferLines = stop.getTransferableLines();
-                // 排除当前线路
-                transferLines.remove(line.getId());
-                hasTransferableLines = !transferLines.isEmpty();
+                showTerminalStopTitle(stop);
+                
+                // 更新终点站计分板
+                ScoreboardManager.updateTerminalScoreboard(passenger, line, targetStopId);
+            }
+        }
+        
+        // 3秒后自动下车，并移除矿车
+        SchedulerUtil.runTaskLater(plugin, () -> {
+            if (minecart != null && !minecart.isDead()) {
+                // 强制下车
+                minecart.eject();
+                
+                // 清除计分板
+                ScoreboardManager.clearScoreboard(passenger);
+                
+                // 延迟移除矿车
+                final Minecart finalMinecart = minecart;
+                SchedulerUtil.runTaskLater(plugin, () -> {
+                    if (finalMinecart != null && !finalMinecart.isDead()) {
+                        finalMinecart.remove();
+                    }
+                }, 40L); // 2秒后移除
+            }
+            // 取消当前任务
+            cancel();
+        }, 60L); // 3秒后执行
+    }
+    
+    /**
+     * 显示终点站Title
+     */
+    private void showTerminalStopTitle(Stop stop) {
+        // 获取Title和Subtitle模板
+        String titleTemplate = plugin.getConfig().getString("titles.terminal_stop.title", "§c终点站");
+        String subtitleTemplate = plugin.getConfig().getString("titles.terminal_stop.subtitle", "§6请下车 | 当前可换乘: &a{stop_transfers}");
+        
+        // 检查站点是否有自定义title配置
+        Map<String, String> customTitle = stop.getCustomTitle("terminal_stop");
+        if (customTitle != null) {
+            if (customTitle.containsKey("title")) {
+                titleTemplate = customTitle.get("title");
             }
             
-            // 根据是否有可换乘线路选择subtitle模板
-            String subtitle;
-            if (hasTransferableLines) {
-                // 有换乘线路，使用包含换乘信息的模板
-                subtitle = plugin.getConfig().getString("titles.terminal_stop.subtitle_with_transfers", 
-                    "&c终点站 - 请下车 | 可换乘: &a{transfer_lines}");
-            } else {
-                // 没有换乘线路，使用不含换乘信息的基本模板
-                subtitle = plugin.getConfig().getString("titles.terminal_stop.subtitle", 
-                    "&c终点站 - 请下车");
+            if (customTitle.containsKey("subtitle")) {
+                subtitleTemplate = customTitle.get("subtitle");
             }
-            
-            // 替换占位符 - 终点站的nextStop传null
-            title = TextUtil.replacePlaceholders(title, line, stop, lastStop, null, terminalStop, plugin.getLineManager());
-            subtitle = TextUtil.replacePlaceholders(subtitle, line, stop, lastStop, null, terminalStop, plugin.getLineManager());
-            
-            plugin.getLogger().info("显示终点站提示: title=" + title + ", subtitle=" + subtitle);
-            
-            passenger.sendTitle(
-                ChatColor.translateAlternateColorCodes('&', title),
-                ChatColor.translateAlternateColorCodes('&', subtitle),
-                plugin.getTerminalStopFadeIn(),
-                plugin.getTerminalStopStay(),
-                plugin.getTerminalStopFadeOut()
-            );
+        }
+        
+        // 使用TextUtil替换占位符
+        LineManager lineManager = plugin.getLineManager();
+        
+        // 添加调试日志
+        if (lineManager == null) {
+            plugin.getLogger().warning("showTerminalStopTitle: LineManager为null，无法获取换乘信息");
         } else {
-            plugin.getLogger().warning("终点站提示未显示：配置中已禁用 (terminal_stop.enabled = false)");
-        }
-        
-        // 播放到站音乐
-        playArrivalSound();
-        
-        // 延迟强制玩家下车并移除矿车
-        plugin.getLogger().info("计划4秒后强制玩家下车");
-        
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                if (minecart != null && !minecart.isDead()) {
-                    plugin.getLogger().info("执行强制下车操作，玩家: " + passenger.getName());
-                    
-                    // 清除计分板
-                    ScoreboardManager.clearScoreboard(passenger);
-                    
-                    // 强制玩家下车
-                    minecart.eject();
-                    
-                    // 延迟移除矿车
-                    new BukkitRunnable() {
-                        @Override
-                        public void run() {
-                            if (minecart != null && !minecart.isDead()) {
-                                minecart.remove();
-                                plugin.getLogger().info("终点站矿车已移除");
-                            }
-                        }
-                    }.runTaskLater(plugin, 20L); // 1秒后移除
-                } else {
-                    plugin.getLogger().warning("无法强制下车：矿车已不存在");
-                }
+            // 检查当前站点的换乘信息
+            List<String> transfers = stop.getTransferableLines();
+            if (transfers == null || transfers.isEmpty()) {
+                plugin.getLogger().info("终点站 " + stop.getName() + " 没有换乘线路");
+            } else {
+                plugin.getLogger().info("终点站 " + stop.getName() + " 的换乘线路: " + String.join(", ", transfers));
             }
-        }.runTaskLater(plugin, 80L); // 4秒后强制下车
-    }
-    
-    /**
-     * 更新乘客的计分板
-     */
-    private void updateStoppedScoreboard() {
-        if (passenger != null && passenger.isOnline() && line != null && targetStopId != null) {
-            ScoreboardManager.updateTravelScoreboard(passenger, line, targetStopId, true);
         }
-    }
-    
-    /**
-     * 更新乘客的旅途中计分板（不显示当前站，只显示下一站和其他站）
-     */
-    private void updateTravelingScoreboard() {
-        if (passenger != null && passenger.isOnline() && line != null && targetStopId != null) {
-            ScoreboardManager.updateTravelScoreboard(passenger, line, targetStopId, false);
+        
+        String title = TextUtil.replacePlaceholders(titleTemplate, line, stop, null, null, stop, lineManager);
+        String subtitle = TextUtil.replacePlaceholders(subtitleTemplate, line, stop, null, null, stop, lineManager);
+        
+        // 检查占位符是否被替换
+        if (subtitleTemplate.contains("{stop_transfers}") && subtitle.contains("{stop_transfers}")) {
+            plugin.getLogger().warning("终点站 stop_transfers 占位符未被替换，可能是换乘信息获取失败");
         }
+        
+        // 设置淡入淡出时间
+        int fadeIn = plugin.getConfig().getInt("titles.terminal_stop.fade_in", 10);
+        int stay = plugin.getConfig().getInt("titles.terminal_stop.stay", 60);
+        int fadeOut = plugin.getConfig().getInt("titles.terminal_stop.fade_out", 10);
+        
+        // 转换颜色代码
+        title = ChatColor.translateAlternateColorCodes('&', title);
+        subtitle = ChatColor.translateAlternateColorCodes('&', subtitle);
+        
+        // 向玩家显示Title
+        passenger.sendTitle(title, subtitle, fadeIn, stay, fadeOut);
     }
     
     /**
      * 显示行程开始信息
      */
     private void showJourneyStartInfo() {
-        if (passenger == null || !passenger.isOnline() || !plugin.getConfig().getBoolean("titles.passenger_journey.enabled", true)) {
+        if (passenger == null || !passenger.isOnline()) {
             return;
         }
         
-        // 获取终点站信息
-        List<String> stopIds = line.getOrderedStopIds();
-        StopManager stopManager = plugin.getStopManager();
-        
-        Stop nextStop = targetStopId != null ? stopManager.getStop(targetStopId) : null;
-        
-        Stop terminalStop = null;
-        if (!stopIds.isEmpty()) {
-            String terminalStopId = stopIds.get(stopIds.size() - 1);
-            terminalStop = stopManager.getStop(terminalStopId);
+        // 检查配置中是否启用了乘客行程Title
+        if (plugin.getConfig().getBoolean("titles.passenger_journey.enabled", true)) {
+            // 获取必要的站点信息
+            Stop currentStop = plugin.getStopManager().getStop(currentStopId);
+            if (currentStop == null) {
+                plugin.getLogger().warning("无法获取当前站信息: " + currentStopId);
+                return;
+            }
+            
+            Stop nextStop = plugin.getStopManager().getStop(targetStopId);
+            if (nextStop == null) {
+                plugin.getLogger().warning("无法获取下一站信息: " + targetStopId);
+                return;
+            }
+            
+            // 获取终点站信息
+            List<String> stopIds = line.getOrderedStopIds();
+            String terminusId = stopIds.isEmpty() ? null : stopIds.get(stopIds.size() - 1);
+            Stop terminusStop = terminusId != null ? plugin.getStopManager().getStop(terminusId) : null;
+            
+            // 获取LineManager以便访问换乘信息
+            LineManager lineManager = plugin.getLineManager();
+            if (lineManager == null) {
+                plugin.getLogger().warning("LineManager为null，无法获取可换乘线路信息");
+                return;
+            }
+            
+            // 获取Title模板
+            String titleTemplate = plugin.getConfig().getString("titles.passenger_journey.title", "下一站 &e{next_stop_name}");
+            String subtitleTemplate = plugin.getConfig().getString("titles.passenger_journey.subtitle", "开往 &d{terminus_name} &f方向 | 当前可换乘: &a{stop_transfers} | 下一站可换乘: &6{next_stop_transfers}");
+            String actionbarTemplate = plugin.getConfig().getString("titles.passenger_journey.actionbar", "列车已启动，请扶好站稳，注意安全");
+            
+            // 检查当前站点是否有自定义passenger_journey配置
+            Map<String, String> customTitle = currentStop.getCustomTitle("passenger_journey");
+            if (customTitle != null) {
+                if (customTitle.containsKey("title")) {
+                    titleTemplate = customTitle.get("title");
+                }
+                
+                if (customTitle.containsKey("subtitle")) {
+                    subtitleTemplate = customTitle.get("subtitle");
+                }
+                
+                if (customTitle.containsKey("actionbar")) {
+                    actionbarTemplate = customTitle.get("actionbar");
+                }
+            }
+            
+            // 添加调试日志，检查站点换乘信息
+            List<String> currentTransfers = currentStop.getTransferableLines();
+            if (currentTransfers == null || currentTransfers.isEmpty()) {
+                plugin.getLogger().info("当前站 " + currentStop.getName() + " 没有换乘线路");
+            } else {
+                plugin.getLogger().info("当前站 " + currentStop.getName() + " 的换乘线路: " + String.join(", ", currentTransfers));
+            }
+            
+            List<String> nextTransfers = nextStop.getTransferableLines();
+            if (nextTransfers == null || nextTransfers.isEmpty()) {
+                plugin.getLogger().info("下一站 " + nextStop.getName() + " 没有换乘线路");
+            } else {
+                plugin.getLogger().info("下一站 " + nextStop.getName() + " 的换乘线路: " + String.join(", ", nextTransfers));
+            }
+            
+            // 替换标题占位符
+            String title = TextUtil.replacePlaceholders(titleTemplate, line, currentStop, null, nextStop, terminusStop, lineManager);
+            String subtitle = TextUtil.replacePlaceholders(subtitleTemplate, line, currentStop, null, nextStop, terminusStop, lineManager);
+            String actionbar = TextUtil.replacePlaceholders(actionbarTemplate, line, currentStop, null, nextStop, terminusStop, lineManager);
+            
+            // 检查占位符是否被替换
+            if (subtitleTemplate.contains("{stop_transfers}") && subtitle.contains("{stop_transfers}")) {
+                plugin.getLogger().warning("stop_transfers占位符未被替换，可能是换乘信息获取失败");
+            }
+            
+            if (subtitleTemplate.contains("{next_stop_transfers}") && subtitle.contains("{next_stop_transfers}")) {
+                plugin.getLogger().warning("next_stop_transfers占位符未被替换，可能是换乘信息获取失败");
+            }
+            
+            // 设置淡入淡出时间
+            int fadeIn = plugin.getConfig().getInt("titles.passenger_journey.fade_in", 5);
+            int stay = plugin.getConfig().getInt("titles.passenger_journey.stay", 40);
+            int fadeOut = plugin.getConfig().getInt("titles.passenger_journey.fade_out", 5);
+            
+            // 转换颜色代码
+            title = ChatColor.translateAlternateColorCodes('&', title);
+            subtitle = ChatColor.translateAlternateColorCodes('&', subtitle);
+            actionbar = ChatColor.translateAlternateColorCodes('&', actionbar);
+            
+            // 向玩家显示Title
+            passenger.sendTitle(title, subtitle, fadeIn, stay, fadeOut);
+            
+            // 显示ActionBar信息
+            passenger.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(actionbar));
         }
-        
-        // 获取车站信息
-        Stop currentStop = stopManager.getStop(currentStopId);
-        
-        // 从配置文件获取Title和Subtitle
-        String title = plugin.getConfig().getString("titles.passenger_journey.title", "下一站 &e{next_stop_name}");
-        
-        // 是否有可换乘线路
-        boolean hasTransferableLines = false;
-        if (nextStop != null) {
-            List<String> transferLines = nextStop.getTransferableLines();
-            // 排除当前线路
-            transferLines.remove(line.getId());
-            hasTransferableLines = !transferLines.isEmpty();
+    }
+    
+    /**
+     * 专门用于发车到下一站的任务类，避免构造函数中的目标站点查找逻辑问题
+     */
+    private class TrainMovementTaskForNextStop extends TrainMovementTask {
+        public TrainMovementTaskForNextStop(Metro plugin, Minecart minecart, Player passenger, 
+                String lineId, String currentStopId, String nextStopId) {
+            super(plugin, minecart, passenger, lineId, currentStopId);
+            
+            // 直接设置目标站为指定的下一站，而不是通过line.getNextStopId获取
+            this.targetStopId = nextStopId;
+            this.isMoving = true;
+            
+            // 更新计分板为行驶中状态
+            ScoreboardManager.updateTravelingScoreboard(passenger, line, targetStopId);
+            
+            // 显示行程信息
+            showJourneyStartInfo();
+            
+            // 记录调试信息
+            plugin.getLogger().info("创建前往下一站的任务: 当前站=" + currentStopId + ", 目标站=" + nextStopId);
         }
-        
-        // 根据是否有可换乘线路选择subtitle模板
-        String subtitle;
-        if (hasTransferableLines) {
-            // 有换乘线路，使用包含换乘信息的模板
-            subtitle = plugin.getConfig().getString("titles.passenger_journey.subtitle_with_transfers", 
-                "开往 &d{terminus_name} &f方向 | 可换乘: &a{transfer_lines}");
-        } else {
-            // 没有换乘线路，使用不含换乘信息的基本模板
-            subtitle = plugin.getConfig().getString("titles.passenger_journey.subtitle", 
-                "开往 &d{terminus_name} &f方向");
-        }
-        
-        String actionbar = plugin.getConfig().getString("titles.passenger_journey.actionbar", "列车已启动，请扶好站稳，注意安全");
-        
-        // 替换占位符
-        title = TextUtil.replacePlaceholders(title, line, currentStop, null, nextStop, terminalStop, plugin.getLineManager());
-        subtitle = TextUtil.replacePlaceholders(subtitle, line, currentStop, null, nextStop, terminalStop, plugin.getLineManager());
-        actionbar = TextUtil.replacePlaceholders(actionbar, line, currentStop, null, nextStop, terminalStop, plugin.getLineManager());
-        
-        // 显示Title和Subtitle
-        int fadeIn = plugin.getConfig().getInt("titles.passenger_journey.fade_in", 5);
-        int stay = plugin.getConfig().getInt("titles.passenger_journey.stay", 40);
-        int fadeOut = plugin.getConfig().getInt("titles.passenger_journey.fade_out", 5);
-        
-        passenger.sendTitle(
-            ChatColor.translateAlternateColorCodes('&', title),
-            ChatColor.translateAlternateColorCodes('&', subtitle),
-            fadeIn, stay, fadeOut
-        );
-        
-        // 显示Actionbar信息
-        passenger.spigot().sendMessage(
-            ChatMessageType.ACTION_BAR,
-            TextComponent.fromLegacyText(ChatColor.translateAlternateColorCodes('&', actionbar))
-        );
     }
 } 

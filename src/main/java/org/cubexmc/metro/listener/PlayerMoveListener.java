@@ -11,12 +11,12 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.metadata.MetadataValue;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Stop;
+import org.cubexmc.metro.util.SchedulerUtil;
 import org.cubexmc.metro.util.TextUtil;
 
 import java.util.HashMap;
@@ -31,8 +31,8 @@ public class PlayerMoveListener implements Listener {
     
     private final Metro plugin;
     private final Map<UUID, String> playerInStopMap = new HashMap<>(); // 记录玩家当前所在的停靠区ID
-    private final Map<UUID, Integer> continuousInfoTasks = new HashMap<>(); // 记录持续显示信息的任务ID
-    private final Map<UUID, Integer> actionBarTasks = new HashMap<>(); // 记录专门的ActionBar显示任务ID
+    private final Map<UUID, Object> continuousInfoTasks = new HashMap<>(); // 记录持续显示信息的任务ID
+    private final Map<UUID, Object> actionBarTasks = new HashMap<>(); // 记录专门的ActionBar显示任务ID
     
     public PlayerMoveListener(Metro plugin) {
         this.plugin = plugin;
@@ -50,6 +50,23 @@ public class PlayerMoveListener implements Listener {
             return;
         }
         
+        // 检查玩家是否在矿车内，如果在矿车内则不显示站台信息
+        if (player.isInsideVehicle() && player.getVehicle() instanceof org.bukkit.entity.Minecart) {
+            org.bukkit.entity.Minecart minecart = (org.bukkit.entity.Minecart) player.getVehicle();
+            // 检查是否是Metro的矿车
+            if ("MetroMinecart".equals(minecart.getCustomName())) {
+                // 如果玩家在Metro矿车内，取消站台信息显示
+                UUID playerId = player.getUniqueId();
+                String currentStopId = playerInStopMap.remove(playerId);
+                if (currentStopId != null) {
+                    cancelContinuousInfoTask(playerId);
+                    cancelActionBarTask(playerId);
+                }
+                return;
+            }
+        }
+        
+        // 玩家不在矿车内，正常处理站台信息
         Location location = player.getLocation();
         StopManager stopManager = plugin.getStopManager();
         Stop stop = stopManager.getStopContainingLocation(location);
@@ -152,31 +169,29 @@ public class PlayerMoveListener implements Listener {
         String title = plugin.getConfig().getString(configPath + ".title", 
                 plugin.getConfig().getString("titles.stop_continuous.title", "{line_color_code}{line}"));
         
-        // 判断是否有可换乘线路
-        boolean hasTransferableLines = false;
-        if (nextStop != null) {
-            List<String> transferLines = nextStop.getTransferableLines();
-            // 排除当前线路
-            transferLines.remove(line.getId());
-            hasTransferableLines = !transferLines.isEmpty();
-        }
-        
-        // 根据是否有可换乘线路选择subtitle模板
-        String subtitle;
-        if (hasTransferableLines) {
-            // 有换乘线路，使用包含换乘信息的模板
-            subtitle = plugin.getConfig().getString(configPath + ".subtitle_with_transfers", 
-                    plugin.getConfig().getString("titles.stop_continuous.subtitle_with_transfers", 
-                    "开往 &d{terminus_name} &f方向 | 下一站: &e{next_stop_name} | 可换乘: &a{transfer_lines}"));
-        } else {
-            // 没有换乘线路，使用不含换乘信息的基本模板
-            subtitle = plugin.getConfig().getString(configPath + ".subtitle", 
-                    plugin.getConfig().getString("titles.stop_continuous.subtitle", 
-                    "开往 &d{terminus_name} &f方向 | 下一站: &e{next_stop_name}"));
-        }
+        // 获取subtitle
+        String subtitle = plugin.getConfig().getString(configPath + ".subtitle", 
+                plugin.getConfig().getString("titles.stop_continuous.subtitle", 
+                "开往 &d{terminus_name} &f方向 | 下一站: &e{next_stop_name}"));
         
         String actionbar = plugin.getConfig().getString(configPath + ".actionbar", 
                 plugin.getConfig().getString("titles.stop_continuous.actionbar", "§f上一站: §7{last_stop_name} §f| 下一站: §a{next_stop_name} §f| §e可换乘: {transfer_lines}"));
+        
+        // 检查站点是否有自定义title配置
+        Map<String, String> customTitle = stop.getCustomTitle("stop_continuous");
+        if (customTitle != null) {
+            if (customTitle.containsKey("title")) {
+                title = customTitle.get("title");
+            }
+            
+            if (customTitle.containsKey("subtitle")) {
+                subtitle = customTitle.get("subtitle");
+            }
+            
+            if (customTitle.containsKey("actionbar")) {
+                actionbar = customTitle.get("actionbar");
+            }
+        }
         
         // 替换占位符
         final String finalTitle = TextUtil.replacePlaceholders(title, line, stop, lastStop, nextStop, terminalStop, lineManager);
@@ -186,11 +201,10 @@ public class PlayerMoveListener implements Listener {
         // 根据always配置选择显示方式
         if (alwaysShow) {
             // 在always模式下，为ActionBar创建一个高频刷新的独立任务
-            BukkitRunnable actionBarTask = new BukkitRunnable() {
+            Object actionBarTaskId = SchedulerUtil.runTaskTimer(plugin, new Runnable() {
                 @Override
                 public void run() {
                     if (!player.isOnline() || !stop.isInStop(player.getLocation())) {
-                        cancel();
                         cancelActionBarTask(playerId);
                         return;
                     }
@@ -201,91 +215,85 @@ public class PlayerMoveListener implements Listener {
                         TextComponent.fromLegacyText(ChatColor.translateAlternateColorCodes('&', finalActionbar))
                     );
                 }
-            };
+            }, 0L, 20L); // 每秒刷新一次ActionBar
             
-            // 高频刷新ActionBar（每10 tick，约0.5秒刷新一次）
-            int actionBarTaskId = actionBarTask.runTaskTimer(plugin, 0, 10).getTaskId();
+            // 保存ActionBar任务ID
             actionBarTasks.put(playerId, actionBarTaskId);
-        }
-        
-        // 创建并启动主任务（负责Title显示）
-        BukkitRunnable task = new BukkitRunnable() {
-            @Override
-            public void run() {
-                if (!player.isOnline() || !stop.isInStop(player.getLocation())) {
-                    cancel();
-                    cancelContinuousInfoTask(playerId);
-                    cancelActionBarTask(playerId);
-                    return;
-                }
-                
-                // 根据always配置选择显示方式
-                if (alwaysShow) {
-                    // 持续显示模式：使用无淡入淡出效果的title显示（时间极短）
+            
+            // 创建Title刷新任务
+            Object titleTaskId = SchedulerUtil.runTaskTimer(plugin, new Runnable() {
+                @Override
+                public void run() {
+                    if (!player.isOnline() || !stop.isInStop(player.getLocation())) {
+                        cancelContinuousInfoTask(playerId);
+                        return;
+                    }
+                    
+                    // 显示Title信息
                     player.sendTitle(
                         ChatColor.translateAlternateColorCodes('&', finalTitle),
                         ChatColor.translateAlternateColorCodes('&', finalSubtitle),
-                        0, 90, 0  // 无淡入淡出，持续时间增加到100 ticks (5秒)，比刷新间隔长
+                        0, 40, 10
                     );
+                }
+            }, 0L, interval);
+            
+            // 保存Title任务ID
+            continuousInfoTasks.put(playerId, titleTaskId);
+        } else {
+            // 在非always模式下，只在玩家进入停靠区时显示一次信息
+            
+            // 检查是否是第一次进入该停靠区（避免多次触发）
+            String metaKey = "metro_first_run_" + stop.getId();
+            List<MetadataValue> metaList = player.getMetadata(metaKey);
+            
+            if (metaList.isEmpty()) {
+                // 标记玩家已经在该停靠区触发过事件
+                player.setMetadata(metaKey, new FixedMetadataValue(plugin, true));
+                
+                // 获取淡入淡出时间
+                int fadeIn = plugin.getConfig().getInt("titles.stop_continuous.fade_in", 10);
+                int stay = plugin.getConfig().getInt("titles.stop_continuous.stay", 40);
+                int fadeOut = plugin.getConfig().getInt("titles.stop_continuous.fade_out", 10);
+                
+                // 显示Title信息（一次性）
+                player.sendTitle(
+                    ChatColor.translateAlternateColorCodes('&', finalTitle),
+                    ChatColor.translateAlternateColorCodes('&', finalSubtitle),
+                    fadeIn, stay, fadeOut
+                );
+                
+                // 创建ActionBar显示任务（短时间内持续显示）
+                final int totalDisplayTime = stay + fadeOut; // 总显示时间
+                Object actionBarTaskId = SchedulerUtil.runTaskTimer(plugin, new Runnable() {
+                    private int count = 0;
+                    private final int maxCount = totalDisplayTime / 20 + 1; // 转换为tick并加1以确保覆盖整个时间
                     
-                    // ActionBar由专门的任务处理，这里不再发送
-                } else {
-                    // 非持续显示模式：仅在任务首次运行时显示
-                    // 获取任务首次运行的标记
-                    boolean isFirstRun = true;
-                    
-                    if (player.hasMetadata("metro_first_run_" + stop.getId())) {
-                        MetadataValue value = player.getMetadata("metro_first_run_" + stop.getId()).get(0);
-                        if (value != null && value.asBoolean()) {
-                            isFirstRun = false;
+                    @Override
+                    public void run() {
+                        if (!player.isOnline() || count >= maxCount || !stop.isInStop(player.getLocation())) {
+                            cancelActionBarTask(playerId);
+                            return;
                         }
-                    }
-                    
-                    if (isFirstRun) {
-                        // 首次运行，显示title和actionbar
-                        player.setMetadata("metro_first_run_" + stop.getId(), 
-                                new FixedMetadataValue(plugin, true));
                         
-                        // 同时显示Title和ActionBar
-                        player.sendTitle(
-                            ChatColor.translateAlternateColorCodes('&', finalTitle),
-                            ChatColor.translateAlternateColorCodes('&', finalSubtitle),
-                            plugin.getConfig().getInt("titles.stop_continuous.fade_in", 10),
-                            plugin.getConfig().getInt("titles.stop_continuous.stay", 40),
-                            plugin.getConfig().getInt("titles.stop_continuous.fade_out", 10)
-                        );
-                        
-                        // 显示ActionBar
+                        // 显示ActionBar信息
                         player.spigot().sendMessage(
                             ChatMessageType.ACTION_BAR,
                             TextComponent.fromLegacyText(ChatColor.translateAlternateColorCodes('&', finalActionbar))
                         );
                         
-                        // 停止任务，因为非持续显示模式只需要显示一次
-                        new BukkitRunnable() {
-                            @Override
-                            public void run() {
-                                // 清除标记，以便下次进入停靠区时能再次显示
-                                player.removeMetadata("metro_first_run_" + stop.getId(), plugin);
-                            }
-                        }.runTaskLater(plugin, 200L); // 10秒后清除标记
-                        
-                        // 立即取消任务，不再持续运行
-                        cancel();
+                        count++;
                     }
-                }
+                }, 0L, 20L);
+                
+                // 保存ActionBar任务ID
+                actionBarTasks.put(playerId, actionBarTaskId);
             }
-        };
-        
-        int taskId = task.runTaskTimer(plugin, 0, interval).getTaskId();
-        continuousInfoTasks.put(playerId, taskId);
+        }
     }
     
     /**
-     * 获取包含指定停靠区的线路
-     * 
-     * @param stop 停靠区
-     * @return 包含该停靠区的第一条线路，如果没有则返回null
+     * 查找包含指定停靠区的线路
      */
     private Line findLineForStop(Stop stop) {
         if (stop == null) {
@@ -303,12 +311,12 @@ public class PlayerMoveListener implements Listener {
     }
     
     /**
-     * 取消持续显示信息的任务
+     * 取消显示持续信息的任务
      */
     private void cancelContinuousInfoTask(UUID playerId) {
-        Integer taskId = continuousInfoTasks.remove(playerId);
+        Object taskId = continuousInfoTasks.remove(playerId);
         if (taskId != null) {
-            plugin.getServer().getScheduler().cancelTask(taskId);
+            SchedulerUtil.cancelTask(taskId);
         }
     }
     
@@ -316,9 +324,9 @@ public class PlayerMoveListener implements Listener {
      * 取消ActionBar显示任务
      */
     private void cancelActionBarTask(UUID playerId) {
-        Integer taskId = actionBarTasks.remove(playerId);
+        Object taskId = actionBarTasks.remove(playerId);
         if (taskId != null) {
-            plugin.getServer().getScheduler().cancelTask(taskId);
+            SchedulerUtil.cancelTask(taskId);
         }
     }
 } 

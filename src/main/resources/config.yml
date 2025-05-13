@@ -9,20 +9,17 @@ titles:
     always: true # 是否在站台区域始终显示信息，true为持续显示，false为仅在进入时显示一次
     # 普通站点
     title: "&b{stop_name}"
-    subtitle: "开往 &d{terminus_name} &f方向 | 下一站: &e{next_stop_name}"
-    subtitle_with_transfers: "开往 &d{terminus_name} &f方向 | 下一站: &e{next_stop_name} | 可换乘: &a{transfer_lines}"
+    subtitle: "开往 &d{terminus_name} &f方向 | 下一站: &e{next_stop_name} | 当前可换乘: &a{stop_transfers} | 下一站可换乘: &6{next_stop_transfers}"
     actionbar: "请右击铁轨，自动搭乘 {line_color_code}{line} &f列车"
     # 始发站特殊显示
     start_stop:
       title: "&b{stop_name}"
-      subtitle: "开往 &d{terminus_name} &f方向 | 始发站"
-      subtitle_with_transfers: "开往 &d{terminus_name} &f方向 | 始发站 | 可换乘: &a{transfer_lines}"
+      subtitle: "开往 &d{terminus_name} &f方向 | 始发站 | 当前可换乘: &a{stop_transfers}"
       actionbar: "请右击铁轨，自动搭乘 {line_color_code}{line} &f列车"
     # 终点站特殊显示
     end_stop:
       title: "&b{stop_name}"
-      subtitle: "开往 &d{stop_name} &f方向 | &e终点站"
-      subtitle_with_transfers: "开往 &d{stop_name} &f方向 | &e终点站 | 可换乘: &a{transfer_lines}"
+      subtitle: "开往 &d{stop_name} &f方向 | &e终点站 | 当前可换乘: &a{stop_transfers}"
       actionbar: "本站为终点站，请进对侧站台乘车"
     # 以下选项仅在 always=false 时生效
     fade_in: 10
@@ -33,8 +30,7 @@ titles:
   arrive_stop:
     enabled: true
     title: "&b{stop_name} &f到了"
-    subtitle: "开往 &d{terminus_name} &f方向 | 下一站: &e{next_stop_name}"
-    subtitle_with_transfers: "开往 &d{terminus_name} &f方向 | 下一站: &e{next_stop_name} | 可换乘: &a{transfer_lines}"
+    subtitle: "开往 &d{terminus_name} &f方向 | 下一站: &e{next_stop_name} | 当前可换乘: &a{stop_transfers} | 下一站可换乘: &6{next_stop_transfers}"
     fade_in: 10
     stay: 40
     fade_out: 10
@@ -43,8 +39,7 @@ titles:
   terminal_stop:
     enabled: true
     title: "&b{stop_name}"
-    subtitle: "&c终点站 - 请下车"
-    subtitle_with_transfers: "&c终点站 - 请下车 | 可换乘: &a{transfer_lines}"
+    subtitle: "&c终点站 - 请下车 | 当前可换乘: &a{stop_transfers}"
     fade_in: 10
     stay: 60
     fade_out: 10
@@ -54,8 +49,7 @@ titles:
     enabled: true
     interval: 40 # 刷新间隔，单位tick
     title: "下一站 &e{next_stop_name}"
-    subtitle: "开往 &d{terminus_name} &f方向"
-    subtitle_with_transfers: "开往 &d{terminus_name} &f方向 | 可换乘: &a{transfer_lines}"
+    subtitle: "开往 &d{terminus_name} &f方向 | 下一站可换乘: &6{next_stop_transfers}"
     actionbar: "列车已启动，请扶好站稳，注意安全"
     fade_in: 5
     stay: 40
@@ -63,59 +57,52 @@ titles:
 
 # 音乐配置
 sounds:
-  # 上车发车时播放的音乐
+  # 发车时播放的音乐（模拟地铁发车前的提示音）
   departure:
     enabled: true
+    # 播放前的初始延迟（单位tick，20tick=1秒）
+    initial_delay: 0
     # 音符序列，格式为 "音符,音高,音量,音色"
     # 音符可以是 NOTE (音符盒音符) 或 CUSTOM (自定义声音)
     # 音高范围：0-24 (对应F#3到F#5)
     # 音量范围：0.0-1.0
     # 对于NOTE，音色可以是：PIANO, BASS, SNARE, CLICKS, BASS_DRUM, BELL, FLUTE, CHIME, GUITAR, XYLOPHONE, IRON_XYLOPHONE, COW_BELL, DIDGERIDOO, BIT, BANJO, PLING
     notes:
-      - "NOTE,12,1.0,BELL,5" # 延迟5ticks
-      - "NOTE,14,1.0,BELL,5"
-      - "NOTE,16,1.0,BELL,5"
-      - "NOTE,19,1.0,BELL,5"
+      - "NOTE,14,1.0,BELL,0"    # 第一个"叮"
+      - "NOTE,0,0.0,BELL,10"    # 短暂停顿
   
-  # 到站时播放的音乐
+  # 到站时播放的音乐（模拟车内到站提示音）
   arrival:
     enabled: true
+    # 播放前的初始延迟（单位tick，20tick=1秒）
+    initial_delay: 40
     notes:
-      - "NOTE,19,1.0,BELL,5"
-      - "NOTE,16,1.0,BELL,5"
-      - "NOTE,14,1.0,BELL,5"
-      - "NOTE,12,1.0,BELL,5"
+      - "NOTE,16,1.0,CHIME,0"   # 清脆的"叮"
+      - "NOTE,12,1.0,CHIME,10"  # 较低的音调结束
       
-  # 车辆到站时播放的音乐（列车进站时）
+  # 车辆到站时播放的音乐（模拟站台列车进站声音）
   station_arrival:
     enabled: true
+    # 播放前的初始延迟（单位tick，20tick=1秒）
+    initial_delay: 0
     notes:
-      - "NOTE,16,1.0,BELL,5"
-      - "NOTE,19,1.0,BELL,5"
-      - "NOTE,19,1.0,BELL,5"
+      - "NOTE,4,1.0,PLING,0"     # 低沉的进站声
+      - "NOTE,4,0.8,PLING,5"     # 减弱的低音
 
 # 计分板配置
 scoreboard:
+  # 是否启用计分板
+  enabled: true
   # 站点显示样式
   styles:
     # 当前站点样式
-    current_stop: "§f● "
+    current_stop: "&f"
     # 下一站样式
-    next_stop: "§a● "
+    next_stop: "&a"
     # 其他站点样式
-    other_stops: "§7● "
+    other_stops: "&7"
   # 线路标识符配置
-  line_symbol: "■" # 所有线路统一使用的标识符，将根据线路颜色自动着色
-  # 乘客计分板
-  passenger:
-    enabled: true
-    title: "{line_color_code}{line}"
-    lines:
-      - "§f开往: §e{terminus_name}方向"
-      - "§f终点站: §e{destination_stop_name}"
-      - ""
-      - "§f当前站点:"
-      - "{stop_list}"
+  line_symbol: "●" # 所有线路统一使用的标识符，将根据线路颜色自动着色
 
 # 一般设置
 settings:
@@ -124,8 +111,8 @@ settings:
   # 矿车移动速度
   cart_speed: 0.3
   # 矿车生成延迟（右键铁轨后多久生成矿车，单位tick，20tick=1秒）
-  cart_spawn_delay: 20
+  cart_spawn_delay: 60
   # 矿车消失延迟（下车后多久矿车消失，单位tick，20tick=1秒）
-  cart_despawn_delay: 60
-  # 注意：停靠区范围现在由每个停靠区的两个对角坐标点确定，此设置不再使用
-  # stop_range: 5.0 
+  cart_despawn_delay: 0
+  # 矿车发车延迟（上车后多久自动发车，单位tick，20tick=1秒）
+  cart_departure_delay: 100

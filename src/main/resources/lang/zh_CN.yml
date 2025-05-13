@@ -67,6 +67,9 @@ command:
     help_addtransfer: "&6/m stop addtransfer <stop_id> <transfer_line_id> &f- 添加可换乘线路"
     help_deltransfer: "&6/m stop deltransfer <stop_id> <transfer_line_id> &f- 移除可换乘线路"
     help_listtransfers: "&6/m stop listtransfers <stop_id> &f- 列出停靠区的可换乘线路"
+    help_settitle: "&6/m stop settitle <stop_id> <title_type> <key> <value> &f- 设置停靠区自定义title"
+    help_deltitle: "&6/m stop deltitle <stop_id> <title_type> [key] &f- 删除停靠区自定义title"
+    help_listtitles: "&6/m stop listtitles <stop_id> &f- 查看停靠区所有自定义title"
     
     usage_create: "&c用法: /m stop create <stop_id> <\"显示名称\">"
     usage_delete: "&c用法: /m stop delete <stop_id>"
@@ -76,6 +79,9 @@ command:
     usage_addtransfer: "&c用法: /m stop addtransfer <stop_id> <transfer_line_id>"
     usage_deltransfer: "&c用法: /m stop deltransfer <stop_id> <transfer_line_id>"
     usage_listtransfers: "&c用法: /m stop listtransfers <stop_id>"
+    usage_settitle: "&c用法: /m stop settitle <stop_id> <title_type> <key> <value>"
+    usage_deltitle: "&c用法: /m stop deltitle <stop_id> <title_type> [key]"
+    usage_listtitles: "&c用法: /m stop listtitles <stop_id>"
     
     create_success: "&a成功创建停靠区: %1"
     create_exists: "&c停靠区ID %1 已存在!"
@@ -107,6 +113,21 @@ command:
     transfers_invalid: "&c- %1 (无效线路)"
     
     stop_not_found: "&c未找到停靠区: %1"
+    
+    # 自定义Title相关
+    title_types: "&c有效title类型: stop_continuous, arrive_stop, terminal_stop, passenger_journey"
+    title_keys: "&c有效title键: title, subtitle, actionbar"
+    
+    settitle_success: "&a成功为停靠区 %1 设置自定义title: [%2.%3] = \"%4\""
+    deltitle_success: "&a成功从停靠区 %1 移除自定义title: [%2.%3]"
+    deltitle_type_success: "&a成功从停靠区 %1 移除所有 %2 自定义title设置"
+    deltitle_not_found: "&c停靠区 %1 没有自定义title: [%2.%3]"
+    deltitle_type_not_found: "&c停靠区 %1 没有 %2 自定义title设置"
+    
+    listtitles_header: "&a===== 停靠区 %1 自定义Title配置 ====="
+    listtitles_type: "&6类型: %1"
+    listtitles_item: "&e  - %1: \"%2\""
+    listtitles_empty: "&e该停靠区没有自定义Title配置"
 
 # 测试命令相关
 test:
@@ -147,7 +168,12 @@ movement:
 # 交互相关
 interact:
   train_coming: "&e列车即将进站，请稍候..."
-  train_spawned: "&a已为你生成矿车，请上车！"
+  train_spawned: "&a已上车，%1秒后发车..."
+  train_error: "&c生成列车时出现错误，请稍后再试。"
+  train_pending: "&c此站台已有列车正在进站，请稍等片刻再尝试。"
+  stop_no_line: "&c该停靠区不属于任何线路。"
+  stop_no_point: "&c该停靠区还未设置停靠点，无法上车。"
+  terminal_stop: "&c终点站无法发车，请前往始发站乘车。"
   
 # 车辆相关
 vehicle:
