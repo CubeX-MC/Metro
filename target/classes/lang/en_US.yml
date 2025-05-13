@@ -1,0 +1,177 @@
+# Metro Plugin English Language File
+
+# Basic Information
+plugin:
+  enabled: "&aMetro plugin enabled!"
+  disabled: "&cMetro plugin disabled!"
+  reload: "&aConfiguration reloaded."
+  no_permission: "&cYou don't have permission to use this command."
+  players_only: "&cThis command is for players only."
+
+# Command Related Messages
+command:
+  # Main Command Help
+  help_header: "&a===== Metro Admin Commands Help ====="
+  help_line: "&aCommand: &6/m line &f- Manage metro lines (use /m line for subcommands)"
+  help_stop: "&aCommand: &6/m stop &f- Manage stops (use /m stop for subcommands)"
+  help_reload: "&aCommand: &6/m reload &f- Reload configuration"
+  help_testendpoint: "&aCommand: &6/m testendpoint &f- Test terminal stop notification display"
+  help_teststopinfo: "&aCommand: &6/m teststopinfo <line_id> [stop_id] &f- Test line station information"
+  unknown: "&cUnknown command. Use /m for help."
+
+  # Line Command Related
+  line:
+    help_header: "&a===== Metro Line Management Commands ====="
+    help_create: "&6/m line create <line_id> <display_name> &f- Create a new line"
+    help_delete: "&6/m line delete <line_id> &f- Delete a line"
+    help_list: "&6/m line list &f- List all lines"
+    help_setcolor: "&6/m line setcolor <line_id> <color> &f- Set line color"
+    help_setterminus: "&6/m line setterminus <line_id> <direction_name> &f- Set line terminus direction name"
+    help_addstop: "&6/m line addstop <line_id> <stop_id> [index] &f- Add a stop to a line"
+    help_removestop: "&6/m line removestop <line_id> <stop_id> &f- Remove a stop from a line"
+    help_stops: "&6/m line stops <line_id> &f- List all stops on a line"
+    
+    usage_create: "&cUsage: /m line create <line_id> <\"display_name\">"
+    usage_delete: "&cUsage: /m line delete <line_id>"
+    usage_setcolor: "&cUsage: /m line setcolor <line_id> <color>\n&eColor examples: &a&a, &b&b, &c&c, &9&9 etc. Minecraft color codes"
+    usage_setterminus: "&cUsage: /m line setterminus <line_id> <terminus_direction_name>"
+    usage_addstop: "&cUsage: /m line addstop <line_id> <stop_id> [sequence_index]"
+    usage_delstop: "&cUsage: /m line delstop <line_id> <stop_id>"
+    
+    create_success: "&aSuccessfully created line: %1"
+    create_exists: "&cLine ID %1 already exists!"
+    delete_success: "&aSuccessfully deleted line: %1"
+    delete_not_found: "&cCould not find line ID: %1"
+    setcolor_success: "&aSuccessfully set line %1 color to: %2example text"
+    setterminus_success: "&aSuccessfully set line %1 terminus direction name to: %2"
+    addstop_success: "&aSuccessfully added stop %1 to line %2"
+    addstop_fail: "&cFailed to add stop, please check if line ID and stop ID exist."
+    delstop_success: "&aSuccessfully removed stop %1 from line %2"
+    delstop_fail: "&cFailed to remove stop, please check if line ID and stop ID exist."
+    
+    list_empty: "&eNo lines available."
+    list_header: "&a===== Line List ====="
+    list_format: "&6%1&f: &e%2"
+    index_format: "&cIndex must be a number."
+    line_not_found: "&cLine not found: %1"
+
+  # Stop Command Related
+  stop:
+    help_header: "&a===== Metro Stop Management Commands ====="
+    help_create: "&6/m stop create <stop_id> <display_name> &f- Create a new stop"
+    help_delete: "&6/m stop delete <stop_id> &f- Delete a stop"
+    help_list: "&6/m stop list &f- List all stops"
+    help_setcorner1: "&6/m stop setcorner1 <stop_id> &f- Set the first corner of the stop area"
+    help_setcorner2: "&6/m stop setcorner2 <stop_id> &f- Set the second corner of the stop area"
+    help_setpoint: "&6/m stop setpoint <stop_id> [yaw] &f- Set stop point location and departure direction"
+    help_addtransfer: "&6/m stop addtransfer <stop_id> <transfer_line_id> &f- Add a transfer line"
+    help_deltransfer: "&6/m stop deltransfer <stop_id> <transfer_line_id> &f- Remove a transfer line"
+    help_listtransfers: "&6/m stop listtransfers <stop_id> &f- List transferable lines at a stop"
+    help_settitle: "&6/m stop settitle <stop_id> <title_type> <key> <value> &f- Set custom title for a stop"
+    help_deltitle: "&6/m stop deltitle <stop_id> <title_type> [key] &f- Delete custom title for a stop"
+    help_listtitles: "&6/m stop listtitles <stop_id> &f- View all custom titles for a stop"
+    
+    usage_create: "&cUsage: /m stop create <stop_id> <\"display_name\">"
+    usage_delete: "&cUsage: /m stop delete <stop_id>"
+    usage_setcorner1: "&cUsage: /m stop setcorner1 <stop_id>"
+    usage_setcorner2: "&cUsage: /m stop setcorner2 <stop_id>"
+    usage_setpoint: "&cUsage: /m stop setpoint <stop_id> [yaw]"
+    usage_addtransfer: "&cUsage: /m stop addtransfer <stop_id> <transfer_line_id>"
+    usage_deltransfer: "&cUsage: /m stop deltransfer <stop_id> <transfer_line_id>"
+    usage_listtransfers: "&cUsage: /m stop listtransfers <stop_id>"
+    usage_settitle: "&cUsage: /m stop settitle <stop_id> <title_type> <key> <value>"
+    usage_deltitle: "&cUsage: /m stop deltitle <stop_id> <title_type> [key]"
+    usage_listtitles: "&cUsage: /m stop listtitles <stop_id>"
+    
+    create_success: "&aSuccessfully created stop: %1"
+    create_exists: "&cStop ID %1 already exists!"
+    delete_success: "&aSuccessfully deleted stop: %1"
+    delete_not_found: "&cCould not find stop ID: %1"
+    
+    setcorner1_success: "&aSuccessfully set first corner for stop %1: %2"
+    setcorner1_fail: "&cFailed to set stop corner, please check if stop ID exists."
+    setcorner2_success: "&aSuccessfully set second corner for stop %1: %2"
+    setcorner2_fail: "&cFailed to set stop corner, please check if stop ID exists."
+    
+    setpoint_yaw_invalid: "&cDeparture direction must be a valid float."
+    setpoint_not_rail: "&cYou must stand on a rail to set a stop point."
+    setpoint_not_in_area: "&cYou must be inside the %1 stop area to set the stop point."
+    setpoint_success: "&aSuccessfully set stop point for %1, departure direction: %2"
+    setpoint_fail: "&cFailed to set stop point, please check if stop ID exists."
+    
+    addtransfer_success: "&aSuccessfully added line %1 as a transfer line for stop %2"
+    addtransfer_exists: "&eStop %1 already has transfer line %2"
+    deltransfer_success: "&aSuccessfully removed transfer line %1 from stop %2"
+    deltransfer_not_exists: "&eStop %1 does not have transfer line %2"
+    
+    list_empty: "&eNo stops available."
+    list_header: "&a===== Stop List ====="
+    list_format: "&6%1&f: &e%2"
+    
+    transfers_empty: "&eStop %1 has no transfer lines"
+    transfers_header: "&aTransfer lines for stop %1:"
+    transfers_format: "&e- %1"
+    transfers_invalid: "&c- %1 (invalid line)"
+    
+    stop_not_found: "&cStop not found: %1"
+    
+    # Custom Title Related
+    title_types: "&cValid title types: stop_continuous, arrive_stop, terminal_stop, departure"
+    title_keys: "&cValid title keys: title, subtitle, actionbar"
+    
+    settitle_success: "&aSuccessfully set custom title for stop %1: [%2.%3] = \"%4\""
+    deltitle_success: "&aSuccessfully removed custom title from stop %1: [%2.%3]"
+    deltitle_type_success: "&aSuccessfully removed all %2 custom title settings from stop %1"
+    deltitle_not_found: "&cStop %1 does not have custom title: [%2.%3]"
+    deltitle_type_not_found: "&cStop %1 does not have %2 custom title settings"
+    
+    listtitles_header: "&a===== Stop %1 Custom Title Configuration ====="
+    listtitles_type: "&6Type: %1"
+    listtitles_item: "&e  - %1: \"%2\""
+    listtitles_empty: "&eThis stop has no custom title configuration"
+
+# Test Command Related
+test:
+  endpoint_start: "&aTesting terminal stop notification..."
+  endpoint_disabled: "&cTerminal stop notification is disabled. In config: titles.terminal_stop.enabled = false"
+  endpoint_show: "&aShowing terminal stop notification: title=%1, subtitle=%2"
+  
+  stopinfo_usage: "&cUsage: /m teststopinfo <line_id> [stop_id]"
+  stopinfo_line_empty: "&eLine %1 has no stops."
+  stopinfo_header: "&a===== Line Stops ====="
+  stopinfo_line: "&6Line: %1 (%2)"
+  stopinfo_stop_format: "&b%1. &e%2 &f(%3)%4"
+  stopinfo_stop_start: " &6(starting station)"
+  stopinfo_stop_end: " &6(terminal station)"
+  stopinfo_detail_hint: "&aUse /m teststopinfo %1 <stop_id> to view details"
+  
+  stop_info_header: "&a===== Stop Information ====="
+  stop_info_line: "&6Line: %1 (%2)"
+  stop_info_current: "&6Current stop: %1 (%2)"
+  stop_info_prev: "&6Previous stop: %1"
+  stop_info_next: "&6Next stop: %1"
+  stop_info_terminal: "&6Terminal stop: %1"
+  stop_info_no_prev: "None (starting station)"
+  stop_info_no_next: "None (terminal station)"
+  stop_info_no_terminal: "None"
+  stop_info_title_preview: "&aTitle preview: %1"
+  stop_info_subtitle_preview: "&aSubtitle preview: %1"
+
+# Passenger Related Messages
+passenger:
+  train_derailed: "&cTrack damaged, journey terminated!"
+  
+# Movement Listener Related
+movement:
+  enter_stop: "&aYou've entered stop area: %1"
+  leave_stop: "&eYou've left stop area: %1"
+  
+# Interaction Related
+interact:
+  train_coming: "&eTrain arriving soon, please wait..."
+  train_spawned: "&aYou've boarded, departing in %1 seconds..."
+  train_error: "&cError spawning train, please try again later."
+  train_pending: "&cA train is already approaching this station, please wait a moment and try again."
+  stop_no_line: "&cThis stop doesn't belong to any line."
+  stop_no_point: "&cThis stop doesn't have a stop point set, boarding is not possible."
+  terminal_stop: "&cCannot depart from terminal station, please go to the starting station to board." 

@@ -263,6 +263,25 @@ public final class Metro extends JavaPlugin {
     }
     
     /**
+     * 获取等待发车音乐配置
+     */
+    public boolean isWaitingSoundEnabled() {
+        return getConfig().getBoolean("sounds.waiting.enabled", true);
+    }
+    
+    public List<String> getWaitingNotes() {
+        return getConfig().getStringList("sounds.waiting.notes");
+    }
+    
+    public int getWaitingInitialDelay() {
+        return getConfig().getInt("sounds.waiting.initial_delay", 0);
+    }
+    
+    public int getWaitingSoundInterval() {
+        return getConfig().getInt("sounds.waiting.interval", 60);
+    }
+    
+    /**
      * 获取矿车速度
      */
     public double getCartSpeed() {
@@ -270,11 +289,18 @@ public final class Metro extends JavaPlugin {
     }
     
     /**
+     * 获取矿车生成延迟
+     */
+    public long getCartSpawnDelay() {
+        return getConfig().getLong("settings.cart_spawn_delay", 100L);
+    }
+
+    /**
      * 获取列车在站点停留的延迟时间（以游戏刻为单位）
      * 
      * @return 延迟时间，默认为100刻（5秒）
      */
     public long getCartDepartureDelay() {
-        return getConfig().getLong("cart_departure_delay", 100L);
+        return getConfig().getLong("settings.cart_departure_delay", 100L);
     }
 }

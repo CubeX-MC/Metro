@@ -95,6 +95,7 @@ command:
     
     setpoint_yaw_invalid: "&c发车朝向必须是一个有效的浮点数。"
     setpoint_not_rail: "&c必须站在铁轨上设置停靠点。"
+    setpoint_not_in_area: "&c必须站在 %1 停靠区域内设置停靠点。"
     setpoint_success: "&a成功为停靠区 %1 设置停靠点，发车朝向: %2"
     setpoint_fail: "&c设置停靠点失败，请检查停靠区ID是否存在。"
     
@@ -115,7 +116,7 @@ command:
     stop_not_found: "&c未找到停靠区: %1"
     
     # 自定义Title相关
-    title_types: "&c有效title类型: stop_continuous, arrive_stop, terminal_stop, passenger_journey"
+    title_types: "&c有效title类型: stop_continuous, arrive_stop, terminal_stop, departure"
     title_keys: "&c有效title键: title, subtitle, actionbar"
     
     settitle_success: "&a成功为停靠区 %1 设置自定义title: [%2.%3] = \"%4\""

@@ -75,10 +75,10 @@ public class LanguageManager {
                     YamlConfiguration defaultConfig = YamlConfiguration.loadConfiguration(
                             new InputStreamReader(inputStream, StandardCharsets.UTF_8));
                     languageFiles.put(defaultLanguage, defaultConfig);
-                    plugin.getLogger().info("已加载内置默认语言: " + defaultLanguage);
+                    plugin.getLogger().info("Loaded default language: " + defaultLanguage);
                 }
             } catch (Exception e) {
-                plugin.getLogger().log(Level.WARNING, "加载内置默认语言失败: " + defaultLanguage, e);
+                plugin.getLogger().log(Level.WARNING, "Failed to load default language: " + defaultLanguage, e);
             }
         }
     }
@@ -92,7 +92,6 @@ public class LanguageManager {
         File langFile = new File(plugin.getDataFolder(), "lang/" + langCode + ".yml");
         if (!langFile.exists()) {
             plugin.saveResource("lang/" + langCode + ".yml", false);
-            plugin.getLogger().info("已创建默认语言文件: " + langCode);
         }
     }
 

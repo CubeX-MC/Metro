@@ -216,11 +216,6 @@ public class ScoreboardManager {
         int currentStopIndex = currentStopId != null ? stopIds.indexOf(currentStopId) : -1;
         int nextStopIndex = nextStopId != null ? stopIds.indexOf(nextStopId) : -1;
         
-        // 记录日志
-        String statusDesc = currentStopId != null ? (nextStopId != null ? "进入站点" : "终点站") : "行驶中";
-        plugin.getLogger().info("计分板更新 - " + statusDesc + 
-            " - 当前站索引: " + currentStopIndex + ", 下一站索引: " + nextStopIndex);
-        
         for (int i = 0; i < stopIds.size(); i++) {
             String stopId = stopIds.get(i);
             Stop stop = stopManager.getStop(stopId);

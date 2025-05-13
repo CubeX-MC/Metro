@@ -252,6 +252,36 @@ public class MetroAdminCommand implements CommandExecutor {
                 return true;
             }
             
+            // 重命名线路命令
+            if (subCommand.equals("rename")) {
+                if (args.length < 4) {
+                    player.sendMessage(ChatColor.RED + "用法: /m line rename <line_id> <新名称>");
+                    return true;
+                }
+                
+                String lineId = args[2];
+                // 拼接剩余参数作为新名称
+                StringBuilder newName = new StringBuilder();
+                for (int i = 3; i < args.length; i++) {
+                    if (i > 3) newName.append(" ");
+                    newName.append(args[i]);
+                }
+                
+                Line line = lineManager.getLine(lineId);
+                if (line == null) {
+                    player.sendMessage(ChatColor.RED + "未找到线路: " + lineId);
+                    return true;
+                }
+                
+                String oldName = line.getName();
+                if (lineManager.setLineName(lineId, newName.toString())) {
+                    player.sendMessage(ChatColor.GREEN + "成功将线路 " + oldName + " 重命名为: " + newName);
+                } else {
+                    player.sendMessage(ChatColor.RED + "重命名线路失败，请检查线路ID是否存在。");
+                }
+                return true;
+            }
+            
             switch (subCommand) {
                 case "create":
                     if (args.length < 3) {
@@ -456,7 +486,7 @@ public class MetroAdminCommand implements CommandExecutor {
             if (subCommand.equals("settitle")) {
                 if (args.length < 6) {
                     player.sendMessage(ChatColor.RED + "用法: /m stop settitle <stop_id> <title_type> <key> <value>");
-                    player.sendMessage(ChatColor.RED + "title_type: stop_continuous, arrive_stop, terminal_stop, passenger_journey");
+                    player.sendMessage(ChatColor.RED + "title_type: stop_continuous, arrive_stop, terminal_stop, departure");
                     player.sendMessage(ChatColor.RED + "key: title, subtitle, actionbar");
                     return true;
                 }
@@ -482,7 +512,7 @@ public class MetroAdminCommand implements CommandExecutor {
                 // 验证titleType
                 if (!isValidTitleType(titleType)) {
                     player.sendMessage(ChatColor.RED + "无效的title类型: " + titleType);
-                    player.sendMessage(ChatColor.RED + "有效类型: stop_continuous, arrive_stop, terminal_stop, passenger_journey");
+                    player.sendMessage(ChatColor.RED + "有效类型: stop_continuous, arrive_stop, terminal_stop, departure");
                     return true;
                 }
                 
@@ -529,7 +559,7 @@ public class MetroAdminCommand implements CommandExecutor {
                 // 验证titleType
                 if (!isValidTitleType(titleType)) {
                     player.sendMessage(ChatColor.RED + "无效的title类型: " + titleType);
-                    player.sendMessage(ChatColor.RED + "有效类型: stop_continuous, arrive_stop, terminal_stop, passenger_journey");
+                    player.sendMessage(ChatColor.RED + "有效类型: stop_continuous, arrive_stop, terminal_stop, departure");
                     return true;
                 }
                 
@@ -580,7 +610,7 @@ public class MetroAdminCommand implements CommandExecutor {
                 player.sendMessage(ChatColor.GREEN + "===== 停靠区 " + stop.getName() + " 自定义Title配置 =====");
                 boolean hasCustomTitles = false;
                 
-                String[] titleTypes = {"stop_continuous", "arrive_stop", "terminal_stop", "passenger_journey"};
+                String[] titleTypes = {"stop_continuous", "arrive_stop", "terminal_stop", "departure"};
                 for (String titleType : titleTypes) {
                     Map<String, String> titleConfig = stop.getCustomTitle(titleType);
                     if (titleConfig != null && !titleConfig.isEmpty()) {
@@ -595,6 +625,36 @@ public class MetroAdminCommand implements CommandExecutor {
                 
                 if (!hasCustomTitles) {
                     player.sendMessage(ChatColor.YELLOW + "该停靠区没有自定义Title配置");
+                }
+                return true;
+            }
+            
+            // 重命名停靠区命令
+            if (subCommand.equals("rename")) {
+                if (args.length < 4) {
+                    player.sendMessage(ChatColor.RED + "用法: /m stop rename <stop_id> <新名称>");
+                    return true;
+                }
+                
+                String stopId = args[2];
+                // 拼接剩余参数作为新名称
+                StringBuilder newName = new StringBuilder();
+                for (int i = 3; i < args.length; i++) {
+                    if (i > 3) newName.append(" ");
+                    newName.append(args[i]);
+                }
+                
+                Stop stop = stopManager.getStop(stopId);
+                if (stop == null) {
+                    player.sendMessage(ChatColor.RED + "未找到停靠区: " + stopId);
+                    return true;
+                }
+                
+                String oldName = stop.getName();
+                if (stopManager.setStopName(stopId, newName.toString())) {
+                    player.sendMessage(ChatColor.GREEN + "成功将停靠区 " + oldName + " 重命名为: " + newName);
+                } else {
+                    player.sendMessage(ChatColor.RED + "重命名停靠区失败，请检查停靠区ID是否存在。");
                 }
                 return true;
             }
@@ -687,33 +747,46 @@ public class MetroAdminCommand implements CommandExecutor {
                     
                 case "setpoint":
                     if (args.length < 3) {
-                        player.sendMessage(ChatColor.RED + "用法: /m stop setpoint <stop_id> [yaw]");
+                        player.sendMessage(plugin.getLanguageManager().getMessage("command.stop.usage_setpoint"));
                         return true;
                     }
                     
                     stopId = args[2];
                     float yaw = player.getLocation().getYaw();
                     
+                    // 检查停靠区是否存在
+                    Stop stop = stopManager.getStop(stopId);
+                    if (stop == null) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("command.stop.stop_not_found", stopId));
+                        return true;
+                    }
+                    
                     if (args.length > 3) {
                         try {
                             yaw = Float.parseFloat(args[3]);
                         } catch (NumberFormatException e) {
-                            player.sendMessage(ChatColor.RED + "发车朝向必须是一个有效的浮点数。");
+                            player.sendMessage(plugin.getLanguageManager().getMessage("command.stop.setpoint_yaw_invalid"));
                             return true;
                         }
                     }
                     
-                    // 检查玩家是否站在铁轨上
+                    // 检查玩家是否在铁轨上
                     location = player.getLocation();
                     if (!LocationUtil.isRail(location)) {
-                        player.sendMessage(ChatColor.RED + "必须站在铁轨上设置停靠点。");
+                        player.sendMessage(plugin.getLanguageManager().getMessage("command.stop.setpoint_not_rail"));
+                        return true;
+                    }
+                    
+                    // 检查玩家是否在停靠区域内
+                    if (!stop.isInStop(location)) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("command.stop.setpoint_not_in_area", stop.getName()));
                         return true;
                     }
                     
                     if (stopManager.setStopPoint(stopId, location, yaw)) {
-                        player.sendMessage(ChatColor.GREEN + "成功为停靠区 " + stopId + " 设置停靠点，发车朝向: " + yaw);
+                        player.sendMessage(plugin.getLanguageManager().getMessage("command.stop.setpoint_success", stopId, String.valueOf(yaw)));
                     } else {
-                        player.sendMessage(ChatColor.RED + "设置停靠点失败，请检查停靠区ID是否存在。");
+                        player.sendMessage(plugin.getLanguageManager().getMessage("command.stop.setpoint_fail"));
                     }
                     break;
                 
@@ -770,6 +843,9 @@ public class MetroAdminCommand implements CommandExecutor {
         player.sendMessage(plugin.getLanguageManager().getMessage("command.line.help_addstop"));
         player.sendMessage(plugin.getLanguageManager().getMessage("command.line.help_removestop"));
         player.sendMessage(plugin.getLanguageManager().getMessage("command.line.help_stops"));
+        // 添加重命名线路的帮助信息
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', 
+                "&6/m line rename <line_id> <新名称> &f- 修改线路的显示名称"));
     }
     
     /**
@@ -804,6 +880,9 @@ public class MetroAdminCommand implements CommandExecutor {
                 "&6/m stop deltitle <stop_id> <title_type> [key] &f- 删除停靠区自定义title"));
         player.sendMessage(ChatColor.translateAlternateColorCodes('&', 
                 "&6/m stop listtitles <stop_id> &f- 查看停靠区所有自定义title"));
+        // 添加重命名停靠区的帮助信息
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', 
+                "&6/m stop rename <stop_id> <新名称> &f- 修改停靠区的显示名称"));
     }
     
     /**
@@ -813,7 +892,7 @@ public class MetroAdminCommand implements CommandExecutor {
         return titleType.equals("stop_continuous") || 
                titleType.equals("arrive_stop") || 
                titleType.equals("terminal_stop") || 
-               titleType.equals("passenger_journey");
+               titleType.equals("departure");
     }
     
     /**

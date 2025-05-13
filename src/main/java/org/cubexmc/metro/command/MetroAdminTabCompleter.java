@@ -31,13 +31,13 @@ public class MetroAdminTabCompleter implements TabCompleter {
     
     // 线路子命令
     private static final List<String> LINE_SUBCOMMANDS = Arrays.asList(
-            "create", "delete", "list", "setcolor", "setterminus", "addstop", "delstop", "stops"
+            "create", "delete", "list", "setcolor", "setterminus", "addstop", "delstop", "stops", "rename"
     );
     
     // 停靠区子命令
     private static final List<String> STOP_SUBCOMMANDS = Arrays.asList(
             "create", "delete", "list", "setcorner1", "setcorner2", "setpoint",
-            "addtransfer", "deltransfer", "listtransfers", "settitle", "deltitle", "listtitles"
+            "addtransfer", "deltransfer", "listtransfers", "settitle", "deltitle", "listtitles", "rename"
     );
     
     // 颜色代码列表
@@ -48,7 +48,7 @@ public class MetroAdminTabCompleter implements TabCompleter {
     
     // title类型列表
     private static final List<String> TITLE_TYPES = Arrays.asList(
-            "stop_continuous", "arrive_stop", "terminal_stop", "passenger_journey"
+            "stop_continuous", "arrive_stop", "terminal_stop", "departure"
     );
     
     // title键列表
@@ -96,7 +96,8 @@ public class MetroAdminTabCompleter implements TabCompleter {
                 String subCommand = args[1].toLowerCase();
                 if ("delete".equals(subCommand) || "setcolor".equals(subCommand) || 
                         "setterminus".equals(subCommand) || "addstop".equals(subCommand) || 
-                        "delstop".equals(subCommand) || "stops".equals(subCommand)) {
+                        "delstop".equals(subCommand) || "stops".equals(subCommand) ||
+                        "rename".equals(subCommand)) {
                     return getLineIds();
                 }
             } else if ("stop".equals(mainCommand)) {
@@ -105,7 +106,8 @@ public class MetroAdminTabCompleter implements TabCompleter {
                         "setcorner2".equals(subCommand) || "setpoint".equals(subCommand) || 
                         "addtransfer".equals(subCommand) || "deltransfer".equals(subCommand) ||
                         "listtransfers".equals(subCommand) || "settitle".equals(subCommand) || 
-                        "deltitle".equals(subCommand) || "listtitles".equals(subCommand)) {
+                        "deltitle".equals(subCommand) || "listtitles".equals(subCommand) ||
+                        "rename".equals(subCommand)) {
                     return getStopIds();
                 }
             } else if ("teststopinfo".equals(mainCommand)) {

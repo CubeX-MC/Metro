@@ -131,7 +131,7 @@ public class Stop {
     /**
      * 获取站点自定义title配置
      * 
-     * @param titleType title类型(stop_continuous, arrive_stop, terminal_stop, passenger_journey)
+     * @param titleType title类型(stop_continuous, arrive_stop, terminal_stop, departure)
      * @return 配置Map，如果不存在则返回null
      */
     public Map<String, String> getCustomTitle(String titleType) {
@@ -141,7 +141,7 @@ public class Stop {
     /**
      * 设置站点自定义title配置
      * 
-     * @param titleType title类型(stop_continuous, arrive_stop, terminal_stop, passenger_journey)
+     * @param titleType title类型(stop_continuous, arrive_stop, terminal_stop, departure)
      * @param config title配置
      */
     public void setCustomTitle(String titleType, Map<String, String> config) {
@@ -151,7 +151,7 @@ public class Stop {
     /**
      * 移除站点自定义title配置
      * 
-     * @param titleType title类型(stop_continuous, arrive_stop, terminal_stop, passenger_journey)
+     * @param titleType title类型(stop_continuous, arrive_stop, terminal_stop, departure)
      * @return 是否成功移除
      */
     public boolean removeCustomTitle(String titleType) {

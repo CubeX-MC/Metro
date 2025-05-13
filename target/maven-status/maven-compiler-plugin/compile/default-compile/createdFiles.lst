@@ -6,6 +6,7 @@ org\cubexmc\metro\listener\PlayerInteractListener.class
 org\cubexmc\metro\Metrics.class
 org\cubexmc\metro\Metrics$JsonObjectBuilder$JsonObject.class
 org\cubexmc\metro\manager\StopManager.class
+org\cubexmc\metro\train\TrainMovementTask$TrainState.class
 org\cubexmc\metro\util\SoundUtil.class
 org\cubexmc\metro\Metrics$CustomChart.class
 org\cubexmc\metro\Metrics$MetricsBase.class
@@ -17,7 +18,6 @@ org\cubexmc\metro\Metrics$SimplePie.class
 org\cubexmc\metro\Metro.class
 org\cubexmc\metro\listener\PlayerMoveListener$1.class
 org\cubexmc\metro\model\Line.class
-org\cubexmc\metro\listener\VehicleListener$1.class
 org\cubexmc\metro\Metrics$AdvancedBarChart.class
 org\cubexmc\metro\Metrics$SimpleBarChart.class
 org\cubexmc\metro\Metrics$SingleLineChart.class
@@ -30,7 +30,6 @@ org\cubexmc\metro\util\SoundUtil$2.class
 org\cubexmc\metro\util\TextUtil.class
 org\cubexmc\metro\util\SoundUtil$1.class
 org\cubexmc\metro\listener\PlayerMoveListener$3.class
-org\cubexmc\metro\train\TrainMovementTask$TrainMovementTaskForNextStop.class
 org\cubexmc\metro\Metrics$DrilldownPie.class
 org\cubexmc\metro\util\SchedulerUtil.class
 org\cubexmc\metro\model\Stop.class

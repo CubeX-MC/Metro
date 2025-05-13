@@ -45,7 +45,7 @@ titles:
     fade_out: 10
     
   # 乘客上车后行程信息
-  passenger_journey:
+  departure:
     enabled: true
     interval: 40 # 刷新间隔，单位tick
     title: "下一站 &e{next_stop_name}"
@@ -54,6 +54,14 @@ titles:
     fade_in: 5
     stay: 40
     fade_out: 5
+
+  # 乘客等待发车时的信息
+  waiting:
+    enabled: true
+    interval: 20 # 刷新间隔，单位tick
+    title: "列车即将发车"
+    subtitle: "当前站点: &a{stop_name} | 下一站: &e{next_stop_name}"
+    actionbar: "列车将在 &c{countdown} &f秒后发车，请系好安全带"
 
 # 音乐配置
 sounds:
@@ -88,6 +96,16 @@ sounds:
     notes:
       - "NOTE,4,1.0,PLING,0"     # 低沉的进站声
       - "NOTE,4,0.8,PLING,5"     # 减弱的低音
+      
+  # 等待发车时循环播放的提示音乐
+  waiting:
+    enabled: true
+    # 播放前的初始延迟（单位tick，20tick=1秒）
+    initial_delay: 0
+    # 循环间隔（单位tick，20tick=1秒）多长时间播放一次
+    interval: 60
+    notes:
+      - "NOTE,12,0.7,BELL,0"     # 等待提示音
 
 # 计分板配置
 scoreboard:
