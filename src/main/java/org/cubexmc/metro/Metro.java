@@ -228,6 +228,10 @@ public final class Metro extends JavaPlugin {
         return getConfig().getStringList("sounds.departure.notes");
     }
     
+    public int getDepartureInitialDelay() {
+        return getConfig().getInt("sounds.departure.initial_delay", 0);
+    }
+    
     /**
      * 获取到站音乐配置
      */
@@ -237,6 +241,10 @@ public final class Metro extends JavaPlugin {
     
     public List<String> getArrivalNotes() {
         return getConfig().getStringList("sounds.arrival.notes");
+    }
+    
+    public int getArrivalInitialDelay() {
+        return getConfig().getInt("sounds.arrival.initial_delay", 0);
     }
     
     /**
@@ -250,6 +258,29 @@ public final class Metro extends JavaPlugin {
         return getConfig().getStringList("sounds.station_arrival.notes");
     }
     
+    public int getStationArrivalInitialDelay() {
+        return getConfig().getInt("sounds.station_arrival.initial_delay", 0);
+    }
+    
+    /**
+     * 获取等待发车音乐配置
+     */
+    public boolean isWaitingSoundEnabled() {
+        return getConfig().getBoolean("sounds.waiting.enabled", true);
+    }
+    
+    public List<String> getWaitingNotes() {
+        return getConfig().getStringList("sounds.waiting.notes");
+    }
+    
+    public int getWaitingInitialDelay() {
+        return getConfig().getInt("sounds.waiting.initial_delay", 0);
+    }
+    
+    public int getWaitingSoundInterval() {
+        return getConfig().getInt("sounds.waiting.interval", 60);
+    }
+    
     /**
      * 获取矿车速度
      */
@@ -258,12 +289,18 @@ public final class Metro extends JavaPlugin {
     }
     
     /**
-     * 获取停靠区范围
-     * 
-     * @deprecated 此方法不再被使用，因为停靠区现在由两个对角坐标点确定区域，而不是使用固定范围
+     * 获取矿车生成延迟
      */
-    @Deprecated
-    public double getStopRange() {
-        return getConfig().getDouble("settings.stop_range", 5.0);
+    public long getCartSpawnDelay() {
+        return getConfig().getLong("settings.cart_spawn_delay", 100L);
+    }
+
+    /**
+     * 获取列车在站点停留的延迟时间（以游戏刻为单位）
+     * 
+     * @return 延迟时间，默认为100刻（5秒）
+     */
+    public long getCartDepartureDelay() {
+        return getConfig().getLong("settings.cart_departure_delay", 100L);
     }
 }

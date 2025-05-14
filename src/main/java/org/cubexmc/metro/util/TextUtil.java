@@ -52,6 +52,14 @@ public class TextUtil {
         if (stop != null) {
             result = result.replace("{stop_name}", stop.getName());
             result = result.replace("{stop_id}", stop.getId());
+            
+            // 如果有提供LineManager，生成当前站点可换乘线路信息
+            if (lineManager != null) {
+                String transferLines = formatTransferableLines(stop, lineManager);
+                result = result.replace("{stop_transfers}", transferLines);
+            } else {
+                result = result.replace("{stop_transfers}", "");
+            }
         }
         
         // 替换上一站占位符
@@ -71,12 +79,14 @@ public class TextUtil {
             // 如果有提供LineManager，生成下一站可换乘线路信息
             if (lineManager != null) {
                 String transferLines = formatTransferableLines(nextStop, lineManager);
-                result = result.replace("{transfer_lines}", transferLines);
+                result = result.replace("{next_stop_transfers}", transferLines);
+            } else {
+                result = result.replace("{next_stop_transfers}", "");
             }
         } else {
             result = result.replace("{next_stop_name}", "");
             result = result.replace("{next_stop_id}", "");
-            result = result.replace("{transfer_lines}", "");
+            result = result.replace("{next_stop_transfers}", "");
         }
         
         // 替换终点站占位符
@@ -102,12 +112,16 @@ public class TextUtil {
      */
     private static String formatTransferableLines(Stop stop, LineManager lineManager) {
         if (stop == null || lineManager == null) {
-            return "";
+            return ""; // 调试: 缺少参数
         }
         
         List<String> transferableLineIds = stop.getTransferableLines();
+        if (transferableLineIds == null) {
+            return ""; // 调试: 换乘线路列表为null
+        }
+        
         if (transferableLineIds.isEmpty()) {
-            return "无";
+            return "无"; // 无可换乘线路
         }
         
         StringBuilder result = new StringBuilder();
@@ -137,6 +151,7 @@ public class TextUtil {
      * @return 替换后的文本
      */
     public static String replacePlaceholders(String text, Line line, Stop stop) {
+        // 由于LineManager是必须的，但我们不能在这直接获取，所以简化版本不支持换乘信息替换
         return replacePlaceholders(text, line, stop, null, null, null, null);
     }
     
@@ -151,6 +166,7 @@ public class TextUtil {
      * @return 替换后的文本
      */
     public static String replacePlaceholders(String text, Line line, Stop stop, Stop lastStop, Stop nextStop) {
+        // 由于LineManager是必须的，但我们不能在这直接获取，所以简化版本不支持换乘信息替换
         return replacePlaceholders(text, line, stop, lastStop, nextStop, null, null);
     }
     
@@ -166,6 +182,18 @@ public class TextUtil {
      * @return 替换后的文本
      */
     public static String replacePlaceholders(String text, Line line, Stop stop, Stop lastStop, Stop nextStop, Stop terminalStop) {
+        // 由于LineManager是必须的，但我们不能在这直接获取，所以简化版本不支持换乘信息替换
         return replacePlaceholders(text, line, stop, lastStop, nextStop, terminalStop, null);
+    }
+    
+    /**
+     * 格式化当前站点可换乘线路信息（与下一站区分）
+     * 
+     * @param stop 停靠区对象
+     * @param lineManager 线路管理器
+     * @return 格式化后的可换乘线路文本
+     */
+    public static String formatCurrentStationTransferableLines(Stop stop, LineManager lineManager) {
+        return formatTransferableLines(stop, lineManager);
     }
 } 

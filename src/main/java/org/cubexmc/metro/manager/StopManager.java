@@ -205,6 +205,24 @@ public class StopManager {
     }
     
     /**
+     * 设置停靠区名称
+     * 
+     * @param stopId 停靠区ID
+     * @param name 新名称
+     * @return 是否设置成功
+     */
+    public boolean setStopName(String stopId, String name) {
+        Stop stop = stops.get(stopId);
+        if (stop == null) {
+            return false;
+        }
+        
+        stop.setName(name);
+        saveConfig();
+        return true;
+    }
+    
+    /**
      * 通过ID获取停靠区
      * 
      * @param stopId 停靠区ID

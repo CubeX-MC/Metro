@@ -227,4 +227,21 @@ public class LineManager {
         saveConfig();
         return true;
     }
+    
+    /**
+     * 设置线路名称
+     * 
+     * @param lineId 线路ID
+     * @param name 新名称
+     * @return 是否成功
+     */
+    public boolean setLineName(String lineId, String name) {
+        Line line = lines.get(lineId);
+        if (line == null) {
+            return false;
+        }
+        line.setName(name);
+        saveConfig();
+        return true;
+    }
 } 

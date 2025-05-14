@@ -31,19 +31,29 @@ public class MetroAdminTabCompleter implements TabCompleter {
     
     // 线路子命令
     private static final List<String> LINE_SUBCOMMANDS = Arrays.asList(
-            "create", "delete", "list", "setcolor", "setterminus", "addstop", "delstop", "stops"
+            "create", "delete", "list", "setcolor", "setterminus", "addstop", "delstop", "stops", "rename"
     );
     
     // 停靠区子命令
     private static final List<String> STOP_SUBCOMMANDS = Arrays.asList(
             "create", "delete", "list", "setcorner1", "setcorner2", "setpoint",
-            "addtransfer", "deltransfer", "listtransfers"
+            "addtransfer", "deltransfer", "listtransfers", "settitle", "deltitle", "listtitles", "rename"
     );
     
     // 颜色代码列表
     private static final List<String> COLOR_CODES = Arrays.asList(
             "&0", "&1", "&2", "&3", "&4", "&5", "&6", "&7",
             "&8", "&9", "&a", "&b", "&c", "&d", "&e", "&f"
+    );
+    
+    // title类型列表
+    private static final List<String> TITLE_TYPES = Arrays.asList(
+            "stop_continuous", "arrive_stop", "terminal_stop", "departure"
+    );
+    
+    // title键列表
+    private static final List<String> TITLE_KEYS = Arrays.asList(
+            "title", "subtitle", "actionbar"
     );
     
     public MetroAdminTabCompleter(Metro plugin) {
@@ -86,7 +96,8 @@ public class MetroAdminTabCompleter implements TabCompleter {
                 String subCommand = args[1].toLowerCase();
                 if ("delete".equals(subCommand) || "setcolor".equals(subCommand) || 
                         "setterminus".equals(subCommand) || "addstop".equals(subCommand) || 
-                        "delstop".equals(subCommand) || "stops".equals(subCommand)) {
+                        "delstop".equals(subCommand) || "stops".equals(subCommand) ||
+                        "rename".equals(subCommand)) {
                     return getLineIds();
                 }
             } else if ("stop".equals(mainCommand)) {
@@ -94,7 +105,9 @@ public class MetroAdminTabCompleter implements TabCompleter {
                 if ("delete".equals(subCommand) || "setcorner1".equals(subCommand) || 
                         "setcorner2".equals(subCommand) || "setpoint".equals(subCommand) || 
                         "addtransfer".equals(subCommand) || "deltransfer".equals(subCommand) ||
-                        "listtransfers".equals(subCommand)) {
+                        "listtransfers".equals(subCommand) || "settitle".equals(subCommand) || 
+                        "deltitle".equals(subCommand) || "listtitles".equals(subCommand) ||
+                        "rename".equals(subCommand)) {
                     return getStopIds();
                 }
             } else if ("teststopinfo".equals(mainCommand)) {
@@ -116,6 +129,18 @@ public class MetroAdminTabCompleter implements TabCompleter {
                 String subCommand = args[1].toLowerCase();
                 if ("addtransfer".equals(subCommand) || "deltransfer".equals(subCommand)) {
                     return getLineIds();
+                } else if ("settitle".equals(subCommand) || "deltitle".equals(subCommand)) {
+                    return getCompletions(args[3], TITLE_TYPES);
+                }
+            }
+        }
+        
+        // 特定子命令的第五个参数补全
+        if (args.length == 5) {
+            if ("stop".equals(mainCommand)) {
+                String subCommand = args[1].toLowerCase();
+                if ("settitle".equals(subCommand) || "deltitle".equals(subCommand)) {
+                    return getCompletions(args[4], TITLE_KEYS);
                 }
             }
         }
