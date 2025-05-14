@@ -72,18 +72,18 @@ Metro是一个受到牛腩小镇服务器启发的Minecraft服务器插件，为
     * `/m stop rename <stop_id> <"新名称">`: 修改停靠区的显示名称，ID保持不变，不影响线路关联。
     * `/m stop setcorner1 <stop_id>`: 设置停靠区空间的第一个对角点 (管理员看着方块执行)。
     * `/m stop setcorner2 <stop_id>`: 设置停靠区空间的第二个对角点。
-    * `/m stop setpoint <stop_id> [yaw]`: 在当前停靠区空间内，设置精确的"停靠点 (`stoppoint`)"位置 (管理员看着目标红石铁轨执行)。可选 `yaw` 参数设置发车朝向。
+    * `/m stop setpoint [yaw]`: 在当前停靠区空间内，设置精确的"停靠点 (`stoppoint`)"位置 (管理员看着目标红石铁轨执行)。可选 `yaw` 参数设置发车朝向。
     * `/m stop addtransfer <stop_id> <transfer_line_id>`: 为停靠区添加可换乘线路。
     * `/m stop deltransfer <stop_id> <transfer_line_id>`: 从停靠区移除可换乘线路。
     * `/m stop listtransfers <stop_id>`: 列出停靠区的所有可换乘线路。
-    * `/m stop settitle <stop_id> <title_type> <key> <value>`: 为停靠区设置自定义Title显示内容。
+    * `/m stop settitle <stop_id> <title_type> <key> <"自定义文本">`: 为停靠区设置自定义Title显示内容。
         * `title_type` 可以是：
             * `stop_continuous`: 在站台区域持续显示的信息
             * `arrive_stop`: 到站时显示的信息
             * `terminal_stop`: 终点站显示的信息
             * `departure`: 发车后乘车过程中显示的信息
         * `key` 可以是：`title`, `subtitle`, `actionbar`
-        * `value` 是要显示的文本内容，支持颜色代码和占位符
+        * `"自定义文本"` 是要显示的文本内容，支持颜色代码和占位符。如果文本包含空格，请用引号将其包裹。
     * `/m stop deltitle <stop_id> <title_type> [key]`: 删除停靠区的自定义Title设置，省略key将删除整个类型的设置。
     * `/m stop listtitles <stop_id>`: 查看停靠区的所有自定义Title配置。
 * **系统:**
@@ -121,6 +121,16 @@ Metro是一个受到牛腩小镇服务器启发的Minecraft服务器插件，为
         * `stoppoint_location`: (String) 该停靠区内精确的"停靠点"红石铁轨坐标 (`"world,x,y,z"`)。
         * `launch_yaw`: (float) 从`stoppoint_location`发车时的朝向。
         * `transferable_lines`: (List) 可从该站点换乘的其他线路ID列表。
+        * `custom_titles`: (Map, 可选) 该停靠区自定义的Title信息。其结构为 `title_type` 对应一个映射，该映射中 `key` (如 `title`, `subtitle`, `actionbar`) 对应具体显示的 `value` (文本内容)。例如：
+            ```yaml
+            # 示例结构 (在stops.yml中)
+            # custom_titles:
+            #   stop_continuous:
+            #     title: "欢迎来到 {current_stop_name}"
+            #     subtitle: "下一站: {next_stop_name}"
+            #   arrive_stop:
+            #     actionbar: "请注意脚下安全！"
+            ```
     * 示例:
         ```yaml
         central_stop_e:
@@ -132,6 +142,13 @@ Metro是一个受到牛腩小镇服务器启发的Minecraft服务器插件，为
           transferable_lines:
             - "line_2_north"
             - "line_5_circle"
+          custom_titles:
+            stop_continuous:
+              title: "欢迎来到 {current_stop_name}"
+              subtitle: "下一站是 {next_stop_name}"
+            arrive_stop:
+              title: "已抵达: {current_stop_name}"
+              actionbar: "请注意换乘信息"
         ```
 * **`zh_CN.yml` 等语言文件**:
     * 存储所有消息文本，支持多语言配置。

@@ -63,12 +63,23 @@ Metro is a Minecraft server plugin that is inspired by newnan.city server, provi
     * `/m stop create <stop_id> <"display_name">`: Create a new stop.
     * `/m stop delete <stop_id>`: Delete a stop and all its configurations.
     * `/m stop list`: List all stops.
+    * `/m stop rename <stop_id> <"new_name">`: Modify the display name of the stop. The ID remains unchanged and does not affect line associations.
     * `/m stop setcorner1 <stop_id>`: Set the first corner point of the stop space (admin looks at the block when executing).
     * `/m stop setcorner2 <stop_id>`: Set the second corner point of the stop space.
     * `/m stop setpoint <stop_id> [yaw]`: Set the precise "stoppoint" location within the current stop space (admin looks at the target powered rail when executing). Optional `yaw` parameter sets the departure direction.
     * `/m stop addtransfer <stop_id> <transfer_line_id>`: Add a transferable line to a stop.
     * `/m stop deltransfer <stop_id> <transfer_line_id>`: Remove a transferable line from a stop.
     * `/m stop listtransfers <stop_id>`: List all transferable lines for a stop.
+    * `/m stop settitle <stop_id> <title_type> <key> <"custom_text">`: Set custom Title display content for the stop.
+        * `title_type` can be:
+            * `stop_continuous`: Information displayed continuously in the platform area.
+            * `arrive_stop`: Information displayed upon arrival at a stop.
+            * `terminal_stop`: Information displayed at a terminal stop.
+            * `departure`: Information displayed during the journey after departure.
+        * `key` can be: `title`, `subtitle`, `actionbar`.
+        * `"custom_text"` is the text content to be displayed, supporting color codes and placeholders. Enclose in quotes if it contains spaces.
+    * `/m stop deltitle <stop_id> <title_type> [key]`: Delete custom Title settings for the stop. Omitting `key` will delete settings for the entire type.
+    * `/m stop listtitles <stop_id>`: View all custom Title configurations for the stop.
 * **Line and Stop Association:**
     * `/m line addstop <line_id> <stop_id> [order_index]`: Add a stop to a line.
     * `/m line delstop <line_id> <stop_id>`: Remove a stop from a line.
