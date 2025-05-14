@@ -169,7 +169,6 @@ public class PlayerMoveListener implements Listener {
         String title = plugin.getConfig().getString(configPath + ".title", 
                 plugin.getConfig().getString("titles.stop_continuous.title", "{line_color_code}{line}"));
         
-        // 获取subtitle
         String subtitle = plugin.getConfig().getString(configPath + ".subtitle", 
                 plugin.getConfig().getString("titles.stop_continuous.subtitle", 
                 "开往 &d{terminus_name} &f方向 | 下一站: &e{next_stop_name}"));
@@ -177,30 +176,24 @@ public class PlayerMoveListener implements Listener {
         String actionbar = plugin.getConfig().getString(configPath + ".actionbar", 
                 plugin.getConfig().getString("titles.stop_continuous.actionbar", "§f上一站: §7{last_stop_name} §f| 下一站: §a{next_stop_name} §f| §e可换乘: {transfer_lines}"));
         
-        // 检查站点是否有自定义title配置
         Map<String, String> customTitle = stop.getCustomTitle("stop_continuous");
         if (customTitle != null) {
             if (customTitle.containsKey("title")) {
                 title = customTitle.get("title");
             }
-            
             if (customTitle.containsKey("subtitle")) {
                 subtitle = customTitle.get("subtitle");
             }
-            
             if (customTitle.containsKey("actionbar")) {
                 actionbar = customTitle.get("actionbar");
             }
         }
         
-        // 替换占位符
         final String finalTitle = TextUtil.replacePlaceholders(title, line, stop, lastStop, nextStop, terminalStop, lineManager);
         final String finalSubtitle = TextUtil.replacePlaceholders(subtitle, line, stop, lastStop, nextStop, terminalStop, lineManager);
         final String finalActionbar = TextUtil.replacePlaceholders(actionbar, line, stop, lastStop, nextStop, terminalStop, lineManager);
         
-        // 根据always配置选择显示方式
         if (alwaysShow) {
-            // 在always模式下，为ActionBar创建一个高频刷新的独立任务
             Object actionBarTaskId = SchedulerUtil.runTaskTimer(plugin, new Runnable() {
                 @Override
                 public void run() {
@@ -208,19 +201,20 @@ public class PlayerMoveListener implements Listener {
                         cancelActionBarTask(playerId);
                         return;
                     }
-                    
-                    // 持续显示ActionBar信息（更高频率刷新以防闪烁）
+                    if (player.isInsideVehicle() && player.getVehicle() instanceof org.bukkit.entity.Minecart) {
+                        org.bukkit.entity.Minecart minecart = (org.bukkit.entity.Minecart) player.getVehicle();
+                        if ("MetroMinecart".equals(minecart.getCustomName())) {
+                            return; 
+                        }
+                    }
                     player.spigot().sendMessage(
                         ChatMessageType.ACTION_BAR,
                         TextComponent.fromLegacyText(ChatColor.translateAlternateColorCodes('&', finalActionbar))
                     );
                 }
-            }, 0L, 20L); // 每秒刷新一次ActionBar
-            
-            // 保存ActionBar任务ID
+            }, 0L, 20L); 
             actionBarTasks.put(playerId, actionBarTaskId);
-            
-            // 创建Title刷新任务
+
             Object titleTaskId = SchedulerUtil.runTaskTimer(plugin, new Runnable() {
                 @Override
                 public void run() {
@@ -228,8 +222,12 @@ public class PlayerMoveListener implements Listener {
                         cancelContinuousInfoTask(playerId);
                         return;
                     }
-                    
-                    // 显示Title信息
+                    if (player.isInsideVehicle() && player.getVehicle() instanceof org.bukkit.entity.Minecart) {
+                        org.bukkit.entity.Minecart minecart = (org.bukkit.entity.Minecart) player.getVehicle();
+                        if ("MetroMinecart".equals(minecart.getCustomName())) {
+                            return;
+                        }
+                    }
                     player.sendTitle(
                         ChatColor.translateAlternateColorCodes('&', finalTitle),
                         ChatColor.translateAlternateColorCodes('&', finalSubtitle),
@@ -237,57 +235,60 @@ public class PlayerMoveListener implements Listener {
                     );
                 }
             }, 0L, interval);
-            
-            // 保存Title任务ID
             continuousInfoTasks.put(playerId, titleTaskId);
         } else {
-            // 在非always模式下，只在玩家进入停靠区时显示一次信息
-            
-            // 检查是否是第一次进入该停靠区（避免多次触发）
             String metaKey = "metro_first_run_" + stop.getId();
             List<MetadataValue> metaList = player.getMetadata(metaKey);
             
             if (metaList.isEmpty()) {
-                // 标记玩家已经在该停靠区触发过事件
                 player.setMetadata(metaKey, new FixedMetadataValue(plugin, true));
                 
-                // 获取淡入淡出时间
-                int fadeIn = plugin.getConfig().getInt("titles.stop_continuous.fade_in", 10);
-                int stay = plugin.getConfig().getInt("titles.stop_continuous.stay", 40);
-                int fadeOut = plugin.getConfig().getInt("titles.stop_continuous.fade_out", 10);
-                
-                // 显示Title信息（一次性）
-                player.sendTitle(
-                    ChatColor.translateAlternateColorCodes('&', finalTitle),
-                    ChatColor.translateAlternateColorCodes('&', finalSubtitle),
-                    fadeIn, stay, fadeOut
-                );
-                
-                // 创建ActionBar显示任务（短时间内持续显示）
-                final int totalDisplayTime = stay + fadeOut; // 总显示时间
-                Object actionBarTaskId = SchedulerUtil.runTaskTimer(plugin, new Runnable() {
-                    private int count = 0;
-                    private final int maxCount = totalDisplayTime / 20 + 1; // 转换为tick并加1以确保覆盖整个时间
-                    
-                    @Override
-                    public void run() {
-                        if (!player.isOnline() || count >= maxCount || !stop.isInStop(player.getLocation())) {
-                            cancelActionBarTask(playerId);
-                            return;
-                        }
-                        
-                        // 显示ActionBar信息
-                        player.spigot().sendMessage(
-                            ChatMessageType.ACTION_BAR,
-                            TextComponent.fromLegacyText(ChatColor.translateAlternateColorCodes('&', finalActionbar))
-                        );
-                        
-                        count++;
+                boolean inMetroMinecart = false;
+                if (player.isInsideVehicle() && player.getVehicle() instanceof org.bukkit.entity.Minecart) {
+                    org.bukkit.entity.Minecart mc_vehicle = (org.bukkit.entity.Minecart) player.getVehicle();
+                    if ("MetroMinecart".equals(mc_vehicle.getCustomName())) {
+                        inMetroMinecart = true;
                     }
-                }, 0L, 20L);
-                
-                // 保存ActionBar任务ID
-                actionBarTasks.put(playerId, actionBarTaskId);
+                }
+
+                if (!inMetroMinecart) {
+                    int fadeIn = plugin.getConfig().getInt("titles.stop_continuous.fade_in", 10);
+                    int stay = plugin.getConfig().getInt("titles.stop_continuous.stay", 40);
+                    int fadeOut = plugin.getConfig().getInt("titles.stop_continuous.fade_out", 10);
+                    
+                    player.sendTitle(
+                        ChatColor.translateAlternateColorCodes('&', finalTitle),
+                        ChatColor.translateAlternateColorCodes('&', finalSubtitle),
+                        fadeIn, stay, fadeOut
+                    );
+                    
+                    final int totalDisplayTime = stay + fadeOut; 
+                    Object actionBarTaskId = SchedulerUtil.runTaskTimer(plugin, new Runnable() {
+                        private int count = 0;
+                        private final int maxCount = totalDisplayTime / 20 + 1; 
+                        
+                        @Override
+                        public void run() {
+                            if (!player.isOnline() || count >= maxCount || !stop.isInStop(player.getLocation())) {
+                                cancelActionBarTask(playerId);
+                                return;
+                            }
+                            if (player.isInsideVehicle() && player.getVehicle() instanceof org.bukkit.entity.Minecart) {
+                                org.bukkit.entity.Minecart minecart = (org.bukkit.entity.Minecart) player.getVehicle();
+                                if ("MetroMinecart".equals(minecart.getCustomName())) {
+                                    count++; 
+                                    return; 
+                                }
+                            }
+                            player.spigot().sendMessage(
+                                ChatMessageType.ACTION_BAR,
+                                TextComponent.fromLegacyText(ChatColor.translateAlternateColorCodes('&', finalActionbar))
+                            );
+                            count++;
+                        }
+                    }, 0L, 20L);
+                    actionBarTasks.put(playerId, actionBarTaskId);
+                }
             }
         }
     }

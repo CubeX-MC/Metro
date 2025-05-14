@@ -18,6 +18,10 @@ import org.cubexmc.metro.train.ScoreboardManager;
 import org.bukkit.ChatColor;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
+import org.bukkit.Material;
+import org.bukkit.block.Block;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.Powerable;
 
 import java.util.List;
 import java.util.Map;
@@ -247,7 +251,7 @@ public class TrainMovementTask implements Runnable {
         }
         
         // 在站内移动，更新矿车速度（通常较慢）
-        updateMinecartVelocity(plugin.getCartSpeed() * 0.5);
+        // updateMinecartVelocity(plugin.getCartSpeed() * 0.5);
     }
     
     /**
@@ -266,21 +270,29 @@ public class TrainMovementTask implements Runnable {
         }
         
         // 站间行驶，更新矿车速度（通常较快）
-        updateMinecartVelocity(plugin.getCartSpeed());
+        // updateMinecartVelocity(plugin.getCartSpeed());
     }
     
     /**
      * 更新矿车速度
      */
-    private void updateMinecartVelocity(double speed) {
-        // // 直接使用矿车当前朝向设置速度
-        // Vector direction = minecart.getLocation().getDirection();
+    // private void updateMinecartVelocity(double speed) {
         
-        // // 设置矿车的速度
-        // minecart.setVelocity(direction.multiply(speed));
-        Vector normalizedVel = minecart.getVelocity().clone().normalize();
-        minecart.setVelocity(normalizedVel.multiply(speed));
-    }
+    //     Location location = minecart.getLocation();
+    //     Block block = location.getBlock();
+    //     BlockData blockData = block.getBlockData();
+
+    //     if (block.getType() == Material.POWERED_RAIL && blockData instanceof Powerable) {
+    //         Powerable powerable = (Powerable) blockData;
+    //         if (powerable.isPowered()) {
+    //             // 在激活的动力铁轨上设置更高的最大速度
+    //             minecart.setMaxSpeed(speed);
+    //             // 设置实际速度
+    //             Vector normalizedVel = minecart.getVelocity().clone().normalize();
+    //             minecart.setVelocity(normalizedVel.multiply(speed));
+    //         }
+    //     }
+    // }
     
     /**
      * 转换到停站状态
@@ -868,6 +880,8 @@ public class TrainMovementTask implements Runnable {
             startCountdownActionbar("waiting", currentStop, null, nextStop, terminusStop);
         } else {
             // 如果没有倒计时，显示静态actionbar
+            // 在显示静态actionbar前再次确保清空 (虽然上面已经清空过一次，但逻辑上更清晰)
+            // passenger.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText("")); // 可选，因为上面已清除
             String actionbarText = TextUtil.replacePlaceholders(actionbarTemplate, line, currentStop, null, nextStop, terminusStop, lineManager);
             actionbarText = ChatColor.translateAlternateColorCodes('&', actionbarText);
             passenger.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(actionbarText));
@@ -994,14 +1008,25 @@ public class TrainMovementTask implements Runnable {
     }
     
     private void initMinecartVelocity(float yaw, double speed) {
-        // 根据发车朝向yaw创建方向向量
-        Vector direction = new Vector(
-            -Math.sin(Math.toRadians(yaw)), 
-            0, 
-            Math.cos(Math.toRadians(yaw))
-        );
-        
-        // 设置矿车初始速度
-        minecart.setVelocity(direction.multiply(speed));
+        Location location = minecart.getLocation();
+        Block block = location.getBlock();
+        BlockData blockData = block.getBlockData();
+
+        // 检查方块是否为动力铁轨并且可以被充能
+        if (block.getType() == Material.POWERED_RAIL && blockData instanceof Powerable) {
+            Powerable powerable = (Powerable) blockData;
+            if (powerable.isPowered()) {
+                // 在激活的动力铁轨上设置更高的最大速度
+                // minecart.setMaxSpeed(speed);
+                // 设置实际速度
+                Vector direction = new Vector(
+                    -Math.sin(Math.toRadians(yaw)), 
+                    0, 
+                    Math.cos(Math.toRadians(yaw))
+                );
+                // minecart.setVelocity(direction.multiply(speed));
+                minecart.setVelocity(direction.multiply(0.4)); // 设置原版初始速度
+            }
+        }
     }
 } 

@@ -260,6 +260,9 @@ public class PlayerInteractListener implements Listener {
                     minecart.setCustomNameVisible(false);
                     minecart.setPersistent(false);
                     
+                    // 设置矿车的最大速度，只在创建时设置一次
+                    minecart.setMaxSpeed(plugin.getCartSpeed());
+                    
                     // 将玩家放入矿车
                     minecart.addPassenger(player);
                     
