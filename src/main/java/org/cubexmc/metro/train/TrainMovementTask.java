@@ -247,7 +247,7 @@ public class TrainMovementTask implements Runnable {
         }
         
         // 在站内移动，更新矿车速度（通常较慢）
-        updateMinecartVelocity(currentLocation, targetLocation, plugin.getCartSpeed() * 0.5); // 站内速度较慢
+        updateMinecartVelocity(plugin.getCartSpeed() * 0.5);
     }
     
     /**
@@ -266,18 +266,20 @@ public class TrainMovementTask implements Runnable {
         }
         
         // 站间行驶，更新矿车速度（通常较快）
-        updateMinecartVelocity(currentLocation, targetLocation, plugin.getCartSpeed());
+        updateMinecartVelocity(plugin.getCartSpeed());
     }
     
     /**
      * 更新矿车速度
      */
-    private void updateMinecartVelocity(Location currentLocation, Location targetLocation, double speed) {
-        // 计算从当前位置到目标点的方向向量
-        Vector direction = LocationUtil.getDirectionVector(currentLocation, targetLocation);
+    private void updateMinecartVelocity(double speed) {
+        // // 直接使用矿车当前朝向设置速度
+        // Vector direction = minecart.getLocation().getDirection();
         
-        // 设置矿车的速度
-        minecart.setVelocity(direction.multiply(speed));
+        // // 设置矿车的速度
+        // minecart.setVelocity(direction.multiply(speed));
+        Vector normalizedVel = minecart.getVelocity().clone().normalize();
+        minecart.setVelocity(normalizedVel.multiply(speed));
     }
     
     /**
@@ -322,8 +324,11 @@ public class TrainMovementTask implements Runnable {
      */
     private void transitionToMovingBetweenStations() {
         // 更新状态
-        TrainState previousState = currentState;
+        // TrainState previousState = currentState;
         currentState = TrainState.MOVING_BETWEEN_STATIONS;
+        
+        // 离开站台区域后提速到全速
+        // updateMinecartVelocity(plugin.getCartSpeed());
         
         // 更新计分板
         updateScoreboardBasedOnState();
@@ -464,7 +469,7 @@ public class TrainMovementTask implements Runnable {
         }
         
         // 设置矿车初始速度
-        minecart.setVelocity(new Vector(0, 0, 0));
+        initMinecartVelocity(currentStop.getLaunchYaw(), plugin.getCartSpeed() * 0.5);
         
         // 更新状态为站内移动
         currentState = TrainState.MOVING_IN_STATION;
@@ -986,5 +991,17 @@ public class TrainMovementTask implements Runnable {
         // 执行到站处理，这会显示等待信息并设置延迟发车
         // 传递true表示矿车刚刚生成，避免把目的地设置为当前站
         trainTask.handleArrivalAtStation(true);
+    }
+    
+    private void initMinecartVelocity(float yaw, double speed) {
+        // 根据发车朝向yaw创建方向向量
+        Vector direction = new Vector(
+            -Math.sin(Math.toRadians(yaw)), 
+            0, 
+            Math.cos(Math.toRadians(yaw))
+        );
+        
+        // 设置矿车初始速度
+        minecart.setVelocity(direction.multiply(speed));
     }
 } 

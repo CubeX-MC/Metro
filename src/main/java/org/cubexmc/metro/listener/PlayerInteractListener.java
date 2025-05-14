@@ -240,6 +240,7 @@ public class PlayerInteractListener implements Listener {
             
             // 创建一个新位置，保留原来的坐标但使用停靠区的发车朝向
             Location spawnLocation = location.clone();
+            // 反转Yaw值，使矿车外观朝向与移动方向一致
             spawnLocation.setYaw(yaw);
             
             // 获取矿车生成延迟

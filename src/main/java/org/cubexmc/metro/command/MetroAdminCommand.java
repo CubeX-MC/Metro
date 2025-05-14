@@ -372,6 +372,51 @@ public class MetroAdminCommand implements CommandExecutor {
                     }
                     break;
                     
+                case "stops":
+                    if (args.length < 3) {
+                        player.sendMessage(ChatColor.RED + "用法: /m line stops <line_id>");
+                        return true;
+                    }
+                    
+                    lineId = args[2];
+                    Line line = lineManager.getLine(lineId);
+                    
+                    if (line == null) {
+                        player.sendMessage(ChatColor.RED + "未找到线路: " + lineId);
+                        return true;
+                    }
+                    
+                    List<String> stopIds = line.getOrderedStopIds();
+                    
+                    if (stopIds.isEmpty()) {
+                        player.sendMessage(ChatColor.YELLOW + "线路 " + line.getName() + " 上没有站点。");
+                        return true;
+                    }
+                    
+                    player.sendMessage(ChatColor.GREEN + "===== 线路站点列表 =====");
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', 
+                            line.getColor()) + line.getName() + 
+                            ChatColor.GRAY + " (" + line.getId() + ")");
+                    
+                    for (int i = 0; i < stopIds.size(); i++) {
+                        String currentStopId = stopIds.get(i);
+                        Stop stop = stopManager.getStop(currentStopId);
+                        if (stop != null) {
+                            String status = "";
+                            if (i == 0) status = " (起始站)";
+                            if (i == stopIds.size() - 1) status = " (终点站)";
+                            
+                            player.sendMessage(ChatColor.AQUA + "" + (i+1) + ". " + 
+                                    ChatColor.YELLOW + stop.getName() + 
+                                    ChatColor.WHITE + " (" + stop.getId() + ")" + 
+                                    ChatColor.GOLD + status);
+                        } else {
+                            player.sendMessage(ChatColor.AQUA + "" + (i+1) + ". " + 
+                                    ChatColor.RED + currentStopId + " (无效站点)");
+                        }
+                    }
+                    break;
+                    
                 default:
                     sendLineHelpMessage(player);
                     break;
@@ -746,30 +791,6 @@ public class MetroAdminCommand implements CommandExecutor {
                     break;
                     
                 case "setpoint":
-                    if (args.length < 3) {
-                        player.sendMessage(plugin.getLanguageManager().getMessage("command.stop.usage_setpoint"));
-                        return true;
-                    }
-                    
-                    stopId = args[2];
-                    float yaw = player.getLocation().getYaw();
-                    
-                    // 检查停靠区是否存在
-                    Stop stop = stopManager.getStop(stopId);
-                    if (stop == null) {
-                        player.sendMessage(plugin.getLanguageManager().getMessage("command.stop.stop_not_found", stopId));
-                        return true;
-                    }
-                    
-                    if (args.length > 3) {
-                        try {
-                            yaw = Float.parseFloat(args[3]);
-                        } catch (NumberFormatException e) {
-                            player.sendMessage(plugin.getLanguageManager().getMessage("command.stop.setpoint_yaw_invalid"));
-                            return true;
-                        }
-                    }
-                    
                     // 检查玩家是否在铁轨上
                     location = player.getLocation();
                     if (!LocationUtil.isRail(location)) {
@@ -777,10 +798,24 @@ public class MetroAdminCommand implements CommandExecutor {
                         return true;
                     }
                     
-                    // 检查玩家是否在停靠区域内
-                    if (!stop.isInStop(location)) {
-                        player.sendMessage(plugin.getLanguageManager().getMessage("command.stop.setpoint_not_in_area", stop.getName()));
+                    // 自动获取玩家所在的停靠区
+                    Stop stop = stopManager.getStopContainingLocation(location);
+                    if (stop == null) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("command.stop.no_stop_found_at_location"));
                         return true;
+                    }
+                    
+                    stopId = stop.getId();
+                    float yaw = player.getLocation().getYaw();
+                    
+                    // 如果有参数，尝试读取朝向角度
+                    if (args.length > 2) {
+                        try {
+                            yaw = Float.parseFloat(args[2]);
+                        } catch (NumberFormatException e) {
+                            player.sendMessage(plugin.getLanguageManager().getMessage("command.stop.setpoint_yaw_invalid"));
+                            return true;
+                        }
                     }
                     
                     if (stopManager.setStopPoint(stopId, location, yaw)) {
