@@ -4,7 +4,9 @@ English | [简体中文](README.md)
 
 ## Plugin Overview
 
-Metro is a Minecraft server plugin that is inspired by newnan.city server, provides a streamlined and feature-complete subway transportation system. This plugin allows administrators to easily create and manage automated subway line networks, providing players with a convenient and informative riding experience. The core design philosophy is ease of use and flexibility.
+Metro is a Minecraft server plugin inspired by newnan.city server provides a subway transportation system. This plugin allows administrators to create and manage automated subway line networks, providing players with a convenient and informative riding experience.
+
+![Imgurl](https://i.imgur.com/K335iWj.gif)
 
 ## Core Features
 
