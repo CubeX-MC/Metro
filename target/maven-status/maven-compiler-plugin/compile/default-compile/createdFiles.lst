@@ -26,9 +26,7 @@ org\cubexmc\metro\listener\PlayerMoveListener.class
 org\cubexmc\metro\manager\LineManager.class
 org\cubexmc\metro\command\MetroAdminCommand.class
 org\cubexmc\metro\listener\VehicleListener.class
-org\cubexmc\metro\util\SoundUtil$2.class
 org\cubexmc\metro\util\TextUtil.class
-org\cubexmc\metro\util\SoundUtil$1.class
 org\cubexmc\metro\listener\PlayerMoveListener$3.class
 org\cubexmc\metro\Metrics$DrilldownPie.class
 org\cubexmc\metro\util\SchedulerUtil.class

@@ -1,5 +1,6 @@
 package org.cubexmc.metro.train;
 
+import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Minecart;
@@ -14,10 +15,13 @@ import org.cubexmc.metro.util.LocationUtil;
 import org.cubexmc.metro.util.SchedulerUtil;
 import org.cubexmc.metro.util.SoundUtil;
 import org.cubexmc.metro.util.TextUtil;
-import org.cubexmc.metro.train.ScoreboardManager;
 import org.bukkit.ChatColor;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
+import org.bukkit.Material;
+import org.bukkit.block.Block;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.Powerable;
 
 import java.util.List;
 import java.util.Map;
@@ -174,23 +178,26 @@ public class TrainMovementTask implements Runnable {
      * 维护矿车基本属性
      */
     private void maintainMinecartProperties() {
-        minecart.setCustomName("MetroMinecart");
-        minecart.setGravity(false); // 禁用重力，防止下落
-        
-        // 如果矿车被阻挡，强制设置为穿透实体
-        for (Entity entity : minecart.getNearbyEntities(1.0, 1.0, 1.0)) {
-            if (entity != passenger && entity != minecart) {
-                // 如果不是乘客或矿车本身，允许穿透
-                minecart.teleport(minecart.getLocation()); // 刷新位置以避免碰撞
-                break;
+        // minecart.setCustomName("MetroMinecart");
+        Component customName = Component.text("MetroMinecart");
+        SchedulerUtil.entityRun(plugin, minecart, () -> {
+            minecart.customName(customName);
+            minecart.setGravity(false); // 禁用重力，防止下落
+            // 如果矿车被阻挡，强制设置为穿透实体
+            for (Entity entity : minecart.getNearbyEntities(1.0, 1.0, 1.0)) {
+                if (entity != passenger && entity != minecart) {
+                    // 如果不是乘客或矿车本身，允许穿透
+                    minecart.teleport(minecart.getLocation()); // 刷新位置以避免碰撞
+                    break;
+                }
             }
-        }
-        
-        // 检查是否脱轨
-        Location currentLocation = minecart.getLocation();
-        if (!LocationUtil.isOnRail(currentLocation)) {
-            handleDerailment(currentLocation);
-        }
+
+            // 检查是否脱轨
+            Location currentLocation = minecart.getLocation();
+            if (!LocationUtil.isOnRail(currentLocation)) {
+                handleDerailment(currentLocation);
+            }
+        }, 0L, -1); // 确保矿车存在时设置名称
     }
     
     /**
@@ -247,7 +254,7 @@ public class TrainMovementTask implements Runnable {
         }
         
         // 在站内移动，更新矿车速度（通常较慢）
-        updateMinecartVelocity(plugin.getCartSpeed() * 0.5);
+        // updateMinecartVelocity(plugin.getCartSpeed() * 0.5);
     }
     
     /**
@@ -266,21 +273,29 @@ public class TrainMovementTask implements Runnable {
         }
         
         // 站间行驶，更新矿车速度（通常较快）
-        updateMinecartVelocity(plugin.getCartSpeed());
+        // updateMinecartVelocity(plugin.getCartSpeed());
     }
     
     /**
      * 更新矿车速度
      */
-    private void updateMinecartVelocity(double speed) {
-        // // 直接使用矿车当前朝向设置速度
-        // Vector direction = minecart.getLocation().getDirection();
+    // private void updateMinecartVelocity(double speed) {
         
-        // // 设置矿车的速度
-        // minecart.setVelocity(direction.multiply(speed));
-        Vector normalizedVel = minecart.getVelocity().clone().normalize();
-        minecart.setVelocity(normalizedVel.multiply(speed));
-    }
+    //     Location location = minecart.getLocation();
+    //     Block block = location.getBlock();
+    //     BlockData blockData = block.getBlockData();
+
+    //     if (block.getType() == Material.POWERED_RAIL && blockData instanceof Powerable) {
+    //         Powerable powerable = (Powerable) blockData;
+    //         if (powerable.isPowered()) {
+    //             // 在激活的动力铁轨上设置更高的最大速度
+    //             minecart.setMaxSpeed(speed);
+    //             // 设置实际速度
+    //             Vector normalizedVel = minecart.getVelocity().clone().normalize();
+    //             minecart.setVelocity(normalizedVel.multiply(speed));
+    //         }
+    //     }
+    // }
     
     /**
      * 转换到停站状态
@@ -474,14 +489,12 @@ public class TrainMovementTask implements Runnable {
         // 更新状态为站内移动
         currentState = TrainState.MOVING_IN_STATION;
         updateScoreboardBasedOnState();
-    }
-    
-    /**
+    }    /**
      * 安排下一次发车
      */
     private void scheduleNextDeparture() {
-        // 延迟发车
-        SchedulerUtil.runTaskLater(plugin, () -> {
+        // 延迟发车 - 使用实体调度器以确保与矿车实体绑定
+        SchedulerUtil.entityRun(plugin, minecart, (Runnable) () -> {
             // 确保玩家仍在矿车上
             if (isPassengerStillRiding()) {
                 // 发车
@@ -490,10 +503,8 @@ public class TrainMovementTask implements Runnable {
                 // 玩家已下车，移除矿车
                 handlePassengerExit();
             }
-        }, plugin.getCartDepartureDelay());
-    }
-    
-    /**
+        }, plugin.getCartDepartureDelay(), -1); // 转换为tick单位
+    }    /**
      * 处理终点站逻辑
      */
     private void handleTerminalStation() {
@@ -501,8 +512,8 @@ public class TrainMovementTask implements Runnable {
             return;
         }
         
-        // 3秒后自动下车，并移除矿车
-        SchedulerUtil.runTaskLater(plugin, () -> {
+        // 3秒后自动下车，并移除矿车 - 使用实体调度器确保与矿车实体绑定
+        SchedulerUtil.entityRun(plugin, minecart, (Runnable) () -> {
             if (minecart != null && !minecart.isDead()) {
                 // 强制下车
                 minecart.eject();
@@ -510,17 +521,17 @@ public class TrainMovementTask implements Runnable {
                 // 清除计分板
                 ScoreboardManager.clearScoreboard(passenger);
                 
-                // 延迟移除矿车
+                // 延迟移除矿车 - 继续使用实体调度器
                 final Minecart finalMinecart = minecart;
-                SchedulerUtil.runTaskLater(plugin, () -> {
+                SchedulerUtil.entityRun(plugin, finalMinecart, (Runnable) () -> {
                     if (finalMinecart != null && !finalMinecart.isDead()) {
                         finalMinecart.remove();
                     }
-                }, 40L); // 2秒后移除
+                }, 40L, -1); // 2秒后移除
             }
             // 取消当前任务
             cancel();
-        }, 60L); // 3秒后执行
+        }, 60L, -1); // 3秒后执行
     }
     
     /**
@@ -688,7 +699,7 @@ public class TrainMovementTask implements Runnable {
             // 计算延迟时间（tick）
             long delayTicks = (totalSeconds - i) * 20L;
             
-            SchedulerUtil.runTaskLater(plugin, () -> {
+            SchedulerUtil.globalRun(plugin, () -> {
                 // 确保玩家仍在矿车上
                 if (passenger == null || !passenger.isOnline() || passenger.getVehicle() != minecart) {
                     return;
@@ -705,7 +716,7 @@ public class TrainMovementTask implements Runnable {
                 
                 // 显示ActionBar信息
                 passenger.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(actionbarText));
-            }, delayTicks);
+            }, delayTicks, -1); // -1表示不重复执行
         }
     }
     
@@ -868,6 +879,8 @@ public class TrainMovementTask implements Runnable {
             startCountdownActionbar("waiting", currentStop, null, nextStop, terminusStop);
         } else {
             // 如果没有倒计时，显示静态actionbar
+            // 在显示静态actionbar前再次确保清空 (虽然上面已经清空过一次，但逻辑上更清晰)
+            // passenger.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText("")); // 可选，因为上面已清除
             String actionbarText = TextUtil.replacePlaceholders(actionbarTemplate, line, currentStop, null, nextStop, terminusStop, lineManager);
             actionbarText = ChatColor.translateAlternateColorCodes('&', actionbarText);
             passenger.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(actionbarText));
@@ -883,9 +896,9 @@ public class TrainMovementTask implements Runnable {
         }
         
         // 初始延迟后播放第一次
-        SchedulerUtil.runTaskLater(plugin, () -> {
+        SchedulerUtil.globalRun(plugin, () -> {
             playWaitingSoundOnce();
-        }, plugin.getWaitingInitialDelay());
+        }, plugin.getWaitingInitialDelay(), -1); // -1表示不重复执行
         
         // 获取播放间隔
         int interval = plugin.getWaitingSoundInterval();
@@ -896,13 +909,13 @@ public class TrainMovementTask implements Runnable {
         // 创建循环播放任务
         for (int i = 1; i <= repeatTimes; i++) {
             final int currentTime = i;
-            SchedulerUtil.runTaskLater(plugin, () -> {
+            SchedulerUtil.globalRun(plugin, () -> {
                 // 确保玩家仍在矿车上且还在等待发车
                 if (passenger != null && passenger.isOnline() && passenger.getVehicle() == minecart 
                         && currentState == TrainState.STOPPED_AT_STATION) {
                     playWaitingSoundOnce();
                 }
-            }, plugin.getWaitingInitialDelay() + (interval * i));
+            }, plugin.getWaitingInitialDelay() + (interval * i), -1); // -1表示不重复执行
         }
     }
     
@@ -923,8 +936,7 @@ public class TrainMovementTask implements Runnable {
      * @param passenger 乘客
      * @param lineId 线路ID
      * @param currentStopId 当前站点ID
-     */
-    public static void departureToNextStop(Metro plugin, Minecart minecart, Player passenger, String lineId, String currentStopId) {
+     */    public static void departureToNextStop(Metro plugin, Minecart minecart, Player passenger, String lineId, String currentStopId) {
         // 获取线路
         LineManager lineManager = plugin.getLineManager();
         Line line = lineManager.getLine(lineId);
@@ -944,7 +956,8 @@ public class TrainMovementTask implements Runnable {
         
         // 创建一个新的TrainMovementTask，初始状态为停站状态
         TrainMovementTask trainTask = new TrainMovementTask(plugin, minecart, passenger, lineId, currentStopId);
-        Object taskId = SchedulerUtil.runTaskTimer(plugin, trainTask, 1L, 1L); // 立即开始，每tick运行一次
+        // 使用实体调度器来支持 Folia
+        Object taskId = SchedulerUtil.entityRun(plugin, minecart, trainTask, 1L, 1L); // 立即开始，每tick运行一次
         trainTask.setTaskId(taskId);
         
         // 立即处理发车
@@ -960,8 +973,7 @@ public class TrainMovementTask implements Runnable {
      * @param passenger 乘客
      * @param lineId 线路ID
      * @param currentStopId 当前站点ID
-     */
-    public static void startTrainTask(Metro plugin, Minecart minecart, Player passenger, String lineId, String currentStopId) {
+     */    public static void startTrainTask(Metro plugin, Minecart minecart, Player passenger, String lineId, String currentStopId) {
         // 获取线路
         LineManager lineManager = plugin.getLineManager();
         Line line = lineManager.getLine(lineId);
@@ -981,7 +993,8 @@ public class TrainMovementTask implements Runnable {
         
         // 创建一个新的TrainMovementTask，初始状态为停站状态
         TrainMovementTask trainTask = new TrainMovementTask(plugin, minecart, passenger, lineId, currentStopId);
-        Object taskId = SchedulerUtil.runTaskTimer(plugin, trainTask, 1L, 1L); // 立即开始，每tick运行一次
+        // 使用实体调度器来支持 Folia
+        Object taskId = SchedulerUtil.entityRun(plugin, minecart, trainTask, 1L, 1L); // 立即开始，每tick运行一次
         trainTask.setTaskId(taskId);
         
         // 设置任务的目标站点为下一站
@@ -994,14 +1007,25 @@ public class TrainMovementTask implements Runnable {
     }
     
     private void initMinecartVelocity(float yaw, double speed) {
-        // 根据发车朝向yaw创建方向向量
-        Vector direction = new Vector(
-            -Math.sin(Math.toRadians(yaw)), 
-            0, 
-            Math.cos(Math.toRadians(yaw))
-        );
-        
-        // 设置矿车初始速度
-        minecart.setVelocity(direction.multiply(speed));
+        Location location = minecart.getLocation();
+        Block block = location.getBlock();
+        BlockData blockData = block.getBlockData();
+
+        // 检查方块是否为动力铁轨并且可以被充能
+        if (block.getType() == Material.POWERED_RAIL && blockData instanceof Powerable) {
+            Powerable powerable = (Powerable) blockData;
+            if (powerable.isPowered()) {
+                // 在激活的动力铁轨上设置更高的最大速度
+                // minecart.setMaxSpeed(speed);
+                // 设置实际速度
+                Vector direction = new Vector(
+                    -Math.sin(Math.toRadians(yaw)), 
+                    0, 
+                    Math.cos(Math.toRadians(yaw))
+                );
+                // minecart.setVelocity(direction.multiply(speed));
+                minecart.setVelocity(direction.multiply(0.4)); // 设置原版初始速度
+            }
+        }
     }
 } 

@@ -2,10 +2,8 @@ package org.cubexmc.metro.listener;
 
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Minecart;
@@ -15,21 +13,16 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Stop;
 import org.cubexmc.metro.train.TrainMovementTask;
-import org.cubexmc.metro.util.LocationUtil;
 import org.cubexmc.metro.util.SchedulerUtil;
 import org.cubexmc.metro.util.SoundUtil;
-import org.cubexmc.metro.util.TextUtil;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -52,7 +45,7 @@ public class PlayerInteractListener implements Listener {
         this.plugin = plugin;
         
         // 定期清理过期的矿车等待记录
-        SchedulerUtil.runTaskTimer(plugin, () -> {
+        SchedulerUtil.globalRun(plugin, () -> {
             long currentTime = System.currentTimeMillis();
             pendingMinecarts.entrySet().removeIf(entry -> 
                 currentTime - entry.getValue() > MINECART_PENDING_TIMEOUT);
@@ -118,7 +111,7 @@ public class PlayerInteractListener implements Listener {
             
             // 设置一个任务，在冷却时间后清除记录
             final UUID finalPlayerId = playerId;
-            SchedulerUtil.runTaskLaterAsync(plugin, () -> {
+            SchedulerUtil.asyncRun(plugin, () -> {
                 lastInteractTime.remove(finalPlayerId);
             }, INTERACT_COOLDOWN / 50);
         }
@@ -250,7 +243,7 @@ public class PlayerInteractListener implements Listener {
             player.sendMessage(plugin.getLanguageManager().getMessage("interact.train_coming"));
             
             // 延迟生成矿车，使用位置调度器以确保在正确的区域执行
-            SchedulerUtil.runTaskLaterAtLocation(plugin, location, () -> {
+            SchedulerUtil.regionRun(plugin, location, () -> {
                 try {
                     // 生成矿车实体
                     Minecart minecart = (Minecart) location.getWorld().spawnEntity(spawnLocation, EntityType.MINECART);
@@ -259,6 +252,9 @@ public class PlayerInteractListener implements Listener {
                     minecart.setCustomName("MetroMinecart");
                     minecart.setCustomNameVisible(false);
                     minecart.setPersistent(false);
+                    
+                    // 设置矿车的最大速度，只在创建时设置一次
+                    minecart.setMaxSpeed(plugin.getCartSpeed());
                     
                     // 将玩家放入矿车
                     minecart.addPassenger(player);
@@ -277,7 +273,7 @@ public class PlayerInteractListener implements Listener {
                     pendingMinecarts.remove(stopId);
                     player.sendMessage(plugin.getLanguageManager().getMessage("interact.train_error"));
                 }
-            }, spawnDelay);
+            }, spawnDelay, -1); // 立即执行，周期为0
         }
     }
 } 

@@ -22,7 +22,6 @@ import org.cubexmc.metro.util.LocationUtil;
 import org.cubexmc.metro.util.SchedulerUtil;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -109,11 +108,11 @@ public class VehicleListener implements Listener {
         if (!isAtStop(location)) {
             // 如果不在停靠区上，立即移除矿车
             final Minecart finalMinecart = minecart; // 创建final引用以便在Lambda中使用
-            SchedulerUtil.runTaskLaterAtLocation(plugin, location, () -> {
+            SchedulerUtil.regionRun(plugin, location, () -> {
                 if (finalMinecart != null && !finalMinecart.isDead()) {
                     finalMinecart.remove();
                 }
-            }, 1L); // 1 tick后移除
+            }, 1L, -1); // 1 tick后移除
             return;
         }
         
@@ -121,11 +120,11 @@ public class VehicleListener implements Listener {
         int despawnDelay = plugin.getConfig().getInt("settings.cart_despawn_delay", 60);
         
         final Minecart finalMinecart = minecart; // 创建final引用以便在Lambda中使用
-        SchedulerUtil.runTaskLaterAtLocation(plugin, location, () -> {
+        SchedulerUtil.regionRun(plugin, location, () -> {
             if (finalMinecart != null && !finalMinecart.isDead()) {
                 finalMinecart.remove();
             }
-        }, despawnDelay); // 使用配置的延迟时间
+        }, despawnDelay, -1); // 使用配置的延迟时间
     }
     
     /**
@@ -176,7 +175,7 @@ public class VehicleListener implements Listener {
         }
         
         // 注册并启动任务
-        Object taskId = SchedulerUtil.runTaskTimer(plugin, task, 1L, 1L);
+        Object taskId = SchedulerUtil.globalRun(plugin, task, 1L, 1L);
         task.setTaskId(taskId);
         
         // 保存任务ID
