@@ -58,19 +58,27 @@ public class SoundUtil {
                 totalDelay += delay;
                 
                 // 使用匿名内部类创建延迟任务
-                new BukkitRunnable() {
-                    @Override
-                    public void run() {
-                        if (player.isOnline()) {
-                            if ("NOTE".equals(type)) {
-                                playNote(player, tone, volume, instrumentName);
-                            } else if ("CUSTOM".equals(type)) {
-                                // 自定义声音的播放逻辑，如果需要
-                                player.playSound(player.getLocation(), instrumentName, volume, getNoteFrequency(tone));
-                            }
-                        }
+                SchedulerUtil.regionRun(plugin, player.getLocation(), () -> {
+                    if ("NOTE".equals(type)) {
+                        playNote(player, tone, volume, instrumentName);
+                    } else if ("CUSTOM".equals(type)) {
+                        // 自定义声音的播放逻辑，如果需要
+                        player.playSound(player.getLocation(), instrumentName, volume, getNoteFrequency(tone));
                     }
-                }.runTaskLater(plugin, totalDelay);
+                }, totalDelay, -1);
+//                new BukkitRunnable() {
+//                    @Override
+//                    public void run() {
+//                        if (player.isOnline()) {
+//                            if ("NOTE".equals(type)) {
+//                                playNote(player, tone, volume, instrumentName);
+//                            } else if ("CUSTOM".equals(type)) {
+//                                // 自定义声音的播放逻辑，如果需要
+//                                player.playSound(player.getLocation(), instrumentName, volume, getNoteFrequency(tone));
+//                            }
+//                        }
+//                    }
+//                }.runTaskLater(plugin, totalDelay);
             } catch (NumberFormatException e) {
                 // 忽略格式不正确的音符
             }
@@ -121,17 +129,25 @@ public class SoundUtil {
                 totalDelay += delay;
                 
                 // 使用匿名内部类创建延迟任务
-                new BukkitRunnable() {
-                    @Override
-                    public void run() {
-                        if ("NOTE".equals(type)) {
-                            playNoteAtLocation(location, tone, volume, instrumentName);
-                        } else if ("CUSTOM".equals(type)) {
-                            // 自定义声音的播放逻辑，如果需要
-                            location.getWorld().playSound(location, instrumentName, volume, getNoteFrequency(tone));
-                        }
+                SchedulerUtil.regionRun(plugin, location, ()->{
+                    if ("NOTE".equals(type)) {
+                        playNoteAtLocation(location, tone, volume, instrumentName);
+                    } else if ("CUSTOM".equals(type)) {
+                        // 自定义声音的播放逻辑，如果需要
+                        location.getWorld().playSound(location, instrumentName, volume, getNoteFrequency(tone));
                     }
-                }.runTaskLater(plugin, totalDelay);
+                }, totalDelay, -1);
+//                new BukkitRunnable() {
+//                    @Override
+//                    public void run() {
+//                        if ("NOTE".equals(type)) {
+//                            playNoteAtLocation(location, tone, volume, instrumentName);
+//                        } else if ("CUSTOM".equals(type)) {
+//                            // 自定义声音的播放逻辑，如果需要
+//                            location.getWorld().playSound(location, instrumentName, volume, getNoteFrequency(tone));
+//                        }
+//                    }
+//                }.runTaskLater(plugin, totalDelay);
             } catch (NumberFormatException e) {
                 // 忽略格式不正确的音符
             }

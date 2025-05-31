@@ -194,7 +194,7 @@ public class PlayerMoveListener implements Listener {
         final String finalActionbar = TextUtil.replacePlaceholders(actionbar, line, stop, lastStop, nextStop, terminalStop, lineManager);
         
         if (alwaysShow) {
-            Object actionBarTaskId = SchedulerUtil.runTaskTimer(plugin, new Runnable() {
+            Object actionBarTaskId = SchedulerUtil.globalRun(plugin, new Runnable() {
                 @Override
                 public void run() {
                     if (!player.isOnline() || !stop.isInStop(player.getLocation())) {
@@ -215,7 +215,7 @@ public class PlayerMoveListener implements Listener {
             }, 0L, 20L); 
             actionBarTasks.put(playerId, actionBarTaskId);
 
-            Object titleTaskId = SchedulerUtil.runTaskTimer(plugin, new Runnable() {
+            Object titleTaskId = SchedulerUtil.globalRun(plugin, new Runnable() {
                 @Override
                 public void run() {
                     if (!player.isOnline() || !stop.isInStop(player.getLocation())) {
@@ -263,7 +263,7 @@ public class PlayerMoveListener implements Listener {
                     );
                     
                     final int totalDisplayTime = stay + fadeOut; 
-                    Object actionBarTaskId = SchedulerUtil.runTaskTimer(plugin, new Runnable() {
+                    Object actionBarTaskId = SchedulerUtil.globalRun(plugin, new Runnable() {
                         private int count = 0;
                         private final int maxCount = totalDisplayTime / 20 + 1; 
                         
