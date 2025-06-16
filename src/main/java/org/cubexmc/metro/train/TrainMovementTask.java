@@ -1,7 +1,14 @@
 package org.cubexmc.metro.train;
 
-import net.kyori.adventure.text.Component;
+import java.util.List;
+import java.util.Map;
+
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.block.Block;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.Powerable;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Minecart;
 import org.bukkit.entity.Player;
@@ -15,16 +22,10 @@ import org.cubexmc.metro.util.LocationUtil;
 import org.cubexmc.metro.util.SchedulerUtil;
 import org.cubexmc.metro.util.SoundUtil;
 import org.cubexmc.metro.util.TextUtil;
-import org.bukkit.ChatColor;
+
+import net.kyori.adventure.text.Component;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
-import org.bukkit.Material;
-import org.bukkit.block.Block;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.block.data.Powerable;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * 负责控制单个矿车从一个停靠区直接移动到下一个停靠区
@@ -163,7 +164,7 @@ public class TrainMovementTask implements Runnable {
         // 根据当前状态执行不同的逻辑
         switch (currentState) {
             case STOPPED_AT_STATION:
-                handleStoppedAtStation();
+//                handleStoppedAtStation();
                 break;
             case MOVING_IN_STATION:
                 handleMovingInStation(targetStop);
@@ -209,7 +210,23 @@ public class TrainMovementTask implements Runnable {
         if (nearbyRailLocation != null) {
             minecart.teleport(nearbyRailLocation);
         } else {
-            // 如果无法找到附近的铁轨，通知玩家
+            // 如果无法找到附近的铁轨，执行脱轨逻辑
+
+            // 检查是否启用了脱轨爆炸功能
+            if (plugin.getConfig().getBoolean("derailment.explosion.enabled", false)) {
+                // 从配置中获取爆炸参数
+                float power = (float) plugin.getConfig().getDouble("derailment.explosion.power", 4.0);
+                boolean setFire = plugin.getConfig().getBoolean("derailment.explosion.set_fire", true);
+                boolean breakBlocks = plugin.getConfig().getBoolean("derailment.explosion.break_blocks", true);
+                
+                // 在矿车位置创建爆炸
+                // 使用 region scheduler 来确保与 Folia 兼容并获得最佳性能，因为爆炸是基于位置的事件
+                SchedulerUtil.regionRun(plugin, currentLocation, () -> {
+                    currentLocation.getWorld().createExplosion(currentLocation, power, setFire, breakBlocks);
+                }, 0L, -1L);
+            }
+
+            // 通知玩家
             if (passenger != null) {
                 passenger.sendMessage(plugin.getLanguageManager().getMessage("passenger.train_derailed"));
             }
@@ -218,14 +235,6 @@ public class TrainMovementTask implements Runnable {
             minecart.remove();
             cancel();
         }
-    }
-    
-    /**
-     * 处理停站状态
-     */
-    private void handleStoppedAtStation() {
-        // 停站状态下无需更新位置或速度
-        // 此状态通常等待发车指令或处理终点站逻辑
     }
     
     /**
@@ -252,9 +261,6 @@ public class TrainMovementTask implements Runnable {
             transitionToMovingBetweenStations();
             return;
         }
-        
-        // 在站内移动，更新矿车速度（通常较慢）
-        // updateMinecartVelocity(plugin.getCartSpeed() * 0.5);
     }
     
     /**
@@ -262,40 +268,16 @@ public class TrainMovementTask implements Runnable {
      */
     private void handleMovingBetweenStations(Stop targetStop) {
         Location currentLocation = minecart.getLocation();
-        Location targetLocation = targetStop.getStopPointLocation();
+        // Location targetLocation = targetStop.getStopPointLocation();
         
         // 检查是否进入站台区域
         boolean isInStopArea = targetStop.isInStop(currentLocation);
         if (isInStopArea) {
             // 进入站台区域，变更状态为站内移动
             transitionToMovingInStation(targetStop);
-            return;
+            // return;
         }
-        
-        // 站间行驶，更新矿车速度（通常较快）
-        // updateMinecartVelocity(plugin.getCartSpeed());
     }
-    
-    /**
-     * 更新矿车速度
-     */
-    // private void updateMinecartVelocity(double speed) {
-        
-    //     Location location = minecart.getLocation();
-    //     Block block = location.getBlock();
-    //     BlockData blockData = block.getBlockData();
-
-    //     if (block.getType() == Material.POWERED_RAIL && blockData instanceof Powerable) {
-    //         Powerable powerable = (Powerable) blockData;
-    //         if (powerable.isPowered()) {
-    //             // 在激活的动力铁轨上设置更高的最大速度
-    //             minecart.setMaxSpeed(speed);
-    //             // 设置实际速度
-    //             Vector normalizedVel = minecart.getVelocity().clone().normalize();
-    //             minecart.setVelocity(normalizedVel.multiply(speed));
-    //         }
-    //     }
-    // }
     
     /**
      * 转换到停站状态
@@ -879,8 +861,6 @@ public class TrainMovementTask implements Runnable {
             startCountdownActionbar("waiting", currentStop, null, nextStop, terminusStop);
         } else {
             // 如果没有倒计时，显示静态actionbar
-            // 在显示静态actionbar前再次确保清空 (虽然上面已经清空过一次，但逻辑上更清晰)
-            // passenger.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText("")); // 可选，因为上面已清除
             String actionbarText = TextUtil.replacePlaceholders(actionbarTemplate, line, currentStop, null, nextStop, terminusStop, lineManager);
             actionbarText = ChatColor.translateAlternateColorCodes('&', actionbarText);
             passenger.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(actionbarText));
@@ -908,7 +888,6 @@ public class TrainMovementTask implements Runnable {
         
         // 创建循环播放任务
         for (int i = 1; i <= repeatTimes; i++) {
-            final int currentTime = i;
             SchedulerUtil.globalRun(plugin, () -> {
                 // 确保玩家仍在矿车上且还在等待发车
                 if (passenger != null && passenger.isOnline() && passenger.getVehicle() == minecart 
@@ -926,42 +905,6 @@ public class TrainMovementTask implements Runnable {
         if (passenger != null && passenger.isOnline()) {
             SoundUtil.playNoteSequence(plugin, passenger, plugin.getWaitingNotes(), 0);
         }
-    }
-    
-    /**
-     * 静态方法，用于启动一个新的列车移动任务
-     * 
-     * @param plugin 插件实例
-     * @param minecart 矿车实体
-     * @param passenger 乘客
-     * @param lineId 线路ID
-     * @param currentStopId 当前站点ID
-     */    public static void departureToNextStop(Metro plugin, Minecart minecart, Player passenger, String lineId, String currentStopId) {
-        // 获取线路
-        LineManager lineManager = plugin.getLineManager();
-        Line line = lineManager.getLine(lineId);
-        if (line == null) {
-            plugin.getLogger().warning("无法启动列车，线路不存在: " + lineId);
-            return;
-        }
-        
-        // 确保玩家仍在矿车上 - 这个检查可以留在这里，作为安全保障
-        if (passenger == null || !passenger.isOnline() || passenger.getVehicle() != minecart) {
-            // 玩家不在矿车上，移除矿车
-            if (minecart.isValid()) {
-                minecart.remove();
-            }
-            return;
-        }
-        
-        // 创建一个新的TrainMovementTask，初始状态为停站状态
-        TrainMovementTask trainTask = new TrainMovementTask(plugin, minecart, passenger, lineId, currentStopId);
-        // 使用实体调度器来支持 Folia
-        Object taskId = SchedulerUtil.entityRun(plugin, minecart, trainTask, 1L, 1L); // 立即开始，每tick运行一次
-        trainTask.setTaskId(taskId);
-        
-        // 立即处理发车
-        trainTask.handleDeparture();
     }
     
     /**

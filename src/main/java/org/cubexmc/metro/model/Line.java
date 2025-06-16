@@ -12,6 +12,7 @@ public class Line {
     private final List<String> orderedStopIds;
     private String color; // 线路颜色
     private String terminusName; // 终点站方向名称
+    private Double maxSpeed; // 线路最大速度
     
     /**
      * 创建新线路
@@ -25,6 +26,7 @@ public class Line {
         this.orderedStopIds = new ArrayList<>();
         this.color = "&f"; // 默认白色
         this.terminusName = ""; // 默认空
+        this.maxSpeed = null; // 默认使用config.yml中的maxspeed
     }
     
     /**
@@ -88,6 +90,26 @@ public class Line {
      */
     public void setTerminusName(String terminusName) {
         this.terminusName = terminusName;
+    }
+    
+    /**
+     * 获取线路最大速度
+     * 
+     * @return 线路最大速度，如果未设置则返回n-1.0
+     */
+    public Double getMaxSpeed() {
+        if (maxSpeed == null)
+            return -1.0;
+        return maxSpeed;
+    }
+    
+    /**
+     * 设置线路最大速度
+     * 
+     * @param maxSpeed 新的最大速度
+     */
+    public void setMaxSpeed(Double maxSpeed) {
+        this.maxSpeed = maxSpeed;
     }
     
     /**

@@ -1,5 +1,8 @@
 package org.cubexmc.metro;
 
+import java.io.File;
+import java.util.List;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -12,9 +15,6 @@ import org.cubexmc.metro.listener.VehicleListener;
 import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.train.ScoreboardManager;
-
-import java.io.File;
-import java.util.List;
 
 public final class Metro extends JavaPlugin {
 
@@ -58,12 +58,14 @@ public final class Metro extends JavaPlugin {
         int pluginId = 25825; // <-- Replace with the id of your plugin!
         Metrics metrics = new Metrics(this, pluginId);
 
-        getLogger().info(languageManager.getMessage("plugin.enabled"));
+        // getLogger().info(languageManager.getMessage("plugin.enabled"));
+        Bukkit.getConsoleSender().sendMessage(languageManager.getMessage("plugin.enabled"));
     }
 
     @Override
     public void onDisable() {
-        getLogger().info(languageManager.getMessage("plugin.disabled"));
+        // getLogger().info(languageManager.getMessage("plugin.disabled"));
+        Bukkit.getConsoleSender().sendMessage(languageManager.getMessage("plugin.disabled"));
     }
     
     /**

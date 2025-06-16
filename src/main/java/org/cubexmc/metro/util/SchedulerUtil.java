@@ -1,6 +1,8 @@
 package org.cubexmc.metro.util;
 
-import io.papermc.paper.threadedregions.scheduler.*;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Server;
@@ -8,8 +10,11 @@ import org.bukkit.entity.Entity;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitTask;
 
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
+import io.papermc.paper.threadedregions.scheduler.AsyncScheduler;
+import io.papermc.paper.threadedregions.scheduler.EntityScheduler;
+import io.papermc.paper.threadedregions.scheduler.GlobalRegionScheduler;
+import io.papermc.paper.threadedregions.scheduler.RegionScheduler;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 
 /**
  * 调度器工具类，用于兼容Bukkit和Folia调度器
@@ -60,34 +65,6 @@ public class SchedulerUtil {
                 return Bukkit.getScheduler().runTaskTimer(plugin, task, delay, period);
         }
     }
-    
-    /**
-     * 重复执行任务（全局调度）
-     * 
-     * @param plugin 插件实例
-     * @param task 任务
-     * @param delay 延迟时间，单位为tick
-     * @param period 周期时间，单位为tick
-     * @return 任务ID
-     */
-    @SuppressWarnings("unchecked")
-//    public static Object runTaskTimer(Plugin plugin, Runnable task, long delay, long period) {
-//        if (isFolia()) {
-//            try {
-//                // 使用反射调用Folia API
-//                Class<?> bukkitClass = Bukkit.class;
-//                Object globalRegionScheduler = bukkitClass.getMethod("getGlobalRegionScheduler").invoke(null);
-//                return globalRegionScheduler.getClass().getMethod("runAtFixedRate",
-//                        Plugin.class, Class.forName("io.papermc.paper.threadedregions.scheduler.ScheduledTask$Consumer"), long.class, long.class)
-//                        .invoke(globalRegionScheduler, plugin, (Consumer<Object>) scheduledTask -> task.run(), delay, period);
-//            } catch (Exception e) {
-//                // 出现异常时回退到Bukkit调度器
-//                return Bukkit.getScheduler().runTaskTimer(plugin, task, delay, period);
-//            }
-//        } else {
-//            return Bukkit.getScheduler().runTaskTimer(plugin, task, delay, period);
-//        }
-//    }
     
     /**
      * 取消任务

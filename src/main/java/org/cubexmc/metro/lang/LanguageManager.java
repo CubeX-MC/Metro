@@ -1,9 +1,5 @@
 package org.cubexmc.metro.lang;
 
-import org.bukkit.ChatColor;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.cubexmc.metro.Metro;
-
 import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -11,6 +7,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
+
+import org.bukkit.ChatColor;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.cubexmc.metro.Metro;
 
 /**
  * 管理多语言消息的类
@@ -146,7 +146,7 @@ public class LanguageManager {
     }
 
     /**
-     * 使用参数获取格式化的语言消息
+     * 使用参数获取格式化的语言消息（数字占位符）
      *
      * @param key 消息键
      * @param args 替换参数，格式为 %1, %2 等
@@ -158,5 +158,44 @@ public class LanguageManager {
             message = message.replace("%" + (i + 1), String.valueOf(args[i]));
         }
         return message;
+    }
+
+    /**
+     * 使用命名参数获取格式化的语言消息
+     *
+     * @param key 消息键
+     * @param namedArgs 命名参数映射，格式为 {key} = value
+     * @return 格式化后的消息
+     */
+    public String getMessage(String key, Map<String, Object> namedArgs) {
+        String message = getMessage(key);
+        if (namedArgs != null) {
+            for (Map.Entry<String, Object> entry : namedArgs.entrySet()) {
+                message = message.replace("{" + entry.getKey() + "}", String.valueOf(entry.getValue()));
+            }
+        }
+        return message;
+    }
+
+    /**
+     * 创建命名参数映射的便捷方法
+     *
+     * @return 新的参数映射
+     */
+    public static Map<String, Object> args() {
+        return new HashMap<>();
+    }
+
+    /**
+     * 向参数映射添加参数的便捷方法
+     *
+     * @param args 参数映射
+     * @param key 参数名
+     * @param value 参数值
+     * @return 参数映射（链式调用）
+     */
+    public static Map<String, Object> put(Map<String, Object> args, String key, Object value) {
+        args.put(key, value);
+        return args;
     }
 } 
