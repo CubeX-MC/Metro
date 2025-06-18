@@ -1,7 +1,9 @@
 package org.cubexmc.metro.listener;
 
-import net.md_5.bungee.api.ChatMessageType;
-import net.md_5.bungee.api.chat.TextComponent;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
@@ -14,6 +16,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.cubexmc.metro.Metro;
+import org.cubexmc.metro.lang.LanguageManager;
 import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
@@ -22,9 +25,8 @@ import org.cubexmc.metro.train.TrainMovementTask;
 import org.cubexmc.metro.util.SchedulerUtil;
 import org.cubexmc.metro.util.SoundUtil;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
 
 /**
  * 处理玩家交互事件
@@ -242,26 +244,40 @@ public class PlayerInteractListener implements Listener {
             // 显示等待信息
             player.sendMessage(plugin.getLanguageManager().getMessage("interact.train_coming"));
             
-            // 延迟生成矿车，使用位置调度器以确保在正确的区域执行
+            // 延迟生成矿车，使用实体调度器以确保在正确的线程执行
             SchedulerUtil.regionRun(plugin, location, () -> {
                 try {
                     // 生成矿车实体
                     Minecart minecart = (Minecart) location.getWorld().spawnEntity(spawnLocation, EntityType.MINECART);
                     
-                    // 设置矿车没有碰撞体积
+                    // 设置矿车属性
                     minecart.setCustomName("MetroMinecart");
                     minecart.setCustomNameVisible(false);
                     minecart.setPersistent(false);
+                    minecart.setGravity(false); // 禁用重力temp 6-15
+                    minecart.setSlowWhenEmpty(false); // 不因空车而减速
+
+                    double max_speed = line.getMaxSpeed();
+                    if (max_speed == -1.0)
+                        max_speed = plugin.getCartSpeed();
                     
                     // 设置矿车的最大速度，只在创建时设置一次
-                    minecart.setMaxSpeed(plugin.getCartSpeed());
+                    minecart.setMaxSpeed(max_speed);
                     
                     // 将玩家放入矿车
-                    minecart.addPassenger(player);
+                    if (!minecart.addPassenger(player)) {
+                        // 如果上车失败，可能需要处理，例如取消任务或通知玩家
+                        minecart.remove(); // 移除矿车
+                        pendingMinecarts.remove(stopId); // 清除等待状态
+                        player.sendMessage(plugin.getLanguageManager().getMessage("interact.train_error"));
+                        return;
+                    }
                     
                     // 显示待乘车信息
-                    player.sendMessage(plugin.getLanguageManager().getMessage("interact.train_spawned", plugin.getCartDepartureDelay() / 20));
+                    player.sendMessage(plugin.getLanguageManager().getMessage("interact.train_spawned", 
+                            LanguageManager.put(LanguageManager.args(), "departure_seconds", String.valueOf(plugin.getCartDepartureDelay() / 20))));
                     
+                    plugin.getLogger().info("spawnMinecart: " + location.toString());
                     // 创建列车任务，使用TrainMovementTask处理等待发车和发车逻辑
                     // 这将触发handleArrivalAtStation方法，显示等待信息、播放等待音乐，然后延迟发车
                     TrainMovementTask.startTrainTask(plugin, minecart, player, line.getId(), stop.getId());
@@ -272,8 +288,9 @@ public class PlayerInteractListener implements Listener {
                     // 出现异常，清除该站点的矿车等待状态
                     pendingMinecarts.remove(stopId);
                     player.sendMessage(plugin.getLanguageManager().getMessage("interact.train_error"));
+                    e.printStackTrace();
                 }
-            }, spawnDelay, -1); // 立即执行，周期为0
+            }, spawnDelay, -1);
         }
     }
 } 

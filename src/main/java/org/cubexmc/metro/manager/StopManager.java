@@ -1,12 +1,5 @@
 package org.cubexmc.metro.manager;
 
-import org.bukkit.Location;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.cubexmc.metro.Metro;
-import org.cubexmc.metro.model.Stop;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -14,6 +7,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.bukkit.Location;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.cubexmc.metro.Metro;
+import org.cubexmc.metro.model.Stop;
 
 /**
  * 管理停靠区数据的加载、保存和访问

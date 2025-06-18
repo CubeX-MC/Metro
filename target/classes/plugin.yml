@@ -1,10 +1,10 @@
 name: Metro
-version: '1.0.4'
+version: '1.0.5'
 main: org.cubexmc.metro.Metro
 api-version: '1.21'
 folia-supported: true
-authors: [angushushu, elly]
-description: 一个功能简约但完善的Minecraft地铁系统插件
+authors: [angushushu, wwwer]
+description: 一个简单的地铁管理系统
 website: https://cubexmc.org
 
 commands:

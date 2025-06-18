@@ -1,5 +1,9 @@
 package org.cubexmc.metro.listener;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Minecart;
@@ -20,10 +24,6 @@ import org.cubexmc.metro.train.ScoreboardManager;
 import org.cubexmc.metro.train.TrainMovementTask;
 import org.cubexmc.metro.util.LocationUtil;
 import org.cubexmc.metro.util.SchedulerUtil;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * 处理矿车相关事件

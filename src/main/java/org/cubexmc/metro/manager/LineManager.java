@@ -1,11 +1,5 @@
 package org.cubexmc.metro.manager;
 
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.cubexmc.metro.Metro;
-import org.cubexmc.metro.model.Line;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -13,6 +7,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
+
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.cubexmc.metro.Metro;
+import org.cubexmc.metro.model.Line;
 
 /**
  * 线路管理器，负责线路数据的加载、保存和操作
@@ -65,6 +65,12 @@ public class LineManager {
                     line.setTerminusName(terminusName);
                 }
                 
+                // 加载最大速度
+                Double maxSpeed = config.getDouble(lineId + ".max_speed", -1);
+                if (maxSpeed >= 0) {
+                    line.setMaxSpeed(maxSpeed);
+                }
+                
                 lines.put(lineId, line);
             }
         }
@@ -79,6 +85,11 @@ public class LineManager {
                 config.set(lineId + ".ordered_stop_ids", line.getOrderedStopIds());
                 config.set(lineId + ".color", line.getColor());
                 config.set(lineId + ".terminus_name", line.getTerminusName());
+                if (line.getMaxSpeed() != null) {
+                    config.set(lineId + ".max_speed", line.getMaxSpeed());
+                } else {
+                    config.set(lineId + ".max_speed", null);
+                }
             }
             
             // 保存配置到文件
@@ -241,6 +252,23 @@ public class LineManager {
             return false;
         }
         line.setName(name);
+        saveConfig();
+        return true;
+    }
+    
+    /**
+     * 设置线路最大速度
+     * 
+     * @param lineId 线路ID
+     * @param maxSpeed 最大速度
+     * @return 是否成功
+     */
+    public boolean setLineMaxSpeed(String lineId, Double maxSpeed) {
+        Line line = lines.get(lineId);
+        if (line == null) {
+            return false;
+        }
+        line.setMaxSpeed(maxSpeed);
         saveConfig();
         return true;
     }

@@ -1,5 +1,11 @@
 package org.cubexmc.metro.command;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
@@ -9,13 +15,6 @@ import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
-import org.cubexmc.metro.model.Stop;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * 处理Metro插件命令的Tab补全
@@ -26,18 +25,18 @@ public class MetroAdminTabCompleter implements TabCompleter {
     
     // 主命令
     private static final List<String> MAIN_COMMANDS = Arrays.asList(
-            "line", "stop", "reload", "testendpoint", "teststopinfo"
+            "line", "stop", "reload"
     );
     
     // 线路子命令
     private static final List<String> LINE_SUBCOMMANDS = Arrays.asList(
-            "create", "delete", "list", "setcolor", "setterminus", "addstop", "delstop", "stops", "rename"
+            "create", "delete", "list", "setcolor", "setterminus", "addstop", "delstop", "stops", "rename", "setmaxspeed", "info"
     );
     
     // 停靠区子命令
     private static final List<String> STOP_SUBCOMMANDS = Arrays.asList(
-            "create", "delete", "list", "setcorner1", "setcorner2", "setpoint",
-            "addtransfer", "deltransfer", "listtransfers", "settitle", "deltitle", "listtitles", "rename"
+            "create", "delete", "list", "setcorner1", "setcorner2", "setpoint", "tp",
+            "addtransfer", "deltransfer", "listtransfers", "settitle", "deltitle", "listtitles", "rename", "info"
     );
     
     // 颜色代码列表
@@ -85,8 +84,6 @@ public class MetroAdminTabCompleter implements TabCompleter {
                 return getCompletions(args[1], LINE_SUBCOMMANDS);
             } else if ("stop".equals(mainCommand)) {
                 return getCompletions(args[1], STOP_SUBCOMMANDS);
-            } else if ("teststopinfo".equals(mainCommand)) {
-                return getLineIds();
             }
         }
         
@@ -97,22 +94,19 @@ public class MetroAdminTabCompleter implements TabCompleter {
                 if ("delete".equals(subCommand) || "setcolor".equals(subCommand) || 
                         "setterminus".equals(subCommand) || "addstop".equals(subCommand) || 
                         "delstop".equals(subCommand) || "stops".equals(subCommand) ||
-                        "rename".equals(subCommand)) {
+                        "rename".equals(subCommand) || "setmaxspeed".equals(subCommand) || "info".equals(subCommand)) {
                     return getLineIds();
                 }
             } else if ("stop".equals(mainCommand)) {
                 String subCommand = args[1].toLowerCase();
                 if ("delete".equals(subCommand) || "setcorner1".equals(subCommand) || 
-                        "setcorner2".equals(subCommand) || "setpoint".equals(subCommand) || 
+                        "setcorner2".equals(subCommand) || "setpoint".equals(subCommand) || "tp".equals(subCommand) ||
                         "addtransfer".equals(subCommand) || "deltransfer".equals(subCommand) ||
                         "listtransfers".equals(subCommand) || "settitle".equals(subCommand) || 
                         "deltitle".equals(subCommand) || "listtitles".equals(subCommand) ||
-                        "rename".equals(subCommand)) {
+                        "rename".equals(subCommand) || "info".equals(subCommand)) {
                     return getStopIds();
                 }
-            } else if ("teststopinfo".equals(mainCommand)) {
-                String lineId = args[1];
-                return getStopsForLine(lineId);
             }
         }
         
@@ -124,6 +118,8 @@ public class MetroAdminTabCompleter implements TabCompleter {
                     return getCompletions(args[3], COLOR_CODES);
                 } else if ("addstop".equals(subCommand)) {
                     return getStopIds();
+                } else if ("setmaxspeed".equals(subCommand)) {
+                    return getCompletions(args[3], Arrays.asList("0.4", "0.6", "0.8", "1.0"));
                 }
             } else if ("stop".equals(mainCommand)) {
                 String subCommand = args[1].toLowerCase();

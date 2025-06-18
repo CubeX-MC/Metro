@@ -1,13 +1,12 @@
 package org.cubexmc.metro.util;
 
+import java.util.List;
+
 import org.bukkit.Instrument;
 import org.bukkit.Location;
 import org.bukkit.Note;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitRunnable;
-
-import java.util.List;
 
 /**
  * 声音工具类，用于处理音符序列的播放
@@ -66,19 +65,6 @@ public class SoundUtil {
                         player.playSound(player.getLocation(), instrumentName, volume, getNoteFrequency(tone));
                     }
                 }, totalDelay, -1);
-//                new BukkitRunnable() {
-//                    @Override
-//                    public void run() {
-//                        if (player.isOnline()) {
-//                            if ("NOTE".equals(type)) {
-//                                playNote(player, tone, volume, instrumentName);
-//                            } else if ("CUSTOM".equals(type)) {
-//                                // 自定义声音的播放逻辑，如果需要
-//                                player.playSound(player.getLocation(), instrumentName, volume, getNoteFrequency(tone));
-//                            }
-//                        }
-//                    }
-//                }.runTaskLater(plugin, totalDelay);
             } catch (NumberFormatException e) {
                 // 忽略格式不正确的音符
             }
@@ -137,17 +123,6 @@ public class SoundUtil {
                         location.getWorld().playSound(location, instrumentName, volume, getNoteFrequency(tone));
                     }
                 }, totalDelay, -1);
-//                new BukkitRunnable() {
-//                    @Override
-//                    public void run() {
-//                        if ("NOTE".equals(type)) {
-//                            playNoteAtLocation(location, tone, volume, instrumentName);
-//                        } else if ("CUSTOM".equals(type)) {
-//                            // 自定义声音的播放逻辑，如果需要
-//                            location.getWorld().playSound(location, instrumentName, volume, getNoteFrequency(tone));
-//                        }
-//                    }
-//                }.runTaskLater(plugin, totalDelay);
             } catch (NumberFormatException e) {
                 // 忽略格式不正确的音符
             }
