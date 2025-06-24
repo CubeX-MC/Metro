@@ -500,8 +500,8 @@ public class TrainMovementTask implements Runnable {
                 // 强制下车
                 minecart.eject();
                 
-                // 清除计分板
-                ScoreboardManager.clearScoreboard(passenger);
+                // 清除玩家的地铁显示内容（包括计分板和title）
+                ScoreboardManager.clearPlayerDisplay(passenger);
                 
                 // 延迟移除矿车 - 继续使用实体调度器
                 final Minecart finalMinecart = minecart;

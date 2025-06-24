@@ -1,26 +1,24 @@
 package org.cubexmc.metro.train;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
-import org.bukkit.scoreboard.Team;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Stop;
 import org.cubexmc.metro.util.SchedulerUtil;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * 计分板管理器，用于在玩家乘坐矿车时显示线路信息
@@ -305,6 +303,21 @@ public class ScoreboardManager {
                 player.setScoreboard(manager.getNewScoreboard());
                 playerScoreboards.remove(player.getUniqueId());
             }
+        }
+    }
+    
+    /**
+     * 清除玩家的地铁显示内容（包括计分板和title）
+     * 
+     * @param player 要清除显示内容的玩家
+     */
+    public static void clearPlayerDisplay(Player player) {
+        // 清除计分板
+        clearScoreboard(player);
+        
+        // 清除title显示
+        if (player != null && player.isOnline()) {
+            player.sendTitle("", "", 0, 0, 0);
         }
     }
 } 

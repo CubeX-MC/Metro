@@ -95,8 +95,8 @@ public class VehicleListener implements Listener {
             return;
         }
         
-        // 清除玩家的计分板
-        ScoreboardManager.clearScoreboard(player);
+        // 清除玩家的地铁显示内容（包括计分板和title）
+        ScoreboardManager.clearPlayerDisplay(player);
         
         // 取消列车移动任务
         cancelTrainMovementTask(player.getUniqueId());
