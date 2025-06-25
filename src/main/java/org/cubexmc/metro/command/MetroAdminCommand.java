@@ -140,18 +140,30 @@ public class MetroAdminCommand implements CommandExecutor {
                     break;
                     
                 case "setterminus":
-                    if (args.length < 4) {
+                    if (args.length < 3) {
                         player.sendMessage(plugin.getLanguageManager().getMessage("line.usage_setterminus"));
                         return true;
                     }
                     lineId = args[2];
+                    if (args.length == 3) {
+                        // Clear terminus name
+                        if (lineManager.setLineTerminusName(lineId, null)) {
+                            player.sendMessage(plugin.getLanguageManager().getMessage("line.setterminus_success",
+                                    LanguageManager.put(LanguageManager.put(LanguageManager.args(),
+                                            "line_id", lineId), "terminus_name", "")));
+                        } else {
+                            player.sendMessage(plugin.getLanguageManager().getMessage("line.delete_not_found",
+                                    LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
+                        }
+                        return true;
+                    }
                     String terminusName = args[3];
                     if (lineManager.setLineTerminusName(lineId, terminusName)) {
-                        player.sendMessage(plugin.getLanguageManager().getMessage("line.setterminus_success", 
-                                LanguageManager.put(LanguageManager.put(LanguageManager.args(), 
+                        player.sendMessage(plugin.getLanguageManager().getMessage("line.setterminus_success",
+                                LanguageManager.put(LanguageManager.put(LanguageManager.args(),
                                         "line_id", lineId), "terminus_name", terminusName)));
                     } else {
-                        player.sendMessage(plugin.getLanguageManager().getMessage("line.delete_not_found", 
+                        player.sendMessage(plugin.getLanguageManager().getMessage("line.delete_not_found",
                                 LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
                     }
                     break;

@@ -1,11 +1,10 @@
 package org.cubexmc.metro.util;
 
-import org.bukkit.ChatColor;
+import java.util.List;
+
 import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Stop;
-
-import java.util.List;
 
 /**
  * 文本工具类，提供文本处理相关功能
@@ -37,7 +36,12 @@ public class TextUtil {
             result = result.replace("{line}", line.getName());
             result = result.replace("{line_id}", line.getId());
             result = result.replace("{line_color_code}", line.getColor());
-            result = result.replace("{terminus_name}", line.getTerminusName());
+            // Replace terminus_name placeholder, fallback to terminalStop name if no custom terminus set
+            String termName = line.getTerminusName();
+            if (termName == null) {
+                termName = (terminalStop != null ? terminalStop.getName() : "");
+            }
+            result = result.replace("{terminus_name}", termName);
             
             // 目的地站点（线路终点）
             if (!line.getOrderedStopIds().isEmpty()) {
