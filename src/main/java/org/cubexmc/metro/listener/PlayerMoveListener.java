@@ -1,7 +1,10 @@
 package org.cubexmc.metro.listener;
 
-import net.md_5.bungee.api.ChatMessageType;
-import net.md_5.bungee.api.chat.TextComponent;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -19,10 +22,8 @@ import org.cubexmc.metro.model.Stop;
 import org.cubexmc.metro.util.SchedulerUtil;
 import org.cubexmc.metro.util.TextUtil;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
 
 /**
  * 监听玩家移动事件，用于检测玩家进入停靠区
@@ -192,13 +193,19 @@ public class PlayerMoveListener implements Listener {
         final String finalTitle = TextUtil.replacePlaceholders(title, line, stop, lastStop, nextStop, terminalStop, lineManager);
         final String finalSubtitle = TextUtil.replacePlaceholders(subtitle, line, stop, lastStop, nextStop, terminalStop, lineManager);
         final String finalActionbar = TextUtil.replacePlaceholders(actionbar, line, stop, lastStop, nextStop, terminalStop, lineManager);
-        
+
         if (alwaysShow) {
             Object actionBarTaskId = SchedulerUtil.globalRun(plugin, new Runnable() {
                 @Override
                 public void run() {
+                    // 检查任务是否仍然存在于Map中，如果不存在说明已被外部取消
+                    if (!actionBarTasks.containsKey(playerId)) {
+                        return;
+                    }
+                    
                     if (!player.isOnline() || !stop.isInStop(player.getLocation())) {
-                        cancelActionBarTask(playerId);
+                        // 不要在这里取消任务，让外部的PlayerMoveEvent来处理
+                        // cancelActionBarTask(playerId);
                         return;
                     }
                     if (player.isInsideVehicle() && player.getVehicle() instanceof org.bukkit.entity.Minecart) {
@@ -218,8 +225,14 @@ public class PlayerMoveListener implements Listener {
             Object titleTaskId = SchedulerUtil.globalRun(plugin, new Runnable() {
                 @Override
                 public void run() {
+                    // 检查任务是否仍然存在于Map中，如果不存在说明已被外部取消
+                    if (!continuousInfoTasks.containsKey(playerId)) {
+                        return;
+                    }
+
                     if (!player.isOnline() || !stop.isInStop(player.getLocation())) {
-                        cancelContinuousInfoTask(playerId);
+                        // 不要在这里取消任务，让外部的PlayerMoveEvent来处理
+                        // cancelContinuousInfoTask(playerId);
                         return;
                     }
                     if (player.isInsideVehicle() && player.getVehicle() instanceof org.bukkit.entity.Minecart) {
@@ -229,10 +242,12 @@ public class PlayerMoveListener implements Listener {
                         }
                     }
                     player.sendTitle(
-                        ChatColor.translateAlternateColorCodes('&', finalTitle),
-                        ChatColor.translateAlternateColorCodes('&', finalSubtitle),
-                        0, 40, 10
+                         ChatColor.translateAlternateColorCodes('&', finalTitle),
+                         ChatColor.translateAlternateColorCodes('&', finalSubtitle),
+                         0, 40, 0
                     );
+//                    Title title = new Title(ChatColor.translateAlternateColorCodes('&', finalTitle), ChatColor.translateAlternateColorCodes('&', finalSubtitle), 0, 40, interval);
+//                    player.showTitle(title);
                 }
             }, 0L, interval);
             continuousInfoTasks.put(playerId, titleTaskId);

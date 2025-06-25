@@ -276,8 +276,7 @@ public class PlayerInteractListener implements Listener {
                     // 显示待乘车信息
                     player.sendMessage(plugin.getLanguageManager().getMessage("interact.train_spawned", 
                             LanguageManager.put(LanguageManager.args(), "departure_seconds", String.valueOf(plugin.getCartDepartureDelay() / 20))));
-                    
-                    plugin.getLogger().info("spawnMinecart: " + location.toString());
+
                     // 创建列车任务，使用TrainMovementTask处理等待发车和发车逻辑
                     // 这将触发handleArrivalAtStation方法，显示等待信息、播放等待音乐，然后延迟发车
                     TrainMovementTask.startTrainTask(plugin, minecart, player, line.getId(), stop.getId());
