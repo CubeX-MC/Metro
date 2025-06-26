@@ -4,7 +4,7 @@
 
 ## Plugin Overview
 
-Metro is a subway transit system plugin that lets administrators create automated subway lines and provides players with a convenient riding experience.
+Metro is a subway transit system plugin that lets administrators create automated subway lines and provides players with a convenient riding experience, inspired by Newnan.city.
 
 ![Demo](https://i.imgur.com/K335iWj.gif)
 
