@@ -88,7 +88,7 @@ line:
 # Stop Command Related
 stop:
   help_header: "&a===== Metro Stop Management Commands ====="
-  help_create: "&6/m stop create <stop_id> <display_name> &f- Create new stop"
+  help_create: "&6/m stop create <stop_id> <display_name> [radius] &f- Create new stop (optionally auto-set region)"
   help_delete: "&6/m stop delete <stop_id> &f- Delete stop"
   help_list: "&6/m stop list &f- List all stops"
   help_setcorner1: "&6/m stop setcorner1 <stop_id> &f- Set stop's first corner point"
@@ -103,8 +103,8 @@ stop:
   help_rename: "&6/m stop rename <stop_id> <new_name> &f- Rename stop display name"
   help_info: "&6/m stop info <stop_id> &f- View stop detailed information"
   help_tp: "&6/m stop tp <stop_id> &f- Teleport to a stop"
-  
-  usage_create: "&cUsage: /m stop create <stop_id> <\"display_name\">"
+
+  usage_create: "&cUsage: /m stop create <stop_id> <name> [radius]"
   usage_delete: "&cUsage: /m stop delete <stop_id>"
   usage_setcorner1: "&cUsage: /m stop setcorner1 <stop_id>"
   usage_setcorner2: "&cUsage: /m stop setcorner2 <stop_id>"
@@ -120,6 +120,8 @@ stop:
   usage_rename: "&cUsage: /m stop rename <stop_id> <new_name>"
   
   create_success: "&aSuccessfully created stop: {stop_name}"
+  create_success_with_region: "&aSuccessfully created stop: {stop_name} and set region with radius {radius}."
+  create_invalid_radius: "&cInvalid radius: {radius}. Radius must be a positive number."
   create_exists: "&cStop ID {stop_id} already exists!"
   delete_success: "&aSuccessfully deleted stop: {stop_id}"
   delete_not_found: "&cStop ID not found: {stop_id}"
