@@ -691,7 +691,7 @@ public class TrainMovementTask implements Runnable {
                 String actionbarText = actionbarTemplate.replace("{countdown}", String.valueOf(secondsLeft));
                 
                 // 替换其他占位符
-                actionbarText = TextUtil.replacePlaceholders(actionbarText, line, mainStop, prevStop, nextStop, terminusStop, lineManager);
+                actionbarText = TextUtil.replacePlaceholders(actionbarText, line, mainStop, prevStop, nextStop, terminusStop, lineManager, plugin.getStopManager());
                 
                 // 转换颜色代码
                 actionbarText = ChatColor.translateAlternateColorCodes('&', actionbarText);
@@ -747,9 +747,9 @@ public class TrainMovementTask implements Runnable {
         }
         
         // 使用TextUtil替换占位符
-        String title = TextUtil.replacePlaceholders(titleTemplate, line, mainStop, prevStop, nextStop, terminusStop, lineManager);
-        String subtitle = TextUtil.replacePlaceholders(subtitleTemplate, line, mainStop, prevStop, nextStop, terminusStop, lineManager);
-        String actionbar = TextUtil.replacePlaceholders(actionbarTemplate, line, mainStop, prevStop, nextStop, terminusStop, lineManager);
+        String title = TextUtil.replacePlaceholders(titleTemplate, line, mainStop, prevStop, nextStop, terminusStop, lineManager, plugin.getStopManager());
+        String subtitle = TextUtil.replacePlaceholders(subtitleTemplate, line, mainStop, prevStop, nextStop, terminusStop, lineManager, plugin.getStopManager());
+        String actionbar = TextUtil.replacePlaceholders(actionbarTemplate, line, mainStop, prevStop, nextStop, terminusStop, lineManager, plugin.getStopManager());
         
         // 转换颜色代码
         title = ChatColor.translateAlternateColorCodes('&', title);
@@ -835,8 +835,8 @@ public class TrainMovementTask implements Runnable {
         }
         
         // 替换标题占位符
-        String title = TextUtil.replacePlaceholders(titleTemplate, line, currentStop, null, nextStop, terminusStop, lineManager);
-        String subtitle = TextUtil.replacePlaceholders(subtitleTemplate, line, currentStop, null, nextStop, terminusStop, lineManager);
+        String title = TextUtil.replacePlaceholders(titleTemplate, line, currentStop, null, nextStop, terminusStop, lineManager, plugin.getStopManager());
+        String subtitle = TextUtil.replacePlaceholders(subtitleTemplate, line, currentStop, null, nextStop, terminusStop, lineManager, plugin.getStopManager());
         
         // 转换颜色代码
         title = ChatColor.translateAlternateColorCodes('&', title);
@@ -861,7 +861,7 @@ public class TrainMovementTask implements Runnable {
             startCountdownActionbar("waiting", currentStop, null, nextStop, terminusStop);
         } else {
             // 如果没有倒计时，显示静态actionbar
-            String actionbarText = TextUtil.replacePlaceholders(actionbarTemplate, line, currentStop, null, nextStop, terminusStop, lineManager);
+            String actionbarText = TextUtil.replacePlaceholders(actionbarTemplate, line, currentStop, null, nextStop, terminusStop, lineManager, plugin.getStopManager());
             actionbarText = ChatColor.translateAlternateColorCodes('&', actionbarText);
             passenger.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(actionbarText));
         }

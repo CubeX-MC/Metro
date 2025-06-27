@@ -190,9 +190,9 @@ public class PlayerMoveListener implements Listener {
             }
         }
         
-        final String finalTitle = TextUtil.replacePlaceholders(title, line, stop, lastStop, nextStop, terminalStop, lineManager);
-        final String finalSubtitle = TextUtil.replacePlaceholders(subtitle, line, stop, lastStop, nextStop, terminalStop, lineManager);
-        final String finalActionbar = TextUtil.replacePlaceholders(actionbar, line, stop, lastStop, nextStop, terminalStop, lineManager);
+        final String finalTitle = TextUtil.replacePlaceholders(title, line, stop, lastStop, nextStop, terminalStop, lineManager, plugin.getStopManager());
+        final String finalSubtitle = TextUtil.replacePlaceholders(subtitle, line, stop, lastStop, nextStop, terminalStop, lineManager, plugin.getStopManager());
+        final String finalActionbar = TextUtil.replacePlaceholders(actionbar, line, stop, lastStop, nextStop, terminalStop, lineManager, plugin.getStopManager());
 
         if (alwaysShow) {
             Object actionBarTaskId = SchedulerUtil.globalRun(plugin, new Runnable() {
