@@ -58,13 +58,11 @@ public final class Metro extends JavaPlugin {
         int pluginId = 25825; // <-- Replace with the id of your plugin!
         Metrics metrics = new Metrics(this, pluginId);
 
-        // getLogger().info(languageManager.getMessage("plugin.enabled"));
         Bukkit.getConsoleSender().sendMessage(languageManager.getMessage("plugin.enabled"));
     }
 
     @Override
     public void onDisable() {
-        // getLogger().info(languageManager.getMessage("plugin.disabled"));
         Bukkit.getConsoleSender().sendMessage(languageManager.getMessage("plugin.disabled"));
     }
     

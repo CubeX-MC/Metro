@@ -197,7 +197,6 @@ public class TextUtil {
      * @param lineManager 线路管理器
      * @return 格式化后的可换乘线路文本
      */
-    public static String formatCurrentStationTransferableLines(Stop stop, LineManager lineManager) {
-        return formatTransferableLines(stop, lineManager);
-    }
-} 
+    // Removed redundant formatCurrentStationTransferableLines method.
+    // Use formatTransferableLines instead.
+}
