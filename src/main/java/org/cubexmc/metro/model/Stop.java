@@ -2,6 +2,7 @@ package org.cubexmc.metro.model;
 
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.util.BoundingBox; // Paper API import
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -16,13 +17,14 @@ public class Stop {
     private String name;
     private Location corner1; // 区域第一个角点
     private Location corner2; // 区域第二个角点
+    private transient BoundingBox boundingBox; // Paper API BoundingBox
     private Location stopPointLocation; // 停靠点位置，用于矿车生成位置
     private float launchYaw;
     private List<String> transferableLines; // 可换乘的线路ID列表
-    
+
     // 自定义titles配置
     private Map<String, Map<String, String>> customTitles;
-    
+
     /**
      * 创建新停靠区
      * 
@@ -197,26 +199,61 @@ public class Stop {
      * @return 是否在区域内
      */
     public boolean isInStop(Location location) {
-        if (corner1 == null || corner2 == null || location == null || 
-                location.getWorld() == null || 
-                !location.getWorld().equals(corner1.getWorld())) {
+        if (location == null || location.getWorld() == null) {
             return false;
         }
-        
-        int minX = Math.min(corner1.getBlockX(), corner2.getBlockX());
-        int maxX = Math.max(corner1.getBlockX(), corner2.getBlockX());
-        int minY = Math.min(corner1.getBlockY(), corner2.getBlockY());
-        int maxY = Math.max(corner1.getBlockY(), corner2.getBlockY());
-        int minZ = Math.min(corner1.getBlockZ(), corner2.getBlockZ());
-        int maxZ = Math.max(corner1.getBlockZ(), corner2.getBlockZ());
-        
-        int x = location.getBlockX();
-        int y = location.getBlockY();
-        int z = location.getBlockZ();
-        
-        return x >= minX && x <= maxX && y >= minY && y <= maxY && z >= minZ && z <= maxZ;
+
+        BoundingBox currentBox = getBoundingBox();
+        if (currentBox == null) {
+            // If corners are not set, or in different worlds, it's not in the stop.
+            // Also, ensure corner1's world is checked as getBoundingBox might return null if corner1's world is null
+            if (corner1 == null || corner1.getWorld() == null) {
+                return false;
+            }
+            // Fallback to old logic if bounding box couldn't be created but corners might exist
+            // This case should ideally not be hit if getBoundingBox is robust
+            if (corner1 == null || corner2 == null) return false;
+            if (!location.getWorld().equals(corner1.getWorld())) return false;
+
+            int minX = Math.min(corner1.getBlockX(), corner2.getBlockX());
+            int maxX = Math.max(corner1.getBlockX(), corner2.getBlockX());
+            int minY = Math.min(corner1.getBlockY(), corner2.getBlockY());
+            int maxY = Math.max(corner1.getBlockY(), corner2.getBlockY());
+            int minZ = Math.min(corner1.getBlockZ(), corner2.getBlockZ());
+            int maxZ = Math.max(corner1.getBlockZ(), corner2.getBlockZ());
+
+            int x = location.getBlockX();
+            int y = location.getBlockY();
+            int z = location.getBlockZ();
+            return x >= minX && x <= maxX && y >= minY && y <= maxY && z >= minZ && z <= maxZ;
+        }
+
+        // Check world equality before using BoundingBox.contains, as BoundingBox is world-agnostic.
+        // corner1's world is confirmed non-null if currentBox is non-null by getBoundingBox() logic.
+        if (!location.getWorld().equals(this.corner1.getWorld())) {
+            return false;
+        }
+
+        return currentBox.contains(location.toVector());
     }
-    
+
+    /**
+     * 获取由此停靠区的corner1和corner2定义的边界框。
+     * 如果任一角点为null，则返回null。
+     *
+     * @return BoundingBox实例，如果角点有效，否则为null。
+     */
+    public BoundingBox getBoundingBox() {
+        if (this.boundingBox == null && this.corner1 != null && this.corner2 != null) {
+            if (this.corner1.getWorld() == null || !this.corner1.getWorld().equals(this.corner2.getWorld())) {
+                // Cannot create a bounding box if worlds are different or null
+                return null;
+            }
+            this.boundingBox = BoundingBox.of(this.corner1, this.corner2);
+        }
+        return this.boundingBox;
+    }
+
     /**
      * 获取可换乘线路ID列表
      * 
@@ -269,16 +306,18 @@ public class Stop {
     
     public void setCorner1(Location corner1) {
         this.corner1 = corner1;
+        this.boundingBox = null; // Invalidate cached bounding box
     }
-    
+
     public Location getCorner2() {
         return corner2;
     }
-    
+
     public void setCorner2(Location corner2) {
         this.corner2 = corner2;
+        this.boundingBox = null; // Invalidate cached bounding box
     }
-    
+
     public Location getStopPointLocation() {
         return stopPointLocation;
     }

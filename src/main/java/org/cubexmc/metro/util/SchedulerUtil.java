@@ -20,196 +20,176 @@ import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
  * 调度器工具类，用于兼容Bukkit和Folia调度器
  */
 public class SchedulerUtil {
-    
+
+    private static final boolean IS_FOLIA;
+
+    static {
+        boolean foliaDetected = false;
+        try {
+            Class.forName("io.papermc.paper.threadedregions.RegionizedServer");
+            foliaDetected = true;
+        } catch (ClassNotFoundException e) {
+            // Folia not present
+        }
+        IS_FOLIA = foliaDetected;
+    }
+
     /**
      * 判断服务器是否运行在Folia上
-     * 
+     *
      * @return 是否为Folia服务器
      */
     public static boolean isFolia() {
-        try {
-            Class.forName("io.papermc.paper.threadedregions.RegionizedServer");
-            return true;
-        } catch (ClassNotFoundException e) {
-            return false;
+        return IS_FOLIA;
+    }
+
+    // --- Private Helper Methods for Task Execution ---
+
+    private static Object executeTask(Plugin plugin, Runnable task, long delay, long period,
+                                      FoliaScheduler foliaScheduler, BukkitScheduler bukkitScheduler) {
+        delay = Math.max(0, delay);
+        if (isFolia()) {
+            Consumer<ScheduledTask> foliaTask = st -> task.run();
+            return foliaScheduler.schedule(plugin, foliaTask, delay, period);
+        } else {
+            return bukkitScheduler.schedule(plugin, task, delay, period);
         }
     }
-      /**
+
+    @FunctionalInterface
+    private interface FoliaScheduler {
+        ScheduledTask schedule(Plugin plugin, Consumer<ScheduledTask> task, long delay, long period);
+    }
+
+    @FunctionalInterface
+    private interface BukkitScheduler {
+        BukkitTask schedule(Plugin plugin, Runnable task, long delay, long period);
+    }
+
+    // --- Public Scheduler Methods ---
+
+    /**
      * 延迟执行任务（全局调度）
-     * 
+     *
      * @param plugin 插件实例
-     * @param task 任务
-     * @param delay 延迟时间，单位为tick
+     * @param task   任务
+     * @param delay  延迟时间，单位为tick
      * @param period 周期时间，单位为tick, 如果为负数则表示只延迟一次
      * @return 任务ID
      */
     public static Object globalRun(Plugin plugin, Runnable task, long delay, long period) {
-        delay = Math.max(0, delay);
-        if (isFolia()) {
-            Server server = Bukkit.getServer();
-            GlobalRegionScheduler globbalScheduler = server.getGlobalRegionScheduler();
-            // Convert Runnable to Consumer<ScheduledTask> for Folia API
-            Consumer<ScheduledTask> foliaTask = scheduledTask -> task.run();
-            if (period < 0) {
-                // 只执行一次的任务
-                if (delay == 0)
-                    return globbalScheduler.run(plugin, foliaTask);
-                else
-                    return globbalScheduler.runDelayed(plugin, foliaTask, delay);
-            } else {
-                // 重复执行的任务
-                return globbalScheduler.runAtFixedRate(plugin, foliaTask, delay, period);
-            }
-        } else {
-            if (period < 0) {
-                // 只执行一次的任务
-                if (delay == 0)
-                    return Bukkit.getScheduler().runTask(plugin, task);
-                else
-                    return Bukkit.getScheduler().runTaskLater(plugin, task, delay);
-            } else {
-                // 重复执行的任务
-                return Bukkit.getScheduler().runTaskTimer(plugin, task, delay, period);
-            }
-        }
+        return executeTask(plugin, task, delay, period,
+                (p, t, d, r) -> {
+                    GlobalRegionScheduler scheduler = Bukkit.getServer().getGlobalRegionScheduler();
+                    if (r < 0) return (d == 0) ? scheduler.run(p, t) : scheduler.runDelayed(p, t, d);
+                    return scheduler.runAtFixedRate(p, t, d, r);
+                },
+                (p, t, d, r) -> {
+                    if (r < 0) return (d == 0) ? Bukkit.getScheduler().runTask(p, t) : Bukkit.getScheduler().runTaskLater(p, t, d);
+                    return Bukkit.getScheduler().runTaskTimer(p, t, d, r);
+                }
+        );
     }
-    
+
+    /**
+     * 在玩家所在区域执行任务
+     *
+     * @param plugin 插件实例
+     * @param entity 实体
+     * @param task   任务
+     * @param delay  延迟时间，单位为tick
+     * @param period 周期时间，单位为tick，如果为负数则表示只延迟一次
+     * @return 任务ID
+     */
+    public static Object entityRun(Plugin plugin, Entity entity, Runnable task, long delay, long period) {
+        // Entity retired callback - 当实体不存在时的回调
+        Runnable retiredCallback = () -> plugin.getLogger().fine("Entity scheduler task cancelled: entity no longer exists");
+
+        return executeTask(plugin, task, delay, period,
+                (p, t, d, r) -> {
+                    EntityScheduler scheduler = entity.getScheduler();
+                    if (r < 0) return (d == 0) ? scheduler.run(p, t, retiredCallback) : scheduler.runDelayed(p, t, retiredCallback, d);
+                    return scheduler.runAtFixedRate(p, t, retiredCallback, d, r);
+                },
+                (p, t, d, r) -> { // Bukkit doesn't have a retired callback for entity tasks in the same way
+                    if (r < 0) return (d == 0) ? Bukkit.getScheduler().runTask(p, t) : Bukkit.getScheduler().runTaskLater(p, t, d);
+                    return Bukkit.getScheduler().runTaskTimer(p, t, d, r);
+                }
+        );
+    }
+
+    /**
+     * 在指定位置区域延迟执行任务
+     *
+     * @param plugin   插件实例
+     * @param location 位置
+     * @param task     任务
+     * @param delay    延迟时间，单位为tick
+     * @param period   周期时间，单位为tick, 如果为负数则表示只延迟一次
+     * @return 任务ID
+     */
+    public static Object regionRun(Plugin plugin, Location location, Runnable task, long delay, long period) {
+        return executeTask(plugin, task, delay, period,
+                (p, t, d, r) -> {
+                    RegionScheduler scheduler = Bukkit.getServer().getRegionScheduler();
+                    if (r < 0) return (d == 0) ? scheduler.run(p, location, t) : scheduler.runDelayed(p, location, t, d);
+                    return scheduler.runAtFixedRate(p, location, t, d, r);
+                },
+                (p, t, d, r) -> {
+                    if (r < 0) return (d == 0) ? Bukkit.getScheduler().runTask(p, t) : Bukkit.getScheduler().runTaskLater(p, t, d);
+                    return Bukkit.getScheduler().runTaskTimer(p, t, d, r);
+                }
+        );
+    }
+
     /**
      * 取消任务
-     * 
+     *
      * @param task 任务ID
      */
     public static void cancelTask(Object task) {
         if (task == null) return;
         try {
             if (isFolia()) {
-                if (task instanceof ScheduledTask)
+                if (task instanceof ScheduledTask) {
                     ((ScheduledTask) task).cancel();
+                }
             } else {
-                if (task instanceof BukkitTask)
+                if (task instanceof BukkitTask) {
                     ((BukkitTask) task).cancel();
+                }
             }
         } catch (Exception e) {
             // 忽略异常
         }
-    }    /**
-     * 在玩家所在区域执行任务
-     * 
-     * @param plugin 插件实例
-     * @param entity 实体
-     * @param task 任务
-     * @param delay 延迟时间，单位为tick
-     * @param period 周期时间，单位为tick，如果为负数则表示只延迟一次
-     * @return 任务ID
-     */
-    @SuppressWarnings("unchecked")
-    public static Object entityRun(Plugin plugin, Entity entity, Runnable task, long delay, long period) {
-        delay = Math.max(0, delay);
-        if (isFolia()) {
-            EntityScheduler entityScheduler = entity.getScheduler();
-            // Convert task to Consumer<ScheduledTask> for Folia API
-            Consumer<ScheduledTask> foliaTask;
-            if (task instanceof Runnable) {
-                foliaTask = scheduledTask -> ((Runnable) task).run();
-            } else if (task instanceof Consumer) {
-                foliaTask = (Consumer<ScheduledTask>) task;
-            } else {
-                throw new IllegalArgumentException("Task must be either Runnable or Consumer<ScheduledTask>");
-            }
-            
-            // Entity retired callback - 当实体不存在时的回调
-            Runnable retiredCallback = () -> {
-                plugin.getLogger().fine("Entity scheduler task cancelled: entity no longer exists");
-            };
-            
-            if (period < 0) {
-                // 只执行一次的任务
-                if (delay == 0) {
-                    return entityScheduler.run(plugin, foliaTask, retiredCallback);
-                } else {
-                    return entityScheduler.runDelayed(plugin, foliaTask, retiredCallback, delay);
-                }
-            } else {
-                // 重复执行的任务
-                return entityScheduler.runAtFixedRate(plugin, foliaTask, retiredCallback, delay, period);
-            }
-        } else {
-            if (period < 0) {
-                // 只执行一次的任务
-                if (delay == 0) {
-                    return Bukkit.getScheduler().runTask(plugin, (Runnable) task);
-                } else {
-                    return Bukkit.getScheduler().runTaskLater(plugin, (Runnable) task, delay);
-                }
-            } else {
-                // 重复执行的任务
-                return Bukkit.getScheduler().runTaskTimer(plugin, (Runnable) task, delay, period);
-            }
-        }
     }
-      /**
-     * 在指定位置区域延迟执行任务
-     * 
-     * @param plugin 插件实例
-     * @param location 位置
-     * @param task 任务
-     * @param delay 延迟时间，单位为tick
-     * @return 任务ID
-     */
-    public static Object regionRun(Plugin plugin, Location location, Runnable task, long delay, long period) {
-        delay = Math.max(0, delay);
-        if (isFolia()) {
-            Server server = Bukkit.getServer();
-            RegionScheduler regionScheduler = server.getRegionScheduler();
-            // Convert Runnable to Consumer<ScheduledTask> for Folia API
-            Consumer<ScheduledTask> foliaTask = scheduledTask -> task.run();
 
-            if (period < 0) {
-                // 只执行一次的任务
-                if (delay == 0) {
-                    return regionScheduler.run(plugin, location, foliaTask);
-                } else {
-                    return regionScheduler.runDelayed(plugin, location, foliaTask, delay);
-                }
-            } else {
-                // 重复执行的任务
-                return regionScheduler.runAtFixedRate(plugin, location, foliaTask, delay, period);
-            }
-        } else {
-            if (period < 0) {
-                // 只执行一次的任务
-                if (delay == 0) {
-                    return Bukkit.getScheduler().runTask(plugin, task);
-                } else {
-                    return Bukkit.getScheduler().runTaskLater(plugin, task, delay);
-                }
-            } else {
-                // 重复执行的任务
-                return Bukkit.getScheduler().runTaskTimer(plugin, task, delay, period);
-            }
-        }
-    }
-      /**
+    /**
      * 在异步线程延迟执行任务
-     * 
+     *
      * @param plugin 插件实例
-     * @param task 任务
-     * @param delay 延迟时间，单位为毫秒
+     * @param task   任务
+     * @param delayMs 延迟时间，单位为毫秒 (Folia) or Ticks (Bukkit)
+     *                Note: Bukkit's runTaskLaterAsynchronously uses ticks for delay.
+     *                Folia's asyncScheduler uses milliseconds.
+     *                This method standardizes on Ticks for the delay parameter for Bukkit compatibility,
+     *                and converts to MS for Folia. If you need MS precision for Bukkit, schedule with 0 delay
+     *                and handle delay within your runnable.
      */
-    public static void asyncRun(Plugin plugin, Runnable task, long delay) {
-        delay = Math.max(0, delay);
+    public static void asyncRun(Plugin plugin, Runnable task, long delayTicks) {
+        delayTicks = Math.max(0, delayTicks);
         if (isFolia()) {
-            Server server = Bukkit.getServer();
-            AsyncScheduler asyncScheduler = server.getAsyncScheduler();
-            // Convert Runnable to Consumer<ScheduledTask> for Folia API
-            Consumer<ScheduledTask> foliaTask = scheduledTask -> task.run();
-            if (delay <= 0) {
+            AsyncScheduler asyncScheduler = Bukkit.getServer().getAsyncScheduler();
+            Consumer<ScheduledTask> foliaTask = st -> task.run();
+            if (delayTicks <= 0) {
                 asyncScheduler.runNow(plugin, foliaTask);
             } else {
-                asyncScheduler.runDelayed(plugin, foliaTask, delay * 50, TimeUnit.MILLISECONDS);
+                // Convert ticks to milliseconds for Folia (1 tick = 50 ms)
+                asyncScheduler.runDelayed(plugin, foliaTask, delayTicks * 50, TimeUnit.MILLISECONDS);
             }
         } else {
-            Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, task, delay);
+            // Bukkit's runTaskLaterAsynchronously uses ticks for delay
+            Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, task, delayTicks);
         }
     }
-} 
+}

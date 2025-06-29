@@ -673,24 +673,68 @@ public class MetroAdminCommand implements CommandExecutor {
             
             switch (subCommand) {
                 case "create":
-                    if (args.length < 3) {
+                    if (args.length < 4) { // stop create <id> <name...> [radius] - min 4 for name
                         player.sendMessage(plugin.getLanguageManager().getMessage("stop.usage_create"));
                         return true;
                     }
-                    
+
                     String stopId = args[2];
+                    int radius = -1;
+                    int nameEndIndex = args.length;
+
+                    // Check if the last argument is a number (potential radius)
+                    if (args.length > 4) { // Need at least one word for name + radius
+                        try {
+                            radius = Integer.parseInt(args[args.length - 1]);
+                            nameEndIndex = args.length - 1; // Name args exclude the radius
+                        } catch (NumberFormatException e) {
+                            // Last arg is not a number, so it's part of the name
+                            radius = -1;
+                        }
+                    }
+
+                    if (radius == 0) { // Explicitly disallow 0 if it was parsed.
+                         player.sendMessage(plugin.getLanguageManager().getMessage("stop.create_invalid_radius",
+                                LanguageManager.put(LanguageManager.args(), "radius", String.valueOf(radius))));
+                        return true;
+                    }
+
+
                     StringBuilder nameBuilder = new StringBuilder();
-                    for (int i = 3; i < args.length; i++) {
-                        nameBuilder.append(args[i]).append(" ");
+                    for (int i = 3; i < nameEndIndex; i++) {
+                        if (i > 3) nameBuilder.append(" ");
+                        nameBuilder.append(args[i]);
                     }
                     String stopName = nameBuilder.toString().trim();
-                    
+                    if (stopName.isEmpty()){
+                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.usage_create"));
+                        return true;
+                    }
+
                     Stop newStop = stopManager.createStop(stopId, stopName);
                     if (newStop != null) {
-                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.create_success", 
-                                LanguageManager.put(LanguageManager.args(), "stop_name", stopName)));
+                        if (radius > 0) {
+                            Location center = player.getLocation().getBlock().getLocation(); // Use block location as center
+                            Location corner1 = new Location(center.getWorld(),
+                                                            center.getX() - radius,
+                                                            center.getY() - radius,
+                                                            center.getZ() - radius);
+                            Location corner2 = new Location(center.getWorld(),
+                                                            center.getX() + radius,
+                                                            center.getY() + radius,
+                                                            center.getZ() + radius);
+
+                            stopManager.setStopCorner1(stopId, corner1);
+                            stopManager.setStopCorner2(stopId, corner2);
+                            player.sendMessage(plugin.getLanguageManager().getMessage("stop.create_success_with_region",
+                                    LanguageManager.put(LanguageManager.put(LanguageManager.args(), "stop_name", stopName), "radius", String.valueOf(radius))));
+                        } else if (radius < 0) { // No radius given or last arg wasn't a number
+                            player.sendMessage(plugin.getLanguageManager().getMessage("stop.create_success",
+                                    LanguageManager.put(LanguageManager.args(), "stop_name", stopName)));
+                        }
+                        // If radius was 0, message already sent.
                     } else {
-                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_exists", 
+                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_exists",
                                 LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
                     }
                     break;

@@ -8,27 +8,31 @@ import org.bukkit.Note;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+
 /**
  * 声音工具类，用于处理音符序列的播放
  */
 public class SoundUtil {
-    
+
     /**
      * 为指定玩家播放音符序列
-     * 
-     * @param plugin 插件实例
-     * @param player 目标玩家
+     *
+     * @param plugin       插件实例
+     * @param player       目标玩家
      * @param noteSequence 音符序列
      */
     public static void playNoteSequence(JavaPlugin plugin, Player player, List<String> noteSequence) {
         playNoteSequence(plugin, player, noteSequence, 0);
     }
-    
+
     /**
      * 为指定玩家播放音符序列，带初始延迟
-     * 
-     * @param plugin 插件实例
-     * @param player 目标玩家
+     *
+     * @param plugin       插件实例
+     * @param player       目标玩家
      * @param noteSequence 音符序列
      * @param initialDelay 整个音符序列的初始延迟（ticks）
      */
@@ -36,57 +40,39 @@ public class SoundUtil {
         if (player == null || !player.isOnline() || noteSequence == null || noteSequence.isEmpty()) {
             return;
         }
-        
-        long totalDelay = initialDelay; // 加入初始延迟
-        
-        for (String noteData : noteSequence) {
-            String[] parts = noteData.split(",");
-            if (parts.length < 4) {
-                continue; // 跳过格式不正确的音符
+        // For player-specific sounds, the sound location for scheduling is the player's current location.
+        // The actual sound playing action will also use the player's location at the moment of execution.
+        scheduleNoteLogic(plugin, noteSequence, initialDelay, player.getLocation(), (soundPlayerLocation, noteParams) -> {
+            // noteParams: type, tone, volume, instrumentName
+            String type = noteParams[0];
+            int tone = Integer.parseInt(noteParams[1]);
+            float volume = Float.parseFloat(noteParams[2]);
+            String instrumentName = noteParams[3];
+
+            if ("NOTE".equals(type)) {
+                playNote(player, tone, volume, instrumentName);
+            } else if ("CUSTOM".equals(type)) {
+                player.playSound(player.getLocation(), instrumentName, volume, getNoteFrequency(tone));
             }
-            
-            String type = parts[0].trim();
-            
-            try {
-                int tone = Integer.parseInt(parts[1].trim());
-                float volume = Float.parseFloat(parts[2].trim());
-                String instrumentName = parts[3].trim();
-                
-                // 获取延迟时间（如果提供）
-                int delay = (parts.length > 4) ? Integer.parseInt(parts[4].trim()) : 0;
-                totalDelay += delay;
-                
-                // 使用匿名内部类创建延迟任务
-                SchedulerUtil.regionRun(plugin, player.getLocation(), () -> {
-                    if ("NOTE".equals(type)) {
-                        playNote(player, tone, volume, instrumentName);
-                    } else if ("CUSTOM".equals(type)) {
-                        // 自定义声音的播放逻辑，如果需要
-                        player.playSound(player.getLocation(), instrumentName, volume, getNoteFrequency(tone));
-                    }
-                }, totalDelay, -1);
-            } catch (NumberFormatException e) {
-                // 忽略格式不正确的音符
-            }
-        }
+        });
     }
-    
+
     /**
      * 为特定位置播放音符序列（所有附近的玩家都能听到）
-     * 
-     * @param plugin 插件实例
-     * @param location 播放位置
+     *
+     * @param plugin       插件实例
+     * @param location     播放位置
      * @param noteSequence 音符序列
      */
     public static void playNoteSequenceAtLocation(JavaPlugin plugin, Location location, List<String> noteSequence) {
         playNoteSequenceAtLocation(plugin, location, noteSequence, 0);
     }
-    
+
     /**
      * 为特定位置播放音符序列（所有附近的玩家都能听到），带初始延迟
-     * 
-     * @param plugin 插件实例
-     * @param location 播放位置
+     *
+     * @param plugin       插件实例
+     * @param location     播放位置
      * @param noteSequence 音符序列
      * @param initialDelay 整个音符序列的初始延迟（ticks）
      */
@@ -94,41 +80,68 @@ public class SoundUtil {
         if (location == null || location.getWorld() == null || noteSequence == null || noteSequence.isEmpty()) {
             return;
         }
-        
-        long totalDelay = initialDelay; // 加入初始延迟
-        
+        scheduleNoteLogic(plugin, noteSequence, initialDelay, location, (soundPlayLocation, noteParams) -> {
+            // noteParams: type, tone, volume, instrumentName
+            String type = noteParams[0];
+            int tone = Integer.parseInt(noteParams[1]);
+            float volume = Float.parseFloat(noteParams[2]);
+            String instrumentName = noteParams[3];
+
+            if ("NOTE".equals(type)) {
+                playNoteAtLocation(soundPlayLocation, tone, volume, instrumentName);
+            } else if ("CUSTOM".equals(type)) {
+                soundPlayLocation.getWorld().playSound(soundPlayLocation, instrumentName, volume, getNoteFrequency(tone));
+            }
+        });
+    }
+
+    /**
+     * 核心逻辑，用于解析音符序列并调度播放任务
+     *
+     * @param plugin        插件实例
+     * @param noteSequence  音符序列
+     * @param initialDelay  初始延迟 (ticks)
+     * @param scheduleLoc   用于 SchedulerUtil.regionRun 的位置
+     * @param playFunction  实际执行播放的函数，接收播放位置和音符参数 (type, tone, volume, instrumentName)
+     */
+    private static void scheduleNoteLogic(JavaPlugin plugin, List<String> noteSequence, int initialDelay,
+                                          Location scheduleLoc, BiConsumer<Location, String[]> playFunction) {
+        long totalDelay = initialDelay;
+
         for (String noteData : noteSequence) {
             String[] parts = noteData.split(",");
             if (parts.length < 4) {
-                continue; // 跳过格式不正确的音符
+                plugin.getLogger().warning("Invalid note data format, skipping: " + noteData);
+                continue;
             }
-            
+
             String type = parts[0].trim();
-            
+            String toneStr = parts[1].trim();
+            String volumeStr = parts[2].trim();
+            String instrumentName = parts[3].trim();
+            int noteSpecificDelay = (parts.length > 4) ? Integer.parseInt(parts[4].trim()) : 0;
+
+            totalDelay += noteSpecificDelay;
+
+            // Final parameters for the lambda
+            final String[] noteParams = new String[]{type, toneStr, volumeStr, instrumentName};
+            final long currentTotalDelay = totalDelay; // Effectively final for lambda
+
             try {
-                int tone = Integer.parseInt(parts[1].trim());
-                float volume = Float.parseFloat(parts[2].trim());
-                String instrumentName = parts[3].trim();
-                
-                // 获取延迟时间（如果提供）
-                int delay = (parts.length > 4) ? Integer.parseInt(parts[4].trim()) : 0;
-                totalDelay += delay;
-                
-                // 使用匿名内部类创建延迟任务
-                SchedulerUtil.regionRun(plugin, location, ()->{
-                    if ("NOTE".equals(type)) {
-                        playNoteAtLocation(location, tone, volume, instrumentName);
-                    } else if ("CUSTOM".equals(type)) {
-                        // 自定义声音的播放逻辑，如果需要
-                        location.getWorld().playSound(location, instrumentName, volume, getNoteFrequency(tone));
-                    }
-                }, totalDelay, -1);
+                // Validate numeric parts before scheduling to avoid errors in the scheduled task
+                Integer.parseInt(toneStr);
+                Float.parseFloat(volumeStr);
+
+                SchedulerUtil.regionRun(plugin, scheduleLoc, () -> {
+                    playFunction.accept(scheduleLoc, noteParams);
+                }, currentTotalDelay, -1);
+
             } catch (NumberFormatException e) {
-                // 忽略格式不正确的音符
+                plugin.getLogger().warning("Invalid number format in note data, skipping: " + noteData + " - " + e.getMessage());
             }
         }
     }
-    
+
     /**
      * 为玩家播放单个音符
      */

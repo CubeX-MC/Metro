@@ -57,18 +57,28 @@ public class LocationUtil {
         }
     }
     
+import java.util.EnumSet;
+import java.util.Set;
+
     /**
      * 检查给定位置是否为铁轨方块
      */
+    private static final Set<Material> RAIL_MATERIALS = EnumSet.of(
+            Material.RAIL,
+            Material.POWERED_RAIL,
+            Material.DETECTOR_RAIL,
+            Material.ACTIVATOR_RAIL
+            // Add other rail types if necessary, e.g., from mods if this plugin supports them
+    );
+
     public static boolean isRail(Location location) {
         if (location == null) {
             return false;
         }
-        
         Block block = location.getBlock();
-        return block.getType().name().contains("RAIL");
+        return RAIL_MATERIALS.contains(block.getType());
     }
-    
+
     /**
      * 检查给定位置是否在铁轨上（包括当前位置和下方一格）
      */
