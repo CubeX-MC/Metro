@@ -178,10 +178,31 @@ public class Line {
      */
     public String getNextStopId(String currentStopId) {
         int index = orderedStopIds.indexOf(currentStopId);
-        if (index == -1 || index == orderedStopIds.size() - 1) {
+        if (index == -1) {
             return null;
         }
-        return orderedStopIds.get(index + 1);
+        if (isCircular()) {
+            if (orderedStopIds.size() <= 1) return null; // Not a valid circle
+            // For a circular line, the "next" of the last element (which is same as first) is the second element.
+            // Or, more generally, next of index `i` is `(i + 1) % (list.size() - 1)` if we ignore the duplicate end.
+            // Example: [A, B, C, A] size=4. Real elements = A, B, C. size for modulo = 3.
+            // current A (idx 0): next B (idx 1)
+            // current B (idx 1): next C (idx 2)
+            // current C (idx 2): next A (idx 0)
+            // current A (idx 3, duplicate): logically, this state should ideally map to A (idx 0) for consistency.
+            // If currentStopId is the *last* element in `orderedStopIds` (which is a duplicate of the first for circular lines),
+            // its next should be the second element.
+            if (index == orderedStopIds.size() - 1) { // If current is the duplicate last stop (e.g. A in A-B-C-A)
+                 // The next stop is the second stop in the sequence.
+                return orderedStopIds.get(1 % (orderedStopIds.size() -1)); // Handles A->A case returning A (index 0), A->B->A returning B (index 1)
+            }
+            return orderedStopIds.get((index + 1) % (orderedStopIds.size() -1));
+        } else {
+            if (index == orderedStopIds.size() - 1) {
+                return null; // Last stop of a non-circular line
+            }
+            return orderedStopIds.get(index + 1);
+        }
     }
     
     /**
@@ -192,9 +213,47 @@ public class Line {
      */
     public String getPreviousStopId(String currentStopId) {
         int index = orderedStopIds.indexOf(currentStopId);
-        if (index <= 0) {
+        if (index == -1) {
             return null;
         }
-        return orderedStopIds.get(index - 1);
+
+        if (isCircular()) {
+            if (orderedStopIds.size() <= 1) return null; // Not a valid circle for previous
+            // Example: [A, B, C, A], unique part is [A, B, C]
+            // If current is A (index 0), previous is C.
+            // If current is C (index 2), previous is B.
+            // If current is B (index 1), previous is A.
+            // If current is A (index 3, duplicate of first), treat as index 0.
+            if (index == 0 || index == orderedStopIds.size() - 1) { // First stop or its duplicate at the end
+                return orderedStopIds.get(orderedStopIds.size() - 2); // The stop before the duplicate (e.g. C in A-B-C-A)
+            }
+            return orderedStopIds.get(index - 1);
+        } else {
+            if (index == 0) {
+                return null; // First stop of a non-circular line
+            }
+            return orderedStopIds.get(index - 1);
+        }
+    }
+
+    /**
+     * 检查线路是否为环线
+     * 环线条件：停靠区列表不为空，首尾停靠区ID相同，并且至少有3个站点以形成一个有意义的环（例如 A->B->A）
+     * A->A is not a meaningful loop in this context. A->B->A means orderedStopIds would be [A, B, A] (size 3)
+     * @return 如果是环线则返回true
+     */
+    private boolean isCircularInternal() {
+        if (orderedStopIds == null || orderedStopIds.isEmpty() || orderedStopIds.size() < 3) { // e.g. [A,B,A] is minimum
+            return false;
+        }
+        return orderedStopIds.get(0).equals(orderedStopIds.get(orderedStopIds.size() - 1));
+    }
+
+    /**
+     * 公开的检查线路是否为环线的方法
+     * @return 如果是环线则返回true
+     */
+    public boolean isCircular() {
+        return isCircularInternal();
     }
 } 

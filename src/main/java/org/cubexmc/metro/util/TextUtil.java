@@ -24,7 +24,7 @@ public class TextUtil {
      * @return 替换后的文本
      */
     public static String replacePlaceholders(String text, Line line, Stop stop, Stop lastStop, Stop nextStop, 
-                                           Stop terminalStop, LineManager lineManager) {
+                                           Stop terminalStop, LineManager lineManager, StopManager stopManager) {
         if (text == null) {
             return "";
         }
@@ -36,10 +36,34 @@ public class TextUtil {
             result = result.replace("{line}", line.getName());
             result = result.replace("{line_id}", line.getId());
             result = result.replace("{line_color_code}", line.getColor());
-            // Replace terminus_name placeholder, fallback to terminalStop name if no custom terminus set
+
             String termName = line.getTerminusName();
-            if (termName == null) {
-                termName = (terminalStop != null ? terminalStop.getName() : "");
+            // If terminusName is not explicitly set OR if it's empty:
+            if (termName == null || termName.isEmpty()) {
+                if (line.isCircular()) {
+                    // For circular lines without an explicit terminus name, use the next stop's name.
+                    // 'stop' is the current stop in this context.
+                    if (stop != null && stopManager != null) {
+                        String nextStopIdForCircular = line.getNextStopId(stop.getId());
+                        if (nextStopIdForCircular != null) {
+                            Stop actualNextStopForCircular = stopManager.getStop(nextStopIdForCircular);
+                            if (actualNextStopForCircular != null) {
+                                termName = actualNextStopForCircular.getName();
+                            }
+                        }
+                    }
+                    // Fallback for circular if next stop name couldn't be determined
+                    if (termName == null || termName.isEmpty()) {
+                        termName = line.getName(); // Default to line name for circular if next stop fails
+                    }
+                } else {
+                    // For non-circular lines, use the statically defined terminalStop's name.
+                    termName = (terminalStop != null ? terminalStop.getName() : "");
+                }
+            }
+            // Final fallback if termName is still not set (e.g. non-circular and no terminalStop)
+            if (termName == null || termName.isEmpty()) {
+                termName = line.getName(); // Default to line name
             }
             result = result.replace("{terminus_name}", termName);
             
@@ -155,8 +179,10 @@ public class TextUtil {
      * @return 替换后的文本
      */
     public static String replacePlaceholders(String text, Line line, Stop stop) {
-        // 由于LineManager是必须的，但我们不能在这直接获取，所以简化版本不支持换乘信息替换
-        return replacePlaceholders(text, line, stop, null, null, null, null);
+        // Pass null for stopManager in simplified versions if it's not available/relevant for them
+        // However, the primary logic for terminus_name now might need stopManager.
+        // For these simpler overloads, the dynamic terminus for circular lines might not work if stopManager is null.
+        return replacePlaceholders(text, line, stop, null, null, null, null, null);
     }
     
     /**
@@ -170,8 +196,8 @@ public class TextUtil {
      * @return 替换后的文本
      */
     public static String replacePlaceholders(String text, Line line, Stop stop, Stop lastStop, Stop nextStop) {
-        // 由于LineManager是必须的，但我们不能在这直接获取，所以简化版本不支持换乘信息替换
-        return replacePlaceholders(text, line, stop, lastStop, nextStop, null, null);
+        // Pass null for stopManager
+        return replacePlaceholders(text, line, stop, lastStop, nextStop, null, null, null);
     }
     
     /**
@@ -186,8 +212,8 @@ public class TextUtil {
      * @return 替换后的文本
      */
     public static String replacePlaceholders(String text, Line line, Stop stop, Stop lastStop, Stop nextStop, Stop terminalStop) {
-        // 由于LineManager是必须的，但我们不能在这直接获取，所以简化版本不支持换乘信息替换
-        return replacePlaceholders(text, line, stop, lastStop, nextStop, terminalStop, null);
+        // Pass null for stopManager
+        return replacePlaceholders(text, line, stop, lastStop, nextStop, terminalStop, null, null);
     }
     
     /**
