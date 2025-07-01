@@ -50,15 +50,15 @@ public class SchedulerUtil {
             GlobalRegionScheduler globbalScheduler = server.getGlobalRegionScheduler();
             // Convert Runnable to Consumer<ScheduledTask> for Folia API
             Consumer<ScheduledTask> foliaTask = scheduledTask -> task.run();
-            if (period < 0) {
+            if (period <= 0) {
                 // 只执行一次的任务
                 if (delay == 0)
                     return globbalScheduler.run(plugin, foliaTask);
                 else
                     return globbalScheduler.runDelayed(plugin, foliaTask, delay);
             } else {
-                // 重复执行的任务
-                return globbalScheduler.runAtFixedRate(plugin, foliaTask, delay, period);
+                // 立即执行一次，然后重复执行的任务
+                return globbalScheduler.runAtFixedRate(plugin, foliaTask, Math.max(1, delay), period);
             }
         } else {
             if (period < 0) {
@@ -109,38 +109,35 @@ public class SchedulerUtil {
             EntityScheduler entityScheduler = entity.getScheduler();
             // Convert task to Consumer<ScheduledTask> for Folia API
             Consumer<ScheduledTask> foliaTask;
-            if (task instanceof Runnable) {
+            if (task instanceof Runnable)
                 foliaTask = scheduledTask -> ((Runnable) task).run();
-            } else if (task instanceof Consumer) {
+            else if (task instanceof Consumer)
                 foliaTask = (Consumer<ScheduledTask>) task;
-            } else {
+            else
                 throw new IllegalArgumentException("Task must be either Runnable or Consumer<ScheduledTask>");
-            }
             
             // Entity retired callback - 当实体不存在时的回调
             Runnable retiredCallback = () -> {
                 plugin.getLogger().fine("Entity scheduler task cancelled: entity no longer exists");
             };
             
-            if (period < 0) {
+            if (period <= 0) {
                 // 只执行一次的任务
-                if (delay == 0) {
+                if (delay == 0)
                     return entityScheduler.run(plugin, foliaTask, retiredCallback);
-                } else {
+                else
                     return entityScheduler.runDelayed(plugin, foliaTask, retiredCallback, delay);
-                }
             } else {
                 // 重复执行的任务
-                return entityScheduler.runAtFixedRate(plugin, foliaTask, retiredCallback, delay, period);
+                return entityScheduler.runAtFixedRate(plugin, foliaTask, retiredCallback, Math.max(1, delay), period);
             }
         } else {
-            if (period < 0) {
+            if (period <= 0) {
                 // 只执行一次的任务
-                if (delay == 0) {
+                if (delay == 0)
                     return Bukkit.getScheduler().runTask(plugin, (Runnable) task);
-                } else {
+                else
                     return Bukkit.getScheduler().runTaskLater(plugin, (Runnable) task, delay);
-                }
             } else {
                 // 重复执行的任务
                 return Bukkit.getScheduler().runTaskTimer(plugin, (Runnable) task, delay, period);
@@ -164,25 +161,23 @@ public class SchedulerUtil {
             // Convert Runnable to Consumer<ScheduledTask> for Folia API
             Consumer<ScheduledTask> foliaTask = scheduledTask -> task.run();
 
-            if (period < 0) {
+            if (period <= 0) {
                 // 只执行一次的任务
-                if (delay == 0) {
+                if (delay == 0)
                     return regionScheduler.run(plugin, location, foliaTask);
-                } else {
+                else
                     return regionScheduler.runDelayed(plugin, location, foliaTask, delay);
-                }
             } else {
                 // 重复执行的任务
-                return regionScheduler.runAtFixedRate(plugin, location, foliaTask, delay, period);
+                return regionScheduler.runAtFixedRate(plugin, location, foliaTask, Math.max(1, delay), period);
             }
         } else {
-            if (period < 0) {
+            if (period <= 0) {
                 // 只执行一次的任务
-                if (delay == 0) {
+                if (delay == 0)
                     return Bukkit.getScheduler().runTask(plugin, task);
-                } else {
+                else
                     return Bukkit.getScheduler().runTaskLater(plugin, task, delay);
-                }
             } else {
                 // 重复执行的任务
                 return Bukkit.getScheduler().runTaskTimer(plugin, task, delay, period);
