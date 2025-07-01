@@ -50,7 +50,7 @@ public class SchedulerUtil {
         delay = Math.max(0, delay);
         if (isFolia()) {
             Consumer<ScheduledTask> foliaTask = st -> task.run();
-            return foliaScheduler.schedule(plugin, foliaTask, delay, period);
+            return foliaScheduler.schedule(plugin, foliaTask, Math.max(1, delay), period);
         } else {
             return bukkitScheduler.schedule(plugin, task, delay, period);
         }
@@ -82,7 +82,7 @@ public class SchedulerUtil {
                 (p, t, d, r) -> {
                     GlobalRegionScheduler scheduler = Bukkit.getServer().getGlobalRegionScheduler();
                     if (r < 0) return (d == 0) ? scheduler.run(p, t) : scheduler.runDelayed(p, t, d);
-                    return scheduler.runAtFixedRate(p, t, d, r);
+                    return scheduler.runAtFixedRate(p, t, Math.max(1, d), r);
                 },
                 (p, t, d, r) -> {
                     if (r < 0) return (d == 0) ? Bukkit.getScheduler().runTask(p, t) : Bukkit.getScheduler().runTaskLater(p, t, d);
@@ -109,7 +109,7 @@ public class SchedulerUtil {
                 (p, t, d, r) -> {
                     EntityScheduler scheduler = entity.getScheduler();
                     if (r < 0) return (d == 0) ? scheduler.run(p, t, retiredCallback) : scheduler.runDelayed(p, t, retiredCallback, d);
-                    return scheduler.runAtFixedRate(p, t, retiredCallback, d, r);
+                    return scheduler.runAtFixedRate(p, t, retiredCallback, Math.max(1, d), r);
                 },
                 (p, t, d, r) -> { // Bukkit doesn't have a retired callback for entity tasks in the same way
                     if (r < 0) return (d == 0) ? Bukkit.getScheduler().runTask(p, t) : Bukkit.getScheduler().runTaskLater(p, t, d);
@@ -133,7 +133,7 @@ public class SchedulerUtil {
                 (p, t, d, r) -> {
                     RegionScheduler scheduler = Bukkit.getServer().getRegionScheduler();
                     if (r < 0) return (d == 0) ? scheduler.run(p, location, t) : scheduler.runDelayed(p, location, t, d);
-                    return scheduler.runAtFixedRate(p, location, t, d, r);
+                    return scheduler.runAtFixedRate(p, location, t, Math.max(1, d), r);
                 },
                 (p, t, d, r) -> {
                     if (r < 0) return (d == 0) ? Bukkit.getScheduler().runTask(p, t) : Bukkit.getScheduler().runTaskLater(p, t, d);

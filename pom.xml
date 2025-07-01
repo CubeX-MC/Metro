@@ -6,7 +6,7 @@
 
     <groupId>org.cubexmc</groupId>
     <artifactId>metro</artifactId>
-    <version>1.0.8</version>
+    <version>1.0.8J</version>
     <packaging>jar</packaging>
 
     <name>metro</name>
@@ -45,7 +45,9 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>2.3.1</version>
-                <!-- Removed hardcoded outputDirectory. JAR will be created in target/ by default. -->
+                <configuration>
+                    <outputDirectory>D:\Downloads\杰克家工作\MC server\test server\plugins</outputDirectory>
+                </configuration>
             </plugin>
         </plugins>
         <resources>
