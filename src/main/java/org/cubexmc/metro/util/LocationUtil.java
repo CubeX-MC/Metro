@@ -5,6 +5,8 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import java.util.EnumSet;
+import java.util.Set;
 
 /**
  * 位置工具类，用于位置数据的序列化和反序列化
@@ -56,9 +58,6 @@ public class LocationUtil {
             return null;
         }
     }
-    
-import java.util.EnumSet;
-import java.util.Set;
 
     /**
      * 检查给定位置是否为铁轨方块

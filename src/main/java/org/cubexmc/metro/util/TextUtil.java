@@ -3,6 +3,7 @@ package org.cubexmc.metro.util;
 import java.util.List;
 
 import org.cubexmc.metro.manager.LineManager;
+import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Stop;
 

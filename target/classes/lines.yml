@@ -3,15 +3,37 @@
 # 格式:
 # line_id:
 #   name: 线路显示名称
-#   ordered_platform_ids: 
+#   ordered_platform_ids:  (注: 在新版本中建议使用 ordered_stop_ids, 功能相同)
 #     - platform_id1
 #     - platform_id2
 #     ...
+#   color: "&a"  (可选, 线路颜色代码, 默认为 &f 白色)
+#   terminus_name: "自定义终点站显示名" (可选, 用于信息展示)
+#
+# 环线 (Circular Routes):
+# 要定义一条环线，请确保 ordered_stop_ids 列表中的第一个和最后一个 stop_id 相同。
+# 例如: [stopA, stopB, stopC, stopA]
+# 对于环线:
+#   - 如果设置了 terminus_name, 则会使用该名称。
+#   - 如果未设置 terminus_name, 系统将自动使用下一站的名称作为方向指引（例如 “开往 [下一站名称] 方向”）。
+#   - 至少需要定义三个站点ID（例如 A -> B -> A）才能构成有效的环线。
 #
 # 示例:
 # line1:
 #   name: 1号线 - 东西向
-#   ordered_platform_ids:
+#   ordered_stop_ids: # 旧版 ordered_platform_ids 仍可兼容
 #     - east_station_north_platform
 #     - central_station_east_platform
-#     - west_station_south_platform 
+#     - west_station_south_platform
+#   color: "&e"
+#   terminus_name: "西站"
+#
+# line_circle_example:
+#   name: 环线示例
+#   ordered_stop_ids:
+#     - stop_alpha
+#     - stop_beta
+#     - stop_gamma
+#     - stop_alpha # 第一个和最后一个ID相同，构成环线
+#   color: "&b"
+#   # terminus_name: "内环" # 如果不设置此项，则会显示开往下一站
