@@ -57,9 +57,12 @@ line:
   setmaxspeed_invalid: "&cValor de velocidad inválido. La velocidad debe ser un número positivo."
   addstop_success: "&aÁrea de parada {stop_id} añadida exitosamente a línea {line_id}"
   addstop_fail: "&cFallo al añadir área de parada, verifica si la ID de línea y la ID de área de parada existen."
+  addstop_circular_invalid_index: "&cNo puedes añadir o mover una parada al final de una línea circular."
   delstop_success: "&aÁrea de parada {stop_id} eliminada exitosamente de línea {line_id}"
   delstop_fail: "&cFallo al eliminar área de parada, verifica si la ID de línea y la ID de área de parada existen."
-  
+  made_circular: "&aLínea {line_id} es ahora una línea circular."
+  made_normal: "&aLínea {line_id} ya no es una línea circular."
+
   list_empty: "&eNo hay líneas disponibles."
   list_header: "&a===== Lista de Líneas ====="
   list_format: "&6{line_name}&f: &e{line_id}"

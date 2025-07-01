@@ -36,10 +36,16 @@ public class TextUtil {
             result = result.replace("{line}", line.getName());
             result = result.replace("{line_id}", line.getId());
             result = result.replace("{line_color_code}", line.getColor());
-            // Replace terminus_name placeholder, fallback to terminalStop name if no custom terminus set
+            
             String termName = line.getTerminusName();
-            if (termName == null) {
-                termName = (terminalStop != null ? terminalStop.getName() : "");
+            if (line.isCircular()) {
+                if (termName == null || termName.isEmpty()) {
+                    termName = (nextStop != null ? nextStop.getName() : "");
+                }
+            } else {
+                if (termName == null || termName.isEmpty()) {
+                    termName = (terminalStop != null ? terminalStop.getName() : "");
+                }
             }
             result = result.replace("{terminus_name}", termName);
             

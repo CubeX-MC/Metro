@@ -412,6 +412,8 @@ public class TrainMovementTask implements Runnable {
      * @param isNewlySpawned 矿车是否刚刚生成，如果是，则不会把目的地设置为当前站点
      */
     private void handleArrivalAtStation(boolean isNewlySpawned) {
+        // this.currentState = TrainState.STOPPED_AT_STATION;
+
         // 已到达停车点
         
         // 当矿车不是刚刚生成时，才更新当前站点ID
@@ -442,8 +444,9 @@ public class TrainMovementTask implements Runnable {
     private void handleDeparture() {
         // 获取下一站信息
         targetStopId = line.getNextStopId(currentStopId);
+
+        // 如果没有下一个停靠区，则为终点站
         if (targetStopId == null) {
-            plugin.getLogger().warning("无法启动列车，没有下一站: 当前站=" + currentStopId);
             return;
         }
         
@@ -453,7 +456,6 @@ public class TrainMovementTask implements Runnable {
         Stop nextStop = stopManager.getStop(targetStopId);
         
         if (currentStop == null || nextStop == null) {
-            plugin.getLogger().warning("无法启动列车，站点信息无效");
             return;
         }
         
@@ -471,7 +473,9 @@ public class TrainMovementTask implements Runnable {
         // 更新状态为站内移动
         currentState = TrainState.MOVING_IN_STATION;
         updateScoreboardBasedOnState();
-    }    /**
+    }
+    
+    /**
      * 安排下一次发车
      */
     private void scheduleNextDeparture() {
@@ -486,7 +490,9 @@ public class TrainMovementTask implements Runnable {
                 handlePassengerExit();
             }
         }, plugin.getCartDepartureDelay(), -1); // 转换为tick单位
-    }    /**
+    }
+    
+    /**
      * 处理终点站逻辑
      */
     private void handleTerminalStation() {
@@ -921,7 +927,6 @@ public class TrainMovementTask implements Runnable {
         LineManager lineManager = plugin.getLineManager();
         Line line = lineManager.getLine(lineId);
         if (line == null) {
-            plugin.getLogger().warning("无法启动列车，线路不存在: " + lineId);
             return;
         }
         

@@ -57,8 +57,11 @@ line:
   setmaxspeed_invalid: "&cInvalid speed value. Speed must be a positive number."
   addstop_success: "&aSuccessfully added stop {stop_id} to line {line_id}"
   addstop_fail: "&cFailed to add stop, please check if line ID and stop ID exist."
+  addstop_circular_invalid_index: "&cYou cannot add or move a stop to the end of a circular line."
   delstop_success: "&aSuccessfully removed stop {stop_id} from line {line_id}"
   delstop_fail: "&cFailed to remove stop, please check if line ID and stop ID exist."
+  made_circular: "&aLine {line_id} is now a circular line."
+  made_normal: "&aLine {line_id} is no longer a circular line."
   
   list_empty: "&eNo lines available."
   list_header: "&a===== Line List ====="

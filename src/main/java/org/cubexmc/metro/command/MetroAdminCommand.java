@@ -218,6 +218,12 @@ public class MetroAdminCommand implements CommandExecutor {
                     
                     lineId = args[2];
                     stopId = args[3];
+
+                    Line lineToAdd = lineManager.getLine(lineId);
+                    if (lineToAdd == null) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_fail"));
+                        return true;
+                    }
                     
                     int index = -1;
                     if (args.length > 4) {
@@ -228,11 +234,24 @@ public class MetroAdminCommand implements CommandExecutor {
                             return true;
                         }
                     }
+
+                    if (lineToAdd.isCircular() && index != -1 && index >= lineToAdd.getOrderedStopIds().size() - 1) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_circular_invalid_index"));
+                        return true;
+                    }
+
+                    boolean wasCircular = lineToAdd.isCircular();
                     
                     if (lineManager.addStopToLine(lineId, stopId, index)) {
                         player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_success", 
                                 LanguageManager.put(LanguageManager.put(LanguageManager.args(), 
                                         "stop_id", stopId), "line_id", lineId)));
+                        
+                        Line updatedLine = lineManager.getLine(lineId);
+                        if (!wasCircular && updatedLine.isCircular()) {
+                            player.sendMessage(plugin.getLanguageManager().getMessage("line.made_circular",
+                                    LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
+                        }
                     } else {
                         player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_fail"));
                     }
@@ -246,11 +265,24 @@ public class MetroAdminCommand implements CommandExecutor {
                     
                     lineId = args[2];
                     stopId = args[3];
+
+                    Line lineToDel = lineManager.getLine(lineId);
+                    if (lineToDel == null) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("line.delstop_fail"));
+                        return true;
+                    }
+                    boolean wasCircularBeforeDelete = lineToDel.isCircular();
                     
                     if (lineManager.removeStopFromLine(lineId, stopId)) {
                         player.sendMessage(plugin.getLanguageManager().getMessage("line.delstop_success", 
                                 LanguageManager.put(LanguageManager.put(LanguageManager.args(), 
-                                        "line_id", lineId), "stop_id", stopId)));
+                                        "stop_id", stopId), "line_id", lineId)));
+
+                        Line updatedLine = lineManager.getLine(lineId);
+                        if (wasCircularBeforeDelete && !updatedLine.isCircular()) {
+                            player.sendMessage(plugin.getLanguageManager().getMessage("line.made_normal",
+                                    LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
+                        }
                     } else {
                         player.sendMessage(plugin.getLanguageManager().getMessage("line.delstop_fail"));
                     }

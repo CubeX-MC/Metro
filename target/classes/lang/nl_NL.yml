@@ -57,9 +57,12 @@ line:
   setmaxspeed_invalid: "&cOngeldige snelheidswaarde. Snelheid moet een positief getal zijn."
   addstop_success: "&aStopgebied {stop_id} succesvol toegevoegd aan lijn {line_id}"
   addstop_fail: "&cToevoegen van stopgebied mislukt, controleer of lijn ID en stopgebied ID bestaan."
+  addstop_circular_invalid_index: "&cJe kunt een stopgebied niet aan het einde van een cirkelvormige lijn toevoegen."
   delstop_success: "&aStopgebied {stop_id} succesvol verwijderd van lijn {line_id}"
   delstop_fail: "&cVerwijderen van stopgebied mislukt, controleer of lijn ID en stopgebied ID bestaan."
-  
+  made_circular: "&aLijn {line_id} is nu een cirkelvormige lijn."
+  made_normal: "&aLijn {line_id} is geen cirkelvormige lijn meer."
+
   list_empty: "&eGeen lijnen beschikbaar."
   list_header: "&a===== Lijnlijst ====="
   list_format: "&6{line_name}&f: &e{line_id}"
