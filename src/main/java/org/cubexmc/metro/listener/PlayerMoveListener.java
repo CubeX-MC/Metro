@@ -219,7 +219,7 @@ public class PlayerMoveListener implements Listener {
                         TextComponent.fromLegacyText(ChatColor.translateAlternateColorCodes('&', finalActionbar))
                     );
                 }
-            }, 0L, 10L);
+            }, 0L, 20L);
             actionBarTasks.put(playerId, actionBarTaskId);
 
             Object titleTaskId = SchedulerUtil.globalRun(plugin, new Runnable() {
@@ -301,7 +301,7 @@ public class PlayerMoveListener implements Listener {
                             );
                             count++;
                         }
-                    }, 0L, 10L);
+                    }, 0L, 20L);
                     actionBarTasks.put(playerId, actionBarTaskId);
                 }
             }
