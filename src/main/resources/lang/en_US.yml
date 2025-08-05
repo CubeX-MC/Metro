@@ -30,7 +30,7 @@ line:
   help_setterminus: "&6/m line setterminus <line_id> <direction_name> &f- Set line terminus direction name"
   help_setmaxspeed: "&6/m line setmaxspeed <line_id> <speed> &f- Set line maximum speed"
   help_addstop: "&6/m line addstop <line_id> <stop_id> [index] &f- Add stop to line"
-  help_removestop: "&6/m line removestop <line_id> <stop_id> &f- Remove stop from line"
+  help_delstop: "&6/m line delstop <line_id> <stop_id> &f- Remove stop from line"
   help_stops: "&6/m line stops <line_id> &f- List all stops on line"
   help_rename: "&6/m line rename <line_id> <new_name> &f- Rename line display name"
   help_info: "&6/m line info <line_id> &f- View line detailed information"
