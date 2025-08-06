@@ -149,12 +149,12 @@ public class LineManager {
      * @param stopId 停靠区ID
      * @return 是否成功移除
      */
-    public boolean delstopFromLine(String lineId, String stopId) {
+    public boolean delStopFromLine(String lineId, String stopId) {
         Line line = lines.get(lineId);
         if (line == null) {
             return false;
         }
-        line.delstop(stopId);
+        line.delStop(stopId);
         saveConfig();
         return true;
     }
@@ -164,10 +164,10 @@ public class LineManager {
      * 
      * @param stopId 要移除的停靠区ID
      */
-    public void delstopFromAllLines(String stopId) {
+    public void delStopFromAllLines(String stopId) {
         for (Line line : lines.values()) {
             if (line.containsStop(stopId)) {
-                line.delstop(stopId);
+                line.delStop(stopId);
             }
         }
         saveConfig();

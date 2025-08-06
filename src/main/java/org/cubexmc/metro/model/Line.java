@@ -146,7 +146,7 @@ public class Line {
      * 
      * @param stopId 停靠区ID
      */
-    public void delstop(String stopId) {
+    public void delStop(String stopId) {
         orderedStopIds.remove(stopId);
     }
     

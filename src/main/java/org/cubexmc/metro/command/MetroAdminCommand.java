@@ -247,7 +247,7 @@ public class MetroAdminCommand implements CommandExecutor {
                     lineId = args[2];
                     stopId = args[3];
                     
-                    if (lineManager.delstopFromLine(lineId, stopId)) {
+                    if (lineManager.delStopFromLine(lineId, stopId)) {
                         player.sendMessage(plugin.getLanguageManager().getMessage("line.delstop_success", 
                                 LanguageManager.put(LanguageManager.put(LanguageManager.args(), 
                                         "line_id", lineId), "stop_id", stopId)));

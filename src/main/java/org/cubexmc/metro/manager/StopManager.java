@@ -123,7 +123,7 @@ public class StopManager {
         
         // 从所有线路中移除
         LineManager lineManager = plugin.getLineManager();
-        lineManager.delstopFromAllLines(stopId);
+        lineManager.delStopFromAllLines(stopId);
         
         // 移除位置映射
         if (stop.getStopPointLocation() != null) {
