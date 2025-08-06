@@ -57,8 +57,11 @@ line:
   setmaxspeed_invalid: "&c无效的速度值。速度必须为正数。"
   addstop_success: "&a成功将停靠区 {stop_id} 添加到线路 {line_id}"
   addstop_fail: "&c添加停靠区失败，请检查线路ID和停靠区ID是否存在。"
+  addstop_circular_invalid_index: "&c你不能将停靠区添加到环线的末尾。"
   delstop_success: "&a成功从线路 {line_id} 中移除停靠区 {stop_id}"
   delstop_fail: "&c移除停靠区失败，请检查线路ID和停靠区ID是否存在。"
+  made_circular: "&a线路 {line_id} 现在是一条环线。"
+  made_normal: "&a线路 {line_id} 现在不是一条环线。"
   
   list_empty: "&e暂无线路。"
   list_header: "&a===== 线路列表 ====="

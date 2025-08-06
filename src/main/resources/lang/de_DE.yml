@@ -30,7 +30,7 @@ line:
   help_setterminus: "&6/m line setterminus <line_id> <richtungsname> &f- Endstation-Richtungsname festlegen"
   help_setmaxspeed: "&6/m line setmaxspeed <line_id> <geschwindigkeit> &f- Maximale Liniengeschwindigkeit festlegen"
   help_addstop: "&6/m line addstop <line_id> <stop_id> [index] &f- Haltebereich zur Linie hinzufügen"
-  help_delstop: "&6/m line delstop <line_id> <stop_id> &f- Haltebereich von Linie entfernen"
+  help_removestop: "&6/m line delstop <line_id> <stop_id> &f- Haltebereich von Linie entfernen"
   help_stops: "&6/m line stops <line_id> &f- Alle Haltebereiche der Linie auflisten"
   help_rename: "&6/m line rename <line_id> <neuer_name> &f- Linien-Anzeigename umbenennen"
   help_info: "&6/m line info <line_id> &f- Detaillierte Linieninformationen anzeigen"
@@ -57,9 +57,12 @@ line:
   setmaxspeed_invalid: "&cUngültiger Geschwindigkeitswert. Geschwindigkeit muss eine positive Zahl sein."
   addstop_success: "&aHaltebereich {stop_id} erfolgreich zur Linie {line_id} hinzugefügt"
   addstop_fail: "&cHinzufügen des Haltebereichs fehlgeschlagen, prüfe ob Linien-ID und Haltebereich-ID existieren."
+  addstop_circular_invalid_index: "&cDu kannst einen Haltebereich nicht am Ende einer Kreislinie hinzufügen."
   delstop_success: "&aHaltebereich {stop_id} erfolgreich von Linie {line_id} entfernt"
   delstop_fail: "&cEntfernen des Haltebereichs fehlgeschlagen, prüfe ob Linien-ID und Haltebereich-ID existieren."
-  
+  made_circular: "&aLinie {line_id} ist jetzt eine Kreislinie."
+  made_normal: "&aLinie {line_id} ist keine Kreislinie mehr."
+
   list_empty: "&eKeine Linien verfügbar."
   list_header: "&a===== Linienliste ====="
   list_format: "&6{line_name}&f: &e{line_id}"

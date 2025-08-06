@@ -122,6 +122,18 @@ public class Line {
     }
     
     /**
+     * 检查线路是否为环线
+     *
+     * @return 是否为环线
+     */
+    public boolean isCircular() {
+        if (orderedStopIds.isEmpty() || orderedStopIds.size() < 2) {
+            return false;
+        }
+        return orderedStopIds.get(0).equals(orderedStopIds.get(orderedStopIds.size() - 1));
+    }
+    
+    /**
      * 向线路添加停靠区
      * 
      * @param stopId 停靠区ID
@@ -129,12 +141,19 @@ public class Line {
      */
     public void addStop(String stopId, int index) {
         // 先移除，防止重复
-        if (orderedStopIds.contains(stopId)) {
+        boolean isMakingCircular = !isCircular() &&
+                !orderedStopIds.isEmpty() &&
+                orderedStopIds.get(0).equals(stopId) &&
+                (index == -1 || index == orderedStopIds.size());
+
+        if (orderedStopIds.contains(stopId) && !isMakingCircular) {
             orderedStopIds.remove(stopId);
         }
         
         // 添加到指定位置或末尾
-        if (index >= 0 && index < orderedStopIds.size()) {
+        if (isCircular() && index == -1) {
+            orderedStopIds.add(orderedStopIds.size() - 1, stopId);
+        } else if (index >= 0 && index < orderedStopIds.size()) {
             orderedStopIds.add(index, stopId);
         } else {
             orderedStopIds.add(stopId);
@@ -178,8 +197,20 @@ public class Line {
      */
     public String getNextStopId(String currentStopId) {
         int index = orderedStopIds.indexOf(currentStopId);
-        if (index == -1 || index == orderedStopIds.size() - 1) {
+        if (index == -1) {
             return null;
+        }
+
+        if (index == orderedStopIds.size() - 1) {
+            if (isCircular()) {
+                if (orderedStopIds.size() > 1) {
+                    return orderedStopIds.get(1);
+                } else {
+                    return orderedStopIds.get(0);
+                }
+            } else {
+                return null;
+            }
         }
         return orderedStopIds.get(index + 1);
     }
@@ -193,6 +224,13 @@ public class Line {
     public String getPreviousStopId(String currentStopId) {
         int index = orderedStopIds.indexOf(currentStopId);
         if (index <= 0) {
+            if (isCircular()) {
+                if (orderedStopIds.size() > 2) {
+                    return orderedStopIds.get(orderedStopIds.size() - 2);
+                } else if (orderedStopIds.size() == 2) {
+                    return orderedStopIds.get(0);
+                }
+            }
             return null;
         }
         return orderedStopIds.get(index - 1);

@@ -57,9 +57,12 @@ line:
   setmaxspeed_invalid: "&cUngültiger Geschwindigkeitswert. Geschwindigkeit muss eine positive Zahl sein."
   addstop_success: "&aHaltebereich {stop_id} erfolgreich zur Linie {line_id} hinzugefügt"
   addstop_fail: "&cHinzufügen des Haltebereichs fehlgeschlagen, prüfe ob Linien-ID und Haltebereich-ID existieren."
+  addstop_circular_invalid_index: "&cDu kannst einen Haltebereich nicht am Ende einer Kreislinie hinzufügen."
   delstop_success: "&aHaltebereich {stop_id} erfolgreich von Linie {line_id} entfernt"
   delstop_fail: "&cEntfernen des Haltebereichs fehlgeschlagen, prüfe ob Linien-ID und Haltebereich-ID existieren."
-  
+  made_circular: "&aLinie {line_id} ist jetzt eine Kreislinie."
+  made_normal: "&aLinie {line_id} ist keine Kreislinie mehr."
+
   list_empty: "&eKeine Linien verfügbar."
   list_header: "&a===== Linienliste ====="
   list_format: "&6{line_name}&f: &e{line_id}"
