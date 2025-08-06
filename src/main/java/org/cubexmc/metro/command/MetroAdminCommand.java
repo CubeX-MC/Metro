@@ -273,7 +273,7 @@ public class MetroAdminCommand implements CommandExecutor {
                     }
                     boolean wasCircularBeforeDelete = lineToDel.isCircular();
                     
-                    if (lineManager.removeStopFromLine(lineId, stopId)) {
+                    if (lineManager.delStopFromLine(lineId, stopId)) {
                         player.sendMessage(plugin.getLanguageManager().getMessage("line.delstop_success", 
                                 LanguageManager.put(LanguageManager.put(LanguageManager.args(), 
                                         "stop_id", stopId), "line_id", lineId)));
@@ -369,7 +369,7 @@ public class MetroAdminCommand implements CommandExecutor {
                             LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName())));
                     return true;
                 }
-                player.teleportAsync(stop.getStopPointLocation()).thenAccept(success -> {
+                player.teleportAsync(stop.getStopPointLocation()).thenAccept((success) -> {
                     if (success) {
                         player.sendMessage(plugin.getLanguageManager().getMessage("stop.tp_success", 
                                 LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName())));
@@ -895,7 +895,7 @@ public class MetroAdminCommand implements CommandExecutor {
         player.sendMessage(plugin.getLanguageManager().getMessage("line.help_setterminus"));
         player.sendMessage(plugin.getLanguageManager().getMessage("line.help_setmaxspeed"));
         player.sendMessage(plugin.getLanguageManager().getMessage("line.help_addstop"));
-        player.sendMessage(plugin.getLanguageManager().getMessage("line.help_removestop"));
+        player.sendMessage(plugin.getLanguageManager().getMessage("line.help_delstop"));
         player.sendMessage(plugin.getLanguageManager().getMessage("line.help_stops"));
     }
     
