@@ -30,7 +30,7 @@ line:
   help_setterminus: "&6/m line setterminus <line_id> <richtingnaam> &f- Stel lijn eindstation richtingnaam in"
   help_setmaxspeed: "&6/m line setmaxspeed <line_id> <snelheid> &f- Stel lijn maximumsnelheid in"
   help_addstop: "&6/m line addstop <line_id> <stop_id> [index] &f- Voeg stopgebied toe aan lijn"
-  help_removestop: "&6/m line removestop <line_id> <stop_id> &f- Verwijder stopgebied van lijn"
+  help_delstop: "&6/m line delstop <line_id> <stop_id> &f- Verwijder stopgebied van lijn"
   help_stops: "&6/m line stops <line_id> &f- Lijst alle stopgebieden op lijn"
   help_rename: "&6/m line rename <line_id> <nieuwe_naam> &f- Hernoem lijn weergavenaam"
   help_info: "&6/m line info <line_id> &f- Bekijk gedetailleerde lijninformatie"
