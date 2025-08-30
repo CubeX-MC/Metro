@@ -5,6 +5,7 @@ org\cubexmc\metro\Metrics$MultiLineChart.class
 org\cubexmc\metro\manager\SelectionManager.class
 org\cubexmc\metro\listener\PlayerInteractListener.class
 org\cubexmc\metro\Metrics.class
+org\cubexmc\metro\manager\LanguageManager.class
 org\cubexmc\metro\Metrics$JsonObjectBuilder$JsonObject.class
 org\cubexmc\metro\manager\StopManager.class
 org\cubexmc\metro\train\TrainMovementTask$TrainState.class
@@ -13,7 +14,6 @@ org\cubexmc\metro\Metrics$CustomChart.class
 org\cubexmc\metro\Metrics$MetricsBase.class
 org\cubexmc\metro\Metrics$JsonObjectBuilder.class
 org\cubexmc\metro\train\ScoreboardManager.class
-org\cubexmc\metro\lang\LanguageManager.class
 org\cubexmc\metro\command\MetroAdminTabCompleter.class
 org\cubexmc\metro\Metrics$SimplePie.class
 org\cubexmc\metro\Metro.class
