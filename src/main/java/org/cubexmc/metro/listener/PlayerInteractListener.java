@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Minecart;
@@ -18,6 +19,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.lang.LanguageManager;
 import org.cubexmc.metro.manager.LineManager;
+import org.cubexmc.metro.manager.SelectionManager;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Stop;
@@ -34,6 +36,7 @@ import net.md_5.bungee.api.chat.TextComponent;
 public class PlayerInteractListener implements Listener {
     
     private final Metro plugin;
+    private final SelectionManager selectionManager;
     
     // 用于防止短时间内多次点击触发多次调用
     private final Map<UUID, Long> lastInteractTime = new HashMap<>();
@@ -45,6 +48,7 @@ public class PlayerInteractListener implements Listener {
     
     public PlayerInteractListener(Metro plugin) {
         this.plugin = plugin;
+        this.selectionManager = plugin.getSelectionManager();
         
         // 定期清理过期的矿车等待记录
         SchedulerUtil.globalRun(plugin, () -> {
@@ -59,6 +63,24 @@ public class PlayerInteractListener implements Listener {
         Player player = event.getPlayer();
         Action action = event.getAction();
         Block clickedBlock = event.getClickedBlock();
+
+        // 处理金锄头选区
+        // 别忘了添加语言文件selection.corner1_set和selection.corner2_set
+        if (player.hasPermission("metro.admin") && player.getInventory().getItemInMainHand().getType() == Material.GOLDEN_HOE) {
+            if (action == Action.LEFT_CLICK_BLOCK) {
+                selectionManager.setCorner1(player, clickedBlock.getLocation());
+                player.sendMessage(plugin.getLanguageManager().getMessage("selection.corner1_set",
+                        LanguageManager.put(LanguageManager.args(), "location", clickedBlock.getLocation().getBlockX() + ", " + clickedBlock.getLocation().getBlockY() + ", " + clickedBlock.getLocation().getBlockZ())));
+                event.setCancelled(true);
+                return;
+            } else if (action == Action.RIGHT_CLICK_BLOCK) {
+                selectionManager.setCorner2(player, clickedBlock.getLocation());
+                player.sendMessage(plugin.getLanguageManager().getMessage("selection.corner2_set",
+                        LanguageManager.put(LanguageManager.args(), "location", clickedBlock.getLocation().getBlockX() + ", " + clickedBlock.getLocation().getBlockY() + ", " + clickedBlock.getLocation().getBlockZ())));
+                event.setCancelled(true);
+                return;
+            }
+        }
         
         // 如果不是右键点击方块，不处理
         if (action != Action.RIGHT_CLICK_BLOCK || clickedBlock == null) {

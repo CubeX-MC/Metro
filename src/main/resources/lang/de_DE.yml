@@ -20,6 +20,11 @@ command:
   unknown: "&cUnbekannter Befehl. Verwende /m für Hilfe."
   teleport_to: "&aKlicken um zu {stop_name} zu teleportieren"
 
+# Auswahlbezogene Nachrichten
+selection:
+  corner1_set: "&aErster Eckpunkt erfolgreich gesetzt bei: {location}"
+  corner2_set: "&aZweiter Eckpunkt erfolgreich gesetzt bei: {location}"
+
 # Linien-Befehl bezogen
 line:
   help_header: "&a===== Metro Linienverwaltung Befehle ====="
@@ -94,8 +99,7 @@ stop:
   help_create: "&6/m stop create <stop_id> <anzeigename> &f- Neuen Haltebereich erstellen"
   help_delete: "&6/m stop delete <stop_id> &f- Haltebereich löschen"
   help_list: "&6/m stop list &f- Alle Haltebereiche auflisten"
-  help_setcorner1: "&6/m stop setcorner1 <stop_id> &f- Ersten Eckpunkt des Haltebereichs festlegen"
-  help_setcorner2: "&6/m stop setcorner2 <stop_id> &f- Zweiten Eckpunkt des Haltebereichs festlegen"
+  help_setcorners: "&6/m stop setcorners <stop_id> &f- Eckpunkte des Haltebereichs aktualisieren"
   help_setpoint: "&6/m stop setpoint [yaw] &f- Haltepunkt-Position und Abfahrtsrichtung festlegen"
   help_addtransfer: "&6/m stop addtransfer <stop_id> <transfer_line_id> &f- Umsteigelinie hinzufügen"
   help_deltransfer: "&6/m stop deltransfer <stop_id> <transfer_line_id> &f- Umsteigelinie entfernen"
@@ -109,8 +113,7 @@ stop:
   
   usage_create: "&cVerwendung: /m stop create <stop_id> <\"anzeigename\">"
   usage_delete: "&cVerwendung: /m stop delete <stop_id>"
-  usage_setcorner1: "&cVerwendung: /m stop setcorner1 <stop_id>"
-  usage_setcorner2: "&cVerwendung: /m stop setcorner2 <stop_id>"
+  usage_setcorners: "&cVerwendung: /m stop setcorners <stop_id>"
   usage_setpoint: "&cVerwendung: /m stop setpoint [yaw]"
   usage_tp: "&cVerwendung: /m stop tp <stop_id>"
   usage_info: "&cVerwendung: /m stop info <stop_id>"
@@ -128,11 +131,7 @@ stop:
   delete_not_found: "&cHaltebereich-ID nicht gefunden: {stop_id}"
   rename_success: "&aHaltebereich {old_name} erfolgreich umbenannt zu: {new_name}"
   rename_fail: "&cUmbenennung des Haltebereichs fehlgeschlagen, prüfe ob Haltebereich-ID existiert."
-  
-  setcorner1_success: "&aErster Eckpunkt erfolgreich für Haltebereich {stop_id} festgelegt: {location}"
-  setcorner1_fail: "&cFestlegen des Haltebereich-Eckpunkts fehlgeschlagen, prüfe ob Haltebereich-ID existiert."
-  setcorner2_success: "&aZweiter Eckpunkt erfolgreich für Haltebereich {stop_id} festgelegt: {location}"
-  setcorner2_fail: "&cFestlegen des Haltebereich-Eckpunkts fehlgeschlagen, prüfe ob Haltebereich-ID existiert."
+  setcorners_success: "&aEckpunkte für Haltestelle {stop_id} erfolgreich aktualisiert."
   
   setpoint_yaw_invalid: "&cMuss eine Zahl sein"
   setpoint_not_rail: "&cDu musst auf Schienen stehen, um den Haltepunkt festzulegen."
@@ -140,6 +139,7 @@ stop:
   setpoint_success: "&aHaltepunkt erfolgreich für Haltebereich {stop_id} festgelegt, Abfahrtsrichtung: {yaw}"
   setpoint_fail: "&cFestlegen des Haltepunkts fehlgeschlagen, prüfe ob Haltebereich-ID existiert."
   no_stop_found_at_location: "&cKein Haltebereich an aktueller Position gefunden."
+  selection_not_complete: "&cBitte wähle zuerst mit einer Goldhacke zwei Eckpunkte für den Haltestellenbereich aus."
   
   addtransfer_success: "&aLinie {transfer_line_name} erfolgreich als Umsteigelinie für Haltebereich {stop_name} hinzugefügt"
   addtransfer_exists: "&eHaltebereich {stop_name} hat bereits Umsteigelinie {transfer_line_name}"

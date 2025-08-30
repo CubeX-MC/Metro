@@ -20,6 +20,11 @@ command:
   unknown: "&cComando desconocido. Usa /m para ayuda."
   teleport_to: "&aHaz clic para teletransportarte a {stop_name}"
 
+# Mensajes relacionados con la selección
+selection:
+  corner1_set: "&aPrimera esquina establecida con éxito en: {location}"
+  corner2_set: "&aSegunda esquina establecida con éxito en: {location}"
+
 # Relacionado con comandos de línea
 line:
   help_header: "&a===== Comandos de Gestión de Líneas Metro ====="
@@ -94,8 +99,7 @@ stop:
   help_create: "&6/m stop create <stop_id> <nombre_mostrar> &f- Crear nueva área de parada"
   help_delete: "&6/m stop delete <stop_id> &f- Eliminar área de parada"
   help_list: "&6/m stop list &f- Listar todas las áreas de parada"
-  help_setcorner1: "&6/m stop setcorner1 <stop_id> &f- Establecer primer punto de esquina del área de parada"
-  help_setcorner2: "&6/m stop setcorner2 <stop_id> &f- Establecer segundo punto de esquina del área de parada"
+  help_setcorners: "&6/m stop setcorners <stop_id> &f- Actualizar las esquinas de una parada"
   help_setpoint: "&6/m stop setpoint [yaw] &f- Establecer ubicación del punto de parada y dirección de salida"
   help_addtransfer: "&6/m stop addtransfer <stop_id> <transfer_line_id> &f- Añadir línea de transbordo"
   help_deltransfer: "&6/m stop deltransfer <stop_id> <transfer_line_id> &f- Eliminar línea de transbordo"
@@ -109,8 +113,7 @@ stop:
   
   usage_create: "&cUso: /m stop create <stop_id> <\"nombre_mostrar\">"
   usage_delete: "&cUso: /m stop delete <stop_id>"
-  usage_setcorner1: "&cUso: /m stop setcorner1 <stop_id>"
-  usage_setcorner2: "&cUso: /m stop setcorner2 <stop_id>"
+  usage_setcorners: "&cUso: /m stop setcorners <stop_id>"
   usage_setpoint: "&cUso: /m stop setpoint [yaw]"
   usage_tp: "&cUso: /m stop tp <stop_id>"
   usage_info: "&cUso: /m stop info <stop_id>"
@@ -128,11 +131,7 @@ stop:
   delete_not_found: "&cID de área de parada no encontrada: {stop_id}"
   rename_success: "&aÁrea de parada {old_name} renombrada exitosamente a: {new_name}"
   rename_fail: "&cFallo al renombrar área de parada, verifica si la ID de área de parada existe."
-  
-  setcorner1_success: "&aPrimer punto de esquina establecido exitosamente para área de parada {stop_id}: {location}"
-  setcorner1_fail: "&cFallo al establecer punto de esquina del área de parada, verifica si la ID de área de parada existe."
-  setcorner2_success: "&aSegundo punto de esquina establecido exitosamente para área de parada {stop_id}: {location}"
-  setcorner2_fail: "&cFallo al establecer punto de esquina del área de parada, verifica si la ID de área de parada existe."
+  setcorners_success: "&aEsquinas para la parada {stop_id} actualizadas con éxito."
   
   setpoint_yaw_invalid: "&cDebe ser un número"
   setpoint_not_rail: "&cDebes estar parado en rieles para establecer el punto de parada."
@@ -140,6 +139,7 @@ stop:
   setpoint_success: "&aPunto de parada establecido exitosamente para área de parada {stop_id}, dirección de salida: {yaw}"
   setpoint_fail: "&cFallo al establecer punto de parada, verifica si la ID de área de parada existe."
   no_stop_found_at_location: "&cNo se encontró área de parada en la ubicación actual."
+  selection_not_complete: "&cPor favor, usa una azada de oro para seleccionar primero dos esquinas del área de la parada."
   
   addtransfer_success: "&aLínea {transfer_line_name} añadida exitosamente como línea de transbordo para área de parada {stop_name}"
   addtransfer_exists: "&eÁrea de parada {stop_name} ya tiene línea de transbordo {transfer_line_name}"

@@ -35,7 +35,7 @@ public class MetroAdminTabCompleter implements TabCompleter {
     
     // 停靠区子命令
     private static final List<String> STOP_SUBCOMMANDS = Arrays.asList(
-            "create", "delete", "list", "setcorner1", "setcorner2", "setpoint", "tp",
+            "create", "delete", "list", "setcorners", "setpoint", "tp",
             "addtransfer", "deltransfer", "listtransfers", "settitle", "deltitle", "listtitles", "rename", "info"
     );
     
@@ -99,8 +99,7 @@ public class MetroAdminTabCompleter implements TabCompleter {
                 }
             } else if ("stop".equals(mainCommand)) {
                 String subCommand = args[1].toLowerCase();
-                if ("delete".equals(subCommand) || "setcorner1".equals(subCommand) || 
-                        "setcorner2".equals(subCommand) || "setpoint".equals(subCommand) || "tp".equals(subCommand) ||
+                if ("delete".equals(subCommand) || "setcorners".equals(subCommand) || "setpoint".equals(subCommand) || "tp".equals(subCommand) ||
                         "addtransfer".equals(subCommand) || "deltransfer".equals(subCommand) ||
                         "listtransfers".equals(subCommand) || "settitle".equals(subCommand) || 
                         "deltitle".equals(subCommand) || "listtitles".equals(subCommand) ||

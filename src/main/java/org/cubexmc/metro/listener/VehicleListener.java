@@ -162,7 +162,7 @@ public class VehicleListener implements Listener {
 
         if (LocationUtil.isOnRail(to)) {
             // 限制上坡速度为0.4
-            if (to.getY() > from.getY() && minecart.getVelocity().length() > 0.4) {
+            if (to.getY() > from.getY()) {
                 Vector direction = LocationUtil.getDirectionVector(from, to);
                 minecart.setVelocity(direction.multiply(0.4));
             }
