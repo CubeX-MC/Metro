@@ -49,8 +49,11 @@ public class LanguageManager {
             langDir.mkdirs();
         }
 
-        // 保存默认语言文件
-        saveDefaultLanguageFile("zh_CN");
+        // 保存内置语言文件（首次运行时会复制到插件数据目录）
+        String[] bundledLanguages = new String[] { "zh_CN", "en_US", "de_DE", "es_ES", "nl_NL" };
+        for (String lang : bundledLanguages) {
+            saveDefaultLanguageFile(lang);
+        }
         
         // 加载语言目录下的所有yml文件
         File[] langFiles = langDir.listFiles((dir, name) -> name.endsWith(".yml"));

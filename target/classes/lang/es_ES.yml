@@ -30,7 +30,7 @@ line:
   help_setterminus: "&6/m line setterminus <line_id> <nombre_dirección> &f- Establecer nombre de dirección terminal de línea"
   help_setmaxspeed: "&6/m line setmaxspeed <line_id> <velocidad> &f- Establecer velocidad máxima de línea"
   help_addstop: "&6/m line addstop <line_id> <stop_id> [index] &f- Añadir área de parada a línea"
-  help_removestop: "&6/m line removestop <line_id> <stop_id> &f- Eliminar área de parada de línea"
+  help_removestop: "&6/m line delstop <line_id> <stop_id> &f- Eliminar área de parada de línea"
   help_stops: "&6/m line stops <line_id> &f- Listar todas las áreas de parada en línea"
   help_rename: "&6/m line rename <line_id> <nuevo_nombre> &f- Renombrar nombre de visualización de línea"
   help_info: "&6/m line info <line_id> &f- Ver información detallada de línea"

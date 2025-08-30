@@ -6,7 +6,7 @@
 
     <groupId>org.cubexmc</groupId>
     <artifactId>metro</artifactId>
-    <version>1.0.9</version>
+    <version>1.0.10</version>
     <packaging>jar</packaging>
 
     <name>metro</name>
@@ -46,7 +46,7 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>2.3.1</version>
                 <configuration>
-                    <outputDirectory>D:\Downloads\杰克家工作\MC server\test server\plugins</outputDirectory>
+                    <outputDirectory>C:\Users\Angus\Desktop\MC server\test server\plugins</outputDirectory>
                 </configuration>
             </plugin>
         </plugins>

@@ -30,7 +30,7 @@ line:
   help_setterminus: "&6/m line setterminus <line_id> <richtungsname> &f- Endstation-Richtungsname festlegen"
   help_setmaxspeed: "&6/m line setmaxspeed <line_id> <geschwindigkeit> &f- Maximale Liniengeschwindigkeit festlegen"
   help_addstop: "&6/m line addstop <line_id> <stop_id> [index] &f- Haltebereich zur Linie hinzufügen"
-  help_removestop: "&6/m line removestop <line_id> <stop_id> &f- Haltebereich von Linie entfernen"
+  help_removestop: "&6/m line delstop <line_id> <stop_id> &f- Haltebereich von Linie entfernen"
   help_stops: "&6/m line stops <line_id> &f- Alle Haltebereiche der Linie auflisten"
   help_rename: "&6/m line rename <line_id> <neuer_name> &f- Linien-Anzeigename umbenennen"
   help_info: "&6/m line info <line_id> &f- Detaillierte Linieninformationen anzeigen"
