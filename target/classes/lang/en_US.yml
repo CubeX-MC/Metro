@@ -20,6 +20,11 @@ command:
   unknown: "&cUnknown command. Use /m for help."
   teleport_to: "&aClick to teleport to {stop_name}"
 
+# Selection Related Messages
+selection:
+  corner1_set: "&aSuccessfully set the first corner point at: {location}"
+  corner2_set: "&aSuccessfully set the second corner point at: {location}"
+
 # Line Command Related
 line:
   help_header: "&a===== Metro Line Management Commands ====="
@@ -94,8 +99,7 @@ stop:
   help_create: "&6/m stop create <stop_id> <display_name> &f- Create new stop"
   help_delete: "&6/m stop delete <stop_id> &f- Delete stop"
   help_list: "&6/m stop list &f- List all stops"
-  help_setcorner1: "&6/m stop setcorner1 <stop_id> &f- Set stop's first corner point"
-  help_setcorner2: "&6/m stop setcorner2 <stop_id> &f- Set stop's second corner point"
+  help_setcorners: "&6/m stop setcorners <stop_id> &f- Update stop's corner points"
   help_setpoint: "&6/m stop setpoint [yaw] &f- Set stopping point position and departure direction"
   help_addtransfer: "&6/m stop addtransfer <stop_id> <transfer_line_id> &f- Add transferable line"
   help_deltransfer: "&6/m stop deltransfer <stop_id> <transfer_line_id> &f- Remove transferable line"
@@ -109,8 +113,7 @@ stop:
   
   usage_create: "&cUsage: /m stop create <stop_id> <\"display_name\">"
   usage_delete: "&cUsage: /m stop delete <stop_id>"
-  usage_setcorner1: "&cUsage: /m stop setcorner1 <stop_id>"
-  usage_setcorner2: "&cUsage: /m stop setcorner2 <stop_id>"
+  usage_setcorners: "&cUsage: /m stop setcorners <stop_id>"
   usage_setpoint: "&cUsage: /m stop setpoint [yaw]"
   usage_tp: "&cUsage: /m stop tp <stop_id>"
   usage_info: "&cUsage: /m stop info <stop_id>"
@@ -128,11 +131,7 @@ stop:
   delete_not_found: "&cStop ID not found: {stop_id}"
   rename_success: "&aSuccessfully renamed stop {old_name} to: {new_name}"
   rename_fail: "&cFailed to rename stop, please check if stop ID exists."
-  
-  setcorner1_success: "&aSuccessfully set area first corner point for stop {stop_id}: {location}"
-  setcorner1_fail: "&cFailed to set stop corner point, please check if stop ID exists."
-  setcorner2_success: "&aSuccessfully set area second corner point for stop {stop_id}: {location}"
-  setcorner2_fail: "&cFailed to set stop corner point, please check if stop ID exists."
+  setcorners_success: "&aSuccessfully updated corners for stop {stop_id}."
   
   setpoint_yaw_invalid: "&cMust be a number"
   setpoint_not_rail: "&cMust stand on rails to set stopping point."
@@ -140,6 +139,7 @@ stop:
   setpoint_success: "&aSuccessfully set stopping point for stop {stop_id}, departure direction: {yaw}"
   setpoint_fail: "&cFailed to set stopping point, please check if stop ID exists."
   no_stop_found_at_location: "&cNo stop found at current location."
+  selection_not_complete: "&cPlease use a golden hoe to select two corner points of the stop area first."
   
   addtransfer_success: "&aSuccessfully added line {transfer_line_name} as transferable line for stop {stop_name}"
   addtransfer_exists: "&eStop {stop_name} already has transferable line {transfer_line_name}"

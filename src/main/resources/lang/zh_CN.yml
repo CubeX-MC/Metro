@@ -20,6 +20,11 @@ command:
   unknown: "&c未知命令。请使用 /m 查看帮助。"
   teleport_to: "&a点击传送至 {stop_name}"
 
+# 选区相关消息
+selection:
+  corner1_set: "&a成功设置第一个角点位置: {location}"
+  corner2_set: "&a成功设置第二个角点位置: {location}"
+
 # 线路命令相关
 line:
   help_header: "&a===== Metro线路管理命令 ====="
@@ -94,8 +99,7 @@ stop:
   help_create: "&6/m stop create <stop_id> <显示名称> &f- 创建新停靠区"
   help_delete: "&6/m stop delete <stop_id> &f- 删除停靠区"
   help_list: "&6/m stop list &f- 列出所有停靠区"
-  help_setcorner1: "&6/m stop setcorner1 <stop_id> &f- 设置停靠区的第一个角点"
-  help_setcorner2: "&6/m stop setcorner2 <stop_id> &f- 设置停靠区的第二个角点"
+  help_setcorners: "&6/m stop setcorners <stop_id> &f- 更新停靠区的角点"
   help_setpoint: "&6/m stop setpoint [yaw] &f- 设置停靠点位置和发车朝向"
   help_addtransfer: "&6/m stop addtransfer <stop_id> <transfer_line_id> &f- 添加可换乘线路"
   help_deltransfer: "&6/m stop deltransfer <stop_id> <transfer_line_id> &f- 移除可换乘线路"
@@ -109,8 +113,7 @@ stop:
   
   usage_create: "&c用法: /m stop create <stop_id> <\"显示名称\">"
   usage_delete: "&c用法: /m stop delete <stop_id>"
-  usage_setcorner1: "&c用法: /m stop setcorner1 <stop_id>"
-  usage_setcorner2: "&c用法: /m stop setcorner2 <stop_id>"
+  usage_setcorners: "&c用法: /m stop setcorners <stop_id>"
   usage_setpoint: "&c用法: /m stop setpoint [yaw]"
   usage_tp: "&c用法: /m stop tp <stop_id>"
   usage_info: "&c用法: /m stop info <stop_id>"
@@ -128,11 +131,7 @@ stop:
   delete_not_found: "&c找不到停靠区ID: {stop_id}"
   rename_success: "&a成功重命名停靠区 {old_name} 为: {new_name}"
   rename_fail: "&c重命名停靠区失败，请检查停靠区ID是否存在。"
-  
-  setcorner1_success: "&a成功为停靠区 {stop_id} 设置区域第一个角点: {location}"
-  setcorner1_fail: "&c设置停靠区角点失败，请检查停靠区ID是否存在。"
-  setcorner2_success: "&a成功为停靠区 {stop_id} 设置区域第二个角点: {location}"
-  setcorner2_fail: "&c设置停靠区角点失败，请检查停靠区ID是否存在。"
+  setcorners_success: "&a成功更新停靠区 {stop_id} 的角点。"
   
   setpoint_yaw_invalid: "&c必须是一个数字"
   setpoint_not_rail: "&c必须站在铁轨上设置停靠点。"
@@ -140,6 +139,7 @@ stop:
   setpoint_success: "&a成功为停靠区 {stop_id} 设置停靠点，发车朝向: {yaw}"
   setpoint_fail: "&c设置停靠点失败，请检查停靠区ID是否存在。"
   no_stop_found_at_location: "&c当前位置找不到任何停靠区。"
+  selection_not_complete: "&c请先使用金锄头选择停靠区的两个角点。"
   
   addtransfer_success: "&a成功将线路 {transfer_line_name} 添加为停靠区 {stop_name} 的可换乘线路"
   addtransfer_exists: "&e停靠区 {stop_name} 已存在可换乘线路 {transfer_line_name}"

@@ -17,6 +17,7 @@ import org.bukkit.entity.Player;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.lang.LanguageManager;
 import org.cubexmc.metro.manager.LineManager;
+import org.cubexmc.metro.manager.SelectionManager;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Stop;
@@ -717,7 +718,15 @@ public class MetroAdminCommand implements CommandExecutor {
                     }
                     String stopName = nameBuilder.toString().trim();
                     
-                    Stop newStop = stopManager.createStop(stopId, stopName);
+                    SelectionManager selectionManager = plugin.getSelectionManager();
+                    if (!selectionManager.isSelectionComplete(player)) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.selection_not_complete"));
+                        return true;
+                    }
+                    Location corner1 = selectionManager.getCorner1(player);
+                    Location corner2 = selectionManager.getCorner2(player);
+
+                    Stop newStop = stopManager.createStop(stopId, stopName, corner1, corner2);
                     if (newStop != null) {
                         player.sendMessage(plugin.getLanguageManager().getMessage("stop.create_success", 
                                 LanguageManager.put(LanguageManager.args(), "stop_name", stopName)));
@@ -727,6 +736,31 @@ public class MetroAdminCommand implements CommandExecutor {
                     }
                     break;
                     
+                case "setcorners":
+                    if (args.length < 3) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.usage_setcorners"));
+                        return true;
+                    }
+
+                    stopId = args[2];
+                    SelectionManager selectionManagerCorners = plugin.getSelectionManager();
+                    if (!selectionManagerCorners.isSelectionComplete(player)) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.selection_not_complete"));
+                        return true;
+                    }
+
+                    Location corner1ToSet = selectionManagerCorners.getCorner1(player);
+                    Location corner2ToSet = selectionManagerCorners.getCorner2(player);
+
+                    if (stopManager.setStopCorners(stopId, corner1ToSet, corner2ToSet)) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.setcorners_success",
+                                LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
+                    } else {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_not_found",
+                                LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
+                    }
+                    break;
+
                 case "delete":
                     if (args.length < 3) {
                         player.sendMessage(plugin.getLanguageManager().getMessage("stop.usage_delete"));
@@ -769,45 +803,9 @@ public class MetroAdminCommand implements CommandExecutor {
                     }
                     break;
                     
-                case "setcorner1":
-                    if (args.length < 3) {
-                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.usage_setcorner1"));
-                        return true;
-                    }
-                    
-                    stopId = args[2];
-                    Location location = player.getLocation();
-                    
-                    if (stopManager.setStopCorner1(stopId, location)) {
-                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.setcorner1_success", 
-                                LanguageManager.put(LanguageManager.put(LanguageManager.args(), 
-                                        "stop_id", stopId), "location", LocationUtil.locationToString(location))));
-                    } else {
-                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.setcorner1_fail"));
-                    }
-                    break;
-                    
-                case "setcorner2":
-                    if (args.length < 3) {
-                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.usage_setcorner2"));
-                        return true;
-                    }
-                    
-                    stopId = args[2];
-                    location = player.getLocation();
-                    
-                    if (stopManager.setStopCorner2(stopId, location)) {
-                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.setcorner2_success", 
-                                LanguageManager.put(LanguageManager.put(LanguageManager.args(), 
-                                        "stop_id", stopId), "location", LocationUtil.locationToString(location))));
-                    } else {
-                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.setcorner2_fail"));
-                    }
-                    break;
-                    
                 case "setpoint":
                     // 检查玩家是否在铁轨上
-                    location = player.getLocation();
+                    Location location = player.getLocation();
                     if (!LocationUtil.isRail(location)) {
                         player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_not_rail"));
                         return true;
@@ -909,8 +907,7 @@ public class MetroAdminCommand implements CommandExecutor {
         player.sendMessage(plugin.getLanguageManager().getMessage("stop.help_list"));
         player.sendMessage(plugin.getLanguageManager().getMessage("stop.help_info"));
         player.sendMessage(plugin.getLanguageManager().getMessage("stop.help_rename"));
-        player.sendMessage(plugin.getLanguageManager().getMessage("stop.help_setcorner1"));
-        player.sendMessage(plugin.getLanguageManager().getMessage("stop.help_setcorner2"));
+        player.sendMessage(plugin.getLanguageManager().getMessage("stop.help_setcorners"));
         player.sendMessage(plugin.getLanguageManager().getMessage("stop.help_setpoint"));
         player.sendMessage(plugin.getLanguageManager().getMessage("stop.help_tp"));
         player.sendMessage(plugin.getLanguageManager().getMessage("stop.help_addtransfer"));

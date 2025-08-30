@@ -98,17 +98,40 @@ public class StopManager {
      * @param displayName 停靠区显示名称
      * @return 创建的停靠区
      */
-    public Stop createStop(String stopId, String displayName) {
+    public Stop createStop(String stopId, String displayName, Location corner1, Location corner2) {
         if (stops.containsKey(stopId)) {
             return null; // 已存在
         }
-        
+
         Stop stop = new Stop(stopId, displayName);
+        if (corner1 != null && corner2 != null) {
+            stop.setCorner1(corner1);
+            stop.setCorner2(corner2);
+        }
         stops.put(stopId, stop);
         saveConfig();
         return stop;
     }
     
+    /**
+     * 设置停靠区的新角点
+     * @param stopId 停靠区ID
+     * @param corner1 新的角点1
+     * @param corner2 新的角点2
+     * @return 如果成功更新则为true
+     */
+    public boolean setStopCorners(String stopId, Location corner1, Location corner2) {
+        Stop stop = stops.get(stopId);
+        if (stop == null) {
+            return false;
+        }
+
+        stop.setCorner1(corner1);
+        stop.setCorner2(corner2);
+        saveConfig();
+        return true;
+    }
+
     /**
      * 删除停靠区
      * 
@@ -164,42 +187,6 @@ public class StopManager {
         // 添加新位置映射
         locationToStopId.put(location, stopId);
         
-        saveConfig();
-        return true;
-    }
-    
-    /**
-     * 设置停靠区区域的第一个角点
-     * 
-     * @param stopId 停靠区ID
-     * @param location 角点位置
-     * @return 是否设置成功
-     */
-    public boolean setStopCorner1(String stopId, Location location) {
-        Stop stop = stops.get(stopId);
-        if (stop == null) {
-            return false;
-        }
-        
-        stop.setCorner1(location);
-        saveConfig();
-        return true;
-    }
-    
-    /**
-     * 设置停靠区区域的第二个角点
-     * 
-     * @param stopId 停靠区ID
-     * @param location 角点位置
-     * @return 是否设置成功
-     */
-    public boolean setStopCorner2(String stopId, Location location) {
-        Stop stop = stops.get(stopId);
-        if (stop == null) {
-            return false;
-        }
-        
-        stop.setCorner2(location);
         saveConfig();
         return true;
     }

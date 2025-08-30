@@ -13,6 +13,7 @@ import org.cubexmc.metro.listener.PlayerInteractListener;
 import org.cubexmc.metro.listener.PlayerMoveListener;
 import org.cubexmc.metro.listener.VehicleListener;
 import org.cubexmc.metro.manager.LineManager;
+import org.cubexmc.metro.manager.SelectionManager;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.train.ScoreboardManager;
 
@@ -21,6 +22,7 @@ public final class Metro extends JavaPlugin {
     private LineManager lineManager;
     private StopManager stopManager;
     private LanguageManager languageManager;
+    private SelectionManager selectionManager;
 
     @Override
     public void onEnable() {
@@ -41,6 +43,7 @@ public final class Metro extends JavaPlugin {
         // 初始化管理器
         this.lineManager = new LineManager(this);
         this.stopManager = new StopManager(this);
+        this.selectionManager = new SelectionManager();
         
         // 初始化计分板管理器
         ScoreboardManager.initialize(this);
@@ -130,6 +133,15 @@ public final class Metro extends JavaPlugin {
      */
     public LanguageManager getLanguageManager() {
         return languageManager;
+    }
+    
+    /**
+     * 获取选区管理器
+     * 
+     * @return 选区管理器
+     */
+    public SelectionManager getSelectionManager() {
+        return selectionManager;
     }
     
     /**

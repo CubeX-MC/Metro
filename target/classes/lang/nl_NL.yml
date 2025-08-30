@@ -20,6 +20,11 @@ command:
   unknown: "&cOnbekend commando. Gebruik /m voor hulp."
   teleport_to: "&aKlik om te teleporteren naar {stop_name}"
 
+# Selectie gerelateerde berichten
+selection:
+  corner1_set: "&aEerste hoekpunt succesvol ingesteld op: {location}"
+  corner2_set: "&aTweede hoekpunt succesvol ingesteld op: {location}"
+
 # Lijn commando gerelateerd
 line:
   help_header: "&a===== Metro Lijnbeheer Commando's ====="
@@ -94,8 +99,7 @@ stop:
   help_create: "&6/m stop create <stop_id> <weergavenaam> &f- Maak nieuw stopgebied"
   help_delete: "&6/m stop delete <stop_id> &f- Verwijder stopgebied"
   help_list: "&6/m stop list &f- Lijst alle stopgebieden"
-  help_setcorner1: "&6/m stop setcorner1 <stop_id> &f- Stel eerste hoekpunt van stopgebied in"
-  help_setcorner2: "&6/m stop setcorner2 <stop_id> &f- Stel tweede hoekpunt van stopgebied in"
+  help_setcorners: "&6/m stop setcorners <stop_id> &f- Update de hoekpunten van een stop"
   help_setpoint: "&6/m stop setpoint [yaw] &f- Stel stoppuntlocatie en vertrekrichting in"
   help_addtransfer: "&6/m stop addtransfer <stop_id> <transfer_line_id> &f- Voeg overstaplijn toe"
   help_deltransfer: "&6/m stop deltransfer <stop_id> <transfer_line_id> &f- Verwijder overstaplijn"
@@ -109,8 +113,7 @@ stop:
   
   usage_create: "&cGebruik: /m stop create <stop_id> <\"weergavenaam\">"
   usage_delete: "&cGebruik: /m stop delete <stop_id>"
-  usage_setcorner1: "&cGebruik: /m stop setcorner1 <stop_id>"
-  usage_setcorner2: "&cGebruik: /m stop setcorner2 <stop_id>"
+  usage_setcorners: "&cGebruik: /m stop setcorners <stop_id>"
   usage_setpoint: "&cGebruik: /m stop setpoint [yaw]"
   usage_tp: "&cGebruik: /m stop tp <stop_id>"
   usage_info: "&cGebruik: /m stop info <stop_id>"
@@ -128,11 +131,7 @@ stop:
   delete_not_found: "&cStopgebied ID niet gevonden: {stop_id}"
   rename_success: "&aStopgebied {old_name} succesvol hernoemd naar: {new_name}"
   rename_fail: "&cHernoemen van stopgebied mislukt, controleer of stopgebied ID bestaat."
-  
-  setcorner1_success: "&aEerste hoekpunt succesvol ingesteld voor stopgebied {stop_id}: {location}"
-  setcorner1_fail: "&cInstellen van stopgebied hoekpunt mislukt, controleer of stopgebied ID bestaat."
-  setcorner2_success: "&aTweede hoekpunt succesvol ingesteld voor stopgebied {stop_id}: {location}"
-  setcorner2_fail: "&cInstellen van stopgebied hoekpunt mislukt, controleer of stopgebied ID bestaat."
+  setcorners_success: "&aHoekpunten voor stop {stop_id} succesvol bijgewerkt."
   
   setpoint_yaw_invalid: "&cMoet een getal zijn"
   setpoint_not_rail: "&cJe moet op rails staan om het stoppunt in te stellen."
@@ -140,6 +139,7 @@ stop:
   setpoint_success: "&aStoppunt succesvol ingesteld voor stopgebied {stop_id}, vertrekrichting: {yaw}"
   setpoint_fail: "&cInstellen van stoppunt mislukt, controleer of stopgebied ID bestaat."
   no_stop_found_at_location: "&cGeen stopgebied gevonden op huidige locatie."
+  selection_not_complete: "&cGebruik eerst een gouden schoffel om twee hoekpunten van het stopgebied te selecteren."
   
   addtransfer_success: "&aLijn {transfer_line_name} succesvol toegevoegd als overstaplijn voor stopgebied {stop_name}"
   addtransfer_exists: "&eStopgebied {stop_name} heeft al overstaplijn {transfer_line_name}"
