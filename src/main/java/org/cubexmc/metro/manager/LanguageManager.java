@@ -1,4 +1,4 @@
-package org.cubexmc.metro.lang;
+package org.cubexmc.metro.manager;
 
 import java.io.File;
 import java.io.InputStream;
