@@ -15,6 +15,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.vehicle.VehicleEnterEvent;
 import org.bukkit.event.vehicle.VehicleExitEvent;
 import org.bukkit.event.vehicle.VehicleMoveEvent;
+import org.bukkit.util.Vector;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.StopManager;
@@ -140,18 +141,32 @@ public class VehicleListener implements Listener {
         }
         
         Minecart minecart = (Minecart) vehicle;
-        
+
         // 检查是否是Metro的矿车
         if (!"MetroMinecart".equals(minecart.getCustomName())) {
             return;
         }
-        
+
         // 获取当前位置
-        Location location = minecart.getLocation();
-        
-        // 检查矿车是否在铁轨上
-        if (!LocationUtil.isOnRail(location)) {
-            // 矿车已脱轨，强制乘客下车并移除矿车
+        // Location location = minecart.getLocation();
+
+        // // 检查矿车是否在铁轨上
+        // if (!LocationUtil.isOnRail(location)) {
+        //     // 矿车已脱轨，强制乘客下车并移除矿车
+        //     minecart.eject();
+        //     minecart.remove();
+        // }
+
+        Location from = event.getFrom();
+        Location to = event.getTo();
+
+        if (LocationUtil.isOnRail(to)) {
+            // 限制上坡速度为0.4
+            if (to.getY() > from.getY() && minecart.getVelocity().length() > 0.4) {
+                Vector direction = LocationUtil.getDirectionVector(from, to);
+                minecart.setVelocity(direction.multiply(0.4));
+            }
+        } else {
             minecart.eject();
             minecart.remove();
         }
