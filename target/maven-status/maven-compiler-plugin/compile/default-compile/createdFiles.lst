@@ -3,6 +3,7 @@ org\cubexmc\metro\listener\PlayerMoveListener$2.class
 org\cubexmc\metro\util\LocationUtil.class
 org\cubexmc\metro\Metrics$MultiLineChart.class
 org\cubexmc\metro\manager\SelectionManager.class
+org\cubexmc\metro\train\TrainMovementTask$1.class
 org\cubexmc\metro\listener\PlayerInteractListener.class
 org\cubexmc\metro\Metrics.class
 org\cubexmc\metro\Metrics$JsonObjectBuilder$JsonObject.class

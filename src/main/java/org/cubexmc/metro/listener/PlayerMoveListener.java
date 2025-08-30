@@ -24,6 +24,7 @@ import org.cubexmc.metro.util.TextUtil;
 
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
+import org.bukkit.scheduler.BukkitTask;
 
 /**
  * 监听玩家移动事件，用于检测玩家进入停靠区
@@ -32,8 +33,8 @@ public class PlayerMoveListener implements Listener {
     
     private final Metro plugin;
     private final Map<UUID, String> playerInStopMap = new HashMap<>(); // 记录玩家当前所在的停靠区ID
-    private final Map<UUID, Object> continuousInfoTasks = new HashMap<>(); // 记录持续显示信息的任务ID
-    private final Map<UUID, Object> actionBarTasks = new HashMap<>(); // 记录专门的ActionBar显示任务ID
+    private final Map<UUID, BukkitTask> continuousInfoTasks = new HashMap<>(); // 记录持续显示信息的任务ID
+    private final Map<UUID, BukkitTask> actionBarTasks = new HashMap<>(); // 记录专门的ActionBar显示任务ID
     
     public PlayerMoveListener(Metro plugin) {
         this.plugin = plugin;
@@ -195,7 +196,7 @@ public class PlayerMoveListener implements Listener {
         final String finalActionbar = TextUtil.replacePlaceholders(actionbar, line, stop, lastStop, nextStop, terminalStop, lineManager);
 
         if (alwaysShow) {
-            Object actionBarTaskId = SchedulerUtil.globalRun(plugin, new Runnable() {
+            BukkitTask actionBarTaskId = SchedulerUtil.globalRun(plugin, new Runnable() {
                 @Override
                 public void run() {
                     // 检查任务是否仍然存在于Map中，如果不存在说明已被外部取消
@@ -222,7 +223,7 @@ public class PlayerMoveListener implements Listener {
             }, 0L, 20L);
             actionBarTasks.put(playerId, actionBarTaskId);
 
-            Object titleTaskId = SchedulerUtil.globalRun(plugin, new Runnable() {
+            BukkitTask titleTaskId = SchedulerUtil.globalRun(plugin, new Runnable() {
                 @Override
                 public void run() {
                     // 检查任务是否仍然存在于Map中，如果不存在说明已被外部取消
@@ -278,7 +279,7 @@ public class PlayerMoveListener implements Listener {
                     );
                     
                     final int totalDisplayTime = stay + fadeOut; 
-                    Object actionBarTaskId = SchedulerUtil.globalRun(plugin, new Runnable() {
+                    BukkitTask actionBarTaskId = SchedulerUtil.globalRun(plugin, new Runnable() {
                         private int count = 0;
                         private final int maxCount = totalDisplayTime / 20 + 1; 
                         
@@ -330,7 +331,7 @@ public class PlayerMoveListener implements Listener {
      * 取消显示持续信息的任务
      */
     private void cancelContinuousInfoTask(UUID playerId) {
-        Object taskId = continuousInfoTasks.remove(playerId);
+        BukkitTask taskId = continuousInfoTasks.remove(playerId);
         if (taskId != null) {
             SchedulerUtil.cancelTask(taskId);
         }
@@ -340,7 +341,7 @@ public class PlayerMoveListener implements Listener {
      * 取消ActionBar显示任务
      */
     private void cancelActionBarTask(UUID playerId) {
-        Object taskId = actionBarTasks.remove(playerId);
+        BukkitTask taskId = actionBarTasks.remove(playerId);
         if (taskId != null) {
             SchedulerUtil.cancelTask(taskId);
         }

@@ -171,118 +171,114 @@ public class ScoreboardManager {
      * @param nextStopId 下一站点ID (可为null)
      */
     private static void updateScoreboardInternal(Player player, Line line, String currentStopId, String nextStopId) {
-        if (SchedulerUtil.isFolia()) {
+        org.bukkit.scoreboard.ScoreboardManager manager = Bukkit.getScoreboardManager();
+        if (manager == null) {
             return;
-        } else {
-            org.bukkit.scoreboard.ScoreboardManager manager = Bukkit.getScoreboardManager();
-            if (manager == null) {
-                return;
-            }
+        }
 
-            Scoreboard scoreboard = playerScoreboards.getOrDefault(player.getUniqueId(), manager.getNewScoreboard());
-            // check if scoreboard is null
-            if (scoreboard == null) {
-                plugin.getLogger().info("Scoreboard is null");
-            }
+        Scoreboard scoreboard = playerScoreboards.getOrDefault(player.getUniqueId(), manager.getNewScoreboard());
+        // check if scoreboard is null
+        if (scoreboard == null) {
+            plugin.getLogger().info("Scoreboard is null");
+        }
 
-            // 清除旧的计分板内容
-            if (scoreboard.getObjective("metro") != null) {
-                scoreboard.getObjective("metro").unregister();
-            }
+        // 清除旧的计分板内容
+        if (scoreboard.getObjective("metro") != null) {
+            scoreboard.getObjective("metro").unregister();
+        }
 
-            // 创建新的计分板
-            Objective objective = scoreboard.registerNewObjective("metro", "dummy",
-                    ChatColor.GOLD + "" + ChatColor.BOLD + line.getName());
-            objective.setDisplaySlot(DisplaySlot.SIDEBAR);
+        // 创建新的计分板
+        Objective objective = scoreboard.registerNewObjective("metro", "dummy",
+                ChatColor.GOLD + "" + ChatColor.BOLD + line.getName());
+        objective.setDisplaySlot(DisplaySlot.SIDEBAR);
 
-            // 获取线路的所有停靠区信息
-            List<String> stopIds = line.getOrderedStopIds();
-            StopManager stopManager = plugin.getStopManager();
-            LineManager lineManager = plugin.getLineManager();
+        // 获取线路的所有停靠区信息
+        List<String> stopIds = line.getOrderedStopIds();
+        StopManager stopManager = plugin.getStopManager();
+        LineManager lineManager = plugin.getLineManager();
 
-            // 从配置文件中获取样式设置
-            String currentStopStyle = plugin.getConfig().getString("scoreboard.styles.current_stop", "&f");
-            String nextStopStyle = plugin.getConfig().getString("scoreboard.styles.next_stop", "&a");
-            String otherStopsStyle = plugin.getConfig().getString("scoreboard.styles.other_stops", "&7");
+        // 从配置文件中获取样式设置
+        String currentStopStyle = plugin.getConfig().getString("scoreboard.styles.current_stop", "&f");
+        String nextStopStyle = plugin.getConfig().getString("scoreboard.styles.next_stop", "&a");
+        String otherStopsStyle = plugin.getConfig().getString("scoreboard.styles.other_stops", "&7");
 
-            // 转换颜色代码
-            currentStopStyle = ChatColor.translateAlternateColorCodes('&', currentStopStyle);
-            nextStopStyle = ChatColor.translateAlternateColorCodes('&', nextStopStyle);
-            otherStopsStyle = ChatColor.translateAlternateColorCodes('&', otherStopsStyle);
+        // 转换颜色代码
+        currentStopStyle = ChatColor.translateAlternateColorCodes('&', currentStopStyle);
+        nextStopStyle = ChatColor.translateAlternateColorCodes('&', nextStopStyle);
+        otherStopsStyle = ChatColor.translateAlternateColorCodes('&', otherStopsStyle);
 
-            // 从配置文件中获取统一的线路标识符
-            String lineSymbol = plugin.getConfig().getString("scoreboard.line_symbol", "■");
+        // 从配置文件中获取统一的线路标识符
+        String lineSymbol = plugin.getConfig().getString("scoreboard.line_symbol", "■");
 
-            // 在计分板上显示所有停靠区
-            int scoreValue = stopIds.size();
-            Map<String, String> displayedStops = new HashMap<>(); // 用于跟踪已显示的停靠区
+        // 在计分板上显示所有停靠区
+        int scoreValue = stopIds.size();
+        Map<String, String> displayedStops = new HashMap<>(); // 用于跟踪已显示的停靠区
 
-            // 找到当前站点和下一站点的索引
-            int currentStopIndex = currentStopId != null ? stopIds.indexOf(currentStopId) : -1;
-            int nextStopIndex = nextStopId != null ? stopIds.indexOf(nextStopId) : -1;
+        // 找到当前站点和下一站点的索引
+        int currentStopIndex = currentStopId != null ? stopIds.indexOf(currentStopId) : -1;
+        int nextStopIndex = nextStopId != null ? stopIds.indexOf(nextStopId) : -1;
 
-            for (int i = 0; i < stopIds.size(); i++) {
-                String stopId = stopIds.get(i);
-                Stop stop = stopManager.getStop(stopId);
-                if (stop != null) {
-                    String displayName = stop.getName();
+        for (int i = 0; i < stopIds.size(); i++) {
+            String stopId = stopIds.get(i);
+            Stop stop = stopManager.getStop(stopId);
+            if (stop != null) {
+                String displayName = stop.getName();
 
-                    // 如果该停靠区已经显示过，则跳过（避免重复显示）
-                    if (displayedStops.containsKey(displayName)) {
-                        continue;
-                    }
+                // 如果该停靠区已经显示过，则跳过（避免重复显示）
+                if (displayedStops.containsKey(displayName)) {
+                    continue;
+                }
 
-                    displayedStops.put(displayName, displayName);
+                displayedStops.put(displayName, displayName);
 
-                    // 获取该站点的可换乘线路
-                    List<String> transferableLines = stop.getTransferableLines();
-                    StringBuilder transferInfo = new StringBuilder();
+                // 获取该站点的可换乘线路
+                List<String> transferableLines = stop.getTransferableLines();
+                StringBuilder transferInfo = new StringBuilder();
 
-                    // 添加换乘线路标识符
-                    if (!transferableLines.isEmpty()) {
-                        // 排除当前乘坐的线路
-                        List<String> filteredLines = new ArrayList<>(transferableLines);
-                        filteredLines.remove(line.getId());
+                // 添加换乘线路标识符
+                if (!transferableLines.isEmpty()) {
+                    // 排除当前乘坐的线路
+                    List<String> filteredLines = new ArrayList<>(transferableLines);
+                    filteredLines.remove(line.getId());
 
-                        if (!filteredLines.isEmpty()) {
-                            for (String transferLineId : filteredLines) {
-                                Line transferLine = lineManager.getLine(transferLineId);
-                                if (transferLine != null) {
-                                    // 使用线路颜色 + 统一标识符
-                                    String coloredSymbol = ChatColor.translateAlternateColorCodes('&', transferLine.getColor()) + lineSymbol + " ";
-                                    transferInfo.append(coloredSymbol);
-                                }
+                    if (!filteredLines.isEmpty()) {
+                        for (String transferLineId : filteredLines) {
+                            Line transferLine = lineManager.getLine(transferLineId);
+                            if (transferLine != null) {
+                                // 使用线路颜色 + 统一标识符
+                                String coloredSymbol = ChatColor.translateAlternateColorCodes('&', transferLine.getColor()) + lineSymbol + " ";
+                                transferInfo.append(coloredSymbol);
                             }
                         }
                     }
-
-                    // 设置站点样式和名称
-                    String formattedName;
-                    if (i == currentStopIndex) {
-                        // 当前站点
-                        formattedName = currentStopStyle + displayName;
-                    } else if (i == nextStopIndex) {
-                        // 下一站
-                        formattedName = nextStopStyle + displayName;
-                    } else {
-                        // 其他站点
-                        formattedName = otherStopsStyle + displayName;
-                    }
-
-                    // 添加换乘信息
-                    if (transferInfo.length() > 0) {
-                        formattedName += " " + transferInfo;
-                    }
-
-                    Score score = objective.getScore(formattedName);
-                    score.setScore(scoreValue--);
                 }
-            }
 
-            // 应用计分板
-            player.setScoreboard(scoreboard);
-            playerScoreboards.put(player.getUniqueId(), scoreboard);
+                // 设置站点样式和名称
+                String formattedName;
+                if (i == currentStopIndex) {
+                    // 当前站点
+                    formattedName = currentStopStyle + displayName;
+                } else if (i == nextStopIndex) {
+                    // 下一站
+                    formattedName = nextStopStyle + displayName;
+                } else {
+                    // 其他站点
+                    formattedName = otherStopsStyle + displayName;
+                }
+
+                // 添加换乘信息
+                if (transferInfo.length() > 0) {
+                    formattedName += " " + transferInfo;
+                }
+
+                Score score = objective.getScore(formattedName);
+                score.setScore(scoreValue--);
+            }
         }
+
+        // 应用计分板
+        player.setScoreboard(scoreboard);
+        playerScoreboards.put(player.getUniqueId(), scoreboard);
     }
     
     /**
@@ -291,18 +287,14 @@ public class ScoreboardManager {
      * @param player 要清除计分板的玩家
      */
     public static void clearScoreboard(Player player) {
-        if (SchedulerUtil.isFolia()) {
+        if (player == null || !player.isOnline()) {
             return;
-        } else {
-            if (player == null || !player.isOnline()) {
-                return;
-            }
+        }
 
-            org.bukkit.scoreboard.ScoreboardManager manager = Bukkit.getScoreboardManager();
-            if (manager != null) {
-                player.setScoreboard(manager.getNewScoreboard());
-                playerScoreboards.remove(player.getUniqueId());
-            }
+        org.bukkit.scoreboard.ScoreboardManager manager = Bukkit.getScoreboardManager();
+        if (manager != null) {
+            player.setScoreboard(manager.getNewScoreboard());
+            playerScoreboards.remove(player.getUniqueId());
         }
     }
     

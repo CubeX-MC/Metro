@@ -149,7 +149,11 @@ public class SoundUtil {
         Note note = getNote(tone);
         
         if (instrument != null && note != null && location.getWorld() != null) {
-            location.getWorld().playNote(location, instrument, note);
+            for (Player player : location.getWorld().getPlayers()) {
+                if (player.getLocation().distanceSquared(location) < 256) { // 16 blocks radius
+                    player.playNote(location, instrument, note);
+                }
+            }
         }
     }
     

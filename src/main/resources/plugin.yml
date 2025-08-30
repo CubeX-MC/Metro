@@ -1,8 +1,8 @@
 name: Metro
 version: '1.0.10'
 main: org.cubexmc.metro.Metro
-api-version: '1.21'
-folia-supported: true
+api-version: '1.18'
+folia-supported: false
 authors: [angushushu, wwwer]
 description: 一个简单的地铁管理系统
 website: https://cubexmc.org

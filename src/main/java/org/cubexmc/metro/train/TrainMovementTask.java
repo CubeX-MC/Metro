@@ -22,8 +22,8 @@ import org.cubexmc.metro.util.LocationUtil;
 import org.cubexmc.metro.util.SchedulerUtil;
 import org.cubexmc.metro.util.SoundUtil;
 import org.cubexmc.metro.util.TextUtil;
+import org.bukkit.scheduler.BukkitTask;
 
-import net.kyori.adventure.text.Component;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 
@@ -47,7 +47,7 @@ public class TrainMovementTask implements Runnable {
     private String currentStopId;
     private String targetStopId;
     private TrainState currentState;
-    private Object taskId; // 保存任务ID，可以是BukkitTask或Folia的ScheduledTask
+    private BukkitTask taskId; // 保存任务ID，为BukkitTask
     
     /**
      * 创建一个新的列车移动任务
@@ -98,7 +98,7 @@ public class TrainMovementTask implements Runnable {
      * 
      * @param taskId 任务ID对象
      */
-    public void setTaskId(Object taskId) {
+    public void setTaskId(BukkitTask taskId) {
         this.taskId = taskId;
     }
     
@@ -180,9 +180,8 @@ public class TrainMovementTask implements Runnable {
      */
     private void maintainMinecartProperties() {
         // minecart.setCustomName("MetroMinecart");
-        Component customName = Component.text("MetroMinecart");
         SchedulerUtil.entityRun(plugin, minecart, () -> {
-            minecart.customName(customName);
+            minecart.setCustomName("MetroMinecart");
             minecart.setGravity(false); // 禁用重力，防止下落
             // 如果矿车被阻挡，强制设置为穿透实体
             for (Entity entity : minecart.getNearbyEntities(1.0, 1.0, 1.0)) {
@@ -942,7 +941,7 @@ public class TrainMovementTask implements Runnable {
         // 创建一个新的TrainMovementTask，初始状态为停站状态
         TrainMovementTask trainTask = new TrainMovementTask(plugin, minecart, passenger, lineId, currentStopId);
         // 使用实体调度器来支持 Folia
-        Object taskId = SchedulerUtil.entityRun(plugin, minecart, trainTask, 1L, 1L); // 立即开始，每tick运行一次
+        BukkitTask taskId = SchedulerUtil.entityRun(plugin, minecart, trainTask, 1L, 1L); // 立即开始，每tick运行一次
         trainTask.setTaskId(taskId);
         
         // 设置任务的目标站点为下一站

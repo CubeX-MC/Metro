@@ -25,6 +25,7 @@ import org.cubexmc.metro.train.ScoreboardManager;
 import org.cubexmc.metro.train.TrainMovementTask;
 import org.cubexmc.metro.util.LocationUtil;
 import org.cubexmc.metro.util.SchedulerUtil;
+import org.bukkit.scheduler.BukkitTask;
 
 /**
  * 处理矿车相关事件
@@ -32,7 +33,7 @@ import org.cubexmc.metro.util.SchedulerUtil;
 public class VehicleListener implements Listener {
     
     private final Metro plugin;
-    private final Map<UUID, Object> trainMovementTasks = new HashMap<>(); // 记录乘客移动任务
+    private final Map<UUID, BukkitTask> trainMovementTasks = new HashMap<>(); // 记录乘客移动任务
     
     public VehicleListener(Metro plugin) {
         this.plugin = plugin;
@@ -190,7 +191,7 @@ public class VehicleListener implements Listener {
         }
         
         // 注册并启动任务
-        Object taskId = SchedulerUtil.globalRun(plugin, task, 1L, 1L);
+        BukkitTask taskId = SchedulerUtil.globalRun(plugin, task, 1L, 1L);
         task.setTaskId(taskId);
         
         // 保存任务ID
@@ -201,7 +202,7 @@ public class VehicleListener implements Listener {
      * 取消列车移动任务
      */
     private void cancelTrainMovementTask(UUID playerId) {
-        Object taskId = trainMovementTasks.remove(playerId);
+        BukkitTask taskId = trainMovementTasks.remove(playerId);
         if (taskId != null) {
             SchedulerUtil.cancelTask(taskId);
         }

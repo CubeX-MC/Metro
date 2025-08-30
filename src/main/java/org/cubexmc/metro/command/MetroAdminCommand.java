@@ -370,14 +370,9 @@ public class MetroAdminCommand implements CommandExecutor {
                             LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName())));
                     return true;
                 }
-                player.teleportAsync(stop.getStopPointLocation()).thenAccept((success) -> {
-                    if (success) {
-                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.tp_success", 
-                                LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName())));
-                    } else {
-                        player.sendMessage(ChatColor.RED + "Teleport failed. The destination might be unsafe.");
-                    }
-                });
+                player.teleport(stop.getStopPointLocation());
+                player.sendMessage(plugin.getLanguageManager().getMessage("stop.tp_success", 
+                        LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName())));
                 return true;
             }
 
