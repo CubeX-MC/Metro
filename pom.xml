@@ -6,7 +6,7 @@
 
     <groupId>org.cubexmc</groupId>
     <artifactId>metro</artifactId>
-    <version>1.0.10</version>
+    <version>1.0.10_1.20+</version>
     <packaging>jar</packaging>
 
     <name>metro</name>

@@ -1,9 +1,9 @@
 C:\Users\Angus\Desktop\MC server\Metro\src\main\java\org\cubexmc\metro\command\MetroAdminCommand.java
 C:\Users\Angus\Desktop\MC server\Metro\src\main\java\org\cubexmc\metro\command\MetroAdminTabCompleter.java
-C:\Users\Angus\Desktop\MC server\Metro\src\main\java\org\cubexmc\metro\lang\LanguageManager.java
 C:\Users\Angus\Desktop\MC server\Metro\src\main\java\org\cubexmc\metro\listener\PlayerInteractListener.java
 C:\Users\Angus\Desktop\MC server\Metro\src\main\java\org\cubexmc\metro\listener\PlayerMoveListener.java
 C:\Users\Angus\Desktop\MC server\Metro\src\main\java\org\cubexmc\metro\listener\VehicleListener.java
+C:\Users\Angus\Desktop\MC server\Metro\src\main\java\org\cubexmc\metro\manager\LanguageManager.java
 C:\Users\Angus\Desktop\MC server\Metro\src\main\java\org\cubexmc\metro\manager\LineManager.java
 C:\Users\Angus\Desktop\MC server\Metro\src\main\java\org\cubexmc\metro\manager\SelectionManager.java
 C:\Users\Angus\Desktop\MC server\Metro\src\main\java\org\cubexmc\metro\manager\StopManager.java

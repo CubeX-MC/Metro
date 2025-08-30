@@ -8,7 +8,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.cubexmc.metro.command.MetroAdminCommand;
 import org.cubexmc.metro.command.MetroAdminTabCompleter;
-import org.cubexmc.metro.lang.LanguageManager;
+import org.cubexmc.metro.manager.LanguageManager;
 import org.cubexmc.metro.listener.PlayerInteractListener;
 import org.cubexmc.metro.listener.PlayerMoveListener;
 import org.cubexmc.metro.listener.VehicleListener;
