@@ -29,6 +29,7 @@ import org.cubexmc.metro.util.SoundUtil;
 
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
+// import org.bukkit.util.Vector;
 
 /**
  * 处理玩家交互事件
@@ -278,6 +279,7 @@ public class PlayerInteractListener implements Listener {
                     minecart.setPersistent(false);
                     minecart.setGravity(false); // 禁用重力temp 6-15
                     minecart.setSlowWhenEmpty(false); // 不因空车而减速
+                    // minecart.setVelocity(new Vector(0, 0, 0));
 
                     double max_speed = line.getMaxSpeed();
                     if (max_speed == -1.0)

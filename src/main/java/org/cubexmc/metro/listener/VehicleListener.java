@@ -41,39 +41,39 @@ public class VehicleListener implements Listener {
     /**
      * 监听玩家进入矿车事件
      */
-    @EventHandler(priority = EventPriority.NORMAL)
-    public void onVehicleEnter(VehicleEnterEvent event) {
-        Vehicle vehicle = event.getVehicle();
-        Entity passenger = event.getEntered();
+    // @EventHandler(priority = EventPriority.NORMAL)
+    // public void onVehicleEnter(VehicleEnterEvent event) {
+    //     Vehicle vehicle = event.getVehicle();
+    //     Entity passenger = event.getEntered();
         
-        // 只处理玩家进入地铁矿车的情况
-        if (!(vehicle instanceof Minecart) || !(passenger instanceof Player)) {
-            return;
-        }
+    //     // 只处理玩家进入地铁矿车的情况
+    //     if (!(vehicle instanceof Minecart) || !(passenger instanceof Player)) {
+    //         return;
+    //     }
         
-        Player player = (Player) passenger;
-        Minecart minecart = (Minecart) vehicle;
+    //     Player player = (Player) passenger;
+    //     Minecart minecart = (Minecart) vehicle;
         
-        // 检查是否是Metro的矿车
-        if (!"MetroMinecart".equals(minecart.getCustomName())) {
-            return;
-        }
+    //     // 检查是否是Metro的矿车
+    //     if (!"MetroMinecart".equals(minecart.getCustomName())) {
+    //         return;
+    //     }
         
-        // 获取当前位置所在的停靠区
-        Location location = minecart.getLocation();
-        StopManager stopManager = plugin.getStopManager();
-        Stop stop = stopManager.getStopContainingLocation(location);
+    //     // 获取当前位置所在的停靠区
+    //     Location location = minecart.getLocation();
+    //     StopManager stopManager = plugin.getStopManager();
+    //     Stop stop = stopManager.getStopContainingLocation(location);
         
-        if (stop != null) {
-            // 找出当前停靠区所在的线路
-            Line line = findLineForStop(stop);
+    //     if (stop != null) {
+    //         // 找出当前停靠区所在的线路
+    //         Line line = findLineForStop(stop);
             
-            if (line != null) {
-                // 初始化列车移动任务
-                startTrainMovementTask(player, minecart, line, stop.getId());
-            }
-        }
-    }
+    //         if (line != null) {
+    //             // 初始化列车移动任务
+    //             startTrainMovementTask(player, minecart, line, stop.getId());
+    //         }
+    //     }
+    // }
     
     /**
      * 监听玩家离开矿车事件
@@ -175,27 +175,28 @@ public class VehicleListener implements Listener {
     /**
      * 启动列车移动任务
      */
-    private void startTrainMovementTask(Player player, Minecart minecart, Line line, String stopId) {
-        UUID playerId = player.getUniqueId();
+    // private void startTrainMovementTask(Player player, Minecart minecart, Line line, String stopId) {
+    //     System.out.println("手动上车启动列车移动任务");
+    //     UUID playerId = player.getUniqueId();
         
-        // 如果已有任务，先取消
-        cancelTrainMovementTask(playerId);
+    //     // 如果已有任务，先取消
+    //     cancelTrainMovementTask(playerId);
         
-        // 创建新的列车移动任务
-        TrainMovementTask task = new TrainMovementTask(plugin, minecart, player, line.getId(), stopId);
+    //     // 创建新的列车移动任务
+    //     TrainMovementTask task = new TrainMovementTask(plugin, minecart, player, line.getId(), stopId);
         
-        // 如果当前站是终点站，不执行任务
-        if (line.getNextStopId(stopId) == null) {
-            return;
-        }
+    //     // 如果当前站是终点站，不执行任务
+    //     if (line.getNextStopId(stopId) == null) {
+    //         return;
+    //     }
         
-        // 注册并启动任务
-        Object taskId = SchedulerUtil.globalRun(plugin, task, 1L, 1L);
-        task.setTaskId(taskId);
+    //     // 注册并启动任务
+    //     Object taskId = SchedulerUtil.globalRun(plugin, task, 1L, 1L);
+    //     task.setTaskId(taskId);
         
-        // 保存任务ID
-        trainMovementTasks.put(playerId, taskId);
-    }
+    //     // 保存任务ID
+    //     trainMovementTasks.put(playerId, taskId);
+    // }
     
     /**
      * 取消列车移动任务

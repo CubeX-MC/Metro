@@ -164,7 +164,7 @@ public class TrainMovementTask implements Runnable {
         // 根据当前状态执行不同的逻辑
         switch (currentState) {
             case STOPPED_AT_STATION:
-//                handleStoppedAtStation();
+                minecart.setVelocity(new Vector(0, 0, 0));
                 break;
             case MOVING_IN_STATION:
                 handleMovingInStation(targetStop);
@@ -922,7 +922,8 @@ public class TrainMovementTask implements Runnable {
      * @param passenger 乘客
      * @param lineId 线路ID
      * @param currentStopId 当前站点ID
-     */    public static void startTrainTask(Metro plugin, Minecart minecart, Player passenger, String lineId, String currentStopId) {
+     */    
+    public static void startTrainTask(Metro plugin, Minecart minecart, Player passenger, String lineId, String currentStopId) {
         // 获取线路
         LineManager lineManager = plugin.getLineManager();
         Line line = lineManager.getLine(lineId);
