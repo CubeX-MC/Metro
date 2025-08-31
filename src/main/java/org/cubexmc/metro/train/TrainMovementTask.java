@@ -164,7 +164,7 @@ public class TrainMovementTask implements Runnable {
         // 根据当前状态执行不同的逻辑
         switch (currentState) {
             case STOPPED_AT_STATION:
-//                handleStoppedAtStation();
+                minecart.setVelocity(new Vector(0, 0, 0));
                 break;
             case MOVING_IN_STATION:
                 handleMovingInStation(targetStop);
