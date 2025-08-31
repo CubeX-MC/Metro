@@ -2,7 +2,7 @@
 
 [English](README_en.md) | 简体中文
 
-[IMG]https://bstats.org/signatures/bukkit/Metro.svg[/IMG]
+![bstats](https://bstats.org/signatures/bukkit/Metro.svg)
 
 ## 插件概述
 
