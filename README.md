@@ -2,6 +2,8 @@
 
 [English](README_en.md) | 简体中文
 
+[IMG]https://bstats.org/signatures/bukkit/Metro.svg[/IMG]
+
 ## 插件概述
 
 Metro是一个受牛腩小镇启发的地铁交通系统插件，允许管理员创建自动化的地铁线路网络，为玩家提供便捷的乘车体验。
@@ -36,13 +38,12 @@ Metro是一个受牛腩小镇启发的地铁交通系统插件，允许管理员
 
 | 命令                                                     | 描述                          |
 | :------------------------------------------------------- | :---------------------------- |
-| `/m stop create <stop_id> <显示名称>`                   | 创建新停靠区                  |
+| `/m stop create <stop_id> <显示名称>`                   | 选区后创建新停靠区                  |
 | `/m stop delete <stop_id>`                              | 删除停靠区及其所有配置        |
 | `/m stop list`                                          | 列出所有停靠区                |
 | `/m stop rename <stop_id> <新名称>`                     | 重命名停靠区                  |
 | `/m stop info <stop_id>`                                | 查看停靠区详细信息            |
-| `/m stop setcorner1 <stop_id>`                          | 设置空间第一个对角点          |
-| `/m stop setcorner2 <stop_id>`                          | 设置空间第二个对角点          |
+| `/m stop setcorners <stop_id>`                          | 设置空间对角点                |
 | `/m stop setpoint [朝向角度]`                            | 设置精确停靠点                |
 | `/m stop addtransfer <stop_id> <换乘线路ID>`             | 添加可换乘线路                |
 | `/m stop deltransfer <stop_id> <换乘线路ID>`             | 移除可换乘线路                |
