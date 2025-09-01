@@ -1,0 +1,245 @@
+# Metro 插件繁體中文語言檔案
+
+# 基本資訊
+plugin:
+  enabled: "&a地鐵插件已啟用！"
+  disabled: "&c地鐵插件已禁用！"
+  reload: "&a設定檔重新載入完成。"
+  no_permission: "&c你沒有權限使用此指令。"
+  players_only: "&c此指令僅限玩家使用。"
+
+# 指令相關訊息
+command:
+  # 主指令幫助
+  help_header: "&a===== Metro 管理員指令幫助 ====="
+  help_line: "&a指令: &6/m line &f- 管理地鐵路線 (使用 /m line 查看子指令)"
+  help_stop: "&a指令: &6/m stop &f- 管理停靠區 (使用 /m stop 查看子指令)"
+  help_reload: "&a指令: &6/m reload &f- 重新載入設定"
+  help_testendpoint: "&a指令: &6/m testendpoint &f- 測試終點站提示顯示"
+  help_teststopinfo: "&a指令: &6/m teststopinfo <路線ID> [站點ID] &f- 測試路線站點資訊"
+  unknown: "&c未知指令。請使用 /m 查看幫助。"
+  teleport_to: "&a點擊傳送至 {stop_name}"
+
+# 選取範圍相關訊息
+selection:
+  corner1_set: "&a成功設定第一個角落點位置: {location}"
+  corner2_set: "&a成功設定第二個角落點位置: {location}"
+
+# 路線指令相關
+line:
+  help_header: "&a===== Metro 路線管理指令 ====="
+  help_create: "&6/m line create <路線ID> <顯示名稱> &f- 建立新路線"
+  help_delete: "&6/m line delete <路線ID> &f- 刪除路線"
+  help_list: "&6/m line list &f- 列出所有路線"
+  help_setcolor: "&6/m line setcolor <路線ID> <顏色> &f- 設定路線顏色"
+  help_setterminus: "&6/m line setterminus <路線ID> <方向名稱> &f- 設定路線終點方向名稱"
+  help_setmaxspeed: "&6/m line setmaxspeed <路線ID> <速度> &f- 設定路線最大速度"
+  help_addstop: "&6/m line addstop <路線ID> <站點ID> [索引] &f- 將停靠區新增至路線"
+  help_delstop: "&6/m line delstop <路線ID> <站點ID> &f- 從路線移除停靠區"
+  help_stops: "&6/m line stops <路線ID> &f- 列出路線上的所有停靠區"
+  help_rename: "&6/m line rename <路線ID> <新名稱> &f- 重新命名路線顯示名稱"
+  help_info: "&6/m line info <路線ID> &f- 查看路線詳細資訊"
+  
+  usage_create: "&c用法: /m line create <路線ID> <\"顯示名稱\">"
+  usage_delete: "&c用法: /m line delete <路線ID>"
+  usage_setcolor: "&c用法: /m line setcolor <路線ID> <顏色>\n&e顏色範例: &a&a, &b&b, &c&c, &9&9 等 Minecraft 顏色代碼"
+  usage_setterminus: "&c用法: /m line setterminus <路線ID> <終點方向名稱>"
+  usage_setmaxspeed: "&c用法: /m line setmaxspeed <路線ID> <速度>\n&e速度必須為正數"
+  usage_addstop: "&c用法: /m line addstop <路線ID> <站點ID> [順序索引]"
+  usage_delstop: "&c用法: /m line delstop <路線ID> <站點ID>"
+  usage_rename: "&c用法: /m line rename <路線ID> <新名稱>"
+  usage_stops: "&c用法: /m line stops <路線ID>"
+  
+  create_success: "&a成功建立路線: {line_id}"
+  create_exists: "&c路線ID {line_id} 已存在！"
+  delete_success: "&a成功刪除路線: {line_id}"
+  delete_not_found: "&c找不到路線ID: {line_id}"
+  setcolor_success: "&a成功設定路線 {line_id} 的顏色為: {color}範例文本"
+  setterminus_success: "&a成功設定路線 {line_id} 的終點方向名稱為: {terminus_name}"
+  rename_success: "&a成功將路線 {line_id} 重新命名為: {new_name}"
+  rename_fail: "&c重新命名路線失敗，請檢查路線ID是否存在。"
+  setmaxspeed_success: "&a成功設定路線 {line_id} 的最大速度為: {max_speed}"
+  setmaxspeed_invalid: "&c無效的速度值。速度必須為正數。"
+  addstop_success: "&a成功將停靠區 {stop_id} 新增至路線 {line_id}"
+  addstop_fail: "&c新增停靠區失敗，請檢查路線ID和停靠區ID是否存在。"
+  addstop_circular_invalid_index: "&c你不能將站點新增至環狀線的末端。"
+  delstop_success: "&a成功從路線 {line_id} 中移除停靠區 {stop_id}"
+  delstop_fail: "&c移除停靠區失敗，請檢查路線ID和停靠區ID是否存在。"
+  made_circular: "&a路線 {line_id} 現在是一條環狀線。"
+  made_normal: "&a路線 {line_id} 現在不是一條環狀線。"
+  
+  list_empty: "&e暫無任何路線。"
+  list_header: "&a===== 路線列表 ====="
+  list_format: "&6{line_name}&f: &e{line_id}"
+  list_item_format: "&6{line_name} &f({line_id})"
+  index_format: "&c索引必須是一個數字。"
+  stops_list_header: "&a===== 路線站點列表 ====="
+  stops_list_empty: "&e路線 {line_name} 上沒有任何站點。"
+  stops_list_prefix: "&b{index}. "
+  stops_list_suffix: " &f({stop_id}){status}"
+  stops_list_invalid_stop: "&b{index}. &c{stop_id} (無效站點)"
+  stops_status_start: " (起點站)"
+  stops_status_end: " (終點站)"
+  info_header: "&a===== 路線資訊: {line_name} ====="
+  info_id: "&6ID: &f{line_id}"
+  info_name: "&6名稱: &f{line_name}"
+  info_color: "&6顏色: &f{color}"
+  info_terminus: "&6終點方向: &f{terminus_name}"
+  info_max_speed: "&6最大速度: &f{max_speed}"
+  info_stops_header: "&6站點列表:"
+  info_stops_item: "&a  {index}. &e{stop_name} &f({stop_id})"
+  info_stops_item_invalid: "&a  {index}. &c{stop_id} (無效站點)"
+  info_no_stops: "&6站點: &e無站點"
+  info_default: "預設"
+  line_not_found: "&c未找到路線: {line_id}"
+
+# 停靠區指令相關
+stop:
+  help_header: "&a===== Metro 停靠區管理指令 ====="
+  help_create: "&6/m stop create <停靠區ID> <顯示名稱> &f- 建立新停靠區"
+  help_delete: "&6/m stop delete <停靠區ID> &f- 刪除停靠區"
+  help_list: "&6/m stop list &f- 列出所有停靠區"
+  help_setcorners: "&6/m stop setcorners <停靠區ID> &f- 更新停靠區的角落點"
+  help_setpoint: "&6/m stop setpoint [yaw] &f- 設定停靠點位置和發車朝向"
+  help_addtransfer: "&6/m stop addtransfer <停靠區ID> <轉乘路線ID> &f- 新增可轉乘路線"
+  help_deltransfer: "&6/m stop deltransfer <停靠區ID> <轉乘路線ID> &f- 移除可轉乘路線"
+  help_listtransfers: "&6/m stop listtransfers <停靠區ID> &f- 列出停靠區的可轉乘路線"
+  help_settitle: "&6/m stop settitle <停靠區ID> <標題類型> <鍵> <值> &f- 設定停靠區自訂標題"
+  help_deltitle: "&6/m stop deltitle <停靠區ID> <標題類型> [鍵] &f- 刪除停靠區自訂標題"
+  help_listtitles: "&6/m stop listtitles <停靠區ID> &f- 查看停靠區所有自訂標題"
+  help_rename: "&6/m stop rename <停靠區ID> <新名稱> &f- 重新命名停靠區顯示名稱"
+  help_info: "&6/m stop info <停靠區ID> &f- 查看停靠區詳細資訊"
+  help_tp: "&6/m stop tp <停靠區ID> &f- 傳送到一個停靠區"
+  
+  usage_create: "&c用法: /m stop create <停靠區ID> <\"顯示名稱\">"
+  usage_delete: "&c用法: /m stop delete <停靠區ID>"
+  usage_setcorners: "&c用法: /m stop setcorners <停靠區ID>"
+  usage_setpoint: "&c用法: /m stop setpoint [yaw]"
+  usage_tp: "&c用法: /m stop tp <停靠區ID>"
+  usage_info: "&c用法: /m stop info <停靠區ID>"
+  usage_addtransfer: "&c用法: /m stop addtransfer <停靠區ID> <轉乘路線ID>"
+  usage_deltransfer: "&c用法: /m stop deltransfer <停靠區ID> <轉乘路線ID>"
+  usage_listtransfers: "&c用法: /m stop listtransfers <停靠區ID>"
+  usage_settitle: "&c用法: /m stop settitle <停靠區ID> <標題類型> <鍵> <值>"
+  usage_deltitle: "&c用法: /m stop deltitle <停靠區ID> <標題類型> [鍵]"
+  usage_listtitles: "&c用法: /m stop listtitles <停靠區ID>"
+  usage_rename: "&c用法: /m stop rename <停靠區ID> <新名稱>"
+  
+  create_success: "&a成功建立停靠區: {stop_name}"
+  create_exists: "&c停靠區ID {stop_id} 已存在！"
+  delete_success: "&a成功刪除停靠區: {stop_id}"
+  delete_not_found: "&c找不到停靠區ID: {stop_id}"
+  rename_success: "&a成功將停靠區 {old_name} 重新命名為: {new_name}"
+  rename_fail: "&c重新命名停靠區失敗，請檢查停靠區ID是否存在。"
+  setcorners_success: "&a成功更新停靠區 {stop_id} 的角落點。"
+  
+  setpoint_yaw_invalid: "&c必須是一個數字"
+  setpoint_not_rail: "&c必須站在鐵軌上設定停靠點。"
+  setpoint_not_in_area: "&c必須站在 {stop_name} 停靠區域內設定停靠點。"
+  setpoint_success: "&a成功為停靠區 {stop_id} 設定停靠點，發車朝向: {yaw}"
+  setpoint_fail: "&c設定停靠點失敗，請檢查停靠區ID是否存在。"
+  no_stop_found_at_location: "&c目前位置找不到任何停靠區。"
+  selection_not_complete: "&c請先使用金鋤頭選取停靠區的兩個角落點。"
+  
+  addtransfer_success: "&a成功將路線 {transfer_line_name} 新增為停靠區 {stop_name} 的可轉乘路線"
+  addtransfer_exists: "&e停靠區 {stop_name} 已存在可轉乘路線 {transfer_line_name}"
+  deltransfer_success: "&a成功從停靠區 {stop_name} 移除可轉乘路線 {transfer_line_name}"
+  deltransfer_not_exists: "&e停靠區 {stop_name} 不存在可轉乘路線 {transfer_line_name}"
+  
+  list_empty: "&e暫無任何停靠區。"
+  list_header: "&a===== 停靠區列表 ====="
+  list_prefix: "&f{index}. "
+  list_suffix: " &7({stop_id})"
+  list_item_format: "&6{stop_id} &f- {stop_name}"
+  
+  transfers_empty: "&e停靠區 {stop_name} 沒有可轉乘路線"
+  transfers_header: "&a停靠區 {stop_name} 的可轉乘路線:"
+  transfers_format: "&e- {line_name}"
+  transfers_invalid: "&c- {line_id} (無效路線)"
+  
+  info_header: "&a===== 停靠區資訊: {stop_name} ====="
+  info_name: "&6名稱: &f{stop_name}"
+  info_id: "&6ID: &f{stop_id}"
+  info_corner1: "&6角落點1: &f{corner1}"
+  info_corner2: "&6角落點2: &f{corner2}"
+  info_stoppoint: "&6停靠點: &f{stoppoint}"
+  info_transfers_header: "&6可轉乘路線:"
+  info_transfer_item: "&a  - &e{line_name} &f({line_id})"
+  info_transfer_item_invalid: "&a  - &c{line_id} (無效路線)"
+  info_no_transfers: "&6可轉乘路線: &e無"
+  info_parent_lines_header: "&6所屬路線:"
+  info_parent_line_item: "&a  - &e{line_name} &f({line_id})"
+  info_no_parent_lines: "&6所屬路線: &e無"
+  
+  stop_not_found: "&c未找到停靠區: {stop_id}"
+  stoppoint_not_set: "&c停靠區 {stop_name} 未設定停靠點。"
+  tp_success: "&a已傳送至 {stop_name}。"
+  
+  # 自訂標題相關
+  title_type_invalid: "&c無效的標題類型: {title_type}"
+  title_key_invalid: "&c無效的標題鍵: {title_key}"
+  title_types: "&c有效的標題類型: stop_continuous, arrive_stop, terminal_stop, departure"
+  title_keys: "&c有效的標題鍵: title, subtitle, actionbar"
+  
+  settitle_success: "&a成功為停靠區 {stop_name} 設定自訂標題: [{title_type}.{title_key}] = \"{title_value}\""
+  deltitle_success: "&a成功從停靠區 {stop_name} 移除自訂標題: [{title_type}.{title_key}]"
+  deltitle_type_success: "&a成功從停靠區 {stop_name} 移除所有 {title_type} 自訂標題設定"
+  deltitle_not_found: "&c停靠區 {stop_name} 沒有自訂標題: [{title_type}.{title_key}]"
+  deltitle_type_not_found: "&c停靠區 {stop_name} 沒有 {title_type} 自訂標題設定"
+  
+  listtitles_header: "&a===== 停靠區 {stop_name} 自訂標題設定 ====="
+  listtitles_type: "&6類型: {title_type}"
+  listtitles_item: "&e  - {title_key}: \"{title_value}\""
+  listtitles_empty: "&e該停靠區沒有自訂標題設定"
+
+# 測試指令相關
+test:
+  endpoint_start: "&a正在測試終點站提示..."
+  endpoint_disabled: "&c終點站提示未啟用。設定檔中 titles.terminal_stop.enabled = false"
+  endpoint_show: "&a顯示終點站提示: title={title}, subtitle={subtitle}"
+  
+  stopinfo_usage: "&c用法: /m teststopinfo <路線ID> [站點ID]"
+  stopinfo_line_empty: "&e路線 {line_name} 上沒有任何站點。"
+  stopinfo_header: "&a===== 路線站點 ====="
+  stopinfo_line: "&6路線: {line_name} ({line_id})"
+  stopinfo_stop_format: "&b{index}. &e{stop_name} &f({stop_id}){status}"
+  stopinfo_stop_start: " &6(起點站)"
+  stopinfo_stop_end: " &6(終點站)"
+  stopinfo_detail_hint: "&a使用 /m teststopinfo {line_id} <stop_id> 查看詳細資訊"
+  
+  stop_info_header: "&a===== 停靠區資訊 ====="
+  stop_info_line: "&6路線: {line_name} ({line_id})"
+  stop_info_current: "&6目前站: {stop_name} ({stop_id})"
+  stop_info_prev: "&6上一站: {prev_stop_name}"
+  stop_info_next: "&6下一站: {next_stop_name}"
+  stop_info_terminal: "&6終點站: {terminal_stop_name}"
+  stop_info_no_prev: "無 (起點站)"
+  stop_info_no_next: "無 (終點站)"
+  stop_info_no_terminal: "無"
+  stop_info_title_preview: "&a標題預覽: {title}"
+  stop_info_subtitle_preview: "&a副標題預覽: {subtitle}"
+
+# 乘客相關訊息
+passenger:
+  train_derailed: "&c鐵軌已損壞，行程已終止！"
+  
+# 移動監聽相關
+movement:
+  enter_stop: "&a您已進入停靠區: {stop_name}"
+  leave_stop: "&e您已離開停靠區: {stop_name}"
+  
+# 互動相關
+interact:
+  train_coming: "&e列車即將進站，請稍候..."
+  train_spawned: "&a已上車，{departure_seconds} 秒後發車..."
+  train_error: "&c生成列車時發生錯誤，請稍後再試。"
+  train_pending: "&c此月台已有列車正在進站，請稍待片刻再嘗試。"
+  stop_no_line: "&c該停靠區不屬於任何路線。"
+  stop_no_point: "&c該停靠區尚未設定停靠點，無法上車。"
+  terminal_stop: "&c終點站無法發車，請前往起點站乘車。"
+  
+# 車輛相關
+vehicle:
+  terminal_arrived: "&a已抵達終點站: {terminal_stop_name}"
+  auto_depart: "&a自動發車: 從 {current_stop_name} 前往 {next_stop_name}"
+  passenger_exit: "&6玩家已下車，將不會自動發車"
