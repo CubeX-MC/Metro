@@ -93,3 +93,6 @@ Metro是一个受牛腩小镇启发的地铁交通系统插件，允许管理员
 * `lines.yml` - 线路数据存储
 * `stops.yml` - 停靠区数据存储
 * `zh_CN.yml` - 中文语言文件
+
+[![Forkers repo roster for @CubeX-MC/Metro](https://reporoster.com/forks/CubeX-MC/Metro)](https://github.com/CubeX-MC/Metro/network/members)
+[![Stargazers repo roster for @CubeX-MC/Metro](https://reporoster.com/stars/CubeX-MC/Metro)](https://github.com/CubeX-MC/Metro/stargazers) 
