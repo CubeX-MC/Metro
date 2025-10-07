@@ -2,6 +2,7 @@
 
 [English](README_en.md) | 简体中文
 
+[Discord](https://discord.com/invite/7tJeSZPZgv) | [QQ频道](https://pd.qq.com/s/1n3hpe4e7?b=9)
 ![bstats](https://bstats.org/signatures/bukkit/Metro.svg)
 
 ## 插件概述
