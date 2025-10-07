@@ -55,6 +55,7 @@ logs/
 *.swp
 *.swo
 *~
+.LCK*
 
 # Java
 *.class
