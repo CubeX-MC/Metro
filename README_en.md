@@ -1,7 +1,7 @@
 # Metro Subway System
 
-[中文](README.md) | English
-
+[中文](README.md) | English<br>
+[Discord](https://discord.com/invite/7tJeSZPZgv) | [QQ频道](https://pd.qq.com/s/1n3hpe4e7?b=9)
 ## Plugin Overview
 
 Metro is a subway transit system plugin that lets administrators create automated subway lines and provides players with a convenient riding experience, inspired by Newnan.city.
