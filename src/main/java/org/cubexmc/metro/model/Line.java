@@ -1,7 +1,11 @@
 package org.cubexmc.metro.model;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * 代表地铁系统中的一条线路
@@ -13,6 +17,8 @@ public class Line {
     private String color; // 线路颜色
     private String terminusName; // 终点站方向名称
     private Double maxSpeed; // 线路最大速度
+    private UUID owner; // 线路所有者 UUID，null 表示服务器所有
+    private final Set<UUID> admins; // 线路管理员 UUID 集合
     
     /**
      * 创建新线路
@@ -27,6 +33,7 @@ public class Line {
         this.color = "&f"; // 默认白色
         this.terminusName = ""; // 默认空
         this.maxSpeed = null; // 默认使用config.yml中的maxspeed
+        this.admins = new HashSet<>();
     }
     
     /**
@@ -170,16 +177,6 @@ public class Line {
     }
     
     /**
-     * 获取停靠区在线路中的索引
-     * 
-     * @param stopId 停靠区ID
-     * @return 索引，不存在返回-1
-     */
-    public int getStopIndex(String stopId) {
-        return orderedStopIds.indexOf(stopId);
-    }
-    
-    /**
      * 检查线路是否包含指定停靠区
      * 
      * @param stopId 停靠区ID
@@ -213,6 +210,53 @@ public class Line {
             }
         }
         return orderedStopIds.get(index + 1);
+    }
+
+    public UUID getOwner() {
+        return owner;
+    }
+
+    public void setOwner(UUID owner) {
+        this.owner = owner;
+        if (owner != null) {
+            admins.add(owner);
+        }
+        admins.remove(null);
+    }
+
+    public Set<UUID> getAdmins() {
+        return new HashSet<>(admins);
+    }
+
+    public void setAdmins(Collection<UUID> adminIds) {
+        admins.clear();
+        if (adminIds != null) {
+            admins.addAll(adminIds);
+        }
+        if (owner != null) {
+            admins.add(owner);
+        }
+        admins.remove(null);
+    }
+
+    public boolean addAdmin(UUID adminId) {
+        if (adminId == null) {
+            return false;
+        }
+        admins.remove(null);
+        return admins.add(adminId);
+    }
+
+    public boolean removeAdmin(UUID adminId) {
+        if (adminId == null) {
+            return false;
+        }
+        if (owner != null && owner.equals(adminId)) {
+            return false;
+        }
+        boolean removed = admins.remove(adminId);
+        admins.remove(null);
+        return removed;
     }
     
     /**

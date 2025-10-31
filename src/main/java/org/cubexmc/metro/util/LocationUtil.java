@@ -1,9 +1,6 @@
 package org.cubexmc.metro.util;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.World;
 import org.bukkit.block.Block;
 
 /**
@@ -25,36 +22,6 @@ public class LocationUtil {
                 location.getBlockX(), 
                 location.getBlockY(), 
                 location.getBlockZ());
-    }
-    
-    /**
-     * 将字符串格式的位置转换为Location对象
-     * 格式应为: "世界名,x,y,z"
-     */
-    public static Location stringToLocation(String locationStr) {
-        if (locationStr == null || locationStr.isEmpty()) {
-            return null;
-        }
-        
-        String[] parts = locationStr.split(",");
-        if (parts.length < 4) {
-            return null;
-        }
-        
-        World world = Bukkit.getWorld(parts[0]);
-        if (world == null) {
-            return null;
-        }
-        
-        try {
-            int x = Integer.parseInt(parts[1]);
-            int y = Integer.parseInt(parts[2]);
-            int z = Integer.parseInt(parts[3]);
-            
-            return new Location(world, x, y, z);
-        } catch (NumberFormatException e) {
-            return null;
-        }
     }
     
     /**
@@ -85,18 +52,6 @@ public class LocationUtil {
         // 检查下方一格
         Location belowLocation = location.clone().subtract(0, 1, 0);
         return isRail(belowLocation);
-    }
-    
-    /**
-     * 检查给定位置是否为红石铁轨
-     */
-    public static boolean isPoweredRail(Location location) {
-        if (location == null) {
-            return false;
-        }
-        
-        Block block = location.getBlock();
-        return block.getType() == Material.POWERED_RAIL;
     }
     
     /**

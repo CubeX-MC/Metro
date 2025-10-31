@@ -21,3 +21,9 @@ permissions:
   metro.use:
     description: 允许玩家使用Metro插件功能（如乘坐地铁）
     default: true
+  metro.line.create:
+    description: 允许玩家创建新的地铁线路
+    default: false
+  metro.stop.create:
+    description: 允许玩家创建新的停靠区
+    default: false

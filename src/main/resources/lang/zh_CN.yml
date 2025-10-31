@@ -19,6 +19,7 @@ command:
   help_teststopinfo: "&a命令: &6/m teststopinfo <line_id> [stop_id] &f- 测试线路站点信息"
   unknown: "&c未知命令。请使用 /m 查看帮助。"
   teleport_to: "&a点击传送至 {stop_name}"
+  player_not_found: "&c未找到玩家: {player}"
 
 # 选区相关消息
 selection:
@@ -39,6 +40,9 @@ line:
   help_stops: "&6/m line stops <line_id> &f- 列出线路上的所有停靠区"
   help_rename: "&6/m line rename <line_id> <新名称> &f- 重命名线路显示名称"
   help_info: "&6/m line info <line_id> &f- 查看线路详细信息"
+  help_trust: "&6/m line trust <line_id> <玩家> &f- 授予线路管理权限"
+  help_untrust: "&6/m line untrust <line_id> <玩家> &f- 移除线路管理权限"
+  help_owner: "&6/m line owner <line_id> <玩家> &f- 转移线路所有权"
   
   usage_create: "&c用法: /m line create <line_id> <\"显示名称\">"
   usage_delete: "&c用法: /m line delete <line_id>"
@@ -49,12 +53,22 @@ line:
   usage_delstop: "&c用法: /m line delstop <line_id> <stop_id>"
   usage_rename: "&c用法: /m line rename <line_id> <新名称>"
   usage_stops: "&c用法: /m line stops <line_id>"
+  usage_info: "&c用法: /m line info <line_id>"
+  usage_trust: "&c用法: /m line trust <line_id> <玩家>"
+  usage_untrust: "&c用法: /m line untrust <line_id> <玩家>"
+  usage_owner: "&c用法: /m line owner <line_id> <玩家>"
+
+  permission_create: "&c你没有权限创建线路。"
+  permission_manage: "&c你无法管理线路 {line_id}。所有者: {owner}。管理员: {admins}"
+  permission_owner: "&c只有线路所有者可以转移所有权。"
   
   create_success: "&a成功创建线路: {line_id}"
   create_exists: "&c线路ID {line_id} 已存在!"
   delete_success: "&a成功删除线路: {line_id}"
+  delete_fail: "&c删除线路 {line_id} 失败。"
   delete_not_found: "&c找不到线路ID: {line_id}"
   setcolor_success: "&a成功设置线路 {line_id} 的颜色为: {color}示例文本"
+  setcolor_fail: "&c设置线路颜色失败。"
   setterminus_success: "&a成功设置线路 {line_id} 的终点方向名称为: {terminus_name}"
   rename_success: "&a成功重命名线路 {line_id} 为: {new_name}"
   rename_fail: "&c重命名线路失败, 请检查线路ID是否存在。"
@@ -86,12 +100,20 @@ line:
   info_color: "&6颜色: &f{color}"
   info_terminus: "&6终点方向: &f{terminus_name}"
   info_max_speed: "&6最大速度: &f{max_speed}"
+  info_owner: "&6所有者: &f{owner}"
+  info_admins: "&6管理员: &f{admins}"
   info_stops_header: "&6站点列表:"
   info_stops_item: "&a  {index}. &e{stop_name} &f({stop_id})"
   info_stops_item_invalid: "&a  {index}. &c{stop_id} (无效站点)"
   info_no_stops: "&6站点: &e无站点"
   info_default: "默认"
   line_not_found: "&c未找到线路: {line_id}"
+  trust_success: "&a已将 {player} 添加为线路 {line_id} 的管理员。"
+  trust_exists: "&e玩家 {player} 已经是该线路的管理员。"
+  untrust_success: "&a已将 {player} 从线路 {line_id} 管理员中移除。"
+  untrust_fail: "&c无法移除 {player} 的线路管理员权限。"
+  owner_success: "&a已将线路 {line_id} 的所有权转移给 {owner}。"
+  owner_fail: "&c转移线路 {line_id} 所有权失败。"
 
 # 停靠区命令相关
 stop:
@@ -110,6 +132,10 @@ stop:
   help_rename: "&6/m stop rename <stop_id> <新名称> &f- 重命名停靠区显示名称"
   help_info: "&6/m stop info <stop_id> &f- 查看停靠区详细信息"
   help_tp: "&6/m stop tp <stop_id> &f- 传送到一个停靠区"
+  help_trust: "&6/m stop trust <stop_id> <玩家> &f- 授予停靠区管理权限"
+  help_untrust: "&6/m stop untrust <stop_id> <玩家> &f- 移除停靠区管理权限"
+  help_owner: "&6/m stop owner <stop_id> <玩家> &f- 转移停靠区所有权"
+  help_link: "&6/m stop link <allow|deny> <stop_id> <line_id> &f- 管理线路链接权限"
   
   usage_create: "&c用法: /m stop create <stop_id> <\"显示名称\">"
   usage_delete: "&c用法: /m stop delete <stop_id>"
@@ -124,6 +150,15 @@ stop:
   usage_deltitle: "&c用法: /m stop deltitle <stop_id> <title_type> [key]"
   usage_listtitles: "&c用法: /m stop listtitles <stop_id>"
   usage_rename: "&c用法: /m stop rename <stop_id> <新名称>"
+  usage_trust: "&c用法: /m stop trust <stop_id> <玩家>"
+  usage_untrust: "&c用法: /m stop untrust <stop_id> <玩家>"
+  usage_owner: "&c用法: /m stop owner <stop_id> <玩家>"
+  usage_link: "&c用法: /m stop link <allow|deny> <stop_id> <line_id>"
+  
+  permission_create: "&c你没有权限创建停靠区。"
+  permission_manage: "&c你无法管理停靠区 {stop_id}。所有者: {owner}。管理员: {admins}"
+  permission_link: "&c你无法将停靠区 {stop_id}（所有者: {owner}）链接到线路 {line_id}。"
+  permission_owner: "&c只有停靠区所有者可以转移所有权。"
   
   create_success: "&a成功创建停靠区: {stop_name}"
   create_exists: "&c停靠区ID {stop_id} 已存在!"
@@ -145,6 +180,16 @@ stop:
   addtransfer_exists: "&e停靠区 {stop_name} 已存在可换乘线路 {transfer_line_name}"
   deltransfer_success: "&a成功从停靠区 {stop_name} 移除可换乘线路 {transfer_line_name}"
   deltransfer_not_exists: "&e停靠区 {stop_name} 不存在可换乘线路 {transfer_line_name}"
+  trust_success: "&a已将 {player} 添加为停靠区 {stop_id} 的管理员。"
+  trust_exists: "&e玩家 {player} 已经是该停靠区的管理员。"
+  untrust_success: "&a已将 {player} 从停靠区 {stop_id} 管理员中移除。"
+  untrust_fail: "&c无法移除 {player} 的停靠区管理员权限。"
+  owner_success: "&a已将停靠区 {stop_id} 的所有权转移给 {owner}。"
+  owner_fail: "&c转移停靠区 {stop_id} 所有权失败。"
+  link_allow_success: "&a已允许线路 {line_id} 连接到停靠区 {stop_id}。"
+  link_allow_exists: "&e线路 {line_id} 已被允许连接至停靠区 {stop_id}。"
+  link_deny_success: "&a已从停靠区 {stop_id} 的白名单中移除线路 {line_id}。"
+  link_deny_missing: "&e线路 {line_id} 不在停靠区 {stop_id} 的白名单中。"
   
   list_empty: "&e暂无停靠区。"
   list_header: "&a===== 停靠区列表 ====="
@@ -163,6 +208,9 @@ stop:
   info_corner1: "&6角点1: &f{corner1}"
   info_corner2: "&6角点2: &f{corner2}"
   info_stoppoint: "&6停靠点: &f{stoppoint}"
+  info_owner: "&6所有者: &f{owner}"
+  info_admins: "&6管理员: &f{admins}"
+  info_linked_lines: "&6已授权线路: &f{lines}"
   info_transfers_header: "&6可换乘线路:"
   info_transfer_item: "&a  - &e{line_name} &f({line_id})"
   info_transfer_item_invalid: "&a  - &c{line_id} (无效线路)"
@@ -243,3 +291,7 @@ vehicle:
   terminal_arrived: "&a已到达终点站: {terminal_stop_name}"
   auto_depart: "&a自动发车: 从 {current_stop_name} 前往 {next_stop_name}"
   passenger_exit: "&6玩家已下车，不会自动发车" 
+
+ownership:
+  server: "服务器"
+  none: "无"

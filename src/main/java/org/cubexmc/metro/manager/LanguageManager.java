@@ -99,20 +99,6 @@ public class LanguageManager {
     }
 
     /**
-     * 设置当前使用的语言
-     *
-     * @param langCode 语言代码
-     * @return 是否成功设置
-     */
-    public boolean setLanguage(String langCode) {
-        if (languageFiles.containsKey(langCode)) {
-            currentLanguage = langCode;
-            return true;
-        }
-        return false;
-    }
-
-    /**
      * 获取语言消息
      *
      * @param key 消息键

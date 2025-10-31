@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
@@ -15,6 +16,8 @@ import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
+import org.cubexmc.metro.model.Stop;
+import org.cubexmc.metro.util.OwnershipUtil;
 
 /**
  * 处理Metro插件命令的Tab补全
@@ -30,13 +33,15 @@ public class MetroAdminTabCompleter implements TabCompleter {
     
     // 线路子命令
     private static final List<String> LINE_SUBCOMMANDS = Arrays.asList(
-            "create", "delete", "list", "setcolor", "setterminus", "addstop", "delstop", "stops", "rename", "setmaxspeed", "info"
+            "create", "delete", "list", "setcolor", "setterminus", "addstop", "delstop", "stops", "rename",
+            "setmaxspeed", "info", "trust", "untrust", "owner"
     );
     
     // 停靠区子命令
     private static final List<String> STOP_SUBCOMMANDS = Arrays.asList(
             "create", "delete", "list", "setcorners", "setpoint", "tp",
-            "addtransfer", "deltransfer", "listtransfers", "settitle", "deltitle", "listtitles", "rename", "info"
+            "addtransfer", "deltransfer", "listtransfers", "settitle", "deltitle", "listtitles", "rename",
+            "info", "trust", "untrust", "owner", "link"
     );
     
     // 颜色代码列表
@@ -67,11 +72,6 @@ public class MetroAdminTabCompleter implements TabCompleter {
         
         Player player = (Player) sender;
         
-        // 检查权限
-        if (!player.hasPermission("metro.admin")) {
-            return Collections.emptyList();
-        }
-        
         // 主命令补全
         if (args.length == 1) {
             return getCompletions(args[0], MAIN_COMMANDS);
@@ -79,6 +79,18 @@ public class MetroAdminTabCompleter implements TabCompleter {
         
         // 子命令补全
         String mainCommand = args[0].toLowerCase();
+
+        if ("stop".equals(mainCommand) && args.length >= 3 && "link".equals(args[1].toLowerCase())) {
+            if (args.length == 3) {
+                return getCompletions(args[2], Arrays.asList("allow", "deny"));
+            } else if (args.length == 4) {
+                return getStopIds(player, true);
+            } else if (args.length == 5) {
+                return getLineIds(player, false);
+            }
+            return Collections.emptyList();
+        }
+
         if (args.length == 2) {
             if ("line".equals(mainCommand)) {
                 return getCompletions(args[1], LINE_SUBCOMMANDS);
@@ -91,20 +103,20 @@ public class MetroAdminTabCompleter implements TabCompleter {
         if (args.length == 3) {
             if ("line".equals(mainCommand)) {
                 String subCommand = args[1].toLowerCase();
-                if ("delete".equals(subCommand) || "setcolor".equals(subCommand) || 
-                        "setterminus".equals(subCommand) || "addstop".equals(subCommand) || 
-                        "delstop".equals(subCommand) || "stops".equals(subCommand) ||
-                        "rename".equals(subCommand) || "setmaxspeed".equals(subCommand) || "info".equals(subCommand)) {
-                    return getLineIds();
+                if (isLineManageCommand(subCommand)) {
+                    return getLineIds(player, true);
+                }
+                if ("stops".equals(subCommand) || "info".equals(subCommand)) {
+                    return getLineIds(player, false);
                 }
             } else if ("stop".equals(mainCommand)) {
                 String subCommand = args[1].toLowerCase();
-                if ("delete".equals(subCommand) || "setcorners".equals(subCommand) || "setpoint".equals(subCommand) || "tp".equals(subCommand) ||
-                        "addtransfer".equals(subCommand) || "deltransfer".equals(subCommand) ||
-                        "listtransfers".equals(subCommand) || "settitle".equals(subCommand) || 
-                        "deltitle".equals(subCommand) || "listtitles".equals(subCommand) ||
-                        "rename".equals(subCommand) || "info".equals(subCommand)) {
-                    return getStopIds();
+                if (isStopManageCommand(subCommand)) {
+                    return getStopIds(player, true);
+                }
+                if ("tp".equals(subCommand) || "info".equals(subCommand) || "list".equals(subCommand)
+                        || "listtransfers".equals(subCommand) || "listtitles".equals(subCommand)) {
+                    return getStopIds(player, false);
                 }
             }
         }
@@ -116,16 +128,20 @@ public class MetroAdminTabCompleter implements TabCompleter {
                 if ("setcolor".equals(subCommand)) {
                     return getCompletions(args[3], COLOR_CODES);
                 } else if ("addstop".equals(subCommand)) {
-                    return getStopIds();
+                    return getStopIds(player, false);
                 } else if ("setmaxspeed".equals(subCommand)) {
                     return getCompletions(args[3], Arrays.asList("0.4", "0.6", "0.8", "1.0"));
+                } else if ("trust".equals(subCommand) || "untrust".equals(subCommand) || "owner".equals(subCommand)) {
+                    return getPlayerNames(args[3]);
                 }
             } else if ("stop".equals(mainCommand)) {
                 String subCommand = args[1].toLowerCase();
                 if ("addtransfer".equals(subCommand) || "deltransfer".equals(subCommand)) {
-                    return getLineIds();
+                    return getLineIds(player, false);
                 } else if ("settitle".equals(subCommand) || "deltitle".equals(subCommand)) {
                     return getCompletions(args[3], TITLE_TYPES);
+                } else if ("trust".equals(subCommand) || "untrust".equals(subCommand) || "owner".equals(subCommand)) {
+                    return getPlayerNames(args[3]);
                 }
             }
         }
@@ -160,9 +176,10 @@ public class MetroAdminTabCompleter implements TabCompleter {
     /**
      * 获取所有线路ID
      */
-    private List<String> getLineIds() {
+    private List<String> getLineIds(Player player, boolean requireManage) {
         LineManager lineManager = plugin.getLineManager();
         return lineManager.getAllLines().stream()
+                .filter(line -> !requireManage || OwnershipUtil.canManageLine(player, line))
                 .map(Line::getId)
                 .collect(Collectors.toList());
     }
@@ -170,20 +187,61 @@ public class MetroAdminTabCompleter implements TabCompleter {
     /**
      * 获取所有停靠区ID
      */
-    private List<String> getStopIds() {
+    private List<String> getStopIds(Player player, boolean requireManage) {
         StopManager stopManager = plugin.getStopManager();
-        return new ArrayList<>(stopManager.getAllStopIds());
+        return stopManager.getAllStopIds().stream()
+                .filter(stopId -> {
+                    if (!requireManage) {
+                        return true;
+                    }
+                    Stop stop = stopManager.getStop(stopId);
+                    return stop != null && OwnershipUtil.canManageStop(player, stop);
+                })
+                .collect(Collectors.toList());
     }
-    
-    /**
-     * 获取指定线路上的所有停靠区ID
-     */
-    private List<String> getStopsForLine(String lineId) {
-        LineManager lineManager = plugin.getLineManager();
-        Line line = lineManager.getLine(lineId);
-        if (line == null) {
-            return Collections.emptyList();
+
+    private List<String> getPlayerNames(String currentArg) {
+        List<String> names = Bukkit.getOnlinePlayers().stream()
+                .map(Player::getName)
+                .collect(Collectors.toList());
+        return getCompletions(currentArg, names);
+    }
+
+    private boolean isLineManageCommand(String subCommand) {
+        switch (subCommand) {
+            case "delete":
+            case "setcolor":
+            case "setterminus":
+            case "addstop":
+            case "delstop":
+            case "rename":
+            case "setmaxspeed":
+            case "trust":
+            case "untrust":
+            case "owner":
+                return true;
+            default:
+                return false;
         }
-        return line.getOrderedStopIds();
     }
-} 
+
+    private boolean isStopManageCommand(String subCommand) {
+        switch (subCommand) {
+            case "delete":
+            case "setcorners":
+            case "setpoint":
+            case "addtransfer":
+            case "deltransfer":
+            case "settitle":
+            case "deltitle":
+            case "rename":
+            case "trust":
+            case "untrust":
+            case "owner":
+            case "link":
+                return true;
+            default:
+                return false;
+        }
+    }
+}

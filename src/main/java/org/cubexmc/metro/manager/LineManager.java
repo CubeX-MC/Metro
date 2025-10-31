@@ -4,8 +4,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.logging.Level;
 
 import org.bukkit.configuration.ConfigurationSection;
@@ -71,6 +74,27 @@ public class LineManager {
                     line.setMaxSpeed(maxSpeed);
                 }
                 
+                String ownerString = config.getString(lineId + ".owner");
+                if (ownerString != null && !ownerString.isEmpty()) {
+                    try {
+                        line.setOwner(UUID.fromString(ownerString));
+                    } catch (IllegalArgumentException ignored) {
+                        line.setOwner(null);
+                    }
+                }
+
+                List<String> adminStrings = config.getStringList(lineId + ".admins");
+                if (adminStrings != null && !adminStrings.isEmpty()) {
+                    Set<UUID> adminIds = new HashSet<>();
+                    for (String adminString : adminStrings) {
+                        try {
+                            adminIds.add(UUID.fromString(adminString));
+                        } catch (IllegalArgumentException ignored) {
+                        }
+                    }
+                    line.setAdmins(adminIds);
+                }
+
                 lines.put(lineId, line);
             }
         }
@@ -85,11 +109,17 @@ public class LineManager {
                 config.set(lineId + ".ordered_stop_ids", line.getOrderedStopIds());
                 config.set(lineId + ".color", line.getColor());
                 config.set(lineId + ".terminus_name", line.getTerminusName());
-                if (line.getMaxSpeed() != null) {
-                    config.set(lineId + ".max_speed", line.getMaxSpeed());
-                } else {
-                    config.set(lineId + ".max_speed", null);
+                config.set(lineId + ".max_speed", line.getMaxSpeed() != null ? line.getMaxSpeed() : null);
+                config.set(lineId + ".owner", line.getOwner() != null ? line.getOwner().toString() : null);
+
+                List<String> adminStrings = new ArrayList<>();
+                for (UUID adminId : line.getAdmins()) {
+                    if (line.getOwner() != null && line.getOwner().equals(adminId)) {
+                        continue;
+                    }
+                    adminStrings.add(adminId.toString());
                 }
+                config.set(lineId + ".admins", adminStrings.isEmpty() ? null : adminStrings);
             }
             
             // 保存配置到文件
@@ -103,11 +133,12 @@ public class LineManager {
         return lines.get(lineId);
     }
     
-    public boolean createLine(String lineId, String name) {
+    public boolean createLine(String lineId, String name, UUID ownerId) {
         if (lines.containsKey(lineId)) {
             return false;
         }
         Line line = new Line(lineId, name);
+        line.setOwner(ownerId);
         lines.put(lineId, line);
         saveConfig();
         return true;
@@ -171,22 +202,6 @@ public class LineManager {
             }
         }
         saveConfig();
-    }
-    
-    /**
-     * 获取包含特定停靠区的所有线路
-     * 
-     * @param stopId 停靠区ID
-     * @return 包含该停靠区的线路列表
-     */
-    public List<Line> getLinesContainingStop(String stopId) {
-        List<Line> result = new ArrayList<>();
-        for (Line line : lines.values()) {
-            if (line.containsStop(stopId)) {
-                result.add(line);
-            }
-        }
-        return result;
     }
     
     /**
@@ -271,5 +286,39 @@ public class LineManager {
         line.setMaxSpeed(maxSpeed);
         saveConfig();
         return true;
+    }
+
+    public boolean setLineOwner(String lineId, UUID ownerId) {
+        Line line = lines.get(lineId);
+        if (line == null) {
+            return false;
+        }
+        line.setOwner(ownerId);
+        saveConfig();
+        return true;
+    }
+
+    public boolean addLineAdmin(String lineId, UUID adminId) {
+        Line line = lines.get(lineId);
+        if (line == null) {
+            return false;
+        }
+        boolean changed = line.addAdmin(adminId);
+        if (changed) {
+            saveConfig();
+        }
+        return changed;
+    }
+
+    public boolean removeLineAdmin(String lineId, UUID adminId) {
+        Line line = lines.get(lineId);
+        if (line == null) {
+            return false;
+        }
+        boolean changed = line.removeAdmin(adminId);
+        if (changed) {
+            saveConfig();
+        }
+        return changed;
     }
 } 
