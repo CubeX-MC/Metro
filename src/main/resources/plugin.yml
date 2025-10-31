@@ -1,5 +1,5 @@
 name: Metro
-version: '1.0.10'
+version: '1.1.0'
 main: org.cubexmc.metro.Metro
 api-version: '1.21'
 folia-supported: true
