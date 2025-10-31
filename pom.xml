@@ -5,8 +5,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.cubexmc</groupId>
-    <artifactId>metro</artifactId>
-    <version>1.0.10_1.18</version>
+<artifactId>metro</artifactId>
+    <version>1.1.0_1.18</version>
     <packaging>jar</packaging>
 
     <name>metro</name>
