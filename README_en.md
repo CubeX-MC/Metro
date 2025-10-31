@@ -4,7 +4,7 @@
 [Discord](https://discord.com/invite/7tJeSZPZgv) | [QQ频道](https://pd.qq.com/s/1n3hpe4e7?b=9)
 ## Plugin Overview
 
-Metro is a subway transit system plugin that lets administrators create automated subway lines and provides players with a convenient riding experience, inspired by Newnan.city.
+Metro is a subway transit system plugin that lets administrators create automated subway lines and provides players with a convenient riding experience, inspired by Newnan.city. The project ships a modern build for Paper 1.20+ (including Folia) and a legacy build for servers on 1.19 or earlier.
 
 ![Demo](https://i.imgur.com/K335iWj.gif)
 
@@ -107,3 +107,14 @@ Players right-click the powered rail inside a Stop to summon and board a minecar
 * `lines.yml` – Line definitions and ordering  
 * `stops.yml` – Stop definitions and properties  
 * `zh_CN.yml` – Chinese language file  
+
+## Build Targets
+
+- **Build both variants**: `mvn clean package`
+  - Produces `metro-modern/target/metro-1.1.0-1.20+.jar`
+  - Produces `metro-legacy/target/metro-1.1.0-1.19-.jar`
+- **Only modern (Paper/Folia 1.20+)**: `mvn -pl metro-modern -am clean package`
+- **Only legacy (Spigot/Paper ≤1.19)**: `mvn -pl metro-legacy -am clean package`
+
+Choose the jar that matches your server version. Folia support is available only in the 1.20+ build.
+
