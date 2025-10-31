@@ -19,6 +19,8 @@ command:
   help_teststopinfo: "&aCommando: &6/m teststopinfo <line_id> [stop_id] &f- Test lijn stop informatie"
   unknown: "&cOnbekend commando. Gebruik /m voor hulp."
   teleport_to: "&aKlik om te teleporteren naar {stop_name}"
+  player_not_found: "&cSpeler {player} niet gevonden."
+  player_not_found: "&cSpeler {player} niet gevonden."
 
 # Selectie gerelateerde berichten
 selection:
@@ -39,6 +41,9 @@ line:
   help_stops: "&6/m line stops <line_id> &f- Lijst alle stopgebieden op lijn"
   help_rename: "&6/m line rename <line_id> <nieuwe_naam> &f- Hernoem lijn weergavenaam"
   help_info: "&6/m line info <line_id> &f- Bekijk gedetailleerde lijninformatie"
+  help_trust: "&6/m line trust <line_id> <speler> &f- Voeg een lijnbeheerder toe"
+  help_untrust: "&6/m line untrust <line_id> <speler> &f- Verwijder een lijnbeheerder"
+  help_owner: "&6/m line owner <line_id> <speler> &f- Draag lijnbezit over"
   
   usage_create: "&cGebruik: /m line create <line_id> <\"weergavenaam\">"
   usage_delete: "&cGebruik: /m line delete <line_id>"
@@ -49,6 +54,13 @@ line:
   usage_delstop: "&cGebruik: /m line delstop <line_id> <stop_id>"
   usage_rename: "&cGebruik: /m line rename <line_id> <nieuwe_naam>"
   usage_stops: "&cGebruik: /m line stops <line_id>"
+  usage_trust: "&cGebruik: /m line trust <line_id> <speler>"
+  usage_untrust: "&cGebruik: /m line untrust <line_id> <speler>"
+  usage_owner: "&cGebruik: /m line owner <line_id> <speler>"
+
+  permission_create: "&cJe hebt geen toestemming om lijnen te maken."
+  permission_manage: "&cJe kunt lijn {line_id} niet beheren. Eigenaar: {owner}. Beheerders: {admins}"
+  permission_owner: "&cAlleen de lijneigenaar kan het eigendom overdragen."
   
   create_success: "&aLijn succesvol aangemaakt: {line_id}"
   create_exists: "&cLijn ID {line_id} bestaat al!"
@@ -91,7 +103,15 @@ line:
   info_stops_item_invalid: "&a  {index}. &c{stop_id} (ongeldig stop)"
   info_no_stops: "&6Stops: &eGeen stops"
   info_default: "Standaard"
+  info_owner: "&6Eigenaar: &f{owner}"
+  info_admins: "&6Beheerders: &f{admins}"
   line_not_found: "&cLijn niet gevonden: {line_id}"
+  trust_success: "&a{player} is toegevoegd als beheerder van lijn {line_id}."
+  trust_exists: "&e{player} is al beheerder van deze lijn."
+  untrust_success: "&a{player} is verwijderd uit de beheerders van lijn {line_id}."
+  untrust_fail: "&c{player} kon niet uit de beheerders worden verwijderd."
+  owner_success: "&aHet eigendom van lijn {line_id} is overgedragen aan {owner}."
+  owner_fail: "&cHet eigendom van lijn {line_id} kon niet worden overgedragen."
 
 # Stopgebied commando gerelateerd
 stop:
@@ -110,6 +130,10 @@ stop:
   help_rename: "&6/m stop rename <stop_id> <nieuwe_naam> &f- Hernoem stopgebied weergavenaam"
   help_info: "&6/m stop info <stop_id> &f- Bekijk gedetailleerde stopgebiedinfo"
   help_tp: "&6/m stop tp <stop_id> &f- Teleporteer naar een stopgebied"
+  help_trust: "&6/m stop trust <stop_id> <speler> &f- Voeg een stopbeheerder toe"
+  help_untrust: "&6/m stop untrust <stop_id> <speler> &f- Verwijder een stopbeheerder"
+  help_owner: "&6/m stop owner <stop_id> <speler> &f- Draag stopbezit over"
+  help_link: "&6/m stop link <allow|deny> <stop_id> <line_id> &f- Beheer lijnkoppelingen"
   
   usage_create: "&cGebruik: /m stop create <stop_id> <\"weergavenaam\">"
   usage_delete: "&cGebruik: /m stop delete <stop_id>"
@@ -124,6 +148,15 @@ stop:
   usage_deltitle: "&cGebruik: /m stop deltitle <stop_id> <title_type> [key]"
   usage_listtitles: "&cGebruik: /m stop listtitles <stop_id>"
   usage_rename: "&cGebruik: /m stop rename <stop_id> <nieuwe_naam>"
+  usage_trust: "&cGebruik: /m stop trust <stop_id> <speler>"
+  usage_untrust: "&cGebruik: /m stop untrust <stop_id> <speler>"
+  usage_owner: "&cGebruik: /m stop owner <stop_id> <speler>"
+  usage_link: "&cGebruik: /m stop link <allow|deny> <stop_id> <line_id>"
+
+  permission_create: "&cJe hebt geen toestemming om stopgebieden te maken."
+  permission_manage: "&cJe kunt stopgebied {stop_id} niet beheren. Eigenaar: {owner}. Beheerders: {admins}"
+  permission_link: "&cJe kunt stopgebied {stop_id} (eigenaar: {owner}) niet koppelen aan lijn {line_id}."
+  permission_owner: "&cAlleen de stopbeheerder kan het eigendom overdragen."
   
   create_success: "&aStopgebied succesvol aangemaakt: {stop_name}"
   create_exists: "&cStopgebied ID {stop_id} bestaat al!"
@@ -145,6 +178,16 @@ stop:
   addtransfer_exists: "&eStopgebied {stop_name} heeft al overstaplijn {transfer_line_name}"
   deltransfer_success: "&aOverstaplijn {transfer_line_name} succesvol verwijderd van stopgebied {stop_name}"
   deltransfer_not_exists: "&eStopgebied {stop_name} heeft geen overstaplijn {transfer_line_name}"
+  trust_success: "&a{player} is toegevoegd als beheerder van stopgebied {stop_id}."
+  trust_exists: "&e{player} is al beheerder van dit stopgebied."
+  untrust_success: "&a{player} is verwijderd uit de beheerders van stopgebied {stop_id}."
+  untrust_fail: "&c{player} kon niet uit de beheerders worden verwijderd."
+  owner_success: "&aHet eigendom van stopgebied {stop_id} is overgedragen aan {owner}."
+  owner_fail: "&cHet eigendom van stopgebied {stop_id} kon niet worden overgedragen."
+  link_allow_success: "&aLijn {line_id} is nu toegestaan voor stopgebied {stop_id}."
+  link_allow_exists: "&eLijn {line_id} was al toegestaan voor stopgebied {stop_id}."
+  link_deny_success: "&aLijn {line_id} is verwijderd uit de toestemmingslijst van stopgebied {stop_id}."
+  link_deny_missing: "&eLijn {line_id} stond niet in de toestemmingslijst van stopgebied {stop_id}."
   
   list_empty: "&eGeen stopgebieden beschikbaar."
   list_header: "&a===== Stopgebiedlijst ====="
@@ -163,6 +206,9 @@ stop:
   info_corner1: "&6Hoekpunt1: &f{corner1}"
   info_corner2: "&6Hoekpunt2: &f{corner2}"
   info_stoppoint: "&6Stoppunt: &f{stoppoint}"
+  info_owner: "&6Eigenaar: &f{owner}"
+  info_admins: "&6Beheerders: &f{admins}"
+  info_linked_lines: "&6Toegestane lijnen: &f{lines}"
   info_transfers_header: "&6Overstaplijnen:"
   info_transfer_item: "&a  - &e{line_name} &f({line_id})"
   info_transfer_item_invalid: "&a  - &c{line_id} (ongeldige lijn)"
@@ -223,6 +269,11 @@ test:
 passenger:
   train_derailed: "&cSpoorweg is beschadigd, reis beëindigd!"
   
+# Eigendom gerelateerd
+ownership:
+  server: "Server"
+  none: "Geen"
+
 # Beweging luisteren gerelateerd
 movement:
   enter_stop: "&aJe bent stopgebied binnengegaan: {stop_name}"

@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
@@ -26,7 +27,6 @@ public class StopManager {
     
     // 缓存数据
     private final Map<String, Stop> stops = new HashMap<>();
-    private final Map<Location, String> locationToStopId = new HashMap<>();
     
     /**
      * 创建停靠区管理器
@@ -49,7 +49,6 @@ public class StopManager {
         
         config = YamlConfiguration.loadConfiguration(configFile);
         stops.clear();
-        locationToStopId.clear();
         
         // 加载所有停靠区
         ConfigurationSection stopsSection = config.getConfigurationSection("");
@@ -62,9 +61,6 @@ public class StopManager {
                     stops.put(stopId, stop);
                     
                     // 缓存位置映射
-                    if (stop.getStopPointLocation() != null) {
-                        locationToStopId.put(stop.getStopPointLocation(), stopId);
-                    }
                 }
             }
         }
@@ -80,6 +76,7 @@ public class StopManager {
             String stopId = entry.getKey();
             Stop stop = entry.getValue();
             
+            config.set(stopId, null);
             ConfigurationSection section = config.createSection(stopId);
             stop.saveToConfig(section);
         }
@@ -98,12 +95,13 @@ public class StopManager {
      * @param displayName 停靠区显示名称
      * @return 创建的停靠区
      */
-    public Stop createStop(String stopId, String displayName, Location corner1, Location corner2) {
+    public Stop createStop(String stopId, String displayName, Location corner1, Location corner2, UUID ownerId) {
         if (stops.containsKey(stopId)) {
             return null; // 已存在
         }
 
-        Stop stop = new Stop(stopId, displayName);
+        Stop stop = new Stop(stopId, displayName == null || displayName.isEmpty() ? stopId : displayName);
+        stop.setOwner(ownerId);
         if (corner1 != null && corner2 != null) {
             stop.setCorner1(corner1);
             stop.setCorner2(corner2);
@@ -149,10 +147,6 @@ public class StopManager {
         lineManager.delStopFromAllLines(stopId);
         
         // 移除位置映射
-        if (stop.getStopPointLocation() != null) {
-            locationToStopId.remove(stop.getStopPointLocation());
-        }
-        
         // 从内存和配置中移除
         stops.remove(stopId);
         config.set(stopId, null);
@@ -176,19 +170,70 @@ public class StopManager {
         }
         
         // 移除旧位置映射
-        if (stop.getStopPointLocation() != null) {
-            locationToStopId.remove(stop.getStopPointLocation());
-        }
-        
         // 更新停靠区
         stop.setStopPointLocation(location);
         stop.setLaunchYaw(yaw);
         
-        // 添加新位置映射
-        locationToStopId.put(location, stopId);
-        
         saveConfig();
         return true;
+    }
+
+    public boolean setStopOwner(String stopId, UUID ownerId) {
+        Stop stop = stops.get(stopId);
+        if (stop == null) {
+            return false;
+        }
+        stop.setOwner(ownerId);
+        saveConfig();
+        return true;
+    }
+
+    public boolean addStopAdmin(String stopId, UUID adminId) {
+        Stop stop = stops.get(stopId);
+        if (stop == null) {
+            return false;
+        }
+        boolean changed = stop.addAdmin(adminId);
+        if (changed) {
+            saveConfig();
+        }
+        return changed;
+    }
+
+    public boolean removeStopAdmin(String stopId, UUID adminId) {
+        Stop stop = stops.get(stopId);
+        if (stop == null) {
+            return false;
+        }
+        boolean changed = stop.removeAdmin(adminId);
+        if (changed) {
+            saveConfig();
+        }
+        return changed;
+    }
+
+    public boolean allowLineLink(String stopId, String lineId) {
+        Stop stop = stops.get(stopId);
+        if (stop == null) {
+            return false;
+        }
+        boolean changed = stop.allowLine(lineId);
+        if (changed) {
+            saveConfig();
+        }
+        return changed;
+    }
+
+    public boolean denyLineLink(String stopId, String lineId) {
+        Stop stop = stops.get(stopId);
+        if (stop == null) {
+            return false;
+        }
+        boolean changed = stop.denyLine(lineId);
+        if (changed) {
+            saveConfig();
+        }
+        return changed;
     }
     
     /**
@@ -220,20 +265,6 @@ public class StopManager {
     }
     
     /**
-     * 通过位置获取停靠区
-     * 
-     * @param location 位置
-     * @return 停靠区，若不存在则返回null
-     */
-    public Stop getStopByLocation(Location location) {
-        String stopId = locationToStopId.get(location);
-        if (stopId != null) {
-            return stops.get(stopId);
-        }
-        return null;
-    }
-    
-    /**
      * 查找包含指定位置的停靠区
      * 
      * @param location 要检查的位置
@@ -255,15 +286,6 @@ public class StopManager {
      */
     public Set<String> getAllStopIds() {
         return stops.keySet();
-    }
-    
-    /**
-     * 获取所有停靠区
-     * 
-     * @return 所有停靠区的列表
-     */
-    public List<Stop> getAllStops() {
-        return new ArrayList<>(stops.values());
     }
     
     /**

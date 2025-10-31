@@ -31,6 +31,10 @@ Metro是一个受牛腩小镇启发的地铁交通系统插件，允许管理员
 | `/m line addstop <line_id> <stop_id> [位置索引]` | 将停靠区添加到线路（可指定位置） |
 | `/m line delstop <line_id> <stop_id>`    | 从线路中移除停靠区       |
 | `/m line stops <line_id>`                | 查看线路的所有停靠区     |
+| `/m line info <line_id>`                 | 查看线路详细信息及权限   |
+| `/m line trust <line_id> <玩家>`         | 授予线路管理权限          |
+| `/m line untrust <line_id> <玩家>`       | 移除线路管理权限          |
+| `/m line owner <line_id> <玩家>`         | 转移线路所有权            |
 
 ### 停靠区管理
 
@@ -41,8 +45,7 @@ Metro是一个受牛腩小镇启发的地铁交通系统插件，允许管理员
 | `/m stop list`                                          | 列出所有停靠区                |
 | `/m stop rename <stop_id> <新名称>`                     | 重命名停靠区                  |
 | `/m stop info <stop_id>`                                | 查看停靠区详细信息            |
-| `/m stop setcorner1 <stop_id>`                          | 设置空间第一个对角点          |
-| `/m stop setcorner2 <stop_id>`                          | 设置空间第二个对角点          |
+| `/m stop setcorners <stop_id>`                          | 更新空间对角点                |
 | `/m stop setpoint [朝向角度]`                            | 设置精确停靠点                |
 | `/m stop addtransfer <stop_id> <换乘线路ID>`             | 添加可换乘线路                |
 | `/m stop deltransfer <stop_id> <换乘线路ID>`             | 移除可换乘线路                |
@@ -51,6 +54,10 @@ Metro是一个受牛腩小镇启发的地铁交通系统插件，允许管理员
 | `/m stop deltitle <stop_id> <类型> [键]`                 | 删除自定义 Title 设置         |
 | `/m stop listtitles <stop_id>`                          | 查看自定义 Title 配置         |
 | `/m stop tp <stop_id>`                                  | 传送到指定停靠区              |
+| `/m stop trust <stop_id> <玩家>`                        | 授予停靠区管理权限            |
+| `/m stop untrust <stop_id> <玩家>`                      | 移除停靠区管理权限            |
+| `/m stop owner <stop_id> <玩家>`                        | 转移停靠区所有权              |
+| `/m stop link <allow|deny> <stop_id> <line_id>`         | 管理线路接入白名单            |
 
 ### 系统管理
 
@@ -60,10 +67,19 @@ Metro是一个受牛腩小镇启发的地铁交通系统插件，允许管理员
 
 ## 权限
 
-| 权限             | 描述                               |
-| :--------------- | :--------------------------------- |
-| `metro.admin`    | 允许使用所有管理员命令             |
-| `metro.use`      | 允许玩家使用地铁系统（右键乘车等） |
+| 权限                 | 描述                               |
+| :------------------ | :--------------------------------- |
+| `metro.admin`        | 允许使用所有管理员命令             |
+| `metro.use`          | 允许玩家使用地铁系统（右键乘车等） |
+| `metro.line.create`  | 允许玩家创建新的线路               |
+| `metro.stop.create`  | 允许玩家创建新的停靠区             |
+
+## 所有权与权限管理
+
+* 新创建的线路和停靠区会自动将创建者设置为所有者，并加入管理员列表。
+* 使用 `/m line trust/untrust/owner` 与 `/m stop trust/untrust/owner` 可以维护线路或站点的管理成员。
+* 停靠区可通过 `/m stop link allow/deny` 为特定线路开放接入；线路管理员必须获得停靠区授权后才能将其加入线路。
+* 旧版本数据中没有权限配置的线路/停靠区会被视为“服务器所有”，只有 OP 或 `metro.admin` 拥有者可以操作。
 
 ## 快速开始
 
@@ -76,11 +92,10 @@ Metro是一个受牛腩小镇启发的地铁交通系统插件，允许管理员
 ### 创建停靠区
 
 1. **创建停靠区**: `/m stop create station1 中央车站`
-2. **设置停靠区范围**:
-   - 站在停靠区一角: `/m stop setcorner1 station1`
-   - 站在停靠区另一角: `/m stop setcorner2 station1`
-3. **设置停靠点**: 站在红石铁轨上执行 `/m stop setpoint`
-4. **添加到线路**: `/m line addstop line1 station1`
+2. **选区**: 手持金锄头左/右键点击停靠区的两个对角点
+3. **应用选区**: `/m stop setcorners station1`
+4. **设置停靠点**: 站在红石铁轨上执行 `/m stop setpoint`
+5. **添加到线路**: `/m line addstop line1 station1`
 
 ### 玩家使用
 

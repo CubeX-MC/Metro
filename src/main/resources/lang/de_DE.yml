@@ -19,6 +19,7 @@ command:
   help_teststopinfo: "&aBefehl: &6/m teststopinfo <line_id> [stop_id] &f- Linien-Haltestelleninfo testen"
   unknown: "&cUnbekannter Befehl. Verwende /m für Hilfe."
   teleport_to: "&aKlicken um zu {stop_name} zu teleportieren"
+  player_not_found: "&cSpieler {player} wurde nicht gefunden."
 
 # Auswahlbezogene Nachrichten
 selection:
@@ -39,6 +40,9 @@ line:
   help_stops: "&6/m line stops <line_id> &f- Alle Haltebereiche der Linie auflisten"
   help_rename: "&6/m line rename <line_id> <neuer_name> &f- Linien-Anzeigename umbenennen"
   help_info: "&6/m line info <line_id> &f- Detaillierte Linieninformationen anzeigen"
+  help_trust: "&6/m line trust <line_id> <spieler> &f- Linienadministrator hinzufügen"
+  help_untrust: "&6/m line untrust <line_id> <spieler> &f- Linienadministrator entfernen"
+  help_owner: "&6/m line owner <line_id> <spieler> &f- Linienbesitz übertragen"
   
   usage_create: "&cVerwendung: /m line create <line_id> <\"anzeigename\">"
   usage_delete: "&cVerwendung: /m line delete <line_id>"
@@ -49,6 +53,13 @@ line:
   usage_delstop: "&cVerwendung: /m line delstop <line_id> <stop_id>"
   usage_rename: "&cVerwendung: /m line rename <line_id> <neuer_name>"
   usage_stops: "&cVerwendung: /m line stops <line_id>"
+  usage_trust: "&cVerwendung: /m line trust <line_id> <spieler>"
+  usage_untrust: "&cVerwendung: /m line untrust <line_id> <spieler>"
+  usage_owner: "&cVerwendung: /m line owner <line_id> <spieler>"
+
+  permission_create: "&cDu hast keine Berechtigung, Linien zu erstellen."
+  permission_manage: "&cDu kannst die Linie {line_id} nicht verwalten. Besitzer: {owner}. Administratoren: {admins}"
+  permission_owner: "&cNur der Linienbesitzer kann den Besitz übertragen."
   
   create_success: "&aLinie erfolgreich erstellt: {line_id}"
   create_exists: "&cLinien-ID {line_id} existiert bereits!"
@@ -91,7 +102,15 @@ line:
   info_stops_item_invalid: "&a  {index}. &c{stop_id} (ungültige Haltestelle)"
   info_no_stops: "&6Haltestellen: &eKeine Haltestellen"
   info_default: "Standard"
+  info_owner: "&6Besitzer: &f{owner}"
+  info_admins: "&6Administratoren: &f{admins}"
   line_not_found: "&cLinie nicht gefunden: {line_id}"
+  trust_success: "&a{player} wurde als Administrator für Linie {line_id} hinzugefügt."
+  trust_exists: "&e{player} ist bereits Administrator dieser Linie."
+  untrust_success: "&a{player} wurde aus den Administratoren der Linie {line_id} entfernt."
+  untrust_fail: "&c{player} konnte nicht aus den Administratoren entfernt werden."
+  owner_success: "&aDer Besitz der Linie {line_id} wurde an {owner} übertragen."
+  owner_fail: "&cDer Besitz der Linie {line_id} konnte nicht übertragen werden."
 
 # Haltebereich-Befehl bezogen
 stop:
@@ -110,6 +129,10 @@ stop:
   help_rename: "&6/m stop rename <stop_id> <neuer_name> &f- Haltebereich-Anzeigename umbenennen"
   help_info: "&6/m stop info <stop_id> &f- Detaillierte Haltebereichsinformationen anzeigen"
   help_tp: "&6/m stop tp <stop_id> &f- Zu einem Haltebereich teleportieren"
+  help_trust: "&6/m stop trust <stop_id> <spieler> &f- Haltebereichsadministrator hinzufügen"
+  help_untrust: "&6/m stop untrust <stop_id> <spieler> &f- Haltebereichsadministrator entfernen"
+  help_owner: "&6/m stop owner <stop_id> <spieler> &f- Haltebereichsbesitz übertragen"
+  help_link: "&6/m stop link <allow|deny> <stop_id> <line_id> &f- Linienverknüpfungen verwalten"
   
   usage_create: "&cVerwendung: /m stop create <stop_id> <\"anzeigename\">"
   usage_delete: "&cVerwendung: /m stop delete <stop_id>"
@@ -124,6 +147,15 @@ stop:
   usage_deltitle: "&cVerwendung: /m stop deltitle <stop_id> <title_type> [key]"
   usage_listtitles: "&cVerwendung: /m stop listtitles <stop_id>"
   usage_rename: "&cVerwendung: /m stop rename <stop_id> <neuer_name>"
+  usage_trust: "&cVerwendung: /m stop trust <stop_id> <spieler>"
+  usage_untrust: "&cVerwendung: /m stop untrust <stop_id> <spieler>"
+  usage_owner: "&cVerwendung: /m stop owner <stop_id> <spieler>"
+  usage_link: "&cVerwendung: /m stop link <allow|deny> <stop_id> <line_id>"
+
+  permission_create: "&cDu hast keine Berechtigung, Haltebereiche zu erstellen."
+  permission_manage: "&cDu kannst den Haltebereich {stop_id} nicht verwalten. Besitzer: {owner}. Administratoren: {admins}"
+  permission_link: "&cDu kannst den Haltebereich {stop_id} (Besitzer: {owner}) nicht mit Linie {line_id} verknüpfen."
+  permission_owner: "&cNur der Haltebereichsbesitzer kann den Besitz übertragen."
   
   create_success: "&aHaltebereich erfolgreich erstellt: {stop_name}"
   create_exists: "&cHaltebereich-ID {stop_id} existiert bereits!"
@@ -145,6 +177,16 @@ stop:
   addtransfer_exists: "&eHaltebereich {stop_name} hat bereits Umsteigelinie {transfer_line_name}"
   deltransfer_success: "&aUmsteigelinie {transfer_line_name} erfolgreich von Haltebereich {stop_name} entfernt"
   deltransfer_not_exists: "&eHaltebereich {stop_name} hat keine Umsteigelinie {transfer_line_name}"
+  trust_success: "&a{player} wurde als Administrator für Haltebereich {stop_id} hinzugefügt."
+  trust_exists: "&e{player} ist bereits Administrator dieses Haltebereichs."
+  untrust_success: "&a{player} wurde aus den Administratoren von Haltebereich {stop_id} entfernt."
+  untrust_fail: "&c{player} konnte nicht aus den Administratoren entfernt werden."
+  owner_success: "&aDer Besitz des Haltebereichs {stop_id} wurde an {owner} übertragen."
+  owner_fail: "&cDer Besitz des Haltebereichs {stop_id} konnte nicht übertragen werden."
+  link_allow_success: "&aLinie {line_id} wurde für Haltebereich {stop_id} freigegeben."
+  link_allow_exists: "&eLinie {line_id} ist bereits für Haltebereich {stop_id} freigegeben."
+  link_deny_success: "&aLinie {line_id} wurde aus der Freigabeliste von Haltebereich {stop_id} entfernt."
+  link_deny_missing: "&eLinie {line_id} war nicht in der Freigabeliste von Haltebereich {stop_id}."
   
   list_empty: "&eKeine Haltebereiche verfügbar."
   list_header: "&a===== Haltebereichsliste ====="
@@ -163,6 +205,9 @@ stop:
   info_corner1: "&6Eckpunkt1: &f{corner1}"
   info_corner2: "&6Eckpunkt2: &f{corner2}"
   info_stoppoint: "&6Haltepunkt: &f{stoppoint}"
+  info_owner: "&6Besitzer: &f{owner}"
+  info_admins: "&6Administratoren: &f{admins}"
+  info_linked_lines: "&6Freigegebene Linien: &f{lines}"
   info_transfers_header: "&6Umsteigelinien:"
   info_transfer_item: "&a  - &e{line_name} &f({line_id})"
   info_transfer_item_invalid: "&a  - &c{line_id} (ungültige Linie)"
@@ -223,6 +268,11 @@ test:
 passenger:
   train_derailed: "&cSchienen sind beschädigt, Fahrt beendet!"
   
+# Besitzbezogene Nachrichten
+ownership:
+  server: "Server"
+  none: "Keine"
+
 # Bewegungs-Listener bezogen
 movement:
   enter_stop: "&aDu hast den Haltebereich betreten: {stop_name}"

@@ -19,6 +19,7 @@ command:
   help_teststopinfo: "&aComando: &6/m teststopinfo <line_id> [stop_id] &f- Probar información de paradas de línea"
   unknown: "&cComando desconocido. Usa /m para ayuda."
   teleport_to: "&aHaz clic para teletransportarte a {stop_name}"
+  player_not_found: "&cNo se encontró al jugador {player}."
 
 # Mensajes relacionados con la selección
 selection:
@@ -39,6 +40,9 @@ line:
   help_stops: "&6/m line stops <line_id> &f- Listar todas las áreas de parada en línea"
   help_rename: "&6/m line rename <line_id> <nuevo_nombre> &f- Renombrar nombre de visualización de línea"
   help_info: "&6/m line info <line_id> &f- Ver información detallada de línea"
+  help_trust: "&6/m line trust <line_id> <jugador> &f- Añadir administrador de la línea"
+  help_untrust: "&6/m line untrust <line_id> <jugador> &f- Quitar administrador de la línea"
+  help_owner: "&6/m line owner <line_id> <jugador> &f- Transferir propiedad de la línea"
   
   usage_create: "&cUso: /m line create <line_id> <\"nombre_mostrar\">"
   usage_delete: "&cUso: /m line delete <line_id>"
@@ -49,6 +53,13 @@ line:
   usage_delstop: "&cUso: /m line delstop <line_id> <stop_id>"
   usage_rename: "&cUso: /m line rename <line_id> <nuevo_nombre>"
   usage_stops: "&cUso: /m line stops <line_id>"
+  usage_trust: "&cUso: /m line trust <line_id> <jugador>"
+  usage_untrust: "&cUso: /m line untrust <line_id> <jugador>"
+  usage_owner: "&cUso: /m line owner <line_id> <jugador>"
+
+  permission_create: "&cNo tienes permiso para crear líneas."
+  permission_manage: "&cNo puedes gestionar la línea {line_id}. Propietario: {owner}. Administradores: {admins}"
+  permission_owner: "&cSolo el propietario de la línea puede transferir la propiedad."
   
   create_success: "&aLínea creada exitosamente: {line_id}"
   create_exists: "&c¡La ID de línea {line_id} ya existe!"
@@ -91,7 +102,15 @@ line:
   info_stops_item_invalid: "&a  {index}. &c{stop_id} (parada inválida)"
   info_no_stops: "&6Paradas: &eSin paradas"
   info_default: "Predeterminado"
+  info_owner: "&6Propietario: &f{owner}"
+  info_admins: "&6Administradores: &f{admins}"
   line_not_found: "&cLínea no encontrada: {line_id}"
+  trust_success: "&a{player} ha sido añadido como administrador de la línea {line_id}."
+  trust_exists: "&e{player} ya es administrador de esta línea."
+  untrust_success: "&a{player} ha sido eliminado de los administradores de la línea {line_id}."
+  untrust_fail: "&cNo se pudo eliminar a {player} de los administradores."
+  owner_success: "&aLa propiedad de la línea {line_id} se ha transferido a {owner}."
+  owner_fail: "&cNo se pudo transferir la propiedad de la línea {line_id}."
 
 # Relacionado con comandos de área de parada
 stop:
@@ -110,6 +129,10 @@ stop:
   help_rename: "&6/m stop rename <stop_id> <nuevo_nombre> &f- Renombrar nombre de visualización del área de parada"
   help_info: "&6/m stop info <stop_id> &f- Ver información detallada del área de parada"
   help_tp: "&6/m stop tp <stop_id> &f- Teletransportarse a un área de parada"
+  help_trust: "&6/m stop trust <stop_id> <jugador> &f- Añadir administrador del área de parada"
+  help_untrust: "&6/m stop untrust <stop_id> <jugador> &f- Quitar administrador del área de parada"
+  help_owner: "&6/m stop owner <stop_id> <jugador> &f- Transferir propiedad del área de parada"
+  help_link: "&6/m stop link <allow|deny> <stop_id> <line_id> &f- Gestionar permisos de enlace de líneas"
   
   usage_create: "&cUso: /m stop create <stop_id> <\"nombre_mostrar\">"
   usage_delete: "&cUso: /m stop delete <stop_id>"
@@ -124,6 +147,15 @@ stop:
   usage_deltitle: "&cUso: /m stop deltitle <stop_id> <title_type> [key]"
   usage_listtitles: "&cUso: /m stop listtitles <stop_id>"
   usage_rename: "&cUso: /m stop rename <stop_id> <nuevo_nombre>"
+  usage_trust: "&cUso: /m stop trust <stop_id> <jugador>"
+  usage_untrust: "&cUso: /m stop untrust <stop_id> <jugador>"
+  usage_owner: "&cUso: /m stop owner <stop_id> <jugador>"
+  usage_link: "&cUso: /m stop link <allow|deny> <stop_id> <line_id>"
+
+  permission_create: "&cNo tienes permiso para crear áreas de parada."
+  permission_manage: "&cNo puedes gestionar el área de parada {stop_id}. Propietario: {owner}. Administradores: {admins}"
+  permission_link: "&cNo puedes enlazar el área de parada {stop_id} (propietario: {owner}) con la línea {line_id}."
+  permission_owner: "&cSolo el propietario del área de parada puede transferir la propiedad."
   
   create_success: "&aÁrea de parada creada exitosamente: {stop_name}"
   create_exists: "&c¡La ID de área de parada {stop_id} ya existe!"
@@ -145,6 +177,16 @@ stop:
   addtransfer_exists: "&eÁrea de parada {stop_name} ya tiene línea de transbordo {transfer_line_name}"
   deltransfer_success: "&aLínea de transbordo {transfer_line_name} eliminada exitosamente del área de parada {stop_name}"
   deltransfer_not_exists: "&eÁrea de parada {stop_name} no tiene línea de transbordo {transfer_line_name}"
+  trust_success: "&a{player} ha sido añadido como administrador del área {stop_id}."
+  trust_exists: "&e{player} ya es administrador de esta área."
+  untrust_success: "&a{player} ha sido eliminado de los administradores del área {stop_id}."
+  untrust_fail: "&cNo se pudo quitar a {player} de los administradores."
+  owner_success: "&aLa propiedad del área {stop_id} se ha transferido a {owner}."
+  owner_fail: "&cNo se pudo transferir la propiedad del área {stop_id}."
+  link_allow_success: "&aLa línea {line_id} ahora puede enlazarse con el área {stop_id}."
+  link_allow_exists: "&eLa línea {line_id} ya está autorizada para el área {stop_id}."
+  link_deny_success: "&aSe ha eliminado la línea {line_id} de la lista blanca del área {stop_id}."
+  link_deny_missing: "&eLa línea {line_id} no estaba en la lista blanca del área {stop_id}."
   
   list_empty: "&eNo hay áreas de parada disponibles."
   list_header: "&a===== Lista de Áreas de Parada ====="
@@ -163,6 +205,9 @@ stop:
   info_corner1: "&6Esquina1: &f{corner1}"
   info_corner2: "&6Esquina2: &f{corner2}"
   info_stoppoint: "&6Punto de parada: &f{stoppoint}"
+  info_owner: "&6Propietario: &f{owner}"
+  info_admins: "&6Administradores: &f{admins}"
+  info_linked_lines: "&6Líneas autorizadas: &f{lines}"
   info_transfers_header: "&6Líneas de transbordo:"
   info_transfer_item: "&a  - &e{line_name} &f({line_id})"
   info_transfer_item_invalid: "&a  - &c{line_id} (línea inválida)"
@@ -223,6 +268,11 @@ test:
 passenger:
   train_derailed: "&c¡Las vías están dañadas, viaje terminado!"
   
+# Propiedad
+ownership:
+  server: "Servidor"
+  none: "Ninguno"
+
 # Relacionado con escucha de movimiento
 movement:
   enter_stop: "&aHas entrado al área de parada: {stop_name}"

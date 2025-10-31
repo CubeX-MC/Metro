@@ -19,6 +19,7 @@ command:
   help_teststopinfo: "&aCommand: &6/m teststopinfo <line_id> [stop_id] &f- Test line stop information"
   unknown: "&cUnknown command. Use /m for help."
   teleport_to: "&aClick to teleport to {stop_name}"
+  player_not_found: "&cPlayer {player} not found."
 
 # Selection Related Messages
 selection:
@@ -39,6 +40,9 @@ line:
   help_stops: "&6/m line stops <line_id> &f- List all stops on line"
   help_rename: "&6/m line rename <line_id> <new_name> &f- Rename line display name"
   help_info: "&6/m line info <line_id> &f- View line detailed information"
+  help_trust: "&6/m line trust <line_id> <player> &f- Add a line administrator"
+  help_untrust: "&6/m line untrust <line_id> <player> &f- Remove a line administrator"
+  help_owner: "&6/m line owner <line_id> <player> &f- Transfer line ownership"
   
   usage_create: "&cUsage: /m line create <line_id> <\"display_name\">"
   usage_delete: "&cUsage: /m line delete <line_id>"
@@ -49,12 +53,22 @@ line:
   usage_delstop: "&cUsage: /m line delstop <line_id> <stop_id>"
   usage_rename: "&cUsage: /m line rename <line_id> <new_name>"
   usage_stops: "&cUsage: /m line stops <line_id>"
+  usage_info: "&cUsage: /m line info <line_id>"
+  usage_trust: "&cUsage: /m line trust <line_id> <player>"
+  usage_untrust: "&cUsage: /m line untrust <line_id> <player>"
+  usage_owner: "&cUsage: /m line owner <line_id> <player>"
+  
+  permission_create: "&cYou don't have permission to create lines."
+  permission_manage: "&cYou cannot manage line {line_id}. Owner: {owner}. Admins: {admins}"
+  permission_owner: "&cOnly the line owner can transfer ownership."
   
   create_success: "&aSuccessfully created line: {line_id}"
   create_exists: "&cLine ID {line_id} already exists!"
   delete_success: "&aSuccessfully deleted line: {line_id}"
+  delete_fail: "&cFailed to delete line {line_id}."
   delete_not_found: "&cLine ID not found: {line_id}"
   setcolor_success: "&aSuccessfully set line {line_id} color to: {color}Example text"
+  setcolor_fail: "&cFailed to set line color."
   setterminus_success: "&aSuccessfully set line {line_id} terminus direction name to: {terminus_name}"
   rename_success: "&aSuccessfully renamed line {line_id} to: {new_name}"
   rename_fail: "&cFailed to rename line, please check if line ID exists."
@@ -86,12 +100,20 @@ line:
   info_color: "&6Color: &f{color}"
   info_terminus: "&6Terminus Direction: &f{terminus_name}"
   info_max_speed: "&6Maximum Speed: &f{max_speed}"
+  info_owner: "&6Owner: &f{owner}"
+  info_admins: "&6Admins: &f{admins}"
   info_stops_header: "&6Stops List:"
   info_stops_item: "&a  {index}. &e{stop_name} &f({stop_id})"
   info_stops_item_invalid: "&a  {index}. &c{stop_id} (Invalid stop)"
   info_no_stops: "&6Stops: &eNo stops"
   info_default: "Default"
   line_not_found: "&cLine not found: {line_id}"
+  trust_success: "&aAdded {player} as administrator for line {line_id}."
+  trust_exists: "&e{player} is already an administrator of this line."
+  untrust_success: "&aRemoved {player} from line {line_id} administrators."
+  untrust_fail: "&cCannot remove {player} from administrators."
+  owner_success: "&aTransferred line {line_id} ownership to {owner}."
+  owner_fail: "&cFailed to transfer ownership of line {line_id}."
 
 # Stop Command Related
 stop:
@@ -110,6 +132,10 @@ stop:
   help_rename: "&6/m stop rename <stop_id> <new_name> &f- Rename stop display name"
   help_info: "&6/m stop info <stop_id> &f- View stop detailed information"
   help_tp: "&6/m stop tp <stop_id> &f- Teleport to a stop"
+  help_trust: "&6/m stop trust <stop_id> <player> &f- Add a stop administrator"
+  help_untrust: "&6/m stop untrust <stop_id> <player> &f- Remove a stop administrator"
+  help_owner: "&6/m stop owner <stop_id> <player> &f- Transfer stop ownership"
+  help_link: "&6/m stop link <allow|deny> <stop_id> <line_id> &f- Manage line link permissions"
   
   usage_create: "&cUsage: /m stop create <stop_id> <\"display_name\">"
   usage_delete: "&cUsage: /m stop delete <stop_id>"
@@ -124,7 +150,16 @@ stop:
   usage_deltitle: "&cUsage: /m stop deltitle <stop_id> <title_type> [key]"
   usage_listtitles: "&cUsage: /m stop listtitles <stop_id>"
   usage_rename: "&cUsage: /m stop rename <stop_id> <new_name>"
+  usage_trust: "&cUsage: /m stop trust <stop_id> <player>"
+  usage_untrust: "&cUsage: /m stop untrust <stop_id> <player>"
+  usage_owner: "&cUsage: /m stop owner <stop_id> <player>"
+  usage_link: "&cUsage: /m stop link <allow|deny> <stop_id> <line_id>"
   
+  permission_create: "&cYou don't have permission to create stops."
+  permission_manage: "&cYou cannot manage stop {stop_id}. Owner: {owner}. Admins: {admins}"
+  permission_link: "&cYou cannot link stop {stop_id} (owner: {owner}) to line {line_id}."
+  permission_owner: "&cOnly the stop owner can transfer ownership."
+
   create_success: "&aSuccessfully created stop: {stop_name}"
   create_exists: "&cStop ID {stop_id} already exists!"
   delete_success: "&aSuccessfully deleted stop: {stop_id}"
@@ -145,6 +180,16 @@ stop:
   addtransfer_exists: "&eStop {stop_name} already has transferable line {transfer_line_name}"
   deltransfer_success: "&aSuccessfully removed transferable line {transfer_line_name} from stop {stop_name}"
   deltransfer_not_exists: "&eStop {stop_name} does not have transferable line {transfer_line_name}"
+  trust_success: "&aAdded {player} as administrator for stop {stop_id}."
+  trust_exists: "&e{player} is already an administrator of this stop."
+  untrust_success: "&aRemoved {player} from stop {stop_id} administrators."
+  untrust_fail: "&cCannot remove {player} from stop administrators."
+  owner_success: "&aTransferred stop {stop_id} ownership to {owner}."
+  owner_fail: "&cFailed to transfer ownership of stop {stop_id}."
+  link_allow_success: "&aAllowed line {line_id} to link with stop {stop_id}."
+  link_allow_exists: "&eLine {line_id} is already allowed for stop {stop_id}."
+  link_deny_success: "&aRemoved line {line_id} from stop {stop_id} link whitelist."
+  link_deny_missing: "&eLine {line_id} was not in the link whitelist for stop {stop_id}."
   
   list_empty: "&eNo stops available."
   list_header: "&a===== Stop List ====="
@@ -163,6 +208,9 @@ stop:
   info_corner1: "&6Corner 1: &f{corner1}"
   info_corner2: "&6Corner 2: &f{corner2}"
   info_stoppoint: "&6Stopping Point: &f{stoppoint}"
+  info_owner: "&6Owner: &f{owner}"
+  info_admins: "&6Admins: &f{admins}"
+  info_linked_lines: "&6Linked Lines: &f{lines}"
   info_transfers_header: "&6Transferable Lines:"
   info_transfer_item: "&a  - &e{line_name} &f({line_id})"
   info_transfer_item_invalid: "&a  - &c{line_id} (Invalid line)"
@@ -218,6 +266,11 @@ test:
   stop_info_no_terminal: "None"
   stop_info_title_preview: "&aTitle Preview: {title}"
   stop_info_subtitle_preview: "&aSubtitle Preview: {subtitle}"
+
+# Ownership
+ownership:
+  server: "Server"
+  none: "None"
 
 # Passenger Related Messages
 passenger:

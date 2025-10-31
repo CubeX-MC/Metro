@@ -4,9 +4,13 @@ import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * 代表地铁系统中的停靠区
@@ -19,6 +23,9 @@ public class Stop {
     private Location stopPointLocation; // 停靠点位置，用于矿车生成位置
     private float launchYaw;
     private List<String> transferableLines; // 可换乘的线路ID列表
+    private UUID owner; // 站点所有者 UUID，null 表示服务器所有
+    private final Set<UUID> admins = new HashSet<>(); // 站点管理员集合
+    private final Set<String> linkedLineIds = new HashSet<>(); // 允许链接的线路ID
     
     // 自定义titles配置
     private Map<String, Map<String, String>> customTitles;
@@ -84,6 +91,32 @@ public class Stop {
                 }
             }
         }
+
+        String ownerString = section.getString("owner");
+        if (ownerString != null && !ownerString.isEmpty()) {
+            try {
+                this.owner = UUID.fromString(ownerString);
+                this.admins.add(this.owner);
+            } catch (IllegalArgumentException ignored) {
+                this.owner = null;
+            }
+        }
+
+        List<String> adminStrings = section.getStringList("admins");
+        if (adminStrings != null) {
+            for (String entry : adminStrings) {
+                try {
+                    UUID adminId = UUID.fromString(entry);
+                    this.admins.add(adminId);
+                } catch (IllegalArgumentException ignored) {
+                }
+            }
+        }
+
+        List<String> linkedLines = section.getStringList("linked_lines");
+        if (linkedLines != null) {
+            this.linkedLineIds.addAll(linkedLines);
+        }
     }
     
     /**
@@ -110,6 +143,27 @@ public class Stop {
         
         // 保存可换乘线路ID列表
         section.set("transferable_lines", transferableLines);
+
+        section.set("owner", owner != null ? owner.toString() : null);
+        if (!admins.isEmpty()) {
+            List<String> adminStrings = new ArrayList<>();
+            for (UUID adminId : admins) {
+                // 避免重复写入所有者
+                if (owner != null && owner.equals(adminId)) {
+                    continue;
+                }
+                adminStrings.add(adminId.toString());
+            }
+            section.set("admins", adminStrings);
+        } else {
+            section.set("admins", null);
+        }
+
+        if (!linkedLineIds.isEmpty()) {
+            section.set("linked_lines", new ArrayList<>(linkedLineIds));
+        } else {
+            section.set("linked_lines", null);
+        }
         
         // 保存自定义titles配置
         if (!customTitles.isEmpty()) {
@@ -293,5 +347,84 @@ public class Stop {
     
     public void setLaunchYaw(float launchYaw) {
         this.launchYaw = launchYaw;
+    }
+
+    public UUID getOwner() {
+        return owner;
+    }
+
+    public void setOwner(UUID owner) {
+        this.owner = owner;
+        if (owner != null) {
+            admins.add(owner);
+        }
+        admins.remove(null);
+    }
+
+    public Set<UUID> getAdmins() {
+        return new HashSet<>(admins);
+    }
+
+    public void setAdmins(Collection<UUID> adminIds) {
+        admins.clear();
+        if (adminIds != null) {
+            admins.addAll(adminIds);
+        }
+        if (owner != null) {
+            admins.add(owner);
+        }
+        admins.remove(null);
+    }
+
+    public boolean addAdmin(UUID adminId) {
+        if (adminId == null) {
+            return false;
+        }
+        admins.remove(null);
+        return admins.add(adminId);
+    }
+
+    public boolean removeAdmin(UUID adminId) {
+        if (adminId == null) {
+            return false;
+        }
+        if (owner != null && owner.equals(adminId)) {
+            return false;
+        }
+        boolean removed = admins.remove(adminId);
+        admins.remove(null);
+        return removed;
+    }
+
+    public Set<String> getLinkedLineIds() {
+        return new HashSet<>(linkedLineIds);
+    }
+
+    public void setLinkedLineIds(Collection<String> lineIds) {
+        linkedLineIds.clear();
+        if (lineIds != null) {
+            linkedLineIds.addAll(lineIds);
+        }
+    }
+
+    public boolean allowLine(String lineId) {
+        if (lineId == null || lineId.isEmpty()) {
+            return false;
+        }
+        return linkedLineIds.add(lineId);
+    }
+
+    public boolean denyLine(String lineId) {
+        if (lineId == null || lineId.isEmpty()) {
+            return false;
+        }
+        return linkedLineIds.remove(lineId);
+    }
+
+    public boolean isLineAllowed(String lineId) {
+        if (lineId == null || lineId.isEmpty()) {
+            return false;
+        }
+        return linkedLineIds.contains(lineId);
     }
 } 

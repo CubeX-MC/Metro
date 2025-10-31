@@ -3,16 +3,21 @@ package org.cubexmc.metro.command;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.manager.LanguageManager;
@@ -22,6 +27,7 @@ import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Stop;
 import org.cubexmc.metro.util.LocationUtil;
+import org.cubexmc.metro.util.OwnershipUtil;
 
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
@@ -47,12 +53,6 @@ public class MetroAdminCommand implements CommandExecutor {
         }
         
         Player player = (Player) sender;
-        
-        // 检查权限
-        if (!player.hasPermission("metro.admin")) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("plugin.no_permission"));
-            return true;
-        }
         
         if (args.length == 0) {
             sendHelpMessage(player);
@@ -83,9 +83,13 @@ public class MetroAdminCommand implements CommandExecutor {
                         player.sendMessage(plugin.getLanguageManager().getMessage("line.usage_create"));
                         return true;
                     }
+                    if (!OwnershipUtil.canCreateLine(player)) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_create"));
+                        return true;
+                    }
                     lineId = args[2];
                     String lineName = args[3];
-                    if (lineManager.createLine(lineId, lineName)) {
+                    if (lineManager.createLine(lineId, lineName, player.getUniqueId())) {
                         player.sendMessage(plugin.getLanguageManager().getMessage("line.create_success", 
                                 LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
                     } else {
@@ -100,11 +104,21 @@ public class MetroAdminCommand implements CommandExecutor {
                         return true;
                     }
                     lineId = args[2];
+                    Line lineToDelete = lineManager.getLine(lineId);
+                    if (lineToDelete == null) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("line.delete_not_found", 
+                                LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
+                        return true;
+                    }
+                    if (!OwnershipUtil.canManageLine(player, lineToDelete)) {
+                        sendLinePermissionDenied(player, lineToDelete);
+                        return true;
+                    }
                     if (lineManager.deleteLine(lineId)) {
                         player.sendMessage(plugin.getLanguageManager().getMessage("line.delete_success", 
                                 LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
                     } else {
-                        player.sendMessage(plugin.getLanguageManager().getMessage("line.delete_not_found", 
+                        player.sendMessage(plugin.getLanguageManager().getMessage("line.delete_fail", 
                                 LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
                     }
                     break;
@@ -130,12 +144,22 @@ public class MetroAdminCommand implements CommandExecutor {
                     }
                     lineId = args[2];
                     String color = args[3];
+                    Line colorLine = lineManager.getLine(lineId);
+                    if (colorLine == null) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("line.delete_not_found", 
+                                LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
+                        return true;
+                    }
+                    if (!OwnershipUtil.canManageLine(player, colorLine)) {
+                        sendLinePermissionDenied(player, colorLine);
+                        return true;
+                    }
                     if (lineManager.setLineColor(lineId, color)) {
                         player.sendMessage(plugin.getLanguageManager().getMessage("line.setcolor_success", 
                                 LanguageManager.put(LanguageManager.put(LanguageManager.args(), 
                                         "line_id", lineId), "color", color)));
                     } else {
-                        player.sendMessage(plugin.getLanguageManager().getMessage("line.delete_not_found", 
+                        player.sendMessage(plugin.getLanguageManager().getMessage("line.setcolor_fail", 
                                 LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
                     }
                     break;
@@ -146,6 +170,16 @@ public class MetroAdminCommand implements CommandExecutor {
                         return true;
                     }
                     lineId = args[2];
+                    Line terminusLine = lineManager.getLine(lineId);
+                    if (terminusLine == null) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("line.delete_not_found",
+                                LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
+                        return true;
+                    }
+                    if (!OwnershipUtil.canManageLine(player, terminusLine)) {
+                        sendLinePermissionDenied(player, terminusLine);
+                        return true;
+                    }
                     if (args.length == 3) {
                         // Clear terminus name
                         if (lineManager.setLineTerminusName(lineId, null)) {
@@ -175,6 +209,16 @@ public class MetroAdminCommand implements CommandExecutor {
                         return true;
                     }
                     lineId = args[2];
+                    Line maxSpeedLine = lineManager.getLine(lineId);
+                    if (maxSpeedLine == null) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("line.delete_not_found", 
+                                LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
+                        return true;
+                    }
+                    if (!OwnershipUtil.canManageLine(player, maxSpeedLine)) {
+                        sendLinePermissionDenied(player, maxSpeedLine);
+                        return true;
+                    }
                     try {
                         double maxSpeed = Double.parseDouble(args[3]);
                         if (maxSpeed < 0) {
@@ -202,6 +246,15 @@ public class MetroAdminCommand implements CommandExecutor {
                     
                     lineId = args[2];
                     String newName = args[3];
+                    Line renameLine = lineManager.getLine(lineId);
+                    if (renameLine == null) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("line.rename_fail"));
+                        return true;
+                    }
+                    if (!OwnershipUtil.canManageLine(player, renameLine)) {
+                        sendLinePermissionDenied(player, renameLine);
+                        return true;
+                    }
                     if (lineManager.setLineName(lineId, newName)) {
                         player.sendMessage(plugin.getLanguageManager().getMessage("line.rename_success", 
                                 LanguageManager.put(LanguageManager.put(LanguageManager.args(), 
@@ -223,6 +276,20 @@ public class MetroAdminCommand implements CommandExecutor {
                     Line lineToAdd = lineManager.getLine(lineId);
                     if (lineToAdd == null) {
                         player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_fail"));
+                        return true;
+                    }
+                    if (!OwnershipUtil.canManageLine(player, lineToAdd)) {
+                        sendLinePermissionDenied(player, lineToAdd);
+                        return true;
+                    }
+                    Stop stopToAdd = stopManager.getStop(stopId);
+                    if (stopToAdd == null) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_not_found",
+                                LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
+                        return true;
+                    }
+                    if (!OwnershipUtil.canLinkStopToLine(player, lineToAdd, stopToAdd)) {
+                        sendStopLinkDenied(player, lineToAdd, stopToAdd);
                         return true;
                     }
                     
@@ -270,6 +337,10 @@ public class MetroAdminCommand implements CommandExecutor {
                     Line lineToDel = lineManager.getLine(lineId);
                     if (lineToDel == null) {
                         player.sendMessage(plugin.getLanguageManager().getMessage("line.delstop_fail"));
+                        return true;
+                    }
+                    if (!OwnershipUtil.canManageLine(player, lineToDel)) {
+                        sendLinePermissionDenied(player, lineToDel);
                         return true;
                     }
                     boolean wasCircularBeforeDelete = lineToDel.isCircular();
@@ -339,6 +410,127 @@ public class MetroAdminCommand implements CommandExecutor {
                         }
                     }
                     break;
+
+                case "info":
+                    if (args.length < 3) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("line.usage_info"));
+                        return true;
+                    }
+                    lineId = args[2];
+                    Line infoLine = lineManager.getLine(lineId);
+                    if (infoLine == null) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("line.delete_not_found",
+                                LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
+                        return true;
+                    }
+                    player.sendMessage(plugin.getLanguageManager().getMessage("line.info_header",
+                            LanguageManager.put(LanguageManager.put(LanguageManager.args(),
+                                    "line_id", infoLine.getId()), "line_name", infoLine.getName())));
+                    player.sendMessage(plugin.getLanguageManager().getMessage("line.info_owner",
+                            LanguageManager.put(LanguageManager.args(), "owner", resolvePlayerName(infoLine.getOwner()))));
+                    player.sendMessage(plugin.getLanguageManager().getMessage("line.info_admins",
+                            LanguageManager.put(LanguageManager.args(), "admins",
+                                    formatAdminNames(infoLine.getAdmins(), infoLine.getOwner()))));
+                    break;
+
+                case "trust":
+                    if (args.length < 4) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("line.usage_trust"));
+                        return true;
+                    }
+                    lineId = args[2];
+                    String trustTargetName = args[3];
+                    Line trustLine = lineManager.getLine(lineId);
+                    if (trustLine == null) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("line.delete_not_found",
+                                LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
+                        return true;
+                    }
+                    if (!OwnershipUtil.canManageLine(player, trustLine)) {
+                        sendLinePermissionDenied(player, trustLine);
+                        return true;
+                    }
+                    UUID trustTargetId = resolvePlayerUUID(trustTargetName);
+                    if (trustTargetId == null) {
+                        sendPlayerNotFound(player, trustTargetName);
+                        return true;
+                    }
+                    if (!lineManager.addLineAdmin(lineId, trustTargetId)) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("line.trust_exists",
+                                LanguageManager.put(LanguageManager.args(), "player", trustTargetName)));
+                    } else {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("line.trust_success",
+                                LanguageManager.put(LanguageManager.put(LanguageManager.args(),
+                                        "line_id", lineId), "player", resolvePlayerName(trustTargetId))));
+                    }
+                    break;
+
+                case "untrust":
+                    if (args.length < 4) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("line.usage_untrust"));
+                        return true;
+                    }
+                    lineId = args[2];
+                    String untrustTargetName = args[3];
+                    Line untrustLine = lineManager.getLine(lineId);
+                    if (untrustLine == null) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("line.delete_not_found",
+                                LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
+                        return true;
+                    }
+                    if (!OwnershipUtil.canManageLine(player, untrustLine)) {
+                        sendLinePermissionDenied(player, untrustLine);
+                        return true;
+                    }
+                    UUID untrustTargetId = resolvePlayerUUID(untrustTargetName);
+                    if (untrustTargetId == null) {
+                        sendPlayerNotFound(player, untrustTargetName);
+                        return true;
+                    }
+                    if (!lineManager.removeLineAdmin(lineId, untrustTargetId)) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("line.untrust_fail",
+                                LanguageManager.put(LanguageManager.args(), "player", untrustTargetName)));
+                    } else {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("line.untrust_success",
+                                LanguageManager.put(LanguageManager.put(LanguageManager.args(),
+                                        "line_id", lineId), "player", resolvePlayerName(untrustTargetId))));
+                    }
+                    break;
+
+                case "owner":
+                    if (args.length < 4) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("line.usage_owner"));
+                        return true;
+                    }
+                    lineId = args[2];
+                    String newOwnerName = args[3];
+                    Line ownerLine = lineManager.getLine(lineId);
+                    if (ownerLine == null) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("line.delete_not_found",
+                                LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
+                        return true;
+                    }
+                    UUID requesterId = player.getUniqueId();
+                    if (!OwnershipUtil.hasAdminBypass(player)) {
+                        if (ownerLine.getOwner() == null || !requesterId.equals(ownerLine.getOwner())) {
+                            player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_owner"));
+                            return true;
+                        }
+                    }
+                    UUID newOwnerId = resolvePlayerUUID(newOwnerName);
+                    if (newOwnerId == null) {
+                        sendPlayerNotFound(player, newOwnerName);
+                        return true;
+                    }
+                    if (lineManager.setLineOwner(lineId, newOwnerId)) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("line.owner_success",
+                                LanguageManager.put(LanguageManager.put(LanguageManager.args(),
+                                        "line_id", lineId), "owner", resolvePlayerName(newOwnerId))));
+                    } else {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("line.owner_fail",
+                                LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
+                    }
+                    break;
                     
                 default:
                     sendLineHelpMessage(player);
@@ -365,6 +557,10 @@ public class MetroAdminCommand implements CommandExecutor {
                             LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
                     return true;
                 }
+                if (!OwnershipUtil.canManageStop(player, stop)) {
+                    sendStopPermissionDenied(player, stop);
+                    return true;
+                }
                 if (stop.getStopPointLocation() == null) {
                     player.sendMessage(plugin.getLanguageManager().getMessage("stop.stoppoint_not_set", 
                             LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName())));
@@ -388,6 +584,10 @@ public class MetroAdminCommand implements CommandExecutor {
                             LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
                     return true;
                 }
+                if (!OwnershipUtil.canManageStop(player, stop)) {
+                    sendStopPermissionDenied(player, stop);
+                    return true;
+                }
 
                 player.sendMessage(plugin.getLanguageManager().getMessage("stop.info_header", 
                         LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName())));
@@ -409,6 +609,14 @@ public class MetroAdminCommand implements CommandExecutor {
                 Location stopPoint = stop.getStopPointLocation();
                 player.sendMessage(plugin.getLanguageManager().getMessage("stop.info_stoppoint", 
                         LanguageManager.put(LanguageManager.args(), "stoppoint", stopPoint != null ? LocationUtil.locationToString(stopPoint) : "Not set")));
+                player.sendMessage(plugin.getLanguageManager().getMessage("stop.info_owner",
+                        LanguageManager.put(LanguageManager.args(), "owner", resolvePlayerName(stop.getOwner()))));
+                player.sendMessage(plugin.getLanguageManager().getMessage("stop.info_admins",
+                        LanguageManager.put(LanguageManager.args(), "admins",
+                                formatAdminNames(stop.getAdmins(), stop.getOwner()))));
+                player.sendMessage(plugin.getLanguageManager().getMessage("stop.info_linked_lines",
+                        LanguageManager.put(LanguageManager.args(), "lines",
+                                formatLineIds(stop.getLinkedLineIds()))));
                 
                 return true;
             }
@@ -427,6 +635,10 @@ public class MetroAdminCommand implements CommandExecutor {
                 if (stop == null) {
                     player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_not_found", 
                             LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
+                    return true;
+                }
+                if (!OwnershipUtil.canManageStop(player, stop)) {
+                    sendStopPermissionDenied(player, stop);
                     return true;
                 }
                 
@@ -462,6 +674,10 @@ public class MetroAdminCommand implements CommandExecutor {
                 if (stop == null) {
                     player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_not_found", 
                             LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
+                    return true;
+                }
+                if (!OwnershipUtil.canManageStop(player, stop)) {
+                    sendStopPermissionDenied(player, stop);
                     return true;
                 }
                 
@@ -661,7 +877,7 @@ public class MetroAdminCommand implements CommandExecutor {
                 }
                 
                 if (!hasCustomTitles) {
-                    player.sendMessage(plugin.getLanguageManager().getMessage("stop.listtitles_no_titles"));
+                    player.sendMessage(plugin.getLanguageManager().getMessage("stop.listtitles_empty"));
                 }
                 return true;
             }
@@ -687,6 +903,10 @@ public class MetroAdminCommand implements CommandExecutor {
                             LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
                     return true;
                 }
+                if (!OwnershipUtil.canManageStop(player, stop)) {
+                    sendStopPermissionDenied(player, stop);
+                    return true;
+                }
                 
                 String oldName = stop.getName();
                 if (stopManager.setStopName(stopId, newName.toString())) {
@@ -705,6 +925,10 @@ public class MetroAdminCommand implements CommandExecutor {
                         player.sendMessage(plugin.getLanguageManager().getMessage("stop.usage_create"));
                         return true;
                     }
+                    if (!OwnershipUtil.canCreateStop(player)) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.permission_create"));
+                        return true;
+                    }
                     
                     String stopId = args[2];
                     StringBuilder nameBuilder = new StringBuilder();
@@ -721,7 +945,7 @@ public class MetroAdminCommand implements CommandExecutor {
                     Location corner1 = selectionManager.getCorner1(player);
                     Location corner2 = selectionManager.getCorner2(player);
 
-                    Stop newStop = stopManager.createStop(stopId, stopName, corner1, corner2);
+                    Stop newStop = stopManager.createStop(stopId, stopName, corner1, corner2, player.getUniqueId());
                     if (newStop != null) {
                         player.sendMessage(plugin.getLanguageManager().getMessage("stop.create_success", 
                                 LanguageManager.put(LanguageManager.args(), "stop_name", stopName)));
@@ -747,6 +971,17 @@ public class MetroAdminCommand implements CommandExecutor {
                     Location corner1ToSet = selectionManagerCorners.getCorner1(player);
                     Location corner2ToSet = selectionManagerCorners.getCorner2(player);
 
+                    Stop cornersStop = stopManager.getStop(stopId);
+                    if (cornersStop == null) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_not_found",
+                                LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
+                        return true;
+                    }
+                    if (!OwnershipUtil.canManageStop(player, cornersStop)) {
+                        sendStopPermissionDenied(player, cornersStop);
+                        return true;
+                    }
+
                     if (stopManager.setStopCorners(stopId, corner1ToSet, corner2ToSet)) {
                         player.sendMessage(plugin.getLanguageManager().getMessage("stop.setcorners_success",
                                 LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
@@ -763,6 +998,16 @@ public class MetroAdminCommand implements CommandExecutor {
                     }
                     
                     stopId = args[2];
+                    Stop stopToDelete = stopManager.getStop(stopId);
+                    if (stopToDelete == null) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_not_found",
+                                LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
+                        return true;
+                    }
+                    if (!OwnershipUtil.canManageStop(player, stopToDelete)) {
+                        sendStopPermissionDenied(player, stopToDelete);
+                        return true;
+                    }
                     if (stopManager.deleteStop(stopId)) {
                         player.sendMessage(plugin.getLanguageManager().getMessage("stop.delete_success", 
                                 LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
@@ -812,6 +1057,10 @@ public class MetroAdminCommand implements CommandExecutor {
                         player.sendMessage(plugin.getLanguageManager().getMessage("stop.no_stop_found_at_location"));
                         return true;
                     }
+                    if (!OwnershipUtil.canManageStop(player, stop)) {
+                        sendStopPermissionDenied(player, stop);
+                        return true;
+                    }
                     
                     stopId = stop.getId();
                     float yaw = player.getLocation().getYaw();
@@ -832,6 +1081,154 @@ public class MetroAdminCommand implements CommandExecutor {
                                         "stop_id", stopId), "yaw", String.valueOf(yaw))));
                     } else {
                         player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_fail"));
+                    }
+                    break;
+
+                case "trust":
+                    if (args.length < 4) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.usage_trust"));
+                        return true;
+                    }
+                    stopId = args[2];
+                    String stopTrustTarget = args[3];
+                    Stop trustStop = stopManager.getStop(stopId);
+                    if (trustStop == null) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_not_found",
+                                LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
+                        return true;
+                    }
+                    if (!OwnershipUtil.canManageStop(player, trustStop)) {
+                        sendStopPermissionDenied(player, trustStop);
+                        return true;
+                    }
+                    UUID trustStopUuid = resolvePlayerUUID(stopTrustTarget);
+                    if (trustStopUuid == null) {
+                        sendPlayerNotFound(player, stopTrustTarget);
+                        return true;
+                    }
+                    if (!stopManager.addStopAdmin(stopId, trustStopUuid)) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.trust_exists",
+                                LanguageManager.put(LanguageManager.args(), "player", stopTrustTarget)));
+                    } else {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.trust_success",
+                                LanguageManager.put(LanguageManager.put(LanguageManager.args(),
+                                        "stop_id", stopId), "player", resolvePlayerName(trustStopUuid))));
+                    }
+                    break;
+
+                case "untrust":
+                    if (args.length < 4) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.usage_untrust"));
+                        return true;
+                    }
+                    stopId = args[2];
+                    String stopUntrustTarget = args[3];
+                    Stop untrustStop = stopManager.getStop(stopId);
+                    if (untrustStop == null) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_not_found",
+                                LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
+                        return true;
+                    }
+                    if (!OwnershipUtil.canManageStop(player, untrustStop)) {
+                        sendStopPermissionDenied(player, untrustStop);
+                        return true;
+                    }
+                    UUID untrustStopUuid = resolvePlayerUUID(stopUntrustTarget);
+                    if (untrustStopUuid == null) {
+                        sendPlayerNotFound(player, stopUntrustTarget);
+                        return true;
+                    }
+                    if (!stopManager.removeStopAdmin(stopId, untrustStopUuid)) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.untrust_fail",
+                                LanguageManager.put(LanguageManager.args(), "player", stopUntrustTarget)));
+                    } else {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.untrust_success",
+                                LanguageManager.put(LanguageManager.put(LanguageManager.args(),
+                                        "stop_id", stopId), "player", resolvePlayerName(untrustStopUuid))));
+                    }
+                    break;
+
+                case "owner":
+                    if (args.length < 4) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.usage_owner"));
+                        return true;
+                    }
+                    stopId = args[2];
+                    String stopOwnerName = args[3];
+                    Stop ownerStop = stopManager.getStop(stopId);
+                    if (ownerStop == null) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_not_found",
+                                LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
+                        return true;
+                    }
+                    UUID stopRequester = player.getUniqueId();
+                    if (!OwnershipUtil.hasAdminBypass(player)) {
+                        if (ownerStop.getOwner() == null || !stopRequester.equals(ownerStop.getOwner())) {
+                            player.sendMessage(plugin.getLanguageManager().getMessage("stop.permission_owner"));
+                            return true;
+                        }
+                    }
+                    UUID newStopOwner = resolvePlayerUUID(stopOwnerName);
+                    if (newStopOwner == null) {
+                        sendPlayerNotFound(player, stopOwnerName);
+                        return true;
+                    }
+                    if (stopManager.setStopOwner(stopId, newStopOwner)) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.owner_success",
+                                LanguageManager.put(LanguageManager.put(LanguageManager.args(),
+                                        "stop_id", stopId), "owner", resolvePlayerName(newStopOwner))));
+                    } else {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.owner_fail",
+                                LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
+                    }
+                    break;
+
+                case "link":
+                    if (args.length < 5) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.usage_link"));
+                        return true;
+                    }
+                    String action = args[2].toLowerCase();
+                    stopId = args[3];
+                    String targetLineId = args[4];
+                    Stop linkStop = stopManager.getStop(stopId);
+                    if (linkStop == null) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_not_found",
+                                LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
+                        return true;
+                    }
+                if (!OwnershipUtil.canManageStop(player, linkStop)) {
+                        sendStopPermissionDenied(player, linkStop);
+                        return true;
+                    }
+                    Line targetLine = lineManager.getLine(targetLineId);
+                    if (targetLine == null) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
+                                LanguageManager.put(LanguageManager.args(), "line_id", targetLineId)));
+                        return true;
+                    }
+                    if ("allow".equals(action)) {
+                        if (stopManager.allowLineLink(stopId, targetLineId)) {
+                            player.sendMessage(plugin.getLanguageManager().getMessage("stop.link_allow_success",
+                                    LanguageManager.put(LanguageManager.put(LanguageManager.args(),
+                                            "stop_id", stopId), "line_id", targetLineId)));
+                        } else {
+                            player.sendMessage(plugin.getLanguageManager().getMessage("stop.link_allow_exists",
+                                    LanguageManager.put(LanguageManager.put(LanguageManager.args(),
+                                            "stop_id", stopId), "line_id", targetLineId)));
+                        }
+                    } else if ("deny".equals(action)) {
+                        if (stopManager.denyLineLink(stopId, targetLineId)) {
+                            player.sendMessage(plugin.getLanguageManager().getMessage("stop.link_deny_success",
+                                    LanguageManager.put(LanguageManager.put(LanguageManager.args(),
+                                            "stop_id", stopId), "line_id", targetLineId)));
+                        } else {
+                            player.sendMessage(plugin.getLanguageManager().getMessage("stop.link_deny_missing",
+                                    LanguageManager.put(LanguageManager.put(LanguageManager.args(),
+                                            "stop_id", stopId), "line_id", targetLineId)));
+                        }
+                    } else {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("stop.usage_link"));
                     }
                     break;
                 
@@ -890,6 +1287,9 @@ public class MetroAdminCommand implements CommandExecutor {
         player.sendMessage(plugin.getLanguageManager().getMessage("line.help_addstop"));
         player.sendMessage(plugin.getLanguageManager().getMessage("line.help_delstop"));
         player.sendMessage(plugin.getLanguageManager().getMessage("line.help_stops"));
+        player.sendMessage(plugin.getLanguageManager().getMessage("line.help_trust"));
+        player.sendMessage(plugin.getLanguageManager().getMessage("line.help_untrust"));
+        player.sendMessage(plugin.getLanguageManager().getMessage("line.help_owner"));
     }
     
     /**
@@ -911,6 +1311,10 @@ public class MetroAdminCommand implements CommandExecutor {
         player.sendMessage(plugin.getLanguageManager().getMessage("stop.help_settitle"));
         player.sendMessage(plugin.getLanguageManager().getMessage("stop.help_deltitle"));
         player.sendMessage(plugin.getLanguageManager().getMessage("stop.help_listtitles"));
+        player.sendMessage(plugin.getLanguageManager().getMessage("stop.help_trust"));
+        player.sendMessage(plugin.getLanguageManager().getMessage("stop.help_untrust"));
+        player.sendMessage(plugin.getLanguageManager().getMessage("stop.help_owner"));
+        player.sendMessage(plugin.getLanguageManager().getMessage("stop.help_link"));
     }
     
     /**
@@ -950,5 +1354,76 @@ public class MetroAdminCommand implements CommandExecutor {
                     LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName()))).create()));
         }
         return stopComponent;
+    }
+
+    private void sendLinePermissionDenied(Player player, Line line) {
+        String ownerName = resolvePlayerName(line.getOwner());
+        String adminNames = formatAdminNames(line.getAdmins(), line.getOwner());
+        player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_manage",
+                LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
+                        "line_id", line.getId()), "owner", ownerName), "admins", adminNames)));
+    }
+
+    private void sendStopPermissionDenied(Player player, Stop stop) {
+        String ownerName = resolvePlayerName(stop.getOwner());
+        String adminNames = formatAdminNames(stop.getAdmins(), stop.getOwner());
+        player.sendMessage(plugin.getLanguageManager().getMessage("stop.permission_manage",
+                LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
+                        "stop_id", stop.getId()), "owner", ownerName), "admins", adminNames)));
+    }
+
+    private void sendStopLinkDenied(Player player, Line line, Stop stop) {
+        String ownerName = resolvePlayerName(stop.getOwner());
+        player.sendMessage(plugin.getLanguageManager().getMessage("stop.permission_link",
+                LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
+                        "stop_id", stop.getId()), "owner", ownerName), "line_id", line.getId())));
+    }
+
+    private String resolvePlayerName(UUID uuid) {
+        if (uuid == null) {
+            return plugin.getLanguageManager().getMessage("ownership.server");
+        }
+        OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(uuid);
+        if (offlinePlayer != null && offlinePlayer.getName() != null) {
+            return offlinePlayer.getName();
+        }
+        return uuid.toString();
+    }
+
+    private UUID resolvePlayerUUID(String name) {
+        if (name == null || name.isEmpty()) {
+            return null;
+        }
+        OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(name);
+        if (offlinePlayer != null) {
+            return offlinePlayer.getUniqueId();
+        }
+        return null;
+    }
+
+    private String formatAdminNames(Set<UUID> adminIds, UUID ownerId) {
+        Set<String> names = new HashSet<>();
+        for (UUID uuid : adminIds) {
+            if (uuid == null || (ownerId != null && ownerId.equals(uuid))) {
+                continue;
+            }
+            names.add(resolvePlayerName(uuid));
+        }
+        if (names.isEmpty()) {
+            return plugin.getLanguageManager().getMessage("ownership.none");
+        }
+        return String.join(", ", names);
+    }
+
+    private void sendPlayerNotFound(Player player, String name) {
+        player.sendMessage(plugin.getLanguageManager().getMessage("command.player_not_found",
+                LanguageManager.put(LanguageManager.args(), "player", name)));
+    }
+
+    private String formatLineIds(Set<String> lineIds) {
+        if (lineIds == null || lineIds.isEmpty()) {
+            return plugin.getLanguageManager().getMessage("ownership.none");
+        }
+        return String.join(", ", lineIds);
     }
 }
