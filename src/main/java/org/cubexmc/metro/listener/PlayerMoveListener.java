@@ -195,7 +195,7 @@ public class PlayerMoveListener implements Listener {
         final String finalActionbar = TextUtil.replacePlaceholders(actionbar, line, stop, lastStop, nextStop, terminalStop, lineManager);
 
         if (alwaysShow) {
-            Object actionBarTaskId = SchedulerUtil.globalRun(plugin, new Runnable() {
+            Object actionBarTaskId = SchedulerUtil.entityRun(plugin, player, new Runnable() {
                 @Override
                 public void run() {
                     // 检查任务是否仍然存在于Map中，如果不存在说明已被外部取消
@@ -222,7 +222,7 @@ public class PlayerMoveListener implements Listener {
             }, 0L, 20L);
             actionBarTasks.put(playerId, actionBarTaskId);
 
-            Object titleTaskId = SchedulerUtil.globalRun(plugin, new Runnable() {
+            Object titleTaskId = SchedulerUtil.entityRun(plugin, player, new Runnable() {
                 @Override
                 public void run() {
                     // 检查任务是否仍然存在于Map中，如果不存在说明已被外部取消
@@ -278,7 +278,7 @@ public class PlayerMoveListener implements Listener {
                     );
                     
                     final int totalDisplayTime = stay + fadeOut; 
-                    Object actionBarTaskId = SchedulerUtil.globalRun(plugin, new Runnable() {
+                    Object actionBarTaskId = SchedulerUtil.entityRun(plugin, player, new Runnable() {
                         private int count = 0;
                         private final int maxCount = totalDisplayTime / 20 + 1; 
                         

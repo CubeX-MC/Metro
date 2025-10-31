@@ -46,7 +46,7 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>2.3.1</version>
                 <configuration>
-                    <outputDirectory>C:\Users\Angus\Desktop\MC server\test server\plugins</outputDirectory>
+                    <outputDirectory>C:\Users\Angus\Desktop\MC server\folia test server\plugins</outputDirectory>
                 </configuration>
             </plugin>
         </plugins>
