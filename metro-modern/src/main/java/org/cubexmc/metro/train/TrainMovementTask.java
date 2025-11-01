@@ -188,7 +188,7 @@ public class TrainMovementTask implements Runnable {
             for (Entity entity : minecart.getNearbyEntities(1.0, 1.0, 1.0)) {
                 if (entity != passenger && entity != minecart) {
                     // 如果不是乘客或矿车本身，允许穿透
-                    minecart.teleport(minecart.getLocation()); // 刷新位置以避免碰撞
+                    SchedulerUtil.teleportEntity(minecart, minecart.getLocation()); // 刷新位置以避免碰撞
                     break;
                 }
             }
@@ -208,7 +208,7 @@ public class TrainMovementTask implements Runnable {
         // 尝试将矿车放回最近的铁轨上
         Location nearbyRailLocation = findNearbyRail(currentLocation);
         if (nearbyRailLocation != null) {
-            minecart.teleport(nearbyRailLocation);
+            SchedulerUtil.teleportEntity(minecart, nearbyRailLocation);
         } else {
             // 如果无法找到附近的铁轨，执行脱轨逻辑
 

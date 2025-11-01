@@ -1,5 +1,6 @@
 package org.cubexmc.metro.util;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -143,6 +144,24 @@ public class SchedulerUtil {
                 return Bukkit.getScheduler().runTaskTimer(plugin, (Runnable) task, delay, period);
             }
         }
+    }
+
+    /**
+     * 在当前上下文安全地传送实体，兼容 Folia / Paper / Bukkit。
+     *
+     * @param entity   需要传送的实体
+     * @param location 目标位置
+     * @return Folia 下返回的 {@link CompletableFuture}，在非 Folia 环境返回已完成的 Future
+     */
+    public static CompletableFuture<Boolean> teleportEntity(Entity entity, Location location) {
+        if (location == null || entity == null) {
+            return CompletableFuture.completedFuture(Boolean.FALSE);
+        }
+        if (isFolia()) {
+            return entity.teleportAsync(location);
+        }
+        boolean success = entity.teleport(location);
+        return CompletableFuture.completedFuture(success);
     }
       /**
      * 在指定位置区域延迟执行任务

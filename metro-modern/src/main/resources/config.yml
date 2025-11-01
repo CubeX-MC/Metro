@@ -103,8 +103,9 @@ sounds:
     # 对于NOTE，乐器可以是：PIANO, BASS, SNARE, CLICKS, BASS_DRUM, BELL, FLUTE, CHIME, GUITAR, XYLOPHONE, IRON_XYLOPHONE, COW_BELL, DIDGERIDOO, BIT, BANJO, PLING
     # For NOTE, INSTRUMENT can be: PIANO, BASS, SNARE, CLICKS, BASS_DRUM, BELL, FLUTE, CHIME, GUITAR, XYLOPHONE, IRON_XYLOPHONE, COW_BELL, DIDGERIDOO, BIT, BANJO, PLING
     notes:
-      - "NOTE,14,1.0,BELL,0" # 第一个"叮" / First "ding"
-      - "NOTE,0,0.0,BELL,10" # 短暂停顿 / Short pause
+      - "NOTE,14,1.0,BELL,0"   # 第一个短促提示音
+      - "NOTE,14,1.0,BELL,8"   # 第二个提示音，间隔较短
+      - "NOTE,10,0.8,PIANO,16" # 低声提醒列车即将出发
   
   # 到站时播放的音乐（模拟车内到站提示音）
   # Sound played on arrival (simulates in-train arrival announcement)
@@ -114,8 +115,9 @@ sounds:
     # Initial delay before playing (in ticks, 20 ticks = 1 second)
     initial_delay: 40
     notes:
-      - "NOTE,16,1.0,CHIME,0" # 清脆的"叮" / Crisp "ding"
-      - "NOTE,12,1.0,CHIME,10" # 较低的音调结束 / Ends with a lower pitch
+      - "NOTE,16,1.0,CHIME,0"  # 高音提示
+      - "NOTE,18,1.0,CHIME,6"  # 第二个高音，模拟到站提示
+      - "NOTE,12,0.8,PIANO,14" # 柔和落音
       
   # 车辆到站时播放的音乐（模拟站台列车进站声音）
   # Sound played when train arrives at station (simulates platform arrival sound)
@@ -125,8 +127,9 @@ sounds:
     # Initial delay before playing (in ticks, 20 ticks = 1 second)
     initial_delay: 0
     notes:
-      - "NOTE,4,1.0,PLING,0" # 低沉的进站声 / Deep arrival sound
-      - "NOTE,4,0.8,PLING,5" # 减弱的低音 / Fading bass
+      - "NOTE,6,0.8,BASS_DRUM,0"  # 列车接近的低音
+      - "NOTE,9,0.9,XYLOPHONE,6"  # 轻微提示音
+      - "NOTE,12,0.7,CHIME,12"    # 短促收尾
       
   # 等待发车时循环播放的提示音乐
   # Looping sound played while waiting for departure
@@ -137,9 +140,9 @@ sounds:
     initial_delay: 0
     # 循环间隔（单位tick，20tick=1秒）多长时间播放一次
     # Loop interval (in ticks, 20 ticks = 1 second), how often to play
-    interval: 60
+    interval: 20
     notes:
-      - "NOTE,12,0.7,BELL,0" # 等待提示音 / Waiting prompt sound
+      - "NOTE,13,0.7,BELL,0"   # 与倒计时配合的提示音
 
 # 计分板配置
 # Scoreboard Configuration

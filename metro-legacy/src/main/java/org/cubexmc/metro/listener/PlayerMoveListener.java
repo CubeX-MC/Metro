@@ -138,6 +138,28 @@ public class PlayerMoveListener implements Listener {
         // 获取配置
         int interval = plugin.getConfig().getInt("titles.stop_continuous.interval", 60);
         boolean alwaysShow = plugin.getConfig().getBoolean("titles.stop_continuous.always", true);
+        int configuredFadeIn = plugin.getConfig().getInt("titles.stop_continuous.fade_in", 10);
+        int configuredStay = plugin.getConfig().getInt("titles.stop_continuous.stay", 40);
+        int configuredFadeOut = plugin.getConfig().getInt("titles.stop_continuous.fade_out", 10);
+
+        int continuousFadeIn = configuredFadeIn;
+        int continuousStay = configuredStay;
+        int continuousFadeOut = configuredFadeOut;
+
+        if (alwaysShow) {
+            // 连续显示时禁用淡入淡出，避免标题每次重绘出现闪烁
+            continuousFadeIn = 0;
+            continuousFadeOut = 0;
+            // 确保持续时间覆盖刷新间隔，避免出现可见空窗
+            continuousStay = Math.max(configuredStay, interval + 1);
+        }
+
+        final int effectiveContinuousFadeIn = continuousFadeIn;
+        final int effectiveContinuousStay = continuousStay;
+        final int effectiveContinuousFadeOut = continuousFadeOut;
+        final int singleFadeIn = configuredFadeIn;
+        final int singleStay = configuredStay;
+        final int singleFadeOut = configuredFadeOut;
         
         // 准备信息内容（在任务外提前准备，以便ActionBar任务可以使用）
         // 获取前一站和下一站信息
@@ -245,7 +267,9 @@ public class PlayerMoveListener implements Listener {
                     player.sendTitle(
                          ChatColor.translateAlternateColorCodes('&', finalTitle),
                          ChatColor.translateAlternateColorCodes('&', finalSubtitle),
-                         0, 40, 0
+                         effectiveContinuousFadeIn,
+                         effectiveContinuousStay,
+                         effectiveContinuousFadeOut
                     );
 //                    Title title = new Title(ChatColor.translateAlternateColorCodes('&', finalTitle), ChatColor.translateAlternateColorCodes('&', finalSubtitle), 0, 40, interval);
 //                    player.showTitle(title);
@@ -268,17 +292,13 @@ public class PlayerMoveListener implements Listener {
                 }
 
                 if (!inMetroMinecart) {
-                    int fadeIn = plugin.getConfig().getInt("titles.stop_continuous.fade_in", 10);
-                    int stay = plugin.getConfig().getInt("titles.stop_continuous.stay", 40);
-                    int fadeOut = plugin.getConfig().getInt("titles.stop_continuous.fade_out", 10);
-                    
                     player.sendTitle(
                         ChatColor.translateAlternateColorCodes('&', finalTitle),
                         ChatColor.translateAlternateColorCodes('&', finalSubtitle),
-                        fadeIn, stay, fadeOut
+                        singleFadeIn, singleStay, singleFadeOut
                     );
                     
-                    final int totalDisplayTime = stay + fadeOut; 
+                    final int totalDisplayTime = singleStay + singleFadeOut; 
                     BukkitTask actionBarTaskId = SchedulerUtil.globalRun(plugin, new Runnable() {
                         private int count = 0;
                         private final int maxCount = totalDisplayTime / 20 + 1; 
