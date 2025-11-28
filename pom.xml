@@ -5,58 +5,20 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.cubexmc</groupId>
-    <artifactId>metro</artifactId>
-    <version>1.0.10_1.20+</version>
-    <packaging>jar</packaging>
+    <artifactId>metro-parent</artifactId>
+    <version>1.1.0</version>
+    <packaging>pom</packaging>
 
-    <name>metro</name>
+    <name>metro-parent</name>
+
+    <modules>
+        <module>metro-modern</module>
+        <module>metro-legacy</module>
+    </modules>
 
     <properties>
-        <java.version>21</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-
-    <build>
-        <defaultGoal>clean package</defaultGoal>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.13.0</version>
-                <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.5.3</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>2.3.1</version>
-                <configuration>
-                    <outputDirectory>C:\Users\Angus\Desktop\MC server\test server\plugins</outputDirectory>
-                </configuration>
-            </plugin>
-        </plugins>
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-                <filtering>true</filtering>
-            </resource>
-        </resources>
-    </build>
 
     <repositories>
         <repository>
@@ -72,13 +34,4 @@
             <url>https://repo.papermc.io/repository/maven-public/</url>
         </repository>
     </repositories>
-
-    <dependencies>
-        <dependency>
-            <groupId>io.papermc.paper</groupId>
-            <artifactId>paper-api</artifactId>
-            <version>1.21.4-R0.1-SNAPSHOT</version>
-            <scope>provided</scope>
-        </dependency>
-    </dependencies>
 </project>

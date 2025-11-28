@@ -4,7 +4,7 @@
 [Discord](https://discord.com/invite/7tJeSZPZgv) | [QQ频道](https://pd.qq.com/s/1n3hpe4e7?b=9)
 ## Plugin Overview
 
-Metro is a subway transit system plugin that lets administrators create automated subway lines and provides players with a convenient riding experience, inspired by Newnan.city.
+Metro is a subway transit system plugin that lets administrators create automated subway lines and provides players with a convenient riding experience, inspired by Newnan.city. The project ships a modern build for Paper 1.20+ (including Folia) and a legacy build for servers on 1.19 or earlier.
 
 ![Demo](https://i.imgur.com/K335iWj.gif)
 
@@ -31,6 +31,10 @@ Metro is a subway transit system plugin that lets administrators create automate
 | `/m line addstop <line_id> <stop_id> [index]`     | Add a stop to the line (optional position) |
 | `/m line delstop <line_id> <stop_id>`             | Remove a stop from the line                |
 | `/m line stops <line_id>`                         | Show all stops on the line                 |
+| `/m line info <line_id>`                          | Display detailed line info and members     |
+| `/m line trust <line_id> <player>`                | Add a line administrator                   |
+| `/m line untrust <line_id> <player>`              | Remove a line administrator                |
+| `/m line owner <line_id> <player>`                | Transfer line ownership                    |
 
 ### Stop Management
 
@@ -41,8 +45,7 @@ Metro is a subway transit system plugin that lets administrators create automate
 | `/m stop list`                                                 | List all stops                     |
 | `/m stop rename <stop_id> <new_name>`                          | Rename a stop                      |
 | `/m stop info <stop_id>`                                       | Show detailed info for a stop      |
-| `/m stop setcorner1 <stop_id>`                                 | Set first corner point of the area |
-| `/m stop setcorner2 <stop_id>`                                 | Set second corner point            |
+| `/m stop setcorners <stop_id>`                                 | Apply the currently selected region|
 | `/m stop setpoint [yaw]`                                       | Set the StopPoint (powered rail)   |
 | `/m stop addtransfer <stop_id> <line_id>`                      | Add a transfer line                |
 | `/m stop deltransfer <stop_id> <line_id>`                      | Remove a transfer line             |
@@ -51,6 +54,10 @@ Metro is a subway transit system plugin that lets administrators create automate
 | `/m stop deltitle <stop_id> <type> [key]`                      | Delete custom title (or specific)  |
 | `/m stop listtitles <stop_id>`                                 | List custom title configurations   |
 | `/m stop tp <stop_id>`                                         | Teleport to a stop                 |
+| `/m stop trust <stop_id> <player>`                             | Add a stop administrator           |
+| `/m stop untrust <stop_id> <player>`                           | Remove a stop administrator        |
+| `/m stop owner <stop_id> <player>`                             | Transfer stop ownership            |
+| `/m stop link <allow|deny> <stop_id> <line_id>`                | Manage line link whitelist         |
 
 ### System Management
 
@@ -69,8 +76,8 @@ Metro is a subway transit system plugin that lets administrators create automate
 ### Create a Stop
 
 1. `/m stop create station1 Central Station`  
-2. Stand at one corner and run `/m stop setcorner1 station1`  
-3. At the opposite corner, run `/m stop setcorner2 station1`  
+2. With the golden hoe, left/right click to mark the two corners of the station area  
+3. Run `/m stop setcorners station1` to apply the selection  
 4. On the powered rail, run `/m stop setpoint`  
 5. `/m line addstop line1 station1`
 
@@ -80,10 +87,19 @@ Players right-click the powered rail inside a Stop to summon and board a minecar
 
 ## Permissions
 
-| Permission       | Description                               |
-| :--------------- | :---------------------------------------- |
-| `metro.admin`    | Allows use of all admin commands          |
-| `metro.use`      | Allows players to use the subway system   |
+| Permission         | Description                               |
+| :----------------- | :---------------------------------------- |
+| `metro.admin`      | Allows use of all admin commands          |
+| `metro.use`        | Allows players to use the subway system   |
+| `metro.line.create`| Allows players to create new lines        |
+| `metro.stop.create`| Allows players to create new stops        |
+
+## Ownership & Permission Flow
+
+* Newly created lines/stops record the creator as owner and add them to the admin list.
+* `/m line trust/untrust/owner` and `/m stop trust/untrust/owner` manage who can edit each resource.
+* `/m stop link allow/deny` controls which lines are whitelisted to use a stop; line admins must obtain authorization before running `/m line addstop`.
+* Legacy data without ownership entries is treated as server-owned and can only be modified by OPs or players with `metro.admin`.
 
 ## Configuration Files
 
@@ -91,3 +107,14 @@ Players right-click the powered rail inside a Stop to summon and board a minecar
 * `lines.yml` – Line definitions and ordering  
 * `stops.yml` – Stop definitions and properties  
 * `zh_CN.yml` – Chinese language file  
+
+## Build Targets
+
+- **Build both variants**: `mvn clean package`
+  - Produces `metro-modern/target/metro-1.1.0-1.20+.jar`
+  - Produces `metro-legacy/target/metro-1.1.0-1.19-.jar`
+- **Only modern (Paper/Folia 1.20+)**: `mvn -pl metro-modern -am clean package`
+- **Only legacy (Spigot/Paper ≤1.19)**: `mvn -pl metro-legacy -am clean package`
+
+Choose the jar that matches your server version. Folia support is available only in the 1.20+ build.
+

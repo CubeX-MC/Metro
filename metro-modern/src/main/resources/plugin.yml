@@ -1,0 +1,28 @@
+name: Metro
+version: '1.1.1'
+main: org.cubexmc.metro.Metro
+api-version: '1.18'
+folia-supported: true
+authors: [angushushu, wwwer]
+description: A simple metro management system / 一个简单的地铁管理系统
+website: https://cubexmc.org
+
+commands:
+  m:
+    description: Metro Command
+    aliases: [metro]
+    usage: "§cUsage: /m <line|stop|reload> [parameters...]"
+
+permissions:
+  metro.admin:
+    description: Allow use of Metro plugin admin commands
+    default: op
+  metro.use:
+    description: Allow players to use Metro plugin features (such as乘坐地铁）
+    default: true
+  metro.line.create:
+    description: Allow players to create new metro lines
+    default: false
+  metro.stop.create:
+    description: Allow players to create new stops
+    default: false
