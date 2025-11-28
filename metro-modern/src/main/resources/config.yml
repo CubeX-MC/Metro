@@ -173,6 +173,11 @@ settings:
   # 默认语言设置 (支持: zh_CN - 中文, en_US - 英文)
   # Default language setting (Supported: zh_CN - Chinese, en_US - English)
   default_language: "zh_CN"
+  # 选择站台区域的工具 (用于管理员选区)
+  # Tool used to select stop areas (for admin selection)
+  # 可用值参见: https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Material.html
+  # Available values: https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Material.html
+  selection_tool: "GOLDEN_HOE"
   # 矿车移动速度
   # Minecart movement speed
   cart_speed: 0.3

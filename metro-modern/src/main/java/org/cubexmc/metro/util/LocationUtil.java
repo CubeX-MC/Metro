@@ -1,12 +1,26 @@
 package org.cubexmc.metro.util;
 
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
+
+import java.util.EnumSet;
+import java.util.Set;
 
 /**
  * 位置工具类，用于位置数据的序列化和反序列化
  */
 public class LocationUtil {
+    
+    /**
+     * 所有铁轨类型的Material集合，用于快速检查
+     */
+    private static final Set<Material> RAIL_MATERIALS = EnumSet.of(
+        Material.RAIL,
+        Material.POWERED_RAIL,
+        Material.DETECTOR_RAIL,
+        Material.ACTIVATOR_RAIL
+    );
     
     /**
      * 将Location对象转换为字符串格式
@@ -33,7 +47,7 @@ public class LocationUtil {
         }
         
         Block block = location.getBlock();
-        return block.getType().name().contains("RAIL");
+        return RAIL_MATERIALS.contains(block.getType());
     }
     
     /**

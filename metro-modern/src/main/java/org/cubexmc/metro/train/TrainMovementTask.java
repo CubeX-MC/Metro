@@ -23,7 +23,6 @@ import org.cubexmc.metro.util.SchedulerUtil;
 import org.cubexmc.metro.util.SoundUtil;
 import org.cubexmc.metro.util.TextUtil;
 
-import net.kyori.adventure.text.Component;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 
@@ -177,28 +176,12 @@ public class TrainMovementTask implements Runnable {
     
     /**
      * 维护矿车基本属性
+     * 注意: customName, gravity, slowWhenEmpty 等属性已在矿车创建时设置，
+     * 无需每tick重复设置。脱轨检测由 VehicleListener 处理。
      */
     private void maintainMinecartProperties() {
-        // minecart.setCustomName("MetroMinecart");
-        Component customName = Component.text("MetroMinecart");
-        SchedulerUtil.entityRun(plugin, minecart, () -> {
-            minecart.customName(customName);
-            minecart.setGravity(false); // 禁用重力，防止下落
-            // 如果矿车被阻挡，强制设置为穿透实体
-            for (Entity entity : minecart.getNearbyEntities(1.0, 1.0, 1.0)) {
-                if (entity != passenger && entity != minecart) {
-                    // 如果不是乘客或矿车本身，允许穿透
-                    SchedulerUtil.teleportEntity(minecart, minecart.getLocation()); // 刷新位置以避免碰撞
-                    break;
-                }
-            }
-
-            // 检查是否脱轨
-            Location currentLocation = minecart.getLocation();
-            if (!LocationUtil.isOnRail(currentLocation)) {
-                handleDerailment(currentLocation);
-            }
-        }, 0L, -1); // 确保矿车存在时设置名称
+        // 只在必要时检查铁轨（脱轨检测已在 VehicleListener.onVehicleMove 中处理）
+        // 此方法现在仅作为扩展点保留，不执行任何操作以保持原版物理
     }
     
     /**

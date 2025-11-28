@@ -7,25 +7,28 @@
     <parent>
         <groupId>org.cubexmc</groupId>
         <artifactId>metro-parent</artifactId>
-        <version>1.1.0</version>
+        <version>1.1.1</version>
     </parent>
 
-    <artifactId>metro-modern</artifactId>
-    <name>metro-modern</name>
+    <artifactId>metro</artifactId>
+    <name>metro</name>
     <packaging>jar</packaging>
 
     <properties>
-        <java.release>21</java.release>
+        <!-- 使用 Java 17 以兼容 1.18+ 服务器 -->
+        <java.release>17</java.release>
         <base.name>metro</base.name>
-        <modern.classifier>1.20+</modern.classifier>
-        <final.name>${base.name}-${project.parent.version}-${modern.classifier}</final.name>
+        <!-- 统一版本，不再需要版本后缀 -->
+        <final.name>${base.name}-${project.parent.version}</final.name>
     </properties>
 
     <dependencies>
+        <!-- 使用 Spigot API 作为编译依赖，兼容 Spigot/Paper/Folia -->
+        <!-- 选择 1.18.2 作为最低支持版本（Java 17 最低要求） -->
         <dependency>
-            <groupId>io.papermc.paper</groupId>
-            <artifactId>paper-api</artifactId>
-            <version>1.21.4-R0.1-SNAPSHOT</version>
+            <groupId>org.spigotmc</groupId>
+            <artifactId>spigot-api</artifactId>
+            <version>1.18.2-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
@@ -45,4 +48,3 @@
         </plugins>
     </build>
 </project>
-

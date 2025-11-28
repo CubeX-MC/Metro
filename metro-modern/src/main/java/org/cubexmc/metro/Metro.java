@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.cubexmc.metro.command.MetroAdminCommand;
 import org.cubexmc.metro.command.MetroAdminTabCompleter;
@@ -16,6 +17,7 @@ import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.SelectionManager;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.train.ScoreboardManager;
+import org.cubexmc.metro.update.ConfigUpdater;
 
 public final class Metro extends JavaPlugin {
 
@@ -34,10 +36,13 @@ public final class Metro extends JavaPlugin {
         // 初始化配置文件
         saveDefaultConfig();
         
+        // 自动更新配置文件，添加新版本的配置项
+        ConfigUpdater.applyDefaults(this, "config.yml");
+        
         // 初始化默认配置文件
         createDefaultConfigFiles();
         
-        // 初始化语言管理器
+        // 初始化语言管理器（内部会自动更新语言文件）
         this.languageManager = new LanguageManager(this);
 
         // 初始化管理器
@@ -316,5 +321,20 @@ public final class Metro extends JavaPlugin {
      */
     public long getCartDepartureDelay() {
         return getConfig().getLong("settings.cart_departure_delay", 100L);
+    }
+    
+    /**
+     * 获取站台选区工具的Material类型
+     * 
+     * @return Material类型，默认为GOLDEN_HOE
+     */
+    public Material getSelectionTool() {
+        String toolName = getConfig().getString("settings.selection_tool", "GOLDEN_HOE");
+        try {
+            return Material.valueOf(toolName.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            getLogger().warning("Invalid selection tool in config: " + toolName + ", using default GOLDEN_HOE");
+            return Material.GOLDEN_HOE;
+        }
     }
 }

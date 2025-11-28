@@ -30,6 +30,10 @@ public class Stop {
     // 自定义titles配置
     private Map<String, Map<String, String>> customTitles;
     
+    // 缓存的边界值，避免每次isInStop调用时重复计算
+    private int cachedMinX, cachedMaxX, cachedMinY, cachedMaxY, cachedMinZ, cachedMaxZ;
+    private boolean boundsCached = false;
+    
     /**
      * 创建新停靠区
      * 
@@ -117,6 +121,9 @@ public class Stop {
         if (linkedLines != null) {
             this.linkedLineIds.addAll(linkedLines);
         }
+        
+        // 初始化边界缓存
+        updateBoundsCache();
     }
     
     /**
@@ -251,24 +258,20 @@ public class Stop {
      * @return 是否在区域内
      */
     public boolean isInStop(Location location) {
-        if (corner1 == null || corner2 == null || location == null || 
+        if (!boundsCached || location == null || 
                 location.getWorld() == null || 
-                !location.getWorld().equals(corner1.getWorld())) {
+                corner1 == null || !location.getWorld().equals(corner1.getWorld())) {
             return false;
         }
-        
-        int minX = Math.min(corner1.getBlockX(), corner2.getBlockX());
-        int maxX = Math.max(corner1.getBlockX(), corner2.getBlockX());
-        int minY = Math.min(corner1.getBlockY(), corner2.getBlockY());
-        int maxY = Math.max(corner1.getBlockY(), corner2.getBlockY());
-        int minZ = Math.min(corner1.getBlockZ(), corner2.getBlockZ());
-        int maxZ = Math.max(corner1.getBlockZ(), corner2.getBlockZ());
         
         int x = location.getBlockX();
         int y = location.getBlockY();
         int z = location.getBlockZ();
         
-        return x >= minX && x <= maxX && y >= minY && y <= maxY && z >= minZ && z <= maxZ;
+        // 使用缓存的边界值，避免重复计算
+        return x >= cachedMinX && x <= cachedMaxX && 
+               y >= cachedMinY && y <= cachedMaxY && 
+               z >= cachedMinZ && z <= cachedMaxZ;
     }
     
     /**
@@ -323,6 +326,7 @@ public class Stop {
     
     public void setCorner1(Location corner1) {
         this.corner1 = corner1;
+        updateBoundsCache();
     }
     
     public Location getCorner2() {
@@ -331,6 +335,24 @@ public class Stop {
     
     public void setCorner2(Location corner2) {
         this.corner2 = corner2;
+        updateBoundsCache();
+    }
+    
+    /**
+     * 更新边界缓存，在corner1或corner2改变时调用
+     */
+    private void updateBoundsCache() {
+        if (corner1 != null && corner2 != null) {
+            cachedMinX = Math.min(corner1.getBlockX(), corner2.getBlockX());
+            cachedMaxX = Math.max(corner1.getBlockX(), corner2.getBlockX());
+            cachedMinY = Math.min(corner1.getBlockY(), corner2.getBlockY());
+            cachedMaxY = Math.max(corner1.getBlockY(), corner2.getBlockY());
+            cachedMinZ = Math.min(corner1.getBlockZ(), corner2.getBlockZ());
+            cachedMaxZ = Math.max(corner1.getBlockZ(), corner2.getBlockZ());
+            boundsCached = true;
+        } else {
+            boundsCached = false;
+        }
     }
     
     public Location getStopPointLocation() {

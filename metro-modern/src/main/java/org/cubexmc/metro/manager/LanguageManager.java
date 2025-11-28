@@ -11,6 +11,7 @@ import java.util.logging.Level;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.cubexmc.metro.Metro;
+import org.cubexmc.metro.update.LanguageUpdater;
 
 /**
  * 管理多语言消息的类
@@ -49,8 +50,8 @@ public class LanguageManager {
             langDir.mkdirs();
         }
 
-        // 保存内置语言文件（首次运行时会复制到插件数据目录）
-        String[] bundledLanguages = new String[] { "zh_CN", "en_US", "de_DE", "es_ES", "nl_NL" };
+        // 保存内置语言文件（首次运行时会复制到插件数据目录，之后会自动合并新增键）
+        String[] bundledLanguages = new String[] { "zh_CN", "zh_TW", "en_US", "de_DE", "es_ES", "nl_NL" };
         for (String lang : bundledLanguages) {
             saveDefaultLanguageFile(lang);
         }
@@ -87,14 +88,20 @@ public class LanguageManager {
     }
 
     /**
-     * 保存默认语言文件
+     * 保存默认语言文件并自动合并新的语言键
      *
      * @param langCode 语言代码
      */
     private void saveDefaultLanguageFile(String langCode) {
         File langFile = new File(plugin.getDataFolder(), "lang/" + langCode + ".yml");
+        String resourcePath = "lang/" + langCode + ".yml";
+        
         if (!langFile.exists()) {
-            plugin.saveResource("lang/" + langCode + ".yml", false);
+            // 首次运行，复制默认文件
+            plugin.saveResource(resourcePath, false);
+        } else {
+            // 文件已存在，合并新的语言键（不覆盖用户修改）
+            LanguageUpdater.merge(plugin, langFile, resourcePath);
         }
     }
 

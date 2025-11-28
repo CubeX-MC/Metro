@@ -16,6 +16,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.manager.LanguageManager;
 import org.cubexmc.metro.manager.LineManager;
@@ -65,9 +66,12 @@ public class PlayerInteractListener implements Listener {
         Action action = event.getAction();
         Block clickedBlock = event.getClickedBlock();
 
-        // 处理金锄头选区
-        // 别忘了添加语言文件selection.corner1_set和selection.corner2_set
-        if (player.hasPermission("metro.admin") && player.getInventory().getItemInMainHand().getType() == Material.GOLDEN_HOE) {
+        // 处理选区工具（可在config中配置，默认金锄头）
+        // 只处理主手事件，避免主手和副手各触发一次导致消息重复
+        Material selectionTool = plugin.getSelectionTool();
+        if (player.hasPermission("metro.admin") 
+                && player.getInventory().getItemInMainHand().getType() == selectionTool
+                && event.getHand() == EquipmentSlot.HAND) {
             if (action == Action.LEFT_CLICK_BLOCK) {
                 selectionManager.setCorner1(player, clickedBlock.getLocation());
                 player.sendMessage(plugin.getLanguageManager().getMessage("selection.corner1_set",

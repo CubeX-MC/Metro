@@ -96,6 +96,11 @@ public class PlayerMoveListener implements Listener {
             cancelContinuousInfoTask(playerId);
             cancelActionBarTask(playerId);  // 取消ActionBar任务
             
+            // 立即清除title和actionbar显示
+            player.resetTitle();
+            // 发送空的ActionBar来清除显示
+            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(""));
+            
             // 清除首次运行标记
             String lastStopId = currentStopId;
             if (lastStopId != null) {

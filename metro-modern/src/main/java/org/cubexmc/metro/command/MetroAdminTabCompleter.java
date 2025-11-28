@@ -26,9 +26,9 @@ public class MetroAdminTabCompleter implements TabCompleter {
     
     private final Metro plugin;
     
-    // 主命令
+    // 主命令 (包含别名 l=line, s=stop)
     private static final List<String> MAIN_COMMANDS = Arrays.asList(
-            "line", "stop", "reload"
+            "line", "l", "stop", "s", "reload"
     );
     
     // 线路子命令
@@ -79,8 +79,12 @@ public class MetroAdminTabCompleter implements TabCompleter {
         
         // 子命令补全
         String mainCommand = args[0].toLowerCase();
+        
+        // 检查命令类型（支持别名）
+        boolean isLineCommand = "line".equals(mainCommand) || "l".equals(mainCommand);
+        boolean isStopCommand = "stop".equals(mainCommand) || "s".equals(mainCommand);
 
-        if ("stop".equals(mainCommand) && args.length >= 3 && "link".equals(args[1].toLowerCase())) {
+        if (isStopCommand && args.length >= 3 && "link".equals(args[1].toLowerCase())) {
             if (args.length == 3) {
                 return getCompletions(args[2], Arrays.asList("allow", "deny"));
             } else if (args.length == 4) {
@@ -92,16 +96,16 @@ public class MetroAdminTabCompleter implements TabCompleter {
         }
 
         if (args.length == 2) {
-            if ("line".equals(mainCommand)) {
+            if (isLineCommand) {
                 return getCompletions(args[1], LINE_SUBCOMMANDS);
-            } else if ("stop".equals(mainCommand)) {
+            } else if (isStopCommand) {
                 return getCompletions(args[1], STOP_SUBCOMMANDS);
             }
         }
         
         // 特定子命令参数补全
         if (args.length == 3) {
-            if ("line".equals(mainCommand)) {
+            if (isLineCommand) {
                 String subCommand = args[1].toLowerCase();
                 if (isLineManageCommand(subCommand)) {
                     return getLineIds(player, true);
@@ -109,7 +113,7 @@ public class MetroAdminTabCompleter implements TabCompleter {
                 if ("stops".equals(subCommand) || "info".equals(subCommand)) {
                     return getLineIds(player, false);
                 }
-            } else if ("stop".equals(mainCommand)) {
+            } else if (isStopCommand) {
                 String subCommand = args[1].toLowerCase();
                 if (isStopManageCommand(subCommand)) {
                     return getStopIds(player, true);
@@ -123,7 +127,7 @@ public class MetroAdminTabCompleter implements TabCompleter {
         
         // 特定子命令的第四个参数补全
         if (args.length == 4) {
-            if ("line".equals(mainCommand)) {
+            if (isLineCommand) {
                 String subCommand = args[1].toLowerCase();
                 if ("setcolor".equals(subCommand)) {
                     return getCompletions(args[3], COLOR_CODES);
@@ -134,7 +138,7 @@ public class MetroAdminTabCompleter implements TabCompleter {
                 } else if ("trust".equals(subCommand) || "untrust".equals(subCommand) || "owner".equals(subCommand)) {
                     return getPlayerNames(args[3]);
                 }
-            } else if ("stop".equals(mainCommand)) {
+            } else if (isStopCommand) {
                 String subCommand = args[1].toLowerCase();
                 if ("addtransfer".equals(subCommand) || "deltransfer".equals(subCommand)) {
                     return getLineIds(player, false);
@@ -148,7 +152,7 @@ public class MetroAdminTabCompleter implements TabCompleter {
         
         // 特定子命令的第五个参数补全
         if (args.length == 5) {
-            if ("stop".equals(mainCommand)) {
+            if (isStopCommand) {
                 String subCommand = args[1].toLowerCase();
                 if ("settitle".equals(subCommand) || "deltitle".equals(subCommand)) {
                     return getCompletions(args[4], TITLE_KEYS);

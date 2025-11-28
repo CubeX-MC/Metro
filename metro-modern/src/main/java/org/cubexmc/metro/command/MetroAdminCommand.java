@@ -28,6 +28,7 @@ import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Stop;
 import org.cubexmc.metro.util.LocationUtil;
 import org.cubexmc.metro.util.OwnershipUtil;
+import org.cubexmc.metro.util.SchedulerUtil;
 
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
@@ -65,7 +66,8 @@ public class MetroAdminCommand implements CommandExecutor {
         String mainCommand = args[0].toLowerCase();
         
         // 新的命令格式，按照README中的结构处理
-        if (mainCommand.equals("line")) {
+        // 支持别名: l=line, s=stop
+        if (mainCommand.equals("line") || mainCommand.equals("l")) {
             // 线路管理命令
             if (args.length < 2) {
                 sendLineHelpMessage(player);
@@ -536,7 +538,7 @@ public class MetroAdminCommand implements CommandExecutor {
                     sendLineHelpMessage(player);
                     return true;
             }
-        } else if (mainCommand.equals("stop")) {
+        } else if (mainCommand.equals("stop") || mainCommand.equals("s")) {
             // 停靠区管理命令
             if (args.length < 2) {
                 sendStopHelpMessage(player);
@@ -566,7 +568,8 @@ public class MetroAdminCommand implements CommandExecutor {
                             LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName())));
                     return true;
                 }
-                player.teleportAsync(stop.getStopPointLocation()).thenAccept((success) -> {
+                // 使用兼容方式传送，支持 Bukkit/Paper/Folia
+                SchedulerUtil.teleportEntity(player, stop.getStopPointLocation()).thenAccept((success) -> {
                     if (success) {
                         player.sendMessage(plugin.getLanguageManager().getMessage("stop.tp_success", 
                                 LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName())));
@@ -1242,7 +1245,11 @@ public class MetroAdminCommand implements CommandExecutor {
                     break;
             }
         } else if (mainCommand.equals("reload")) {
-            // 重新加载配置
+            // 重新加载配置 - 需要管理员权限
+            if (!OwnershipUtil.hasAdminBypass(player)) {
+                player.sendMessage(plugin.getLanguageManager().getMessage("plugin.no_permission"));
+                return true;
+            }
             
             // 确保所有默认配置文件存在
             plugin.ensureDefaultConfigs();

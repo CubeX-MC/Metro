@@ -79,7 +79,7 @@ public class VehicleListener implements Listener {
     }
     
     /**
-     * 监听矿车移动事件，检测脱轨
+     * 监听矿车移动事件，检测脱轨和处理上坡速度
      */
     @EventHandler(priority = EventPriority.NORMAL)
     public void onVehicleMove(VehicleMoveEvent event) {
@@ -97,26 +97,17 @@ public class VehicleListener implements Listener {
             return;
         }
 
-        // 获取当前位置
-        // Location location = minecart.getLocation();
-
-        // // 检查矿车是否在铁轨上
-        // if (!LocationUtil.isOnRail(location)) {
-        //     // 矿车已脱轨，强制乘客下车并移除矿车
-        //     minecart.eject();
-        //     minecart.remove();
-        // }
-
         Location from = event.getFrom();
         Location to = event.getTo();
 
         if (LocationUtil.isOnRail(to)) {
-            // 限制上坡速度为0.4
+            // 限制上坡速度为0.4，防止到达坡顶后倒退
             if (to.getY() > from.getY()) {
                 Vector direction = LocationUtil.getDirectionVector(from, to);
                 minecart.setVelocity(direction.multiply(0.4));
             }
         } else {
+            // 矿车已脱轨，强制乘客下车并移除矿车
             minecart.eject();
             minecart.remove();
         }

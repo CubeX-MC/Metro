@@ -19,6 +19,7 @@ import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Stop;
 import org.cubexmc.metro.util.SchedulerUtil;
+import org.cubexmc.metro.util.VersionUtil;
 
 /**
  * 计分板管理器，用于在玩家乘坐矿车时显示线路信息
@@ -171,7 +172,7 @@ public class ScoreboardManager {
      * @param nextStopId 下一站点ID (可为null)
      */
     private static void updateScoreboardInternal(Player player, Line line, String currentStopId, String nextStopId) {
-        if (SchedulerUtil.isFolia()) {
+        if (VersionUtil.isFolia()) {
             return;
         } else {
             org.bukkit.scoreboard.ScoreboardManager manager = Bukkit.getScoreboardManager();
@@ -291,7 +292,7 @@ public class ScoreboardManager {
      * @param player 要清除计分板的玩家
      */
     public static void clearScoreboard(Player player) {
-        if (SchedulerUtil.isFolia()) {
+        if (VersionUtil.isFolia()) {
             return;
         } else {
             if (player == null || !player.isOnline()) {
