@@ -14,6 +14,7 @@ command:
   help_header: "&a===== Metro Administrator Befehl Hilfe ====="
   help_line: "&aBefehl: &6/m line &f- Metro-Linien verwalten (verwende /m line für Unterbefehle)"
   help_stop: "&aBefehl: &6/m stop &f- Haltebereiche verwalten (verwende /m stop für Unterbefehle)"
+  help_gui: "&aBefehl: &6/m gui &f- GUI-Verwaltung öffnen"
   help_reload: "&aBefehl: &6/m reload &f- Konfiguration neu laden"
   help_testendpoint: "&aBefehl: &6/m testendpoint &f- Endstation-Anzeige testen"
   help_teststopinfo: "&aBefehl: &6/m teststopinfo <line_id> [stop_id] &f- Linien-Haltestelleninfo testen"
@@ -273,6 +274,53 @@ ownership:
   server: "Server"
   none: "Keine"
 
+# GUI
+gui:
+  main_menu:
+    title: "Metro Verwaltung"
+    line_manage: "&bLinien verwalten"
+    line_manage_lore1: "&7Klicke um alle Linien anzuzeigen"
+    line_manage_lore2: "&7Linien und Haltestellenreihenfolge verwalten"
+    stop_manage: "&aHaltestellen verwalten"
+    stop_manage_lore1: "&7Klicke um alle Haltestellen anzuzeigen"
+    stop_manage_lore2: "&7Teleportieren oder Infos bearbeiten"
+  line_list:
+    title_all: "Linienliste &a[Alle]"
+    title_mine: "Linienliste &6[Meine]"
+    stop_count: "&7Haltestellen: &f{count}"
+    color: "&7Farbe: "
+    can_manage: "&a✔ Verwaltbar"
+    view_only: "&c✖ Nur Ansicht"
+    click_view: "&eLinksklick &7für Haltestellenliste"
+  stop_list:
+    title_all: "Haltestellenliste &a[Alle]"
+    title_mine: "Haltestellenliste &6[Meine]"
+    lines: "&7Linien: "
+    no_lines: "&7Linien: &8Keine"
+    click_tp: "&eLinksklick &7zum Teleportieren"
+    no_stoppoint: "&8Haltepunkt nicht gesetzt"
+  line_detail:
+    title: "&8Linie: "
+    index: "&7Index: &f{index}"
+    start_stop: "&aStarthaltestelle"
+    end_stop: "&cEndhaltestelle"
+    click_tp: "&eLinksklick &7zum Teleportieren"
+    click_remove: "&eRechtsklick &7zum Entfernen"
+    stop_not_exist: "&cHaltestelle existiert nicht"
+  control:
+    prev_page: "&e◀ Zurück"
+    next_page: "&eWeiter ▶"
+    page_info: "&fSeite {current} / {total}"
+    stop_count: "&7Gesamt: {count} Haltestellen"
+    back_main: "&cZurück zum Hauptmenü"
+    back_line_list: "&cZurück zur Linienliste"
+    filter_all: "&aFilter: Alle"
+    filter_mine: "&6Filter: Meine"
+    filter_lore_all: "&7Klicke für nur verwaltbare"
+    filter_lore_mine: "&7Klicke für alle"
+  common:
+    id: "&7ID: &f{id}"
+
 # Bewegungs-Listener bezogen
 movement:
   enter_stop: "&aDu hast den Haltebereich betreten: {stop_name}"
@@ -280,6 +328,7 @@ movement:
   
 # Interaktion bezogen
 interact:
+  actionbar_line_info: "&6{line_name} &f- Nächster Halt: &e{next_stop_name}"
   train_coming: "&eZug nähert sich Station, bitte warten..."
   train_spawned: "&aEingestiegen, Abfahrt in {departure_seconds} Sekunden..."
   train_error: "&cFehler beim Generieren des Zugs, versuche es später erneut."

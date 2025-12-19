@@ -6,14 +6,13 @@
 
     <groupId>org.cubexmc</groupId>
     <artifactId>metro-parent</artifactId>
-    <version>1.1.0</version>
+    <version>1.1.2</version>
     <packaging>pom</packaging>
 
     <name>metro-parent</name>
 
     <modules>
         <module>metro-modern</module>
-        <module>metro-legacy</module>
     </modules>
 
     <properties>

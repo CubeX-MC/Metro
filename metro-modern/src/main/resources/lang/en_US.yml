@@ -14,6 +14,7 @@ command:
   help_header: "&a===== Metro Admin Command Help ====="
   help_line: "&aCommand: &6/m line &f- Manage metro lines (use /m line for subcommands)"
   help_stop: "&aCommand: &6/m stop &f- Manage stops (use /m stop for subcommands)"
+  help_gui: "&aCommand: &6/m gui &f- Open GUI management panel"
   help_reload: "&aCommand: &6/m reload &f- Reload configuration"
   help_testendpoint: "&aCommand: &6/m testendpoint &f- Test terminal station prompt display"
   help_teststopinfo: "&aCommand: &6/m teststopinfo <line_id> [stop_id] &f- Test line stop information"
@@ -272,6 +273,61 @@ ownership:
   server: "Server"
   none: "None"
 
+# GUI related
+gui:
+  main_menu:
+    title: "Metro Management"
+    line_manage: "&bLine Management"
+    line_manage_lore1: "&7Click to view all lines"
+    line_manage_lore2: "&7Manage lines and stop order"
+    stop_manage: "&aStop Management"
+    stop_manage_lore1: "&7Click to view all stops"
+    stop_manage_lore2: "&7Teleport or edit stop info"
+  line_list:
+    title_all: "Line List &a[All]"
+    title_mine: "Line List &6[Mine]"
+    stop_count: "&7Stops: &f{count}"
+    color: "&7Color: "
+    can_manage: "&a✔ Can Manage"
+    view_only: "&c✖ View Only"
+    click_view: "&eLeft-click &7to view stops"
+    click_view_variants: "&eClick to view variants"
+  stop_list:
+    title_all: "Stop List &a[All]"
+    title_mine: "Stop List &6[Mine]"
+    lines: "&7Lines: "
+    no_lines: "&7Lines: &8None"
+    click_tp: "&eLeft-click &7to teleport"
+    no_stoppoint: "&8Stop point not set"
+    click_view_variants: "&eClick to view variants"
+  line_detail:
+    title: "&8Line: "
+    index: "&7Index: &f{index}"
+    start_stop: "&aStart Station"
+    end_stop: "&cTerminal Station"
+    click_tp: "&eLeft-click &7to teleport"
+    click_remove: "&eRight-click &7to remove from line"
+    stop_not_exist: "&cStop does not exist"
+  control:
+    prev_page: "&e◀ Previous"
+    next_page: "&eNext ▶"
+    page_info: "&fPage {current} / {total}"
+    stop_count: "&7Total: {count} stops"
+    back_main: "&cBack to Main Menu"
+    back_line_list: "&cBack to Line List"
+    filter_all: "&aFilter: All"
+    filter_mine: "&6Filter: Mine"
+    filter_lore_all: "&7Click to show only manageable"
+    filter_lore_mine: "&7Click to show all"
+  common:
+    id: "&7ID: &f{id}"
+    variants: "&7Variants: {count}"
+    variants_title: "Variants"
+    back: "&cBack"
+    prev_page: "&e◀ Previous"
+    next_page: "&eNext ▶"
+    page_info: "&fPage {page} / {total}"
+
 # Passenger Related Messages
 passenger:
   train_derailed: "&cRailway is damaged, journey terminated!"
@@ -283,6 +339,7 @@ movement:
   
 # Interaction Related
 interact:
+  actionbar_line_info: "&6{line_name} &f- Next stop: &e{next_stop_name}"
   train_coming: "&eTrain is arriving, please wait..."
   train_spawned: "&aBoarded train, departing in {departure_seconds} seconds..."
   train_error: "&cError occurred while spawning train, please try again later."

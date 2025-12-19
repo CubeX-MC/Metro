@@ -14,6 +14,7 @@ command:
   help_header: "&a===== Metro 管理员命令帮助 ====="
   help_line: "&a命令: &6/m line &f- 管理地铁线路 (使用/m line 查看子命令)"
   help_stop: "&a命令: &6/m stop &f- 管理停靠区 (使用/m stop 查看子命令)"
+  help_gui: "&a命令: &6/m gui &f- 打开图形管理界面"
   help_reload: "&a命令: &6/m reload &f- 重新加载配置"
   help_testendpoint: "&a命令: &6/m testendpoint &f- 测试终点站提示显示"
   help_teststopinfo: "&a命令: &6/m teststopinfo <line_id> [stop_id] &f- 测试线路站点信息"
@@ -278,6 +279,7 @@ movement:
   
 # 交互相关
 interact:
+  actionbar_line_info: "&6{line_name} &f- 下一站: &e{next_stop_name}"
   train_coming: "&e列车即将进站，请稍候..."
   train_spawned: "&a已上车，{departure_seconds}秒后发车..."
   train_error: "&c生成列车时出现错误，请稍后再试。"
@@ -295,3 +297,58 @@ vehicle:
 ownership:
   server: "服务器"
   none: "无"
+
+# GUI 相关
+gui:
+  main_menu:
+    title: "Metro 管理"
+    line_manage: "&b线路管理"
+    line_manage_lore1: "&7点击查看所有线路"
+    line_manage_lore2: "&7管理线路和站点顺序"
+    stop_manage: "&a站点管理"
+    stop_manage_lore1: "&7点击查看所有站点"
+    stop_manage_lore2: "&7传送到站点或编辑信息"
+  line_list:
+    title_all: "线路列表 &a[全部]"
+    title_mine: "线路列表 &6[我的]"
+    stop_count: "&7站点数: &f{count}"
+    color: "&7颜色: "
+    can_manage: "&a✔ 可管理"
+    view_only: "&c✖ 仅查看"
+    click_view: "&e左键 &7查看站点列表"
+    click_view_variants: "&e点击查看变体"
+  stop_list:
+    title_all: "站点列表 &a[全部]"
+    title_mine: "站点列表 &6[我的]"
+    lines: "&7所属线路: "
+    no_lines: "&7所属线路: &8无"
+    click_tp: "&e左键 &7传送到此站点"
+    no_stoppoint: "&8未设置停靠点"
+    click_view_variants: "&e点击查看变体"
+  line_detail:
+    title: "&8线路: "
+    index: "&7序号: &f{index}"
+    start_stop: "&a起点站"
+    end_stop: "&c终点站"
+    click_tp: "&e左键 &7传送到此站点"
+    click_remove: "&e右键 &7从线路移除"
+    stop_not_exist: "&c站点不存在"
+  control:
+    prev_page: "&e◀ 上一页"
+    next_page: "&e下一页 ▶"
+    page_info: "&f第 {current} / {total} 页"
+    stop_count: "&7共 {count} 个站点"
+    back_main: "&c返回主菜单"
+    back_line_list: "&c返回线路列表"
+    filter_all: "&a筛选: 全部"
+    filter_mine: "&6筛选: 我的"
+    filter_lore_all: "&7点击只显示我能管理的"
+    filter_lore_mine: "&7点击显示全部"
+  common:
+    id: "&7ID: &f{id}"
+    variants: "&7变体数量: {count}"
+    variants_title: "变体列表"
+    back: "&c返回"
+    prev_page: "&e◀ 上一页"
+    next_page: "&e下一页 ▶"
+    page_info: "&f第 {page} / {total} 页"

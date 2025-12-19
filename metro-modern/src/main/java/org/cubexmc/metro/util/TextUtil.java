@@ -131,7 +131,7 @@ public class TextUtil {
         }
         
         if (transferableLineIds.isEmpty()) {
-            return "无"; // 无可换乘线路
+            return ""; // 无可换乘线路
         }
         
         StringBuilder result = new StringBuilder();

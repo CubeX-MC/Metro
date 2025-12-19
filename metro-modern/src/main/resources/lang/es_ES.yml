@@ -14,6 +14,7 @@ command:
   help_header: "&a===== Ayuda de Comandos de Administrador Metro ====="
   help_line: "&aComando: &6/m line &f- Gestionar líneas de metro (usa /m line para subcomandos)"
   help_stop: "&aComando: &6/m stop &f- Gestionar áreas de parada (usa /m stop para subcomandos)"
+  help_gui: "&aComando: &6/m gui &f- Abrir panel de gestión GUI"
   help_reload: "&aComando: &6/m reload &f- Recargar configuración"
   help_testendpoint: "&aComando: &6/m testendpoint &f- Probar visualización de estación terminal"
   help_teststopinfo: "&aComando: &6/m teststopinfo <line_id> [stop_id] &f- Probar información de paradas de línea"
@@ -273,6 +274,53 @@ ownership:
   server: "Servidor"
   none: "Ninguno"
 
+# GUI
+gui:
+  main_menu:
+    title: "Gestión Metro"
+    line_manage: "&bGestión de Líneas"
+    line_manage_lore1: "&7Clic para ver todas las líneas"
+    line_manage_lore2: "&7Gestionar líneas y orden de paradas"
+    stop_manage: "&aGestión de Paradas"
+    stop_manage_lore1: "&7Clic para ver todas las paradas"
+    stop_manage_lore2: "&7Teletransportar o editar info"
+  line_list:
+    title_all: "Lista de Líneas &a[Todas]"
+    title_mine: "Lista de Líneas &6[Mías]"
+    stop_count: "&7Paradas: &f{count}"
+    color: "&7Color: "
+    can_manage: "&a✔ Gestionable"
+    view_only: "&c✖ Solo Ver"
+    click_view: "&eClic izq. &7para ver paradas"
+  stop_list:
+    title_all: "Lista de Paradas &a[Todas]"
+    title_mine: "Lista de Paradas &6[Mías]"
+    lines: "&7Líneas: "
+    no_lines: "&7Líneas: &8Ninguna"
+    click_tp: "&eClic izq. &7para teletransportar"
+    no_stoppoint: "&8Punto de parada no configurado"
+  line_detail:
+    title: "&8Línea: "
+    index: "&7Índice: &f{index}"
+    start_stop: "&aEstación Inicial"
+    end_stop: "&cEstación Terminal"
+    click_tp: "&eClic izq. &7para teletransportar"
+    click_remove: "&eClic der. &7para quitar de línea"
+    stop_not_exist: "&cLa parada no existe"
+  control:
+    prev_page: "&e◀ Anterior"
+    next_page: "&eSiguiente ▶"
+    page_info: "&fPágina {current} / {total}"
+    stop_count: "&7Total: {count} paradas"
+    back_main: "&cVolver al Menú Principal"
+    back_line_list: "&cVolver a Lista de Líneas"
+    filter_all: "&aFiltro: Todas"
+    filter_mine: "&6Filtro: Mías"
+    filter_lore_all: "&7Clic para mostrar solo gestionables"
+    filter_lore_mine: "&7Clic para mostrar todas"
+  common:
+    id: "&7ID: &f{id}"
+
 # Relacionado con escucha de movimiento
 movement:
   enter_stop: "&aHas entrado al área de parada: {stop_name}"
@@ -280,6 +328,7 @@ movement:
   
 # Relacionado con interacción
 interact:
+  actionbar_line_info: "&6{line_name} &f- Próxima parada: &e{next_stop_name}"
   train_coming: "&eTren acercándose a la estación, por favor espera..."
   train_spawned: "&aSubido al tren, salida en {departure_seconds} segundos..."
   train_error: "&cError al generar tren, inténtalo de nuevo más tarde."

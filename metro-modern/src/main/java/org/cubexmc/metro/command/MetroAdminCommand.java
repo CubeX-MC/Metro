@@ -14,10 +14,10 @@ import java.util.stream.Collectors;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.manager.LanguageManager;
@@ -1244,6 +1244,9 @@ public class MetroAdminCommand implements CommandExecutor {
                     sendStopHelpMessage(player);
                     break;
             }
+        } else if (mainCommand.equals("gui")) {
+            // 打开 GUI 管理界面
+            plugin.getGuiManager().openMainMenu(player);
         } else if (mainCommand.equals("reload")) {
             // 重新加载配置 - 需要管理员权限
             if (!OwnershipUtil.hasAdminBypass(player)) {
@@ -1280,6 +1283,7 @@ public class MetroAdminCommand implements CommandExecutor {
         player.sendMessage(plugin.getLanguageManager().getMessage("command.help_header"));
         player.sendMessage(plugin.getLanguageManager().getMessage("command.help_line"));
         player.sendMessage(plugin.getLanguageManager().getMessage("command.help_stop"));
+        player.sendMessage(plugin.getLanguageManager().getMessage("command.help_gui"));
         player.sendMessage(plugin.getLanguageManager().getMessage("command.help_reload"));
     }
     

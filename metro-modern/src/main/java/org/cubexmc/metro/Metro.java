@@ -9,6 +9,8 @@ import org.bukkit.Material;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.cubexmc.metro.command.MetroAdminCommand;
 import org.cubexmc.metro.command.MetroAdminTabCompleter;
+import org.cubexmc.metro.gui.GuiListener;
+import org.cubexmc.metro.gui.GuiManager;
 import org.cubexmc.metro.manager.LanguageManager;
 import org.cubexmc.metro.listener.PlayerInteractListener;
 import org.cubexmc.metro.listener.PlayerMoveListener;
@@ -25,6 +27,7 @@ public final class Metro extends JavaPlugin {
     private StopManager stopManager;
     private LanguageManager languageManager;
     private SelectionManager selectionManager;
+    private GuiManager guiManager;
 
     @Override
     public void onEnable() {
@@ -49,6 +52,7 @@ public final class Metro extends JavaPlugin {
         this.lineManager = new LineManager(this);
         this.stopManager = new StopManager(this);
         this.selectionManager = new SelectionManager();
+        this.guiManager = new GuiManager(this);
         
         // 初始化计分板管理器
         ScoreboardManager.initialize(this);
@@ -61,6 +65,7 @@ public final class Metro extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new PlayerInteractListener(this), this);
         Bukkit.getPluginManager().registerEvents(new VehicleListener(this), this);
         Bukkit.getPluginManager().registerEvents(new PlayerMoveListener(this), this);
+        Bukkit.getPluginManager().registerEvents(new GuiListener(this), this);
 
         // 注册bstats
         int pluginId = 25825; // <-- Replace with the id of your plugin!
@@ -147,6 +152,15 @@ public final class Metro extends JavaPlugin {
      */
     public SelectionManager getSelectionManager() {
         return selectionManager;
+    }
+    
+    /**
+     * 获取 GUI 管理器
+     * 
+     * @return GUI 管理器
+     */
+    public GuiManager getGuiManager() {
+        return guiManager;
     }
     
     /**

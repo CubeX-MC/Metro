@@ -1,5 +1,5 @@
 name: Metro
-version: '1.1.1'
+version: '1.1.2'
 main: org.cubexmc.metro.Metro
 api-version: '1.18'
 folia-supported: true
@@ -17,9 +17,14 @@ permissions:
   metro.admin:
     description: Allow use of Metro plugin admin commands
     default: op
+    children:
+      metro.tp: true
   metro.use:
     description: Allow players to use Metro plugin features (such as乘坐地铁）
     default: true
+  metro.tp:
+    description: Allow players to teleport to stops via GUI
+    default: false
   metro.line.create:
     description: Allow players to create new metro lines
     default: false

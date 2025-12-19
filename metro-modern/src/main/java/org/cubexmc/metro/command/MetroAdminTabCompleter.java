@@ -28,7 +28,7 @@ public class MetroAdminTabCompleter implements TabCompleter {
     
     // 主命令 (包含别名 l=line, s=stop)
     private static final List<String> MAIN_COMMANDS = Arrays.asList(
-            "line", "l", "stop", "s", "reload"
+            "line", "l", "stop", "s", "gui", "reload"
     );
     
     // 线路子命令

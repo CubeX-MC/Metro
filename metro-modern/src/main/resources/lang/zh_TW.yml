@@ -14,6 +14,7 @@ command:
   help_header: "&a===== Metro 管理員指令幫助 ====="
   help_line: "&a指令: &6/m line &f- 管理地鐵路線 (使用 /m line 查看子指令)"
   help_stop: "&a指令: &6/m stop &f- 管理停靠區 (使用 /m stop 查看子指令)"
+  help_gui: "&a指令: &6/m gui &f- 開啟圖形管理介面"
   help_reload: "&a指令: &6/m reload &f- 重新載入設定"
   help_testendpoint: "&a指令: &6/m testendpoint &f- 測試終點站提示顯示"
   help_teststopinfo: "&a指令: &6/m teststopinfo <路線ID> [站點ID] &f- 測試路線站點資訊"
@@ -230,6 +231,7 @@ movement:
   
 # 互動相關
 interact:
+  actionbar_line_info: "&6{line_name} &f- 下一站: &e{next_stop_name}"
   train_coming: "&e列車即將進站，請稍候..."
   train_spawned: "&a已上車，{departure_seconds} 秒後發車..."
   train_error: "&c生成列車時發生錯誤，請稍後再試。"
@@ -243,3 +245,54 @@ vehicle:
   terminal_arrived: "&a已抵達終點站: {terminal_stop_name}"
   auto_depart: "&a自動發車: 從 {current_stop_name} 前往 {next_stop_name}"
   passenger_exit: "&6玩家已下車，將不會自動發車"
+
+ownership:
+  server: "伺服器"
+  none: "無"
+
+# GUI 相關
+gui:
+  main_menu:
+    title: "Metro 管理"
+    line_manage: "&b路線管理"
+    line_manage_lore1: "&7點擊查看所有路線"
+    line_manage_lore2: "&7管理路線和站點順序"
+    stop_manage: "&a站點管理"
+    stop_manage_lore1: "&7點擊查看所有站點"
+    stop_manage_lore2: "&7傳送到站點或編輯資訊"
+  line_list:
+    title_all: "路線列表 &a[全部]"
+    title_mine: "路線列表 &6[我的]"
+    stop_count: "&7站點數: &f{count}"
+    color: "&7顏色: "
+    can_manage: "&a✔ 可管理"
+    view_only: "&c✖ 僅查看"
+    click_view: "&e左鍵 &7查看站點列表"
+  stop_list:
+    title_all: "站點列表 &a[全部]"
+    title_mine: "站點列表 &6[我的]"
+    lines: "&7所屬路線: "
+    no_lines: "&7所屬路線: &8無"
+    click_tp: "&e左鍵 &7傳送到此站點"
+    no_stoppoint: "&8未設置停靠點"
+  line_detail:
+    title: "&8路線: "
+    index: "&7序號: &f{index}"
+    start_stop: "&a起點站"
+    end_stop: "&c終點站"
+    click_tp: "&e左鍵 &7傳送到此站點"
+    click_remove: "&e右鍵 &7從路線移除"
+    stop_not_exist: "&c站點不存在"
+  control:
+    prev_page: "&e◀ 上一頁"
+    next_page: "&e下一頁 ▶"
+    page_info: "&f第 {current} / {total} 頁"
+    stop_count: "&7共 {count} 個站點"
+    back_main: "&c返回主選單"
+    back_line_list: "&c返回路線列表"
+    filter_all: "&a篩選: 全部"
+    filter_mine: "&6篩選: 我的"
+    filter_lore_all: "&7點擊只顯示我能管理的"
+    filter_lore_mine: "&7點擊顯示全部"
+  common:
+    id: "&7ID: &f{id}"

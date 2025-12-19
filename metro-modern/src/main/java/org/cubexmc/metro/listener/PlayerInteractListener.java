@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -25,6 +24,7 @@ import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Stop;
 import org.cubexmc.metro.train.TrainMovementTask;
+import org.cubexmc.metro.util.OwnershipUtil;
 import org.cubexmc.metro.util.SchedulerUtil;
 import org.cubexmc.metro.util.SoundUtil;
 
@@ -68,8 +68,9 @@ public class PlayerInteractListener implements Listener {
 
         // 处理选区工具（可在config中配置，默认金锄头）
         // 只处理主手事件，避免主手和副手各触发一次导致消息重复
+        // 允许拥有 metro.admin 或 metro.stop.create 权限的玩家使用选区工具
         Material selectionTool = plugin.getSelectionTool();
-        if (player.hasPermission("metro.admin") 
+        if (OwnershipUtil.canCreateStop(player) 
                 && player.getInventory().getItemInMainHand().getType() == selectionTool
                 && event.getHand() == EquipmentSlot.HAND) {
             if (action == Action.LEFT_CLICK_BLOCK) {
@@ -223,21 +224,19 @@ public class PlayerInteractListener implements Listener {
     private void showLineInfo(Player player, Stop stop, Line line) {
         // 获取下一停靠区信息
         String nextStopId = line.getNextStopId(stop.getId());
-        String nextStopName = "终点站";
         
-        if (nextStopId != null) {
-            Stop nextStop = plugin.getStopManager().getStop(nextStopId);
-            if (nextStop != null) {
-                nextStopName = nextStop.getName();
-            }
-        } else {
+        if (nextStopId == null) {
             // 如果当前站已经是终点站，不需要显示信息
             return;
         }
         
+        Stop nextStop = plugin.getStopManager().getStop(nextStopId);
+        String nextStopName = nextStop != null ? nextStop.getName() : nextStopId;
+        
         // 显示ActionBar信息
-        String message = ChatColor.GOLD + line.getName() + ChatColor.WHITE + " - 下一站: " + 
-                ChatColor.YELLOW + nextStopName;
+        String message = plugin.getLanguageManager().getMessage("interact.actionbar_line_info",
+                LanguageManager.put(LanguageManager.put(LanguageManager.args(),
+                        "line_name", line.getName()), "next_stop_name", nextStopName));
         player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(message));
     }
     

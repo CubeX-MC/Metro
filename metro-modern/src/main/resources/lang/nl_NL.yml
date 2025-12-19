@@ -14,6 +14,7 @@ command:
   help_header: "&a===== Metro Beheerder Commando Hulp ====="
   help_line: "&aCommando: &6/m line &f- Beheer metrolijnen (gebruik /m line voor subcommando's)"
   help_stop: "&aCommando: &6/m stop &f- Beheer stopgebieden (gebruik /m stop voor subcommando's)"
+  help_gui: "&aCommando: &6/m gui &f- Open GUI-beheerpaneel"
   help_reload: "&aCommando: &6/m reload &f- Herlaad configuratie"
   help_testendpoint: "&aCommando: &6/m testendpoint &f- Test eindstation prompt weergave"
   help_teststopinfo: "&aCommando: &6/m teststopinfo <line_id> [stop_id] &f- Test lijn stop informatie"
@@ -274,6 +275,53 @@ ownership:
   server: "Server"
   none: "Geen"
 
+# GUI
+gui:
+  main_menu:
+    title: "Metro Beheer"
+    line_manage: "&bLijnen Beheren"
+    line_manage_lore1: "&7Klik om alle lijnen te bekijken"
+    line_manage_lore2: "&7Lijnen en halte volgorde beheren"
+    stop_manage: "&aHaltes Beheren"
+    stop_manage_lore1: "&7Klik om alle haltes te bekijken"
+    stop_manage_lore2: "&7Teleporteren of info bewerken"
+  line_list:
+    title_all: "Lijnenlijst &a[Alle]"
+    title_mine: "Lijnenlijst &6[Mijn]"
+    stop_count: "&7Haltes: &f{count}"
+    color: "&7Kleur: "
+    can_manage: "&a✔ Beheerbaar"
+    view_only: "&c✖ Alleen Bekijken"
+    click_view: "&eLinkermuisklik &7voor haltes"
+  stop_list:
+    title_all: "Halteslijst &a[Alle]"
+    title_mine: "Halteslijst &6[Mijn]"
+    lines: "&7Lijnen: "
+    no_lines: "&7Lijnen: &8Geen"
+    click_tp: "&eLinkermuisklik &7om te teleporteren"
+    no_stoppoint: "&8Haltepunt niet ingesteld"
+  line_detail:
+    title: "&8Lijn: "
+    index: "&7Index: &f{index}"
+    start_stop: "&aStartstation"
+    end_stop: "&cEindstation"
+    click_tp: "&eLinkermuisklik &7om te teleporteren"
+    click_remove: "&eRechtermuisklik &7om te verwijderen"
+    stop_not_exist: "&cHalte bestaat niet"
+  control:
+    prev_page: "&e◀ Vorige"
+    next_page: "&eVolgende ▶"
+    page_info: "&fPagina {current} / {total}"
+    stop_count: "&7Totaal: {count} haltes"
+    back_main: "&cTerug naar Hoofdmenu"
+    back_line_list: "&cTerug naar Lijnenlijst"
+    filter_all: "&aFilter: Alle"
+    filter_mine: "&6Filter: Mijn"
+    filter_lore_all: "&7Klik voor alleen beheerbare"
+    filter_lore_mine: "&7Klik voor alle"
+  common:
+    id: "&7ID: &f{id}"
+
 # Beweging luisteren gerelateerd
 movement:
   enter_stop: "&aJe bent stopgebied binnengegaan: {stop_name}"
@@ -281,6 +329,7 @@ movement:
   
 # Interactie gerelateerd
 interact:
+  actionbar_line_info: "&6{line_name} &f- Volgende halte: &e{next_stop_name}"
   train_coming: "&eTrein nadert station, even geduld..."
   train_spawned: "&aIngestapt, vertrek over {departure_seconds} seconden..."
   train_error: "&cFout bij het genereren van trein, probeer later opnieuw."
