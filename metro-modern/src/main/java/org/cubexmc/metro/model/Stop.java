@@ -371,6 +371,22 @@ public class Stop {
         this.launchYaw = launchYaw;
     }
 
+    /**
+     * 获取站点所在的世界名称
+     * 优先使用 stopPointLocation，如果没有则使用 corner1
+     * 
+     * @return 世界名称，如果没有位置信息则返回 null
+     */
+    public String getWorldName() {
+        if (stopPointLocation != null && stopPointLocation.getWorld() != null) {
+            return stopPointLocation.getWorld().getName();
+        }
+        if (corner1 != null && corner1.getWorld() != null) {
+            return corner1.getWorld().getName();
+        }
+        return null;
+    }
+
     public UUID getOwner() {
         return owner;
     }

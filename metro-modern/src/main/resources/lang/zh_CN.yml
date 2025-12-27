@@ -77,6 +77,8 @@ line:
   setmaxspeed_invalid: "&c无效的速度值。速度必须为正数。"
   addstop_success: "&a成功将停靠区 {stop_id} 添加到线路 {line_id}"
   addstop_fail: "&c添加停靠区失败，请检查线路ID和停靠区ID是否存在。"
+  addstop_world_mismatch: "&c无法添加停靠区：该停靠区位于世界 '{stop_world}'，但线路 {line_id} 位于世界 '{line_world}'。同一条线路的所有停靠区必须在同一个世界。"
+  addstop_stop_no_world: "&c无法添加停靠区 {stop_id}：该停靠区没有设置有效的位置。请先设置停靠区的角点或停靠点。"
   addstop_circular_invalid_index: "&c你不能将停靠区添加到环线的末尾。"
   delstop_success: "&a成功从线路 {line_id} 中移除停靠区 {stop_id}"
   delstop_fail: "&c移除停靠区失败，请检查线路ID和停靠区ID是否存在。"
@@ -175,7 +177,7 @@ stop:
   setpoint_success: "&a成功为停靠区 {stop_id} 设置停靠点，发车朝向: {yaw}"
   setpoint_fail: "&c设置停靠点失败，请检查停靠区ID是否存在。"
   no_stop_found_at_location: "&c当前位置找不到任何停靠区。"
-  selection_not_complete: "&c请先使用金锄头选择停靠区的两个角点。"
+  selection_not_complete: "&c请先使用 {tool} 选择停靠区的两个角点。"
   
   addtransfer_success: "&a成功将线路 {transfer_line_name} 添加为停靠区 {stop_name} 的可换乘线路"
   addtransfer_exists: "&e停靠区 {stop_name} 已存在可换乘线路 {transfer_line_name}"

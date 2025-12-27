@@ -95,6 +95,12 @@ public class LineManager {
                     line.setAdmins(adminIds);
                 }
 
+                // 加载世界名称
+                String worldName = config.getString(lineId + ".world");
+                if (worldName != null && !worldName.isEmpty()) {
+                    line.setWorldName(worldName);
+                }
+
                 lines.put(lineId, line);
             }
         }
@@ -120,6 +126,7 @@ public class LineManager {
                     adminStrings.add(adminId.toString());
                 }
                 config.set(lineId + ".admins", adminStrings.isEmpty() ? null : adminStrings);
+                config.set(lineId + ".world", line.getWorldName());
             }
             
             // 保存配置到文件
@@ -169,6 +176,23 @@ public class LineManager {
             return false;
         }
         line.addStop(stopId, index);
+        saveConfig();
+        return true;
+    }
+
+    /**
+     * 设置线路世界名称
+     * 
+     * @param lineId 线路ID
+     * @param worldName 世界名称
+     * @return 是否成功设置
+     */
+    public boolean setLineWorldName(String lineId, String worldName) {
+        Line line = lines.get(lineId);
+        if (line == null) {
+            return false;
+        }
+        line.setWorldName(worldName);
         saveConfig();
         return true;
     }

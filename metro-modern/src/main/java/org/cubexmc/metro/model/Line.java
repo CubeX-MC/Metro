@@ -19,6 +19,7 @@ public class Line {
     private Double maxSpeed; // 线路最大速度
     private UUID owner; // 线路所有者 UUID，null 表示服务器所有
     private final Set<UUID> admins; // 线路管理员 UUID 集合
+    private String worldName; // 线路所在世界名称，null 表示还未添加任何站点
     
     /**
      * 创建新线路
@@ -226,6 +227,24 @@ public class Line {
 
     public Set<UUID> getAdmins() {
         return new HashSet<>(admins);
+    }
+
+    /**
+     * 获取线路所在世界名称
+     * 
+     * @return 世界名称，如果线路还没有站点则返回null
+     */
+    public String getWorldName() {
+        return worldName;
+    }
+
+    /**
+     * 设置线路所在世界名称
+     * 
+     * @param worldName 世界名称
+     */
+    public void setWorldName(String worldName) {
+        this.worldName = worldName;
     }
 
     public void setAdmins(Collection<UUID> adminIds) {

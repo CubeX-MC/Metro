@@ -74,6 +74,8 @@ line:
   setmaxspeed_invalid: "&cUngültiger Geschwindigkeitswert. Geschwindigkeit muss eine positive Zahl sein."
   addstop_success: "&aHaltebereich {stop_id} erfolgreich zur Linie {line_id} hinzugefügt"
   addstop_fail: "&cHinzufügen des Haltebereichs fehlgeschlagen, prüfe ob Linien-ID und Haltebereich-ID existieren."
+  addstop_world_mismatch: "&cHaltebereich kann nicht hinzugefügt werden: Der Haltebereich befindet sich in Welt '{stop_world}', aber Linie {line_id} ist in Welt '{line_world}'. Alle Haltebereiche einer Linie müssen in derselben Welt sein."
+  addstop_stop_no_world: "&cHaltebereich {stop_id} kann nicht hinzugefügt werden: Der Haltebereich hat keine gültige Position. Bitte setze zuerst die Eckpunkte oder den Haltepunkt."
   addstop_circular_invalid_index: "&cDu kannst einen Haltebereich nicht am Ende einer Kreislinie hinzufügen."
   delstop_success: "&aHaltebereich {stop_id} erfolgreich von Linie {line_id} entfernt"
   delstop_fail: "&cEntfernen des Haltebereichs fehlgeschlagen, prüfe ob Linien-ID und Haltebereich-ID existieren."
@@ -172,7 +174,7 @@ stop:
   setpoint_success: "&aHaltepunkt erfolgreich für Haltebereich {stop_id} festgelegt, Abfahrtsrichtung: {yaw}"
   setpoint_fail: "&cFestlegen des Haltepunkts fehlgeschlagen, prüfe ob Haltebereich-ID existiert."
   no_stop_found_at_location: "&cKein Haltebereich an aktueller Position gefunden."
-  selection_not_complete: "&cBitte wähle zuerst mit einer Goldhacke zwei Eckpunkte für den Haltestellenbereich aus."
+  selection_not_complete: "&cBitte wähle zuerst mit einer {tool} zwei Eckpunkte für den Haltestellenbereich aus."
   
   addtransfer_success: "&aLinie {transfer_line_name} erfolgreich als Umsteigelinie für Haltebereich {stop_name} hinzugefügt"
   addtransfer_exists: "&eHaltebereich {stop_name} hat bereits Umsteigelinie {transfer_line_name}"

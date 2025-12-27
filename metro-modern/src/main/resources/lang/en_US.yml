@@ -77,6 +77,8 @@ line:
   setmaxspeed_invalid: "&cInvalid speed value. Speed must be a positive number."
   addstop_success: "&aSuccessfully added stop {stop_id} to line {line_id}"
   addstop_fail: "&cFailed to add stop, please check if line ID and stop ID exist."
+  addstop_world_mismatch: "&cCannot add stop: The stop is in world '{stop_world}' but line {line_id} is in world '{line_world}'. All stops in a line must be in the same world."
+  addstop_stop_no_world: "&cCannot add stop {stop_id}: The stop has no valid location set. Please set the stop's corners or stop point first."
   addstop_circular_invalid_index: "&cYou cannot add or move a stop to the end of a circular line."
   delstop_success: "&aSuccessfully removed stop {stop_id} from line {line_id}"
   delstop_fail: "&cFailed to remove stop, please check if line ID and stop ID exist."
@@ -175,7 +177,7 @@ stop:
   setpoint_success: "&aSuccessfully set stopping point for stop {stop_id}, departure direction: {yaw}"
   setpoint_fail: "&cFailed to set stopping point, please check if stop ID exists."
   no_stop_found_at_location: "&cNo stop found at current location."
-  selection_not_complete: "&cPlease use a golden hoe to select two corner points of the stop area first."
+  selection_not_complete: "&cPlease use a {tool} to select two corner points of the stop area first."
   
   addtransfer_success: "&aSuccessfully added line {transfer_line_name} as transferable line for stop {stop_name}"
   addtransfer_exists: "&eStop {stop_name} already has transferable line {transfer_line_name}"

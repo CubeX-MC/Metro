@@ -75,6 +75,8 @@ line:
   setmaxspeed_invalid: "&cOngeldige snelheidswaarde. Snelheid moet een positief getal zijn."
   addstop_success: "&aStopgebied {stop_id} succesvol toegevoegd aan lijn {line_id}"
   addstop_fail: "&cToevoegen van stopgebied mislukt, controleer of lijn ID en stopgebied ID bestaan."
+  addstop_world_mismatch: "&cKan stopgebied niet toevoegen: Het stopgebied bevindt zich in wereld '{stop_world}' maar lijn {line_id} bevindt zich in wereld '{line_world}'. Alle stopgebieden van een lijn moeten in dezelfde wereld zijn."
+  addstop_stop_no_world: "&cKan stopgebied {stop_id} niet toevoegen: Het stopgebied heeft geen geldige locatie. Stel eerst de hoekpunten of het stoppunt in."
   addstop_circular_invalid_index: "&cJe kunt een stopgebied niet aan het einde van een cirkelvormige lijn toevoegen."
   delstop_success: "&aStopgebied {stop_id} succesvol verwijderd van lijn {line_id}"
   delstop_fail: "&cVerwijderen van stopgebied mislukt, controleer of lijn ID en stopgebied ID bestaan."
@@ -173,7 +175,7 @@ stop:
   setpoint_success: "&aStoppunt succesvol ingesteld voor stopgebied {stop_id}, vertrekrichting: {yaw}"
   setpoint_fail: "&cInstellen van stoppunt mislukt, controleer of stopgebied ID bestaat."
   no_stop_found_at_location: "&cGeen stopgebied gevonden op huidige locatie."
-  selection_not_complete: "&cGebruik eerst een gouden schoffel om twee hoekpunten van het stopgebied te selecteren."
+  selection_not_complete: "&cGebruik eerst een {tool} om twee hoekpunten van het stopgebied te selecteren."
   
   addtransfer_success: "&aLijn {transfer_line_name} succesvol toegevoegd als overstaplijn voor stopgebied {stop_name}"
   addtransfer_exists: "&eStopgebied {stop_name} heeft al overstaplijn {transfer_line_name}"

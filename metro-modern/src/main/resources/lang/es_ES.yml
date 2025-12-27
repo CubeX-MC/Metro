@@ -74,6 +74,8 @@ line:
   setmaxspeed_invalid: "&cValor de velocidad inválido. La velocidad debe ser un número positivo."
   addstop_success: "&aÁrea de parada {stop_id} añadida exitosamente a línea {line_id}"
   addstop_fail: "&cFallo al añadir área de parada, verifica si la ID de línea y la ID de área de parada existen."
+  addstop_world_mismatch: "&cNo se puede añadir la parada: La parada está en el mundo '{stop_world}' pero la línea {line_id} está en el mundo '{line_world}'. Todas las paradas de una línea deben estar en el mismo mundo."
+  addstop_stop_no_world: "&cNo se puede añadir la parada {stop_id}: La parada no tiene una ubicación válida. Por favor, establece primero las esquinas o el punto de parada."
   addstop_circular_invalid_index: "&cNo puedes añadir o mover una parada al final de una línea circular."
   delstop_success: "&aÁrea de parada {stop_id} eliminada exitosamente de línea {line_id}"
   delstop_fail: "&cFallo al eliminar área de parada, verifica si la ID de línea y la ID de área de parada existen."
@@ -172,7 +174,7 @@ stop:
   setpoint_success: "&aPunto de parada establecido exitosamente para área de parada {stop_id}, dirección de salida: {yaw}"
   setpoint_fail: "&cFallo al establecer punto de parada, verifica si la ID de área de parada existe."
   no_stop_found_at_location: "&cNo se encontró área de parada en la ubicación actual."
-  selection_not_complete: "&cPor favor, usa una azada de oro para seleccionar primero dos esquinas del área de la parada."
+  selection_not_complete: "&cPor favor, usa una {tool} para seleccionar primero dos esquinas del área de la parada."
   
   addtransfer_success: "&aLínea {transfer_line_name} añadida exitosamente como línea de transbordo para área de parada {stop_name}"
   addtransfer_exists: "&eÁrea de parada {stop_name} ya tiene línea de transbordo {transfer_line_name}"

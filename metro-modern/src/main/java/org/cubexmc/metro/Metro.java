@@ -351,4 +351,25 @@ public final class Metro extends JavaPlugin {
             return Material.GOLDEN_HOE;
         }
     }
+
+    /**
+     * 获取选区工具的显示名称（用于语言消息）
+     * 
+     * @return 工具的显示名称
+     */
+    public String getSelectionToolName() {
+        Material tool = getSelectionTool();
+        // 将 GOLDEN_HOE 转换为 Golden Hoe 这样的格式
+        String name = tool.name().toLowerCase().replace('_', ' ');
+        // 首字母大写
+        StringBuilder result = new StringBuilder();
+        for (String word : name.split(" ")) {
+            if (!word.isEmpty()) {
+                result.append(Character.toUpperCase(word.charAt(0)))
+                      .append(word.substring(1))
+                      .append(" ");
+            }
+        }
+        return result.toString().trim();
+    }
 }
