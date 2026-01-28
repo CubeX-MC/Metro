@@ -16,21 +16,21 @@ titles:
     always: true
     # 普通站点
     # Normal station
-    title: "&b{stop_name}"
-    subtitle: "开往 &d{terminus_name} &f方向 | 下一站: &e{next_stop_name} | 当前可换乘: &a{stop_transfers} | 下一站可换乘: &6{next_stop_transfers}"
-    actionbar: "请右击铁轨，自动搭乘 {line_color_code}{line} &f列车"
+    title: '&b{stop_name}'
+    subtitle: '&d➔ {terminus_name} &8| &e» {next_stop_name} &8| &a⇄ {stop_transfers}'
+    actionbar: '&fRight-click rail to board &7[&r{line_color_code}{line}&7]'
     # 始发站特殊显示
     # Special display for starting station
     start_stop:
-      title: "&b{stop_name}"
-      subtitle: "开往 &d{terminus_name} &f方向 | 始发站 | 当前可换乘: &a{stop_transfers}"
-      actionbar: "请右击铁轨，自动搭乘 {line_color_code}{line} &f列车"
+      title: '&b{stop_name}'
+      subtitle: '&d➔ {terminus_name} &8| &fOrigin &8| &a⇄ {stop_transfers}'
+      actionbar: '&fRight-click rail to board &7[&r{line_color_code}{line}&7]'
     # 终点站特殊显示
     # Special display for terminal station
     end_stop:
-      title: "&b{stop_name}"
-      subtitle: "开往 &d{stop_name} &f方向 | &e终点站 | 当前可换乘: &a{stop_transfers}"
-      actionbar: "本站为终点站，请进对侧站台乘车"
+      title: '&b{stop_name}'
+      subtitle: '&c🛑 Terminal Station &8| &a⇄ {stop_transfers}'
+      actionbar: '&cEnd of line. Please allow passengers to exit.'
     # 以下选项仅在 always=false 时生效
     # The following options are effective only when always=false
     fade_in: 10
@@ -41,22 +41,22 @@ titles:
   # Title displayed upon arrival at the station
   arrive_stop:
     enabled: true
-    title: "&b{stop_name} &f到了"
-    subtitle: "开往 &d{terminus_name} &f方向 | 下一站: &e{next_stop_name} | 当前可换乘: &a{stop_transfers} | 下一站可换乘: &6{next_stop_transfers}"
+    title: '&b{stop_name}'
+    subtitle: '&7Next: &e{next_stop_name} &8| &a⇄ {stop_transfers}'
     fade_in: 10
     stay: 40
     fade_out: 10
-    
+  
   # 终点站显示
   # Terminal station display
   terminal_stop:
     enabled: true
-    title: "&b{stop_name}"
-    subtitle: "&c终点站 - 请下车 | 当前可换乘: &a{stop_transfers}"
+    title: '&b{stop_name}'
+    subtitle: '&c🛑 Terminal &8| &a⇄ {stop_transfers}'
     fade_in: 10
     stay: 60
     fade_out: 10
-    
+  
   # 乘客上车后行程信息
   # Trip information after passenger boards
   departure:
@@ -64,13 +64,13 @@ titles:
     # 刷新间隔，单位tick
     # Refresh interval in ticks
     interval: 40
-    title: "下一站 &e{next_stop_name}"
-    subtitle: "开往 &d{terminus_name} &f方向 | 下一站可换乘: &6{next_stop_transfers}"
-    actionbar: "列车已启动，请扶好站稳，注意安全"
+    title: '&e» {next_stop_name}'
+    subtitle: '&d➔ {terminus_name}'
+    actionbar: '&7Departing... Please stand clear of the doors.'
     fade_in: 5
     stay: 40
     fade_out: 5
-
+  
   # 乘客等待发车时的信息
   # Information while passenger is waiting for departure
   waiting:
@@ -78,9 +78,9 @@ titles:
     # 刷新间隔，单位tick
     # Refresh interval in ticks
     interval: 20
-    title: "列车即将发车"
-    subtitle: "当前站点: &a{stop_name} | 下一站: &e{next_stop_name}"
-    actionbar: "列车将在 &c{countdown} &f秒后发车，请系好安全带"
+    title: '&fDeparting Soon'
+    subtitle: '&7Current: &a{stop_name} &8| &7Next: &e{next_stop_name}'
+    actionbar: '&e⚠ Departing in &c{countdown}s'
 
 # 音乐配置
 # Sound Configuration
@@ -103,9 +103,8 @@ sounds:
     # 对于NOTE，乐器可以是：PIANO, BASS, SNARE, CLICKS, BASS_DRUM, BELL, FLUTE, CHIME, GUITAR, XYLOPHONE, IRON_XYLOPHONE, COW_BELL, DIDGERIDOO, BIT, BANJO, PLING
     # For NOTE, INSTRUMENT can be: PIANO, BASS, SNARE, CLICKS, BASS_DRUM, BELL, FLUTE, CHIME, GUITAR, XYLOPHONE, IRON_XYLOPHONE, COW_BELL, DIDGERIDOO, BIT, BANJO, PLING
     notes:
-      - "NOTE,14,1.0,BELL,0"   # 第一个短促提示音
-      - "NOTE,14,1.0,BELL,8"   # 第二个提示音，间隔较短
-      - "NOTE,10,0.8,PIANO,16" # 低声提醒列车即将出发
+    - NOTE,18,1.0,PLING,0
+    - NOTE,18,1.0,PLING,4
   
   # 到站时播放的音乐（模拟车内到站提示音）
   # Sound played on arrival (simulates in-train arrival announcement)
@@ -113,12 +112,12 @@ sounds:
     enabled: true
     # 播放前的初始延迟（单位tick，20tick=1秒）
     # Initial delay before playing (in ticks, 20 ticks = 1 second)
-    initial_delay: 40
+    initial_delay: 20
     notes:
-      - "NOTE,16,1.0,CHIME,0"  # 高音提示
-      - "NOTE,18,1.0,CHIME,6"  # 第二个高音，模拟到站提示
-      - "NOTE,12,0.8,PIANO,14" # 柔和落音
-      
+    - NOTE,6,0.8,CHIME,0
+    - NOTE,10,0.9,CHIME,4
+    - NOTE,13,1.0,CHIME,8
+  
   # 车辆到站时播放的音乐（模拟站台列车进站声音）
   # Sound played when train arrives at station (simulates platform arrival sound)
   station_arrival:
@@ -127,10 +126,9 @@ sounds:
     # Initial delay before playing (in ticks, 20 ticks = 1 second)
     initial_delay: 0
     notes:
-      - "NOTE,6,0.8,BASS_DRUM,0"  # 列车接近的低音
-      - "NOTE,9,0.9,XYLOPHONE,6"  # 轻微提示音
-      - "NOTE,12,0.7,CHIME,12"    # 短促收尾
-      
+    - NOTE,1,0.5,BASS_DRUM,0
+    - NOTE,5,0.3,SNARE,5
+  
   # 等待发车时循环播放的提示音乐
   # Looping sound played while waiting for departure
   waiting:
@@ -142,7 +140,7 @@ sounds:
     # Loop interval (in ticks, 20 ticks = 1 second), how often to play
     interval: 20
     notes:
-      - "NOTE,13,0.7,BELL,0"   # 与倒计时配合的提示音
+    - NOTE,18,0.3,CLICKS,0
 
 # 计分板配置
 # Scoreboard Configuration
@@ -155,29 +153,25 @@ scoreboard:
   styles:
     # 当前站点样式
     # Current stop style
-    current_stop: "&f"
+    current_stop: '&f● '
     # 下一站样式
     # Next stop style
-    next_stop: "&a"
+    next_stop: '&a○ '
     # 其他站点样式
     # Other stops style
-    other_stops: "&7"
+    other_stops: '&7· '
   # 线路标识符配置
   # Line identifier configuration
-  line_symbol: "●" # 所有线路统一使用的标识符，将根据线路颜色自动着色
-                   # Identifier used for all lines, will be colored automatically based on line color
+  line_symbol: ❙ # 所有线路统一使用的标识符，将根据线路颜色自动着色
+# Identifier used for all lines, will be colored automatically based on line color
 
 # 一般设置
 # General Settings
 settings:
+  selection_tool: GOLDEN_SHOVEL
   # 默认语言设置 (支持: zh_CN - 中文, en_US - 英文)
   # Default language setting (Supported: zh_CN - Chinese, en_US - English)
-  default_language: "zh_CN"
-  # 选择站台区域的工具 (用于管理员选区)
-  # Tool used to select stop areas (for admin selection)
-  # 可用值参见: https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Material.html
-  # Available values: https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Material.html
-  selection_tool: "GOLDEN_HOE"
+  default_language: en_US
   # 矿车移动速度
   # Minecart movement speed
   cart_speed: 0.3
