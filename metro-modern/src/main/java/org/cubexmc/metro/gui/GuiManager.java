@@ -238,23 +238,7 @@ public class GuiManager {
                     .build());
         }
         
-        // Add back button
-        inv.setItem(SLOT_BACK, new ItemBuilder(Material.ARROW)
-                .name(msg("gui.common.back"))
-                .build());
-                
-        // Add page controls if needed
-        if (totalPages > 1) {
-            if (page > 0) {
-                inv.setItem(SLOT_PREV_PAGE, new ItemBuilder(Material.ARROW).name(msg("gui.common.prev_page")).build());
-            }
-            inv.setItem(SLOT_PAGE_INFO, new ItemBuilder(Material.PAPER)
-                    .name(msg("gui.common.page_info", "page", String.valueOf(page + 1), "total", String.valueOf(totalPages)))
-                    .build());
-            if (page < totalPages - 1) {
-                inv.setItem(SLOT_NEXT_PAGE, new ItemBuilder(Material.ARROW).name(msg("gui.common.next_page")).build());
-            }
-        }
+        addVariantNavigationControls(inv, page, totalPages);
         
         player.openInventory(inv);
     }
@@ -442,23 +426,7 @@ public class GuiManager {
                     .build());
         }
         
-        // Add back button
-        inv.setItem(SLOT_BACK, new ItemBuilder(Material.ARROW)
-                .name(msg("gui.common.back"))
-                .build());
-                
-        // Add page controls if needed
-        if (totalPages > 1) {
-            if (page > 0) {
-                inv.setItem(SLOT_PREV_PAGE, new ItemBuilder(Material.ARROW).name(msg("gui.common.prev_page")).build());
-            }
-            inv.setItem(SLOT_PAGE_INFO, new ItemBuilder(Material.PAPER)
-                    .name(msg("gui.common.page_info", "page", String.valueOf(page + 1), "total", String.valueOf(totalPages)))
-                    .build());
-            if (page < totalPages - 1) {
-                inv.setItem(SLOT_NEXT_PAGE, new ItemBuilder(Material.ARROW).name(msg("gui.common.next_page")).build());
-            }
-        }
+        addVariantNavigationControls(inv, page, totalPages);
         
         player.openInventory(inv);
     }
@@ -643,5 +611,27 @@ public class GuiManager {
             case "f" -> Material.WHITE_WOOL;        // 白色
             default -> Material.WHITE_WOOL;
         };
+    }
+
+    private void addVariantNavigationControls(Inventory inv, int page, int totalPages) {
+        inv.setItem(SLOT_BACK, new ItemBuilder(Material.ARROW)
+                .name(msg("gui.common.back"))
+                .build());
+        if (totalPages <= 1) {
+            return;
+        }
+        if (page > 0) {
+            inv.setItem(SLOT_PREV_PAGE, new ItemBuilder(Material.ARROW)
+                    .name(msg("gui.common.prev_page"))
+                    .build());
+        }
+        inv.setItem(SLOT_PAGE_INFO, new ItemBuilder(Material.PAPER)
+                .name(msg("gui.common.page_info", "page", String.valueOf(page + 1), "total", String.valueOf(totalPages)))
+                .build());
+        if (page < totalPages - 1) {
+            inv.setItem(SLOT_NEXT_PAGE, new ItemBuilder(Material.ARROW)
+                    .name(msg("gui.common.next_page"))
+                    .build());
+        }
     }
 }

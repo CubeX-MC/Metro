@@ -7,7 +7,6 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
 import org.cubexmc.metro.Metro;
-import org.cubexmc.metro.gui.GuiHolder.GuiType;
 import org.cubexmc.metro.manager.LanguageManager;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Stop;
@@ -69,6 +68,9 @@ public class GuiListener implements Listener {
             case LINE_VARIANTS -> handleLineVariantsClick(player, holder, slot);
             case STOP_VARIANTS -> handleStopVariantsClick(player, holder, slot);
             case LINE_DETAIL -> handleLineDetailClick(player, holder, slot, event.isRightClick());
+            case STOP_DETAIL -> {
+                // STOP_DETAIL is reserved for future expansion.
+            }
         }
     }
     
@@ -132,6 +134,9 @@ public class GuiListener implements Listener {
             if (index >= 0 && index < lineNames.size()) {
                 String name = lineNames.get(index);
                 List<Line> variants = groupedLines.get(name);
+                if (variants == null || variants.isEmpty()) {
+                    return;
+                }
                 
                 if (variants.size() > 1) {
                     plugin.getGuiManager().openLineVariants(player, name, 0);
@@ -225,6 +230,9 @@ public class GuiListener implements Listener {
             if (index >= 0 && index < stopNames.size()) {
                 String name = stopNames.get(index);
                 List<Stop> variants = groupedStops.get(name);
+                if (variants == null || variants.isEmpty()) {
+                    return;
+                }
                 
                 if (variants.size() > 1) {
                     plugin.getGuiManager().openStopVariants(player, name, 0);
