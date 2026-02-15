@@ -15,6 +15,7 @@ import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.train.ScoreboardManager;
 import org.cubexmc.metro.util.LocationUtil;
+import org.cubexmc.metro.util.MetroConstants;
 import org.cubexmc.metro.util.SchedulerUtil;
 
 /**
@@ -45,7 +46,7 @@ public class VehicleListener implements Listener {
         Minecart minecart = (Minecart) vehicle;
         
         // 检查是否是Metro的矿车
-        if (!"MetroMinecart".equals(minecart.getCustomName())) {
+        if (!MetroConstants.METRO_MINECART_NAME.equals(minecart.getCustomName())) {
             return;
         }
         
@@ -68,7 +69,7 @@ public class VehicleListener implements Listener {
         }
         
         // 如果在停靠区上，根据配置延迟移除矿车
-        int despawnDelay = plugin.getConfig().getInt("settings.cart_despawn_delay", 60);
+        int despawnDelay = plugin.getConfig().getInt("settings.cart_despawn_delay", 0);
         
         final Minecart finalMinecart = minecart; // 创建final引用以便在Lambda中使用
         SchedulerUtil.regionRun(plugin, location, () -> {
@@ -93,7 +94,7 @@ public class VehicleListener implements Listener {
         Minecart minecart = (Minecart) vehicle;
 
         // 检查是否是Metro的矿车
-        if (!"MetroMinecart".equals(minecart.getCustomName())) {
+        if (!MetroConstants.METRO_MINECART_NAME.equals(minecart.getCustomName())) {
             return;
         }
 

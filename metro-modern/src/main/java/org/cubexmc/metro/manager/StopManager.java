@@ -27,6 +27,8 @@ public class StopManager {
     
     // 缓存数据
     private final Map<String, Stop> stops = new HashMap<>();
+    // 轻量级按世界索引，减少高频位置查询遍历范围
+    private final Map<String, List<Stop>> worldStopIndex = new HashMap<>();
     
     /**
      * 创建停靠区管理器
@@ -49,6 +51,7 @@ public class StopManager {
         
         config = YamlConfiguration.loadConfiguration(configFile);
         stops.clear();
+        worldStopIndex.clear();
         
         // 加载所有停靠区
         ConfigurationSection stopsSection = config.getConfigurationSection("");
@@ -57,10 +60,13 @@ public class StopManager {
             for (String stopId : stopIds) {
                 ConfigurationSection stopSection = stopsSection.getConfigurationSection(stopId);
                 if (stopSection != null) {
-                    Stop stop = new Stop(stopId, stopSection);
-                    stops.put(stopId, stop);
-                    
-                    // 缓存位置映射
+                    try {
+                        Stop stop = new Stop(stopId, stopSection);
+                        stops.put(stopId, stop);
+                        indexStop(stop);
+                    } catch (RuntimeException ex) {
+                        plugin.getLogger().warning("Failed to load stop " + stopId + " from stops.yml: " + ex.getMessage());
+                    }
                 }
             }
         }
@@ -107,6 +113,7 @@ public class StopManager {
             stop.setCorner2(corner2);
         }
         stops.put(stopId, stop);
+        indexStop(stop);
         saveConfig();
         return stop;
     }
@@ -124,8 +131,10 @@ public class StopManager {
             return false;
         }
 
+        deindexStop(stop);
         stop.setCorner1(corner1);
         stop.setCorner2(corner2);
+        indexStop(stop);
         saveConfig();
         return true;
     }
@@ -147,6 +156,7 @@ public class StopManager {
         lineManager.delStopFromAllLines(stopId);
         
         // 移除位置映射
+        deindexStop(stop);
         // 从内存和配置中移除
         stops.remove(stopId);
         config.set(stopId, null);
@@ -170,9 +180,11 @@ public class StopManager {
         }
         
         // 移除旧位置映射
+        deindexStop(stop);
         // 更新停靠区
         stop.setStopPointLocation(location);
         stop.setLaunchYaw(yaw);
+        indexStop(stop);
         
         saveConfig();
         return true;
@@ -271,7 +283,14 @@ public class StopManager {
      * @return 包含该位置的停靠区，如果没有则返回null
      */
     public Stop getStopContainingLocation(Location location) {
-        for (Stop stop : stops.values()) {
+        if (location == null || location.getWorld() == null) {
+            return null;
+        }
+        List<Stop> candidateStops = worldStopIndex.get(location.getWorld().getName());
+        if (candidateStops == null || candidateStops.isEmpty()) {
+            return null;
+        }
+        for (Stop stop : candidateStops) {
             if (stop.isInStop(location)) {
                 return stop;
             }
@@ -348,5 +367,34 @@ public class StopManager {
      */
     public void reload() {
         loadConfig();
+    }
+
+    private void indexStop(Stop stop) {
+        if (stop == null) {
+            return;
+        }
+        String worldName = stop.getWorldName();
+        if (worldName == null || worldName.isEmpty()) {
+            return;
+        }
+        worldStopIndex.computeIfAbsent(worldName, key -> new ArrayList<>()).add(stop);
+    }
+
+    private void deindexStop(Stop stop) {
+        if (stop == null) {
+            return;
+        }
+        String worldName = stop.getWorldName();
+        if (worldName == null || worldName.isEmpty()) {
+            return;
+        }
+        List<Stop> indexedStops = worldStopIndex.get(worldName);
+        if (indexedStops == null) {
+            return;
+        }
+        indexedStops.remove(stop);
+        if (indexedStops.isEmpty()) {
+            worldStopIndex.remove(worldName);
+        }
     }
 } 

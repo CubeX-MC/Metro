@@ -2,13 +2,16 @@ package org.cubexmc.metro;
 
 import java.io.File;
 import java.util.List;
-
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.command.PluginCommand;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Minecart;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.cubexmc.metro.command.MetroAdminCommand;
 import org.cubexmc.metro.command.MetroAdminTabCompleter;
+import org.cubexmc.metro.config.ConfigFacade;
 import org.cubexmc.metro.gui.GuiListener;
 import org.cubexmc.metro.gui.GuiManager;
 import org.cubexmc.metro.manager.LanguageManager;
@@ -20,6 +23,7 @@ import org.cubexmc.metro.manager.SelectionManager;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.train.ScoreboardManager;
 import org.cubexmc.metro.update.ConfigUpdater;
+import org.cubexmc.metro.util.MetroConstants;
 
 public final class Metro extends JavaPlugin {
 
@@ -28,6 +32,11 @@ public final class Metro extends JavaPlugin {
     private LanguageManager languageManager;
     private SelectionManager selectionManager;
     private GuiManager guiManager;
+    private ConfigFacade configFacade;
+    private PlayerInteractListener playerInteractListener;
+    private VehicleListener vehicleListener;
+    private PlayerMoveListener playerMoveListener;
+    private GuiListener guiListener;
 
     @Override
     public void onEnable() {
@@ -41,6 +50,7 @@ public final class Metro extends JavaPlugin {
         
         // 自动更新配置文件，添加新版本的配置项
         ConfigUpdater.applyDefaults(this, "config.yml");
+        this.configFacade = new ConfigFacade(this);
         
         // 初始化默认配置文件
         createDefaultConfigFiles();
@@ -58,18 +68,28 @@ public final class Metro extends JavaPlugin {
         ScoreboardManager.initialize(this);
 
         // 注册命令
-        getCommand("m").setExecutor(new MetroAdminCommand(this));
-        getCommand("m").setTabCompleter(new MetroAdminTabCompleter(this));
+        PluginCommand metroCommand = getCommand("m");
+        if (metroCommand == null) {
+            getLogger().severe("Command 'm' is missing in plugin.yml, disabling plugin.");
+            Bukkit.getPluginManager().disablePlugin(this);
+            return;
+        }
+        metroCommand.setExecutor(new MetroAdminCommand(this));
+        metroCommand.setTabCompleter(new MetroAdminTabCompleter(this));
 
         // 注册事件监听器
-        Bukkit.getPluginManager().registerEvents(new PlayerInteractListener(this), this);
-        Bukkit.getPluginManager().registerEvents(new VehicleListener(this), this);
-        Bukkit.getPluginManager().registerEvents(new PlayerMoveListener(this), this);
-        Bukkit.getPluginManager().registerEvents(new GuiListener(this), this);
+        this.playerInteractListener = new PlayerInteractListener(this);
+        this.vehicleListener = new VehicleListener(this);
+        this.playerMoveListener = new PlayerMoveListener(this);
+        this.guiListener = new GuiListener(this);
+        Bukkit.getPluginManager().registerEvents(playerInteractListener, this);
+        Bukkit.getPluginManager().registerEvents(vehicleListener, this);
+        Bukkit.getPluginManager().registerEvents(playerMoveListener, this);
+        Bukkit.getPluginManager().registerEvents(guiListener, this);
 
         // 注册bstats
         int pluginId = 25825; // <-- Replace with the id of your plugin!
-        Metrics metrics = new Metrics(this, pluginId);
+        new Metrics(this, pluginId);
 
         // getLogger().info(languageManager.getMessage("plugin.enabled"));
         Bukkit.getConsoleSender().sendMessage(languageManager.getMessage("plugin.enabled"));
@@ -77,8 +97,33 @@ public final class Metro extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        // getLogger().info(languageManager.getMessage("plugin.disabled"));
-        Bukkit.getConsoleSender().sendMessage(languageManager.getMessage("plugin.disabled"));
+        // 主动清理任务与显示，避免 reload 残留状态
+        if (playerMoveListener != null) {
+            playerMoveListener.shutdown();
+        }
+        if (playerInteractListener != null) {
+            playerInteractListener.shutdown();
+        }
+        ScoreboardManager.shutdown();
+
+        // 清理在线玩家显示与地铁矿车
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            ScoreboardManager.clearPlayerDisplay(player);
+        }
+        for (org.bukkit.World world : Bukkit.getWorlds()) {
+            for (Entity entity : world.getEntities()) {
+                if (entity instanceof Minecart minecart && MetroConstants.METRO_MINECART_NAME.equals(minecart.getCustomName())) {
+                    minecart.eject();
+                    minecart.remove();
+                }
+            }
+        }
+
+        if (languageManager != null) {
+            Bukkit.getConsoleSender().sendMessage(languageManager.getMessage("plugin.disabled"));
+        } else {
+            getLogger().info("Metro plugin disabled.");
+        }
     }
     
     /**
@@ -162,170 +207,168 @@ public final class Metro extends JavaPlugin {
     public GuiManager getGuiManager() {
         return guiManager;
     }
+
+    public ConfigFacade getConfigFacade() {
+        return configFacade;
+    }
     
     /**
      * 获取进入停靠区Title配置
      */
     public boolean isEnterStopTitleEnabled() {
-        return getConfig().getBoolean("titles.enter_stop.enabled", true);
+        return configFacade.isEnterStopTitleEnabled();
     }
     
     public String getEnterStopTitle() {
-        String title = getConfig().getString("titles.enter_stop.title", "§6{line}");
-        return ChatColor.translateAlternateColorCodes('&', title);
+        return configFacade.getEnterStopTitle();
     }
     
     public String getEnterStopSubtitle() {
-        String subtitle = getConfig().getString("titles.enter_stop.subtitle", "§a{stop_name}");
-        return ChatColor.translateAlternateColorCodes('&', subtitle);
+        return configFacade.getEnterStopSubtitle();
     }
     
     public int getEnterStopFadeIn() {
-        return getConfig().getInt("titles.enter_stop.fade_in", 10);
+        return configFacade.getEnterStopFadeIn();
     }
     
     public int getEnterStopStay() {
-        return getConfig().getInt("titles.enter_stop.stay", 40);
+        return configFacade.getEnterStopStay();
     }
     
     public int getEnterStopFadeOut() {
-        return getConfig().getInt("titles.enter_stop.fade_out", 10);
+        return configFacade.getEnterStopFadeOut();
     }
     
     /**
      * 获取到站Title配置
      */
     public boolean isArriveStopTitleEnabled() {
-        return getConfig().getBoolean("titles.arrive_stop.enabled", true);
+        return configFacade.isArriveStopTitleEnabled();
     }
     
     public String getArriveStopTitle() {
-        String title = getConfig().getString("titles.arrive_stop.title", "§a已到站");
-        return ChatColor.translateAlternateColorCodes('&', title);
+        return configFacade.getArriveStopTitle();
     }
     
     public String getArriveStopSubtitle() {
-        String subtitle = getConfig().getString("titles.arrive_stop.subtitle", "§6{stop_name}");
-        return ChatColor.translateAlternateColorCodes('&', subtitle);
+        return configFacade.getArriveStopSubtitle();
     }
     
     public int getArriveStopFadeIn() {
-        return getConfig().getInt("titles.arrive_stop.fade_in", 10);
+        return configFacade.getArriveStopFadeIn();
     }
     
     public int getArriveStopStay() {
-        return getConfig().getInt("titles.arrive_stop.stay", 40);
+        return configFacade.getArriveStopStay();
     }
     
     public int getArriveStopFadeOut() {
-        return getConfig().getInt("titles.arrive_stop.fade_out", 10);
+        return configFacade.getArriveStopFadeOut();
     }
     
     /**
      * 获取终点站Title配置
      */
     public boolean isTerminalStopTitleEnabled() {
-        return getConfig().getBoolean("titles.terminal_stop.enabled", true);
+        return configFacade.isTerminalStopTitleEnabled();
     }
     
     public String getTerminalStopTitle() {
-        String title = getConfig().getString("titles.terminal_stop.title", "§c终点站");
-        return ChatColor.translateAlternateColorCodes('&', title);
+        return configFacade.getTerminalStopTitle();
     }
     
     public String getTerminalStopSubtitle() {
-        String subtitle = getConfig().getString("titles.terminal_stop.subtitle", "§6请下车");
-        return ChatColor.translateAlternateColorCodes('&', subtitle);
+        return configFacade.getTerminalStopSubtitle();
     }
     
     public int getTerminalStopFadeIn() {
-        return getConfig().getInt("titles.terminal_stop.fade_in", 10);
+        return configFacade.getTerminalStopFadeIn();
     }
     
     public int getTerminalStopStay() {
-        return getConfig().getInt("titles.terminal_stop.stay", 60);
+        return configFacade.getTerminalStopStay();
     }
     
     public int getTerminalStopFadeOut() {
-        return getConfig().getInt("titles.terminal_stop.fade_out", 10);
+        return configFacade.getTerminalStopFadeOut();
     }
     
     /**
      * 获取发车音乐配置
      */
     public boolean isDepartureSoundEnabled() {
-        return getConfig().getBoolean("sounds.departure.enabled", true);
+        return configFacade.isDepartureSoundEnabled();
     }
     
     public List<String> getDepartureNotes() {
-        return getConfig().getStringList("sounds.departure.notes");
+        return configFacade.getDepartureNotes();
     }
     
     public int getDepartureInitialDelay() {
-        return getConfig().getInt("sounds.departure.initial_delay", 0);
+        return configFacade.getDepartureInitialDelay();
     }
     
     /**
      * 获取到站音乐配置
      */
     public boolean isArrivalSoundEnabled() {
-        return getConfig().getBoolean("sounds.arrival.enabled", true);
+        return configFacade.isArrivalSoundEnabled();
     }
     
     public List<String> getArrivalNotes() {
-        return getConfig().getStringList("sounds.arrival.notes");
+        return configFacade.getArrivalNotes();
     }
     
     public int getArrivalInitialDelay() {
-        return getConfig().getInt("sounds.arrival.initial_delay", 0);
+        return configFacade.getArrivalInitialDelay();
     }
     
     /**
      * 获取车辆到站音乐配置
      */
     public boolean isStationArrivalSoundEnabled() {
-        return getConfig().getBoolean("sounds.station_arrival.enabled", true);
+        return configFacade.isStationArrivalSoundEnabled();
     }
     
     public List<String> getStationArrivalNotes() {
-        return getConfig().getStringList("sounds.station_arrival.notes");
+        return configFacade.getStationArrivalNotes();
     }
     
     public int getStationArrivalInitialDelay() {
-        return getConfig().getInt("sounds.station_arrival.initial_delay", 0);
+        return configFacade.getStationArrivalInitialDelay();
     }
     
     /**
      * 获取等待发车音乐配置
      */
     public boolean isWaitingSoundEnabled() {
-        return getConfig().getBoolean("sounds.waiting.enabled", true);
+        return configFacade.isWaitingSoundEnabled();
     }
     
     public List<String> getWaitingNotes() {
-        return getConfig().getStringList("sounds.waiting.notes");
+        return configFacade.getWaitingNotes();
     }
     
     public int getWaitingInitialDelay() {
-        return getConfig().getInt("sounds.waiting.initial_delay", 0);
+        return configFacade.getWaitingInitialDelay();
     }
     
     public int getWaitingSoundInterval() {
-        return getConfig().getInt("sounds.waiting.interval", 60);
+        return configFacade.getWaitingSoundInterval();
     }
     
     /**
      * 获取矿车速度
      */
     public double getCartSpeed() {
-        return getConfig().getDouble("settings.cart_speed", 0.3);
+        return configFacade.getCartSpeed();
     }
     
     /**
      * 获取矿车生成延迟
      */
     public long getCartSpawnDelay() {
-        return getConfig().getLong("settings.cart_spawn_delay", 100L);
+        return configFacade.getCartSpawnDelay();
     }
 
     /**
@@ -334,22 +377,42 @@ public final class Metro extends JavaPlugin {
      * @return 延迟时间，默认为100刻（5秒）
      */
     public long getCartDepartureDelay() {
-        return getConfig().getLong("settings.cart_departure_delay", 100L);
+        return configFacade.getCartDepartureDelay();
+    }
+
+    /**
+     * 是否启用调试日志。
+     */
+    public boolean isDebugEnabled() {
+        return configFacade.isDebugEnabled();
+    }
+
+    /**
+     * 是否启用某个调试分类。
+     *
+     * @param category 调试分类键，例如 train_state_transitions
+     */
+    public boolean isDebugCategoryEnabled(String category) {
+        return configFacade.isDebugCategoryEnabled(category);
+    }
+
+    /**
+     * 输出分类调试日志。
+     */
+    public void debug(String category, String message) {
+        if (!isDebugCategoryEnabled(category)) {
+            return;
+        }
+        getLogger().info("[DEBUG][" + category + "] " + message);
     }
     
     /**
      * 获取站台选区工具的Material类型
      * 
-     * @return Material类型，默认为GOLDEN_HOE
+     * @return Material类型，默认为GOLDEN_SHOVEL
      */
     public Material getSelectionTool() {
-        String toolName = getConfig().getString("settings.selection_tool", "GOLDEN_HOE");
-        try {
-            return Material.valueOf(toolName.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            getLogger().warning("Invalid selection tool in config: " + toolName + ", using default GOLDEN_HOE");
-            return Material.GOLDEN_HOE;
-        }
+        return configFacade.getSelectionTool();
     }
 
     /**
@@ -358,18 +421,6 @@ public final class Metro extends JavaPlugin {
      * @return 工具的显示名称
      */
     public String getSelectionToolName() {
-        Material tool = getSelectionTool();
-        // 将 GOLDEN_HOE 转换为 Golden Hoe 这样的格式
-        String name = tool.name().toLowerCase().replace('_', ' ');
-        // 首字母大写
-        StringBuilder result = new StringBuilder();
-        for (String word : name.split(" ")) {
-            if (!word.isEmpty()) {
-                result.append(Character.toUpperCase(word.charAt(0)))
-                      .append(word.substring(1))
-                      .append(" ");
-            }
-        }
-        return result.toString().trim();
+        return configFacade.getSelectionToolName();
     }
 }

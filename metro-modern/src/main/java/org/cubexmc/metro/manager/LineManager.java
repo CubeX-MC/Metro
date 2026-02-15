@@ -25,11 +25,13 @@ public class LineManager {
     private final File configFile;
     private FileConfiguration config;
     private final Map<String, Line> lines;
+    private final Map<String, Set<String>> stopToLinesIndex;
 
     public LineManager(Metro plugin) {
         this.plugin = plugin;
         this.configFile = new File(plugin.getDataFolder(), "lines.yml");
         this.lines = new HashMap<>();
+        this.stopToLinesIndex = new HashMap<>();
         loadConfig();
     }
 
@@ -44,11 +46,16 @@ public class LineManager {
 
     private void loadLines() {
         lines.clear();
+        stopToLinesIndex.clear();
         ConfigurationSection linesSection = config.getConfigurationSection("");
         
         if (linesSection != null) {
             for (String lineId : linesSection.getKeys(false)) {
                 String name = config.getString(lineId + ".name");
+                if (name == null || name.isBlank()) {
+                    plugin.getLogger().warning("Line " + lineId + " is missing name, using line id as fallback.");
+                    name = lineId;
+                }
                 Line line = new Line(lineId, name);
                 
                 // 加载有序停靠区列表
@@ -79,6 +86,7 @@ public class LineManager {
                     try {
                         line.setOwner(UUID.fromString(ownerString));
                     } catch (IllegalArgumentException ignored) {
+                        plugin.getLogger().warning("Invalid owner UUID in lines.yml for line " + lineId + ": " + ownerString);
                         line.setOwner(null);
                     }
                 }
@@ -90,6 +98,7 @@ public class LineManager {
                         try {
                             adminIds.add(UUID.fromString(adminString));
                         } catch (IllegalArgumentException ignored) {
+                            plugin.getLogger().warning("Invalid admin UUID in lines.yml for line " + lineId + ": " + adminString);
                         }
                     }
                     line.setAdmins(adminIds);
@@ -102,6 +111,7 @@ public class LineManager {
                 }
 
                 lines.put(lineId, line);
+                indexLineStops(line);
             }
         }
     }
@@ -155,7 +165,10 @@ public class LineManager {
         if (!lines.containsKey(lineId)) {
             return false;
         }
-        lines.remove(lineId);
+        Line removed = lines.remove(lineId);
+        if (removed != null) {
+            deindexLineStops(removed);
+        }
         // 从配置中移除该线路
         config.set(lineId, null);
         saveConfig();
@@ -175,7 +188,9 @@ public class LineManager {
         if (line == null) {
             return false;
         }
+        deindexLineStops(line);
         line.addStop(stopId, index);
+        indexLineStops(line);
         saveConfig();
         return true;
     }
@@ -209,7 +224,9 @@ public class LineManager {
         if (line == null) {
             return false;
         }
+        deindexLineStops(line);
         line.delStop(stopId);
+        indexLineStops(line);
         saveConfig();
         return true;
     }
@@ -222,7 +239,9 @@ public class LineManager {
     public void delStopFromAllLines(String stopId) {
         for (Line line : lines.values()) {
             if (line.containsStop(stopId)) {
+                deindexLineStops(line);
                 line.delStop(stopId);
+                indexLineStops(line);
             }
         }
         saveConfig();
@@ -235,6 +254,24 @@ public class LineManager {
      */
     public List<Line> getAllLines() {
         return new ArrayList<>(lines.values());
+    }
+
+    /**
+     * 通过停靠区ID反向获取包含该站点的线路列表。
+     */
+    public List<Line> getLinesForStop(String stopId) {
+        Set<String> lineIds = stopToLinesIndex.get(stopId);
+        if (lineIds == null || lineIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        List<Line> result = new ArrayList<>();
+        for (String lineId : lineIds) {
+            Line line = lines.get(lineId);
+            if (line != null) {
+                result.add(line);
+            }
+        }
+        return result;
     }
     
     /**
@@ -344,5 +381,30 @@ public class LineManager {
             saveConfig();
         }
         return changed;
+    }
+
+    private void indexLineStops(Line line) {
+        if (line == null) {
+            return;
+        }
+        for (String stopId : line.getOrderedStopIds()) {
+            stopToLinesIndex.computeIfAbsent(stopId, key -> new HashSet<>()).add(line.getId());
+        }
+    }
+
+    private void deindexLineStops(Line line) {
+        if (line == null) {
+            return;
+        }
+        for (String stopId : line.getOrderedStopIds()) {
+            Set<String> lineIds = stopToLinesIndex.get(stopId);
+            if (lineIds == null) {
+                continue;
+            }
+            lineIds.remove(line.getId());
+            if (lineIds.isEmpty()) {
+                stopToLinesIndex.remove(stopId);
+            }
+        }
     }
 } 

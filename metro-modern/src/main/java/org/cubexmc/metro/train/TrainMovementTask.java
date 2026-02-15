@@ -18,7 +18,6 @@ import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Stop;
-import org.cubexmc.metro.util.LocationUtil;
 import org.cubexmc.metro.util.SchedulerUtil;
 import org.cubexmc.metro.util.SoundUtil;
 import org.cubexmc.metro.util.TextUtil;
@@ -79,6 +78,11 @@ public class TrainMovementTask implements Runnable {
         LineManager lineManager = plugin.getLineManager();
         this.line = lineManager.getLine(lineId);
         this.currentStopId = fromStopId;
+        if (this.line == null) {
+            this.targetStopId = null;
+            this.currentState = TrainState.STOPPED_AT_STATION;
+            return;
+        }
         this.targetStopId = line.getNextStopId(currentStopId);
         this.currentState = initialState;
         
@@ -106,6 +110,15 @@ public class TrainMovementTask implements Runnable {
      */
     public void cancel() {
         SchedulerUtil.cancelTask(taskId);
+        debugTrain("Task cancelled for passenger=" + safePassengerName() + ", currentStop=" + currentStopId + ", targetStop=" + targetStopId);
+    }
+
+    private void debugTrain(String message) {
+        plugin.debug("train_state_transitions", message);
+    }
+
+    private String safePassengerName() {
+        return passenger == null ? "unknown" : passenger.getName();
     }
     
     /**
@@ -185,42 +198,6 @@ public class TrainMovementTask implements Runnable {
     }
     
     /**
-     * 处理脱轨情况
-     */
-    private void handleDerailment(Location currentLocation) {
-        // 尝试将矿车放回最近的铁轨上
-        Location nearbyRailLocation = findNearbyRail(currentLocation);
-        if (nearbyRailLocation != null) {
-            SchedulerUtil.teleportEntity(minecart, nearbyRailLocation);
-        } else {
-            // 如果无法找到附近的铁轨，执行脱轨逻辑
-
-            // 检查是否启用了脱轨爆炸功能
-            if (plugin.getConfig().getBoolean("derailment.explosion.enabled", false)) {
-                // 从配置中获取爆炸参数
-                float power = (float) plugin.getConfig().getDouble("derailment.explosion.power", 4.0);
-                boolean setFire = plugin.getConfig().getBoolean("derailment.explosion.set_fire", true);
-                boolean breakBlocks = plugin.getConfig().getBoolean("derailment.explosion.break_blocks", true);
-                
-                // 在矿车位置创建爆炸
-                // 使用 region scheduler 来确保与 Folia 兼容并获得最佳性能，因为爆炸是基于位置的事件
-                SchedulerUtil.regionRun(plugin, currentLocation, () -> {
-                    currentLocation.getWorld().createExplosion(currentLocation, power, setFire, breakBlocks);
-                }, 0L, -1L);
-            }
-
-            // 通知玩家
-            if (passenger != null) {
-                passenger.sendMessage(plugin.getLanguageManager().getMessage("passenger.train_derailed"));
-            }
-            // 强制下车并移除矿车
-            minecart.eject();
-            minecart.remove();
-            cancel();
-        }
-    }
-    
-    /**
      * 处理在站内移动状态
      */
     private void handleMovingInStation(Stop targetStop) {
@@ -272,6 +249,7 @@ public class TrainMovementTask implements Runnable {
         // 更新状态
         TrainState previousState = currentState;
         currentState = TrainState.STOPPED_AT_STATION;
+        debugTrain("State transition " + previousState + " -> " + currentState + " for passenger=" + safePassengerName() + ", currentStop=" + currentStopId + ", targetStop=" + targetStopId);
         
         // 如果是从站内移动状态转换过来的，处理停车事件
         if (previousState == TrainState.MOVING_IN_STATION) {
@@ -289,6 +267,7 @@ public class TrainMovementTask implements Runnable {
         // 更新状态
         TrainState previousState = currentState;
         currentState = TrainState.MOVING_IN_STATION;
+        debugTrain("State transition " + previousState + " -> " + currentState + " for passenger=" + safePassengerName() + ", targetStop=" + (targetStop == null ? "null" : targetStop.getId()));
         
         // 如果是从站间行驶状态转换过来的，处理进站事件
         if (previousState == TrainState.MOVING_BETWEEN_STATIONS) {
@@ -305,7 +284,9 @@ public class TrainMovementTask implements Runnable {
     private void transitionToMovingBetweenStations() {
         // 更新状态
         // TrainState previousState = currentState;
+        TrainState previousState = currentState;
         currentState = TrainState.MOVING_BETWEEN_STATIONS;
+        debugTrain("State transition " + previousState + " -> " + currentState + " for passenger=" + safePassengerName() + ", currentStop=" + currentStopId + ", targetStop=" + targetStopId);
         
         // 离开站台区域后提速到全速
         // updateMinecartVelocity(plugin.getCartSpeed());
@@ -348,18 +329,18 @@ public class TrainMovementTask implements Runnable {
      */
     private void playStationArrivalSound(Stop stop) {
         // 检查是否启用站台到站音乐
-        if (!plugin.getConfig().getBoolean("station_arrival.enabled", true)) {
+        if (!plugin.isStationArrivalSoundEnabled()) {
             return;
         }
         
         // 获取音符列表
-        List<String> notes = plugin.getConfig().getStringList("station_arrival.notes");
+        List<String> notes = plugin.getStationArrivalNotes();
         if (notes.isEmpty()) {
             return;
         }
         
         // 获取初始延迟
-        int initialDelay = plugin.getConfig().getInt("station_arrival.initial_delay", 0);
+        int initialDelay = plugin.getStationArrivalInitialDelay();
         
         // 获取站台区域内的所有玩家
         Location stopLocation = stop.getStopPointLocation();
@@ -463,6 +444,7 @@ public class TrainMovementTask implements Runnable {
      */
     private void scheduleNextDeparture() {
         // 延迟发车 - 使用实体调度器以确保与矿车实体绑定
+        debugTrain("Schedule departure in " + plugin.getCartDepartureDelay() + " ticks for passenger=" + safePassengerName() + ", currentStop=" + currentStopId);
         SchedulerUtil.entityRun(plugin, minecart, (Runnable) () -> {
             // 确保玩家仍在矿车上
             if (isPassengerStillRiding()) {
@@ -482,6 +464,7 @@ public class TrainMovementTask implements Runnable {
         if (passenger == null || !passenger.isOnline()) {
             return;
         }
+        debugTrain("Terminal station reached for passenger=" + safePassengerName() + ", stop=" + currentStopId);
         
         // 3秒后自动下车，并移除矿车 - 使用实体调度器确保与矿车实体绑定
         SchedulerUtil.entityRun(plugin, minecart, (Runnable) () -> {
@@ -503,24 +486,6 @@ public class TrainMovementTask implements Runnable {
             // 取消当前任务
             cancel();
         }, 60L, -1); // 3秒后执行
-    }
-    
-    /**
-     * 查找附近最近的铁轨位置
-     */
-    private Location findNearbyRail(Location location) {
-        // 在5格半径内搜索铁轨
-        for (int x = -2; x <= 2; x++) {
-            for (int y = -2; y <= 2; y++) {
-                for (int z = -2; z <= 2; z++) {
-                    Location checkLoc = location.clone().add(x, y, z);
-                    if (LocationUtil.isRail(checkLoc)) {
-                        return checkLoc.clone().add(0.5, 0, 0.5); // 中心化位置
-                    }
-                }
-            }
-        }
-        return null;
     }
     
     /**
@@ -670,7 +635,7 @@ public class TrainMovementTask implements Runnable {
             // 计算延迟时间（tick）
             long delayTicks = (totalSeconds - i) * 20L;
             
-            SchedulerUtil.globalRun(plugin, () -> {
+            SchedulerUtil.entityRun(plugin, minecart, () -> {
                 // 确保玩家仍在矿车上
                 if (passenger == null || !passenger.isOnline() || passenger.getVehicle() != minecart) {
                     return;
@@ -865,19 +830,22 @@ public class TrainMovementTask implements Runnable {
         }
         
         // 初始延迟后播放第一次
-        SchedulerUtil.globalRun(plugin, () -> {
+        SchedulerUtil.entityRun(plugin, minecart, () -> {
             playWaitingSoundOnce();
         }, plugin.getWaitingInitialDelay(), -1); // -1表示不重复执行
         
         // 获取播放间隔
         int interval = plugin.getWaitingSoundInterval();
+        if (interval <= 0) {
+            return;
+        }
         
         // 计算总共需要播放的次数（根据发车延迟和播放间隔）
-        int repeatTimes = (int) Math.ceil(plugin.getCartDepartureDelay() / interval);
+        long repeatTimes = (plugin.getCartDepartureDelay() + interval - 1L) / interval;
         
         // 创建循环播放任务
-        for (int i = 1; i <= repeatTimes; i++) {
-            SchedulerUtil.globalRun(plugin, () -> {
+        for (long i = 1; i <= repeatTimes; i++) {
+            SchedulerUtil.entityRun(plugin, minecart, () -> {
                 // 确保玩家仍在矿车上且还在等待发车
                 if (passenger != null && passenger.isOnline() && passenger.getVehicle() == minecart 
                         && currentState == TrainState.STOPPED_AT_STATION) {

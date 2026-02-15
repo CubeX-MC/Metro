@@ -1,9 +1,9 @@
 package org.cubexmc.metro.listener;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -19,6 +19,7 @@ import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Stop;
+import org.cubexmc.metro.util.MetroConstants;
 import org.cubexmc.metro.util.SchedulerUtil;
 import org.cubexmc.metro.util.TextUtil;
 
@@ -31,9 +32,9 @@ import net.md_5.bungee.api.chat.TextComponent;
 public class PlayerMoveListener implements Listener {
     
     private final Metro plugin;
-    private final Map<UUID, String> playerInStopMap = new HashMap<>(); // 记录玩家当前所在的停靠区ID
-    private final Map<UUID, Object> continuousInfoTasks = new HashMap<>(); // 记录持续显示信息的任务ID
-    private final Map<UUID, Object> actionBarTasks = new HashMap<>(); // 记录专门的ActionBar显示任务ID
+    private final Map<UUID, String> playerInStopMap = new ConcurrentHashMap<>(); // 记录玩家当前所在的停靠区ID
+    private final Map<UUID, Object> continuousInfoTasks = new ConcurrentHashMap<>(); // 记录持续显示信息的任务ID
+    private final Map<UUID, Object> actionBarTasks = new ConcurrentHashMap<>(); // 记录专门的ActionBar显示任务ID
     
     public PlayerMoveListener(Metro plugin) {
         this.plugin = plugin;
@@ -55,7 +56,7 @@ public class PlayerMoveListener implements Listener {
         if (player.isInsideVehicle() && player.getVehicle() instanceof org.bukkit.entity.Minecart) {
             org.bukkit.entity.Minecart minecart = (org.bukkit.entity.Minecart) player.getVehicle();
             // 检查是否是Metro的矿车
-            if ("MetroMinecart".equals(minecart.getCustomName())) {
+            if (MetroConstants.METRO_MINECART_NAME.equals(minecart.getCustomName())) {
                 // 如果玩家在Metro矿车内，取消站台信息显示
                 UUID playerId = player.getUniqueId();
                 String currentStopId = playerInStopMap.remove(playerId);
@@ -220,6 +221,11 @@ public class PlayerMoveListener implements Listener {
         final String finalTitle = TextUtil.replacePlaceholders(title, line, stop, lastStop, nextStop, terminalStop, lineManager);
         final String finalSubtitle = TextUtil.replacePlaceholders(subtitle, line, stop, lastStop, nextStop, terminalStop, lineManager);
         final String finalActionbar = TextUtil.replacePlaceholders(actionbar, line, stop, lastStop, nextStop, terminalStop, lineManager);
+        final String translatedTitle = ChatColor.translateAlternateColorCodes('&', finalTitle);
+        final String translatedSubtitle = ChatColor.translateAlternateColorCodes('&', finalSubtitle);
+        final net.md_5.bungee.api.chat.BaseComponent[] actionbarComponent = TextComponent.fromLegacyText(
+                ChatColor.translateAlternateColorCodes('&', finalActionbar)
+        );
 
         if (alwaysShow) {
             Object actionBarTaskId = SchedulerUtil.entityRun(plugin, player, new Runnable() {
@@ -237,13 +243,13 @@ public class PlayerMoveListener implements Listener {
                     }
                     if (player.isInsideVehicle() && player.getVehicle() instanceof org.bukkit.entity.Minecart) {
                         org.bukkit.entity.Minecart minecart = (org.bukkit.entity.Minecart) player.getVehicle();
-                        if ("MetroMinecart".equals(minecart.getCustomName())) {
+                        if (MetroConstants.METRO_MINECART_NAME.equals(minecart.getCustomName())) {
                             return; 
                         }
                     }
                     player.spigot().sendMessage(
                         ChatMessageType.ACTION_BAR,
-                        TextComponent.fromLegacyText(ChatColor.translateAlternateColorCodes('&', finalActionbar))
+                        actionbarComponent
                     );
                 }
             }, 0L, 20L);
@@ -264,13 +270,13 @@ public class PlayerMoveListener implements Listener {
                     }
                     if (player.isInsideVehicle() && player.getVehicle() instanceof org.bukkit.entity.Minecart) {
                         org.bukkit.entity.Minecart minecart = (org.bukkit.entity.Minecart) player.getVehicle();
-                        if ("MetroMinecart".equals(minecart.getCustomName())) {
+                        if (MetroConstants.METRO_MINECART_NAME.equals(minecart.getCustomName())) {
                             return;
                         }
                     }
                     player.sendTitle(
-                         ChatColor.translateAlternateColorCodes('&', finalTitle),
-                         ChatColor.translateAlternateColorCodes('&', finalSubtitle),
+                        translatedTitle,
+                        translatedSubtitle,
                         effectiveContinuousFadeIn,
                         effectiveContinuousStay,
                         effectiveContinuousFadeOut
@@ -290,15 +296,15 @@ public class PlayerMoveListener implements Listener {
                 boolean inMetroMinecart = false;
                 if (player.isInsideVehicle() && player.getVehicle() instanceof org.bukkit.entity.Minecart) {
                     org.bukkit.entity.Minecart mc_vehicle = (org.bukkit.entity.Minecart) player.getVehicle();
-                    if ("MetroMinecart".equals(mc_vehicle.getCustomName())) {
+                    if (MetroConstants.METRO_MINECART_NAME.equals(mc_vehicle.getCustomName())) {
                         inMetroMinecart = true;
                     }
                 }
 
                 if (!inMetroMinecart) {
                     player.sendTitle(
-                        ChatColor.translateAlternateColorCodes('&', finalTitle),
-                        ChatColor.translateAlternateColorCodes('&', finalSubtitle),
+                        translatedTitle,
+                        translatedSubtitle,
                         singleFadeIn, singleStay, singleFadeOut
                     );
                     
@@ -315,14 +321,14 @@ public class PlayerMoveListener implements Listener {
                             }
                             if (player.isInsideVehicle() && player.getVehicle() instanceof org.bukkit.entity.Minecart) {
                                 org.bukkit.entity.Minecart minecart = (org.bukkit.entity.Minecart) player.getVehicle();
-                                if ("MetroMinecart".equals(minecart.getCustomName())) {
+                                if (MetroConstants.METRO_MINECART_NAME.equals(minecart.getCustomName())) {
                                     count++; 
                                     return; 
                                 }
                             }
                             player.spigot().sendMessage(
                                 ChatMessageType.ACTION_BAR,
-                                TextComponent.fromLegacyText(ChatColor.translateAlternateColorCodes('&', finalActionbar))
+                                actionbarComponent
                             );
                             count++;
                         }
@@ -342,10 +348,9 @@ public class PlayerMoveListener implements Listener {
         }
         
         LineManager lineManager = plugin.getLineManager();
-        for (Line line : lineManager.getAllLines()) {
-            if (line.containsStop(stop.getId())) {
-                return line;
-            }
+        List<Line> lines = lineManager.getLinesForStop(stop.getId());
+        if (!lines.isEmpty()) {
+            return lines.get(0);
         }
         
         return null;
@@ -369,5 +374,20 @@ public class PlayerMoveListener implements Listener {
         if (taskId != null) {
             SchedulerUtil.cancelTask(taskId);
         }
+    }
+
+    /**
+     * 插件关闭时主动清理所有显示任务和缓存状态
+     */
+    public void shutdown() {
+        for (Object taskId : continuousInfoTasks.values()) {
+            SchedulerUtil.cancelTask(taskId);
+        }
+        for (Object taskId : actionBarTasks.values()) {
+            SchedulerUtil.cancelTask(taskId);
+        }
+        continuousInfoTasks.clear();
+        actionBarTasks.clear();
+        playerInStopMap.clear();
     }
 } 

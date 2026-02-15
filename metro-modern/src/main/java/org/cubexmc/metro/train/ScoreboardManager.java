@@ -18,7 +18,7 @@ import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Stop;
-import org.cubexmc.metro.util.SchedulerUtil;
+import org.cubexmc.metro.util.MetroConstants;
 import org.cubexmc.metro.util.VersionUtil;
 
 /**
@@ -63,7 +63,7 @@ public class ScoreboardManager {
         Scoreboard scoreboard = manager.getNewScoreboard();
         
         // 创建主要目标
-        Objective objective = scoreboard.registerNewObjective("metro", "dummy", title);
+        Objective objective = scoreboard.registerNewObjective(MetroConstants.SCOREBOARD_OBJECTIVE, "dummy", title);
         objective.setDisplaySlot(DisplaySlot.SIDEBAR);
         
         // 应用计分板
@@ -88,7 +88,7 @@ public class ScoreboardManager {
             return;
         }
         
-        Objective objective = scoreboard.getObjective("metro");
+        Objective objective = scoreboard.getObjective(MetroConstants.SCOREBOARD_OBJECTIVE);
         if (objective == null) {
             return;
         }
@@ -184,15 +184,16 @@ public class ScoreboardManager {
             // check if scoreboard is null
             if (scoreboard == null) {
                 plugin.getLogger().info("Scoreboard is null");
+                return;
             }
 
             // 清除旧的计分板内容
-            if (scoreboard.getObjective("metro") != null) {
-                scoreboard.getObjective("metro").unregister();
+            if (scoreboard.getObjective(MetroConstants.SCOREBOARD_OBJECTIVE) != null) {
+                scoreboard.getObjective(MetroConstants.SCOREBOARD_OBJECTIVE).unregister();
             }
 
             // 创建新的计分板
-            Objective objective = scoreboard.registerNewObjective("metro", "dummy",
+            Objective objective = scoreboard.registerNewObjective(MetroConstants.SCOREBOARD_OBJECTIVE, "dummy",
                     ChatColor.GOLD + "" + ChatColor.BOLD + line.getName());
             objective.setDisplaySlot(DisplaySlot.SIDEBAR);
 
@@ -320,5 +321,13 @@ public class ScoreboardManager {
         if (player != null && player.isOnline()) {
             player.sendTitle("", "", 0, 0, 0);
         }
+    }
+
+    /**
+     * 插件关闭时清理全局缓存
+     */
+    public static void shutdown() {
+        playerScoreboards.clear();
+        plugin = null;
     }
 } 

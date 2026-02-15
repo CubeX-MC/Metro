@@ -3,13 +3,13 @@ package org.cubexmc.metro.manager;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class SelectionManager {
-    private final Map<UUID, Location> corner1Selections = new HashMap<>();
-    private final Map<UUID, Location> corner2Selections = new HashMap<>();
+    private final Map<UUID, Location> corner1Selections = new ConcurrentHashMap<>();
+    private final Map<UUID, Location> corner2Selections = new ConcurrentHashMap<>();
 
     public void setCorner1(Player player, Location location) {
         corner1Selections.put(player.getUniqueId(), location);

@@ -353,7 +353,7 @@ public class Metrics {
             }
             StringBuilder builder = new StringBuilder();
             try (BufferedReader bufferedReader =
-                         new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+                         new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
                 String line;
                 while ((line = bufferedReader.readLine()) != null) {
                     builder.append(line);
@@ -372,9 +372,9 @@ public class Metrics {
                 // Maven's Relocate is clever and changes strings, too. So we have to use this
                 // little "trick" ... :D
                 final String defaultPackage =
-                        new String(new byte[] {'o', 'r', 'g', '.', 'b', 's', 't', 'a', 't', 's'});
+                        new String(new byte[] {'o', 'r', 'g', '.', 'b', 's', 't', 'a', 't', 's'}, StandardCharsets.UTF_8);
                 final String examplePackage =
-                        new String(new byte[] {'y', 'o', 'u', 'r', '.', 'p', 'a', 'c', 'k', 'a', 'g', 'e'});
+                        new String(new byte[] {'y', 'o', 'u', 'r', '.', 'p', 'a', 'c', 'k', 'a', 'g', 'e'}, StandardCharsets.UTF_8);
                 // We want to make sure no one just copy & pastes the example and uses the wrong
                 // package names
                 if (MetricsBase.class.getPackage().getName().startsWith(defaultPackage)

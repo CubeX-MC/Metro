@@ -29,11 +29,12 @@ import org.cubexmc.metro.model.Stop;
 import org.cubexmc.metro.util.LocationUtil;
 import org.cubexmc.metro.util.OwnershipUtil;
 import org.cubexmc.metro.util.SchedulerUtil;
+import org.cubexmc.metro.update.ConfigUpdater;
 
 import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.chat.hover.content.Text;
 
 /**
  * 处理Metro插件的管理员命令
@@ -41,9 +42,13 @@ import net.md_5.bungee.api.chat.TextComponent;
 public class MetroAdminCommand implements CommandExecutor {
     
     private final Metro plugin;
+    private final LineCommandHandler lineCommandHandler;
+    private final StopCommandHandler stopCommandHandler;
     
     public MetroAdminCommand(Metro plugin) {
         this.plugin = plugin;
+        this.lineCommandHandler = new LineCommandHandler(plugin);
+        this.stopCommandHandler = new StopCommandHandler(plugin);
     }
     
     @Override
@@ -65,46 +70,17 @@ public class MetroAdminCommand implements CommandExecutor {
             return handleReloadCommand(sender, lineManager, stopManager);
         }
         
-        // line 子命令处理
-        if (mainCommand.equals("line") || mainCommand.equals("l")) {
-            if (args.length < 2) {
-                sendLineHelpMessage(sender);
-                return true;
-            }
-            String subCommand = args[1].toLowerCase();
-            
-            // line list - 控制台和玩家都可以使用
-            if (subCommand.equals("list")) {
-                return handleLineListCommand(sender, lineManager);
-            }
-            
-            // line info - 控制台和玩家都可以使用
-            if (subCommand.equals("info")) {
-                return handleLineInfoCommand(sender, args, lineManager);
-            }
-            
-            // line stops - 控制台和玩家都可以使用
-            if (subCommand.equals("stops")) {
-                return handleLineStopsCommand(sender, args, lineManager, stopManager);
+        if (isLineCommand(mainCommand)) {
+            Boolean handled = handleSharedLineSubcommands(sender, args, lineManager, stopManager);
+            if (handled != null) {
+                return handled;
             }
         }
         
-        // stop 子命令处理
-        if (mainCommand.equals("stop") || mainCommand.equals("s")) {
-            if (args.length < 2) {
-                sendStopHelpMessage(sender);
-                return true;
-            }
-            String subCommand = args[1].toLowerCase();
-            
-            // stop list - 控制台和玩家都可以使用
-            if (subCommand.equals("list")) {
-                return handleStopListCommand(sender, stopManager);
-            }
-            
-            // stop info - 控制台和玩家都可以使用
-            if (subCommand.equals("info")) {
-                return handleStopInfoCommand(sender, args, stopManager, lineManager);
+        if (isStopCommand(mainCommand)) {
+            Boolean handled = handleSharedStopSubcommands(sender, args, stopManager, lineManager);
+            if (handled != null) {
+                return handled;
             }
         }
         
@@ -118,7 +94,7 @@ public class MetroAdminCommand implements CommandExecutor {
         
         // 新的命令格式，按照README中的结构处理
         // 支持别名: l=line, s=stop
-        if (mainCommand.equals("line") || mainCommand.equals("l")) {
+        if (isLineCommand(mainCommand)) {
             // 线路管理命令
             if (args.length < 2) {
                 sendLineHelpMessage(player);
@@ -608,7 +584,7 @@ public class MetroAdminCommand implements CommandExecutor {
                     sendLineHelpMessage(player);
                     return true;
             }
-        } else if (mainCommand.equals("stop") || mainCommand.equals("s")) {
+        } else if (isStopCommand(mainCommand)) {
             // 停靠区管理命令
             if (args.length < 2) {
                 sendStopHelpMessage(player);
@@ -622,15 +598,15 @@ public class MetroAdminCommand implements CommandExecutor {
                     player.sendMessage(plugin.getLanguageManager().getMessage("stop.usage_tp"));
                     return true;
                 }
+                if (!player.hasPermission("metro.tp")) {
+                    player.sendMessage(plugin.getLanguageManager().getMessage("plugin.no_permission"));
+                    return true;
+                }
                 String stopId = args[2];
                 Stop stop = stopManager.getStop(stopId);
                 if (stop == null) {
                     player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_not_found", 
                             LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
-                    return true;
-                }
-                if (!OwnershipUtil.canManageStop(player, stop)) {
-                    sendStopPermissionDenied(player, stop);
                     return true;
                 }
                 if (stop.getStopPointLocation() == null) {
@@ -1330,6 +1306,46 @@ public class MetroAdminCommand implements CommandExecutor {
         
         return true;
     }
+
+    private boolean isLineCommand(String mainCommand) {
+        return "line".equals(mainCommand) || "l".equals(mainCommand);
+    }
+
+    private boolean isStopCommand(String mainCommand) {
+        return "stop".equals(mainCommand) || "s".equals(mainCommand);
+    }
+
+    /**
+     * line 的共享子命令（控制台与玩家均可执行）。
+     * 返回 null 表示未处理，需要继续走玩家专用分支。
+     */
+    private Boolean handleSharedLineSubcommands(CommandSender sender, String[] args, LineManager lineManager, StopManager stopManager) {
+        Boolean handled = lineCommandHandler.handleShared(sender, args, lineManager, stopManager);
+        if (handled != null) {
+            return handled;
+        }
+        if (args.length < 2) {
+            sendLineHelpMessage(sender);
+            return true;
+        }
+        return null;
+    }
+
+    /**
+     * stop 的共享子命令（控制台与玩家均可执行）。
+     * 返回 null 表示未处理，需要继续走玩家专用分支。
+     */
+    private Boolean handleSharedStopSubcommands(CommandSender sender, String[] args, StopManager stopManager, LineManager lineManager) {
+        Boolean handled = stopCommandHandler.handleShared(sender, args, stopManager, lineManager);
+        if (handled != null) {
+            return handled;
+        }
+        if (args.length < 2) {
+            sendStopHelpMessage(sender);
+            return true;
+        }
+        return null;
+    }
     
     /**
      * 发送帮助信息 - 支持控制台和玩家
@@ -1423,8 +1439,10 @@ public class MetroAdminCommand implements CommandExecutor {
         TextComponent stopComponent = new TextComponent(stop.getName());
         if (stop.getStopPointLocation() != null) {
             stopComponent.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/metro stop tp " + stop.getId()));
-            stopComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder(plugin.getLanguageManager().getMessage("command.teleport_to", 
-                    LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName()))).create()));
+            String hoverText = plugin.getLanguageManager().getMessage(
+                    "command.teleport_to",
+                    LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName()));
+            stopComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(hoverText)));
         }
         return stopComponent;
     }
@@ -1467,9 +1485,17 @@ public class MetroAdminCommand implements CommandExecutor {
         if (name == null || name.isEmpty()) {
             return null;
         }
-        OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(name);
-        if (offlinePlayer != null) {
-            return offlinePlayer.getUniqueId();
+
+        Player onlinePlayer = Bukkit.getPlayerExact(name);
+        if (onlinePlayer != null) {
+            return onlinePlayer.getUniqueId();
+        }
+
+        for (OfflinePlayer offlinePlayer : Bukkit.getOfflinePlayers()) {
+            String offlineName = offlinePlayer.getName();
+            if (offlineName != null && offlineName.equalsIgnoreCase(name)) {
+                return offlinePlayer.getUniqueId();
+            }
         }
         return null;
     }
@@ -1518,6 +1544,7 @@ public class MetroAdminCommand implements CommandExecutor {
         
         // 重新加载所有配置
         plugin.reloadConfig();
+        ConfigUpdater.applyDefaults(plugin, "config.yml");
         lineManager.reload();
         stopManager.reload();
         
@@ -1529,204 +1556,4 @@ public class MetroAdminCommand implements CommandExecutor {
         return true;
     }
 
-    /**
-     * 处理 line list 命令 - 支持控制台和玩家
-     */
-    private boolean handleLineListCommand(CommandSender sender, LineManager lineManager) {
-        Collection<Line> lines = lineManager.getAllLines();
-        if (lines.isEmpty()) {
-            sender.sendMessage(plugin.getLanguageManager().getMessage("line.list_empty"));
-        } else {
-            sender.sendMessage(plugin.getLanguageManager().getMessage("line.list_header"));
-            for (Line line : lines) {
-                sender.sendMessage(plugin.getLanguageManager().getMessage("line.list_item_format", 
-                        LanguageManager.put(LanguageManager.put(LanguageManager.args(), 
-                                "line_name", line.getName()), "line_id", line.getId())));
-            }
-        }
-        return true;
-    }
-
-    /**
-     * 处理 stop list 命令 - 支持控制台和玩家
-     */
-    private boolean handleStopListCommand(CommandSender sender, StopManager stopManager) {
-        List<Stop> stops = new ArrayList<>(stopManager.getAllStopIds().stream()
-                .map(stopManager::getStop)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList()));
-        if (stops.isEmpty()) {
-            sender.sendMessage(plugin.getLanguageManager().getMessage("stop.list_empty"));
-        } else {
-            sender.sendMessage(plugin.getLanguageManager().getMessage("stop.list_header"));
-            
-            // 按停靠区ID排序以保持一致性
-            stops.sort((s1, s2) -> s1.getId().compareTo(s2.getId()));
-            
-            for (int i = 0; i < stops.size(); i++) {
-                Stop stop = stops.get(i);
-                // 控制台使用纯文本格式，玩家使用可点击格式
-                if (sender instanceof Player) {
-                    TextComponent message = new TextComponent(plugin.getLanguageManager().getMessage("stop.list_prefix", 
-                            LanguageManager.put(LanguageManager.args(), "index", String.valueOf(i+1))));
-                    message.addExtra(createTeleportComponent(stop));
-                    String suffixText = plugin.getLanguageManager().getMessage("stop.list_suffix", 
-                            LanguageManager.put(LanguageManager.args(), "stop_id", stop.getId()));
-                    message.addExtra(new TextComponent(" " + suffixText));
-                    ((Player) sender).spigot().sendMessage(message);
-                } else {
-                    // 控制台纯文本格式
-                    sender.sendMessage(plugin.getLanguageManager().getMessage("stop.list_item_format",
-                            LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                                    "stop_id", stop.getId()), "stop_name", stop.getName())));
-                }
-            }
-        }
-        return true;
-    }
-
-    /**
-     * 处理 line info 命令 - 支持控制台和玩家
-     */
-    private boolean handleLineInfoCommand(CommandSender sender, String[] args, LineManager lineManager) {
-        if (args.length < 3) {
-            sender.sendMessage(plugin.getLanguageManager().getMessage("line.usage_info"));
-            return true;
-        }
-        String lineId = args[2];
-        Line infoLine = lineManager.getLine(lineId);
-        if (infoLine == null) {
-            sender.sendMessage(plugin.getLanguageManager().getMessage("line.delete_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
-            return true;
-        }
-        sender.sendMessage(plugin.getLanguageManager().getMessage("line.info_header",
-                LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                        "line_id", infoLine.getId()), "line_name", infoLine.getName())));
-        sender.sendMessage(plugin.getLanguageManager().getMessage("line.info_owner",
-                LanguageManager.put(LanguageManager.args(), "owner", resolvePlayerName(infoLine.getOwner()))));
-        sender.sendMessage(plugin.getLanguageManager().getMessage("line.info_admins",
-                LanguageManager.put(LanguageManager.args(), "admins",
-                        formatAdminNames(infoLine.getAdmins(), infoLine.getOwner()))));
-        return true;
-    }
-
-    /**
-     * 处理 line stops 命令 - 支持控制台和玩家
-     */
-    private boolean handleLineStopsCommand(CommandSender sender, String[] args, LineManager lineManager, StopManager stopManager) {
-        if (args.length < 3) {
-            sender.sendMessage(plugin.getLanguageManager().getMessage("line.usage_stops"));
-            return true;
-        }
-        
-        String lineId = args[2];
-        Line line = lineManager.getLine(lineId);
-        
-        if (line == null) {
-            sender.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found", 
-                    LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
-            return true;
-        }
-        
-        List<String> stopIds = line.getOrderedStopIds();
-        
-        if (stopIds.isEmpty()) {
-            sender.sendMessage(plugin.getLanguageManager().getMessage("line.stops_list_empty", 
-                    LanguageManager.put(LanguageManager.args(), "line_name", line.getName())));
-            return true;
-        }
-        
-        sender.sendMessage(plugin.getLanguageManager().getMessage("line.stops_list_header"));
-        sender.sendMessage(ChatColor.translateAlternateColorCodes('&',
-                line.getColor() + line.getName() + " &f(" + line.getId() + ")"));
-        
-        for (int i = 0; i < stopIds.size(); i++) {
-            String currentStopId = stopIds.get(i);
-            Stop stop = stopManager.getStop(currentStopId);
-            if (stop != null) {
-                String status = "";
-                if (i == 0) status = plugin.getLanguageManager().getMessage("line.stops_status_start");
-                if (i == stopIds.size() - 1) status = plugin.getLanguageManager().getMessage("line.stops_status_end");
-                
-                if (sender instanceof Player) {
-                    TextComponent message = new TextComponent(plugin.getLanguageManager().getMessage("line.stops_list_prefix", 
-                            LanguageManager.put(LanguageManager.args(), "index", String.valueOf(i+1))));
-                    message.addExtra(createTeleportComponent(stop));
-                    String suffixText = plugin.getLanguageManager().getMessage("line.stops_list_suffix", 
-                            LanguageManager.put(LanguageManager.put(LanguageManager.args(), 
-                                    "stop_id", stop.getId()), "status", status));
-                    message.addExtra(new TextComponent(" " + suffixText));
-                    ((Player) sender).spigot().sendMessage(message);
-                } else {
-                    // 控制台纯文本格式
-                    sender.sendMessage(plugin.getLanguageManager().getMessage("line.stops_list_prefix",
-                            LanguageManager.put(LanguageManager.args(), "index", String.valueOf(i+1))) +
-                            stop.getName() + 
-                            plugin.getLanguageManager().getMessage("line.stops_list_suffix",
-                                    LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                                            "stop_id", stop.getId()), "status", status)));
-                }
-            } else {
-                sender.sendMessage(plugin.getLanguageManager().getMessage("line.stops_list_invalid_stop",
-                        LanguageManager.put(LanguageManager.put(LanguageManager.args(), 
-                                "index", String.valueOf(i + 1)), "stop_id", currentStopId)));
-            }
-        }
-        return true;
-    }
-
-    /**
-     * 处理 stop info 命令 - 支持控制台和玩家
-     */
-    private boolean handleStopInfoCommand(CommandSender sender, String[] args, StopManager stopManager, LineManager lineManager) {
-        if (args.length < 3) {
-            sender.sendMessage(plugin.getLanguageManager().getMessage("stop.usage_info"));
-            return true;
-        }
-        String stopId = args[2];
-        Stop stop = stopManager.getStop(stopId);
-        if (stop == null) {
-            sender.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_not_found", 
-                    LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
-            return true;
-        }
-
-        sender.sendMessage(plugin.getLanguageManager().getMessage("stop.info_header", 
-                LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName())));
-        sender.sendMessage(plugin.getLanguageManager().getMessage("stop.info_id", 
-                LanguageManager.put(LanguageManager.args(), "stop_id", stop.getId())));
-        
-        // 玩家显示可点击的名称，控制台显示纯文本
-        if (sender instanceof Player) {
-            TextComponent nameComponent = new TextComponent(plugin.getLanguageManager().getMessage("stop.info_name", 
-                    LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName())));
-            nameComponent.addExtra(createTeleportComponent(stop));
-            ((Player) sender).spigot().sendMessage(nameComponent);
-        } else {
-            sender.sendMessage(plugin.getLanguageManager().getMessage("stop.info_name",
-                    LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName())));
-        }
-
-        Location corner1 = stop.getCorner1();
-        Location corner2 = stop.getCorner2();
-        sender.sendMessage(plugin.getLanguageManager().getMessage("stop.info_corner1", 
-                LanguageManager.put(LanguageManager.args(), "corner1", corner1 != null ? LocationUtil.locationToString(corner1) : "Not set")));
-        sender.sendMessage(plugin.getLanguageManager().getMessage("stop.info_corner2", 
-                LanguageManager.put(LanguageManager.args(), "corner2", corner2 != null ? LocationUtil.locationToString(corner2) : "Not set")));
-
-        Location stopPoint = stop.getStopPointLocation();
-        sender.sendMessage(plugin.getLanguageManager().getMessage("stop.info_stoppoint", 
-                LanguageManager.put(LanguageManager.args(), "stoppoint", stopPoint != null ? LocationUtil.locationToString(stopPoint) : "Not set")));
-        sender.sendMessage(plugin.getLanguageManager().getMessage("stop.info_owner",
-                LanguageManager.put(LanguageManager.args(), "owner", resolvePlayerName(stop.getOwner()))));
-        sender.sendMessage(plugin.getLanguageManager().getMessage("stop.info_admins",
-                LanguageManager.put(LanguageManager.args(), "admins",
-                        formatAdminNames(stop.getAdmins(), stop.getOwner()))));
-        sender.sendMessage(plugin.getLanguageManager().getMessage("stop.info_linked_lines",
-                LanguageManager.put(LanguageManager.args(), "lines",
-                        formatLineIds(stop.getLinkedLineIds()))));
-        
-        return true;
-    }
 }
