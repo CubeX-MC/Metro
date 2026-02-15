@@ -169,8 +169,8 @@ scoreboard:
 # General Settings
 settings:
   selection_tool: GOLDEN_SHOVEL
-  # 默认语言设置 (支持: zh_CN - 中文, en_US - 英文)
-  # Default language setting (Supported: zh_CN - Chinese, en_US - English)
+  # 默认语言设置 (支持: zh_CN, zh_TW, en_US, de_DE, es_ES, nl_NL)
+  # Default language setting (Supported: zh_CN, zh_TW, en_US, de_DE, es_ES, nl_NL)
   default_language: en_US
   # 矿车移动速度
   # Minecart movement speed
@@ -184,6 +184,16 @@ settings:
   # 矿车发车延迟（上车后多久自动发车，单位tick，20tick=1秒）
   # Minecart departure delay (how long after boarding for the cart to depart automatically, in ticks, 20 ticks = 1 second)
   cart_departure_delay: 100
+  # 调试日志配置（仅用于排障）
+  # Debug logging configuration (for troubleshooting only)
+  debug:
+    enabled: false
+    # 列车状态切换日志
+    # Train state transition logs
+    train_state_transitions: true
+    # 玩家交互流程日志
+    # Player interaction flow logs
+    interaction_flow: true
 
 # 脱轨相关设置
 # Derailment Settings

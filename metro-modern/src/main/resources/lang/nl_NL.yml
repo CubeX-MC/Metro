@@ -21,7 +21,6 @@ command:
   unknown: "&cOnbekend commando. Gebruik /m voor hulp."
   teleport_to: "&aKlik om te teleporteren naar {stop_name}"
   player_not_found: "&cSpeler {player} niet gevonden."
-  player_not_found: "&cSpeler {player} niet gevonden."
 
 # Selectie gerelateerde berichten
 selection:
