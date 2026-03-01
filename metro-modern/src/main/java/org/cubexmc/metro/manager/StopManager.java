@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
@@ -20,16 +22,19 @@ import org.cubexmc.metro.model.Stop;
  * 管理停靠区数据的加载、保存和访问
  */
 public class StopManager {
-    
+
     private final Metro plugin;
     private final File configFile;
     private FileConfiguration config;
-    
+
     // 缓存数据
     private final Map<String, Stop> stops = new HashMap<>();
     // 轻量级按世界索引，减少高频位置查询遍历范围
     private final Map<String, List<Stop>> worldStopIndex = new HashMap<>();
-    
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
+
+    private volatile boolean isDirty = false;
+
     /**
      * 创建停靠区管理器
      * 
@@ -40,7 +45,7 @@ public class StopManager {
         this.configFile = new File(plugin.getDataFolder(), "stops.yml");
         loadConfig();
     }
-    
+
     /**
      * 加载配置文件
      */
@@ -48,93 +53,157 @@ public class StopManager {
         if (!configFile.exists()) {
             plugin.saveResource("stops.yml", false);
         }
-        
+
         config = YamlConfiguration.loadConfiguration(configFile);
-        stops.clear();
-        worldStopIndex.clear();
-        
-        // 加载所有停靠区
-        ConfigurationSection stopsSection = config.getConfigurationSection("");
-        if (stopsSection != null) {
-            Set<String> stopIds = stopsSection.getKeys(false);
-            for (String stopId : stopIds) {
-                ConfigurationSection stopSection = stopsSection.getConfigurationSection(stopId);
-                if (stopSection != null) {
-                    try {
-                        Stop stop = new Stop(stopId, stopSection);
-                        stops.put(stopId, stop);
-                        indexStop(stop);
-                    } catch (RuntimeException ex) {
-                        plugin.getLogger().warning("Failed to load stop " + stopId + " from stops.yml: " + ex.getMessage());
+        lock.writeLock().lock();
+        try {
+            stops.clear();
+            worldStopIndex.clear();
+
+            // 加载所有停靠区
+            ConfigurationSection stopsSection = config.getConfigurationSection("");
+            if (stopsSection != null) {
+                Set<String> stopIds = stopsSection.getKeys(false);
+                for (String stopId : stopIds) {
+                    ConfigurationSection stopSection = stopsSection.getConfigurationSection(stopId);
+                    if (stopSection != null) {
+                        try {
+                            Stop stop = new Stop(stopId, stopSection);
+                            stops.put(stopId, stop);
+                            indexStop(stop);
+                        } catch (RuntimeException ex) {
+                            plugin.getLogger()
+                                    .warning("Failed to load stop " + stopId + " from stops.yml: " + ex.getMessage());
+                        }
                     }
                 }
             }
+        } finally {
+            lock.writeLock().unlock();
         }
-        
+
         plugin.getLogger().info("Loaded " + stops.size() + " stops");
     }
-    
-    /**
-     * 保存配置到文件
-     */
+
     public void saveConfig() {
-        for (Map.Entry<String, Stop> entry : stops.entrySet()) {
-            String stopId = entry.getKey();
-            Stop stop = entry.getValue();
-            
-            config.set(stopId, null);
-            ConfigurationSection section = config.createSection(stopId);
-            stop.saveToConfig(section);
+        this.isDirty = true;
+    }
+
+    public void processAsyncSave() {
+        if (!isDirty) {
+            return;
         }
-        
+        isDirty = false;
+
+        try {
+            String yamlDataFinal;
+            lock.readLock().lock();
+            try {
+                for (Map.Entry<String, Stop> entry : stops.entrySet()) {
+                    String stopId = entry.getKey();
+                    Stop stop = entry.getValue();
+
+                    config.set(stopId, null);
+                    ConfigurationSection section = config.createSection(stopId);
+                    stop.saveToConfig(section);
+                }
+
+                yamlDataFinal = config.saveToString();
+            } finally {
+                lock.readLock().unlock();
+            }
+
+            org.cubexmc.metro.util.SchedulerUtil.asyncRun(plugin, () -> {
+                try {
+                    java.nio.file.Files.writeString(configFile.toPath(), yamlDataFinal);
+                } catch (IOException e) {
+                    plugin.getLogger().severe("Could not async save stops config: " + e.getMessage());
+                }
+            }, 0L);
+        } catch (Exception e) {
+            plugin.getLogger().log(java.util.logging.Level.SEVERE, "处理停靠区配置时出错", e);
+        }
+    }
+
+    public void forceSaveSync() {
+        if (!isDirty) {
+            return;
+        }
+        isDirty = false;
+
+        lock.readLock().lock();
+        try {
+            for (Map.Entry<String, Stop> entry : stops.entrySet()) {
+                String stopId = entry.getKey();
+                Stop stop = entry.getValue();
+
+                config.set(stopId, null);
+                ConfigurationSection section = config.createSection(stopId);
+                stop.saveToConfig(section);
+            }
+        } finally {
+            lock.readLock().unlock();
+        }
+
         try {
             config.save(configFile);
         } catch (IOException e) {
             plugin.getLogger().severe("Could not save stops config: " + e.getMessage());
         }
     }
-    
+
     /**
      * 创建新停靠区
      * 
-     * @param stopId 停靠区ID
+     * @param stopId      停靠区ID
      * @param displayName 停靠区显示名称
      * @return 创建的停靠区
      */
     public Stop createStop(String stopId, String displayName, Location corner1, Location corner2, UUID ownerId) {
-        if (stops.containsKey(stopId)) {
-            return null; // 已存在
-        }
+        lock.writeLock().lock();
+        try {
+            if (stops.containsKey(stopId)) {
+                return null; // 已存在
+            }
 
-        Stop stop = new Stop(stopId, displayName == null || displayName.isEmpty() ? stopId : displayName);
-        stop.setOwner(ownerId);
-        if (corner1 != null && corner2 != null) {
-            stop.setCorner1(corner1);
-            stop.setCorner2(corner2);
+            Stop stop = new Stop(stopId, displayName == null || displayName.isEmpty() ? stopId : displayName);
+            stop.setOwner(ownerId);
+            if (corner1 != null && corner2 != null) {
+                stop.setCorner1(corner1);
+                stop.setCorner2(corner2);
+            }
+            stops.put(stopId, stop);
+            indexStop(stop);
+            saveConfig();
+            return stop;
+        } finally {
+            lock.writeLock().unlock();
         }
-        stops.put(stopId, stop);
-        indexStop(stop);
-        saveConfig();
-        return stop;
     }
-    
+
     /**
      * 设置停靠区的新角点
-     * @param stopId 停靠区ID
+     * 
+     * @param stopId  停靠区ID
      * @param corner1 新的角点1
      * @param corner2 新的角点2
      * @return 如果成功更新则为true
      */
     public boolean setStopCorners(String stopId, Location corner1, Location corner2) {
-        Stop stop = stops.get(stopId);
-        if (stop == null) {
-            return false;
-        }
+        lock.writeLock().lock();
+        try {
+            Stop stop = stops.get(stopId);
+            if (stop == null) {
+                return false;
+            }
 
-        deindexStop(stop);
-        stop.setCorner1(corner1);
-        stop.setCorner2(corner2);
-        indexStop(stop);
+            deindexStop(stop);
+            stop.setCorner1(corner1);
+            stop.setCorner2(corner2);
+            indexStop(stop);
+        } finally {
+            lock.writeLock().unlock();
+        }
         saveConfig();
         return true;
     }
@@ -146,66 +215,87 @@ public class StopManager {
      * @return 是否成功删除
      */
     public boolean deleteStop(String stopId) {
-        Stop stop = stops.get(stopId);
-        if (stop == null) {
-            return false;
+        lock.writeLock().lock();
+        try {
+            Stop stop = stops.get(stopId);
+            if (stop == null) {
+                return false;
+            }
+
+            // 从所有线路中移除
+            LineManager lineManager = plugin.getLineManager();
+            lineManager.delStopFromAllLines(stopId);
+
+            // 移除位置映射
+            deindexStop(stop);
+            // 从内存和配置中移除
+            stops.remove(stopId);
+            config.set(stopId, null);
+        } finally {
+            lock.writeLock().unlock();
         }
-        
-        // 从所有线路中移除
-        LineManager lineManager = plugin.getLineManager();
-        lineManager.delStopFromAllLines(stopId);
-        
-        // 移除位置映射
-        deindexStop(stop);
-        // 从内存和配置中移除
-        stops.remove(stopId);
-        config.set(stopId, null);
         saveConfig();
-        
+
         return true;
     }
-    
+
     /**
      * 设置停靠区的停靠点位置和发车朝向
      * 
-     * @param stopId 停靠区ID
+     * @param stopId   停靠区ID
      * @param location 停靠点位置
-     * @param yaw 发车朝向
+     * @param yaw      发车朝向
      * @return 是否设置成功
      */
     public boolean setStopPoint(String stopId, Location location, float yaw) {
-        Stop stop = stops.get(stopId);
-        if (stop == null) {
-            return false;
+        lock.writeLock().lock();
+        try {
+            Stop stop = stops.get(stopId);
+            if (stop == null) {
+                return false;
+            }
+
+            // 移除旧位置映射
+            deindexStop(stop);
+            // 更新停靠区
+            stop.setStopPointLocation(location);
+            stop.setLaunchYaw(yaw);
+            indexStop(stop);
+        } finally {
+            lock.writeLock().unlock();
         }
-        
-        // 移除旧位置映射
-        deindexStop(stop);
-        // 更新停靠区
-        stop.setStopPointLocation(location);
-        stop.setLaunchYaw(yaw);
-        indexStop(stop);
-        
+
         saveConfig();
         return true;
     }
 
     public boolean setStopOwner(String stopId, UUID ownerId) {
-        Stop stop = stops.get(stopId);
-        if (stop == null) {
-            return false;
+        lock.writeLock().lock();
+        try {
+            Stop stop = stops.get(stopId);
+            if (stop == null) {
+                return false;
+            }
+            stop.setOwner(ownerId);
+        } finally {
+            lock.writeLock().unlock();
         }
-        stop.setOwner(ownerId);
         saveConfig();
         return true;
     }
 
     public boolean addStopAdmin(String stopId, UUID adminId) {
-        Stop stop = stops.get(stopId);
-        if (stop == null) {
-            return false;
+        boolean changed;
+        lock.writeLock().lock();
+        try {
+            Stop stop = stops.get(stopId);
+            if (stop == null) {
+                return false;
+            }
+            changed = stop.addAdmin(adminId);
+        } finally {
+            lock.writeLock().unlock();
         }
-        boolean changed = stop.addAdmin(adminId);
         if (changed) {
             saveConfig();
         }
@@ -213,11 +303,17 @@ public class StopManager {
     }
 
     public boolean removeStopAdmin(String stopId, UUID adminId) {
-        Stop stop = stops.get(stopId);
-        if (stop == null) {
-            return false;
+        boolean changed;
+        lock.writeLock().lock();
+        try {
+            Stop stop = stops.get(stopId);
+            if (stop == null) {
+                return false;
+            }
+            changed = stop.removeAdmin(adminId);
+        } finally {
+            lock.writeLock().unlock();
         }
-        boolean changed = stop.removeAdmin(adminId);
         if (changed) {
             saveConfig();
         }
@@ -225,11 +321,17 @@ public class StopManager {
     }
 
     public boolean allowLineLink(String stopId, String lineId) {
-        Stop stop = stops.get(stopId);
-        if (stop == null) {
-            return false;
+        boolean changed;
+        lock.writeLock().lock();
+        try {
+            Stop stop = stops.get(stopId);
+            if (stop == null) {
+                return false;
+            }
+            changed = stop.allowLine(lineId);
+        } finally {
+            lock.writeLock().unlock();
         }
-        boolean changed = stop.allowLine(lineId);
         if (changed) {
             saveConfig();
         }
@@ -237,35 +339,46 @@ public class StopManager {
     }
 
     public boolean denyLineLink(String stopId, String lineId) {
-        Stop stop = stops.get(stopId);
-        if (stop == null) {
-            return false;
+        boolean changed;
+        lock.writeLock().lock();
+        try {
+            Stop stop = stops.get(stopId);
+            if (stop == null) {
+                return false;
+            }
+            changed = stop.denyLine(lineId);
+        } finally {
+            lock.writeLock().unlock();
         }
-        boolean changed = stop.denyLine(lineId);
         if (changed) {
             saveConfig();
         }
         return changed;
     }
-    
+
     /**
      * 设置停靠区名称
      * 
      * @param stopId 停靠区ID
-     * @param name 新名称
+     * @param name   新名称
      * @return 是否设置成功
      */
     public boolean setStopName(String stopId, String name) {
-        Stop stop = stops.get(stopId);
-        if (stop == null) {
-            return false;
+        lock.writeLock().lock();
+        try {
+            Stop stop = stops.get(stopId);
+            if (stop == null) {
+                return false;
+            }
+
+            stop.setName(name);
+        } finally {
+            lock.writeLock().unlock();
         }
-        
-        stop.setName(name);
         saveConfig();
         return true;
     }
-    
+
     /**
      * 通过ID获取停靠区
      * 
@@ -273,9 +386,14 @@ public class StopManager {
      * @return 停靠区，若不存在则返回null
      */
     public Stop getStop(String stopId) {
-        return stops.get(stopId);
+        lock.readLock().lock();
+        try {
+            return stops.get(stopId);
+        } finally {
+            lock.readLock().unlock();
+        }
     }
-    
+
     /**
      * 查找包含指定位置的停靠区
      * 
@@ -286,27 +404,37 @@ public class StopManager {
         if (location == null || location.getWorld() == null) {
             return null;
         }
-        List<Stop> candidateStops = worldStopIndex.get(location.getWorld().getName());
-        if (candidateStops == null || candidateStops.isEmpty()) {
-            return null;
-        }
-        for (Stop stop : candidateStops) {
-            if (stop.isInStop(location)) {
-                return stop;
+        lock.readLock().lock();
+        try {
+            List<Stop> candidateStops = worldStopIndex.get(location.getWorld().getName());
+            if (candidateStops == null || candidateStops.isEmpty()) {
+                return null;
             }
+            for (Stop stop : candidateStops) {
+                if (stop.isInStop(location)) {
+                    return stop;
+                }
+            }
+            return null;
+        } finally {
+            lock.readLock().unlock();
         }
-        return null;
     }
-    
+
     /**
      * 获取所有停靠区ID
      * 
      * @return 所有停靠区ID的集合
      */
     public Set<String> getAllStopIds() {
-        return stops.keySet();
+        lock.readLock().lock();
+        try {
+            return new java.util.HashSet<>(stops.keySet());
+        } finally {
+            lock.readLock().unlock();
+        }
     }
-    
+
     /**
      * 添加可换乘线路到停靠区
      * 
@@ -315,18 +443,24 @@ public class StopManager {
      * @return 是否成功添加
      */
     public boolean addTransferLine(String stopId, String lineId) {
-        Stop stop = stops.get(stopId);
-        if (stop == null) {
-            return false;
+        boolean added;
+        lock.writeLock().lock();
+        try {
+            Stop stop = stops.get(stopId);
+            if (stop == null) {
+                return false;
+            }
+
+            added = stop.addTransferableLine(lineId);
+        } finally {
+            lock.writeLock().unlock();
         }
-        
-        boolean added = stop.addTransferableLine(lineId);
         if (added) {
             saveConfig();
         }
         return added;
     }
-    
+
     /**
      * 从停靠区移除可换乘线路
      * 
@@ -335,18 +469,24 @@ public class StopManager {
      * @return 是否成功移除
      */
     public boolean removeTransferLine(String stopId, String lineId) {
-        Stop stop = stops.get(stopId);
-        if (stop == null) {
-            return false;
+        boolean removed;
+        lock.writeLock().lock();
+        try {
+            Stop stop = stops.get(stopId);
+            if (stop == null) {
+                return false;
+            }
+
+            removed = stop.removeTransferableLine(lineId);
+        } finally {
+            lock.writeLock().unlock();
         }
-        
-        boolean removed = stop.removeTransferableLine(lineId);
         if (removed) {
             saveConfig();
         }
         return removed;
     }
-    
+
     /**
      * 获取停靠区可换乘的线路ID列表
      * 
@@ -354,14 +494,19 @@ public class StopManager {
      * @return 可换乘线路ID列表，如果停靠区不存在则返回空列表
      */
     public List<String> getTransferableLines(String stopId) {
-        Stop stop = stops.get(stopId);
-        if (stop == null) {
-            return new ArrayList<>();
+        lock.readLock().lock();
+        try {
+            Stop stop = stops.get(stopId);
+            if (stop == null) {
+                return new ArrayList<>();
+            }
+
+            return stop.getTransferableLines();
+        } finally {
+            lock.readLock().unlock();
         }
-        
-        return stop.getTransferableLines();
     }
-    
+
     /**
      * 重新加载配置
      */
@@ -397,4 +542,4 @@ public class StopManager {
             worldStopIndex.remove(worldName);
         }
     }
-} 
+}

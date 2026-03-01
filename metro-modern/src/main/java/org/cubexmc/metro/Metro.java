@@ -1,9 +1,7 @@
 package org.cubexmc.metro;
 
 import java.io.File;
-import java.util.List;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Minecart;
@@ -14,6 +12,8 @@ import org.cubexmc.metro.command.MetroAdminTabCompleter;
 import org.cubexmc.metro.config.ConfigFacade;
 import org.cubexmc.metro.gui.GuiListener;
 import org.cubexmc.metro.gui.GuiManager;
+import net.megavex.scoreboardlibrary.api.ScoreboardLibrary;
+import net.megavex.scoreboardlibrary.api.exception.NoPacketAdapterAvailableException;
 import org.cubexmc.metro.manager.LanguageManager;
 import org.cubexmc.metro.listener.PlayerInteractListener;
 import org.cubexmc.metro.listener.PlayerMoveListener;
@@ -22,6 +22,7 @@ import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.SelectionManager;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.train.ScoreboardManager;
+import org.cubexmc.metro.train.TrainDisplayController;
 import org.cubexmc.metro.update.ConfigUpdater;
 import org.cubexmc.metro.util.MetroConstants;
 
@@ -30,6 +31,8 @@ public final class Metro extends JavaPlugin {
     private LineManager lineManager;
     private StopManager stopManager;
     private LanguageManager languageManager;
+    private ScoreboardLibrary globalScoreboardLibrary;
+    private org.cubexmc.metro.train.ScoreboardManager scoreboardManager;
     private SelectionManager selectionManager;
     private GuiManager guiManager;
     private ConfigFacade configFacade;
@@ -37,6 +40,8 @@ public final class Metro extends JavaPlugin {
     private VehicleListener vehicleListener;
     private PlayerMoveListener playerMoveListener;
     private GuiListener guiListener;
+    private TrainDisplayController trainDisplayController;
+    private Object autoSaveTaskId;
 
     @Override
     public void onEnable() {
@@ -44,17 +49,18 @@ public final class Metro extends JavaPlugin {
         if (!getDataFolder().exists()) {
             getDataFolder().mkdirs();
         }
-        
+
         // 初始化配置文件
         saveDefaultConfig();
-        
+
         // 自动更新配置文件，添加新版本的配置项
         ConfigUpdater.applyDefaults(this, "config.yml");
         this.configFacade = new ConfigFacade(this);
-        
+        this.configFacade.reload();
+
         // 初始化默认配置文件
         createDefaultConfigFiles();
-        
+
         // 初始化语言管理器（内部会自动更新语言文件）
         this.languageManager = new LanguageManager(this);
 
@@ -63,9 +69,17 @@ public final class Metro extends JavaPlugin {
         this.stopManager = new StopManager(this);
         this.selectionManager = new SelectionManager();
         this.guiManager = new GuiManager(this);
-        
+
+        // 初始化计分板库
+        try {
+            this.globalScoreboardLibrary = ScoreboardLibrary.loadScoreboardLibrary(this);
+        } catch (NoPacketAdapterAvailableException e) {
+            getLogger().severe("无法加载 ScoreboardLibrary 数据包适配器，计分板功能将被禁用！");
+        }
+
         // 初始化计分板管理器
-        ScoreboardManager.initialize(this);
+        scoreboardManager = new ScoreboardManager(this);
+        MetroConstants.initialize(this);
 
         // 注册命令
         PluginCommand metroCommand = getCommand("m");
@@ -82,17 +96,46 @@ public final class Metro extends JavaPlugin {
         this.vehicleListener = new VehicleListener(this);
         this.playerMoveListener = new PlayerMoveListener(this);
         this.guiListener = new GuiListener(this);
+        this.trainDisplayController = new TrainDisplayController(this);
         Bukkit.getPluginManager().registerEvents(playerInteractListener, this);
         Bukkit.getPluginManager().registerEvents(vehicleListener, this);
         Bukkit.getPluginManager().registerEvents(playerMoveListener, this);
         Bukkit.getPluginManager().registerEvents(guiListener, this);
+        Bukkit.getPluginManager().registerEvents(trainDisplayController, this);
 
         // 注册bstats
         int pluginId = 25825; // <-- Replace with the id of your plugin!
         new Metrics(this, pluginId);
 
-        // getLogger().info(languageManager.getMessage("plugin.enabled"));
-        Bukkit.getConsoleSender().sendMessage(languageManager.getMessage("plugin.enabled"));
+        // 自动保存任务（每60秒检查一次）
+        this.autoSaveTaskId = org.cubexmc.metro.util.SchedulerUtil.globalRun(this, () -> {
+            if (lineManager != null) {
+                lineManager.processAsyncSave();
+            }
+            if (stopManager != null) {
+                stopManager.processAsyncSave();
+            }
+        }, 1200L, 1200L);
+
+        // ==== BACKWARD COMPATIBILITY ====
+        // Sweep worlds for name-based minecarts missing the PDC tag and apply it.
+        // Doing this delayed allows worlds to fully load.
+        Bukkit.getScheduler().runTaskLater(this, () -> {
+            for (org.bukkit.World world : Bukkit.getWorlds()) {
+                for (org.bukkit.entity.Entity entity : world.getEntitiesByClass(org.bukkit.entity.Minecart.class)) {
+                    if (org.cubexmc.metro.util.MetroConstants.METRO_MINECART_NAME.equals(entity.getCustomName()) &&
+                            !entity.getPersistentDataContainer().has(
+                                    org.cubexmc.metro.util.MetroConstants.getMinecartKey(),
+                                    org.bukkit.persistence.PersistentDataType.BYTE)) {
+                        entity.getPersistentDataContainer().set(org.cubexmc.metro.util.MetroConstants.getMinecartKey(),
+                                org.bukkit.persistence.PersistentDataType.BYTE, (byte) 1);
+                        getLogger().info("Migrated legacy Metro Minecart to PDC data: " + entity.getUniqueId());
+                    }
+                }
+            }
+        }, 100L); // 5 seconds after startup
+
+        getLogger().info("Metro(Modern) has been enabled!");
     }
 
     @Override
@@ -104,19 +147,39 @@ public final class Metro extends JavaPlugin {
         if (playerInteractListener != null) {
             playerInteractListener.shutdown();
         }
-        ScoreboardManager.shutdown();
+        if (scoreboardManager != null) {
+            scoreboardManager.shutdown();
+        }
+        if (globalScoreboardLibrary != null) {
+            globalScoreboardLibrary.close();
+        }
 
         // 清理在线玩家显示与地铁矿车
         for (Player player : Bukkit.getOnlinePlayers()) {
-            ScoreboardManager.clearPlayerDisplay(player);
+            if (scoreboardManager != null) {
+                scoreboardManager.clearPlayerDisplay(player);
+            }
         }
         for (org.bukkit.World world : Bukkit.getWorlds()) {
             for (Entity entity : world.getEntities()) {
-                if (entity instanceof Minecart minecart && MetroConstants.METRO_MINECART_NAME.equals(minecart.getCustomName())) {
+                if (entity instanceof Minecart minecart
+                        && minecart.getPersistentDataContainer().has(
+                                org.cubexmc.metro.util.MetroConstants.getMinecartKey(),
+                                org.bukkit.persistence.PersistentDataType.BYTE)) {
                     minecart.eject();
                     minecart.remove();
                 }
             }
+        }
+
+        if (autoSaveTaskId != null) {
+            org.cubexmc.metro.util.SchedulerUtil.cancelTask(autoSaveTaskId);
+        }
+        if (lineManager != null) {
+            lineManager.forceSaveSync();
+        }
+        if (stopManager != null) {
+            stopManager.forceSaveSync();
         }
 
         if (languageManager != null) {
@@ -125,7 +188,7 @@ public final class Metro extends JavaPlugin {
             getLogger().info("Metro plugin disabled.");
         }
     }
-    
+
     /**
      * 重新创建默认配置文件（如果不存在）
      * 此方法用于reload命令，确保所有配置文件都能够被重新生成
@@ -137,11 +200,11 @@ public final class Metro extends JavaPlugin {
             saveDefaultConfig();
             getLogger().info("重新生成默认主配置文件");
         }
-        
+
         // 确保其他配置文件存在
         createDefaultConfigFiles();
     }
-    
+
     /**
      * 创建默认配置文件
      */
@@ -150,7 +213,7 @@ public final class Metro extends JavaPlugin {
         saveDefaultConfigFiles("lines.yml");
         saveDefaultConfigFiles("stops.yml");
     }
-    
+
     /**
      * 保存默认配置文件
      * 
@@ -162,7 +225,7 @@ public final class Metro extends JavaPlugin {
             saveResource(fileName, false);
         }
     }
-    
+
     /**
      * 获取线路管理器
      * 
@@ -171,7 +234,7 @@ public final class Metro extends JavaPlugin {
     public LineManager getLineManager() {
         return lineManager;
     }
-    
+
     /**
      * 获取停靠区管理器
      * 
@@ -180,7 +243,7 @@ public final class Metro extends JavaPlugin {
     public StopManager getStopManager() {
         return stopManager;
     }
-    
+
     /**
      * 获取语言管理器
      * 
@@ -189,7 +252,15 @@ public final class Metro extends JavaPlugin {
     public LanguageManager getLanguageManager() {
         return languageManager;
     }
-    
+
+    public ScoreboardLibrary getGlobalScoreboardLibrary() {
+        return globalScoreboardLibrary;
+    }
+
+    public org.cubexmc.metro.train.ScoreboardManager getScoreboardManager() {
+        return scoreboardManager;
+    }
+
     /**
      * 获取选区管理器
      * 
@@ -198,7 +269,7 @@ public final class Metro extends JavaPlugin {
     public SelectionManager getSelectionManager() {
         return selectionManager;
     }
-    
+
     /**
      * 获取 GUI 管理器
      * 
@@ -210,174 +281,6 @@ public final class Metro extends JavaPlugin {
 
     public ConfigFacade getConfigFacade() {
         return configFacade;
-    }
-    
-    /**
-     * 获取进入停靠区Title配置
-     */
-    public boolean isEnterStopTitleEnabled() {
-        return configFacade.isEnterStopTitleEnabled();
-    }
-    
-    public String getEnterStopTitle() {
-        return configFacade.getEnterStopTitle();
-    }
-    
-    public String getEnterStopSubtitle() {
-        return configFacade.getEnterStopSubtitle();
-    }
-    
-    public int getEnterStopFadeIn() {
-        return configFacade.getEnterStopFadeIn();
-    }
-    
-    public int getEnterStopStay() {
-        return configFacade.getEnterStopStay();
-    }
-    
-    public int getEnterStopFadeOut() {
-        return configFacade.getEnterStopFadeOut();
-    }
-    
-    /**
-     * 获取到站Title配置
-     */
-    public boolean isArriveStopTitleEnabled() {
-        return configFacade.isArriveStopTitleEnabled();
-    }
-    
-    public String getArriveStopTitle() {
-        return configFacade.getArriveStopTitle();
-    }
-    
-    public String getArriveStopSubtitle() {
-        return configFacade.getArriveStopSubtitle();
-    }
-    
-    public int getArriveStopFadeIn() {
-        return configFacade.getArriveStopFadeIn();
-    }
-    
-    public int getArriveStopStay() {
-        return configFacade.getArriveStopStay();
-    }
-    
-    public int getArriveStopFadeOut() {
-        return configFacade.getArriveStopFadeOut();
-    }
-    
-    /**
-     * 获取终点站Title配置
-     */
-    public boolean isTerminalStopTitleEnabled() {
-        return configFacade.isTerminalStopTitleEnabled();
-    }
-    
-    public String getTerminalStopTitle() {
-        return configFacade.getTerminalStopTitle();
-    }
-    
-    public String getTerminalStopSubtitle() {
-        return configFacade.getTerminalStopSubtitle();
-    }
-    
-    public int getTerminalStopFadeIn() {
-        return configFacade.getTerminalStopFadeIn();
-    }
-    
-    public int getTerminalStopStay() {
-        return configFacade.getTerminalStopStay();
-    }
-    
-    public int getTerminalStopFadeOut() {
-        return configFacade.getTerminalStopFadeOut();
-    }
-    
-    /**
-     * 获取发车音乐配置
-     */
-    public boolean isDepartureSoundEnabled() {
-        return configFacade.isDepartureSoundEnabled();
-    }
-    
-    public List<String> getDepartureNotes() {
-        return configFacade.getDepartureNotes();
-    }
-    
-    public int getDepartureInitialDelay() {
-        return configFacade.getDepartureInitialDelay();
-    }
-    
-    /**
-     * 获取到站音乐配置
-     */
-    public boolean isArrivalSoundEnabled() {
-        return configFacade.isArrivalSoundEnabled();
-    }
-    
-    public List<String> getArrivalNotes() {
-        return configFacade.getArrivalNotes();
-    }
-    
-    public int getArrivalInitialDelay() {
-        return configFacade.getArrivalInitialDelay();
-    }
-    
-    /**
-     * 获取车辆到站音乐配置
-     */
-    public boolean isStationArrivalSoundEnabled() {
-        return configFacade.isStationArrivalSoundEnabled();
-    }
-    
-    public List<String> getStationArrivalNotes() {
-        return configFacade.getStationArrivalNotes();
-    }
-    
-    public int getStationArrivalInitialDelay() {
-        return configFacade.getStationArrivalInitialDelay();
-    }
-    
-    /**
-     * 获取等待发车音乐配置
-     */
-    public boolean isWaitingSoundEnabled() {
-        return configFacade.isWaitingSoundEnabled();
-    }
-    
-    public List<String> getWaitingNotes() {
-        return configFacade.getWaitingNotes();
-    }
-    
-    public int getWaitingInitialDelay() {
-        return configFacade.getWaitingInitialDelay();
-    }
-    
-    public int getWaitingSoundInterval() {
-        return configFacade.getWaitingSoundInterval();
-    }
-    
-    /**
-     * 获取矿车速度
-     */
-    public double getCartSpeed() {
-        return configFacade.getCartSpeed();
-    }
-    
-    /**
-     * 获取矿车生成延迟
-     */
-    public long getCartSpawnDelay() {
-        return configFacade.getCartSpawnDelay();
-    }
-
-    /**
-     * 获取列车在站点停留的延迟时间（以游戏刻为单位）
-     * 
-     * @return 延迟时间，默认为100刻（5秒）
-     */
-    public long getCartDepartureDelay() {
-        return configFacade.getCartDepartureDelay();
     }
 
     /**
@@ -404,23 +307,5 @@ public final class Metro extends JavaPlugin {
             return;
         }
         getLogger().info("[DEBUG][" + category + "] " + message);
-    }
-    
-    /**
-     * 获取站台选区工具的Material类型
-     * 
-     * @return Material类型，默认为GOLDEN_SHOVEL
-     */
-    public Material getSelectionTool() {
-        return configFacade.getSelectionTool();
-    }
-
-    /**
-     * 获取选区工具的显示名称（用于语言消息）
-     * 
-     * @return 工具的显示名称
-     */
-    public String getSelectionToolName() {
-        return configFacade.getSelectionToolName();
     }
 }

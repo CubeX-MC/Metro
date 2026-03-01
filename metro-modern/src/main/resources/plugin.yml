@@ -6,6 +6,8 @@ folia-supported: true
 authors: [angushushu, wwwer]
 description: A simple metro management system / 一个简单的地铁管理系统
 website: https://cubexmc.org
+softdepend:
+  - ViaVersion
 
 commands:
   m:

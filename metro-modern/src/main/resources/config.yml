@@ -145,8 +145,8 @@ sounds:
 # 计分板配置
 # Scoreboard Configuration
 scoreboard:
-  # 是否启用计分板（暂不支持Folia）
-  # Enable scoreboard (Does not support Folia)
+  # 是否启用计分板
+  # Enable scoreboard
   enabled: true
   # 站点显示样式
   # Stop display styles
@@ -172,6 +172,18 @@ settings:
   # 默认语言设置 (支持: zh_CN, zh_TW, en_US, de_DE, es_ES, nl_NL)
   # Default language setting (Supported: zh_CN, zh_TW, en_US, de_DE, es_ES, nl_NL)
   default_language: en_US
+  # 安全模式：开启后保护乘客免受三类干扰
+  # Safe mode: when enabled, protects passengers from three types of interference
+  safe_mode:
+    # 是否启用安全模式
+    # Enable safe mode
+    enabled: true
+    # 实体推力保护：阻止其他实体撞击/推动地铁矿车
+    # Entity push protection: prevent other entities from pushing the metro minecart
+    entity_push_protection: true
+    # 矿车伤害保护：阻止其他玩家攻击/破坏地铁矿车
+    # Minecart damage protection: prevent other players from attacking/breaking the metro minecart
+    damage_protection: true
   # 矿车移动速度
   # Minecart movement speed
   cart_speed: 0.3
@@ -194,6 +206,9 @@ settings:
     # 玩家交互流程日志
     # Player interaction flow logs
     interaction_flow: true
+    # 计分板诊断日志
+    # Scoreboard diagnostic logs
+    scoreboard: true
 
 # 脱轨相关设置
 # Derailment Settings

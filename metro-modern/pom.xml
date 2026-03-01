@@ -22,6 +22,28 @@
         <final.name>${base.name}-${project.parent.version}</final.name>
         <jacoco.minimum.line.coverage>0.06</jacoco.minimum.line.coverage>
     </properties>
+    <repositories>
+        <repository>
+            <id>sonatype</id>
+            <url>https://oss.sonatype.org/content/groups/public/</url>
+        </repository>
+        <repository>
+            <id>spigot-repo</id>
+            <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
+        </repository>
+        <repository>
+            <id>papermc</id>
+            <url>https://repo.papermc.io/repository/maven-public/</url>
+        </repository>
+        <repository>
+            <id>megavex-repo</id>
+            <url>https://repo.megavex.net/maven/</url>
+        </repository>
+        <repository>
+            <id>megavex-repo-snapshots</id>
+            <url>https://repo.megavex.net/snapshots/</url>
+        </repository>
+    </repositories>
 
     <dependencies>
         <!-- 使用 Spigot API 作为编译依赖，兼容 Spigot/Paper/Folia -->
@@ -50,6 +72,29 @@
             <version>5.18.0</version>
             <scope>test</scope>
         </dependency>
+        <!-- Packet-level virtual scoreboard, folia-supported -->
+        <dependency>
+            <groupId>net.megavex</groupId>
+            <artifactId>scoreboard-library-api</artifactId>
+            <version>2.7.0</version>
+        </dependency>
+        <dependency>
+            <groupId>net.megavex</groupId>
+            <artifactId>scoreboard-library-implementation</artifactId>
+            <version>2.7.0</version>
+            <scope>runtime</scope>
+        </dependency>
+        <!-- Adventure API for Text Components -->
+        <dependency>
+            <groupId>net.kyori</groupId>
+            <artifactId>adventure-api</artifactId>
+            <version>4.13.0</version>
+        </dependency>
+        <dependency>
+            <groupId>net.kyori</groupId>
+            <artifactId>adventure-text-serializer-legacy</artifactId>
+            <version>4.13.0</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -68,6 +113,37 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.2</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.5.0</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <relocations>
+                                <relocation>
+                                    <pattern>net.megavex.scoreboardlibrary</pattern>
+                                    <shadedPattern>org.cubexmc.metro.lib.scoreboardlibrary</shadedPattern>
+                                </relocation>
+                            </relocations>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.jacoco</groupId>

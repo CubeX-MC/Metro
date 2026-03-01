@@ -39,30 +39,30 @@ import net.md_5.bungee.api.chat.TextComponent;
  * 处理玩家交互事件
  */
 public class PlayerInteractListener implements Listener {
-    
+
     private final Metro plugin;
     private final SelectionManager selectionManager;
-    
+
     // 用于防止短时间内多次点击触发多次调用
     private final Map<UUID, Long> lastInteractTime = new ConcurrentHashMap<>();
     private static final int INTERACT_COOLDOWN = 2000; // 点击冷却时间，单位毫秒
-    
+
     // 用于跟踪站点的矿车生成状态，键为站点ID，值为时间戳
     private final Map<String, Long> pendingMinecarts = new ConcurrentHashMap<>();
     private static final int MINECART_PENDING_TIMEOUT = 60000; // 矿车最大等待时间，单位毫秒
     private final Object pendingMinecartCleanupTaskId;
-    
+
     public PlayerInteractListener(Metro plugin) {
         this.plugin = plugin;
         this.selectionManager = plugin.getSelectionManager();
-        
+
         // 定期清理过期的矿车等待记录
         this.pendingMinecartCleanupTaskId = SchedulerUtil.globalRun(plugin, () -> {
             long currentTime = System.currentTimeMillis();
             pendingMinecarts.entrySet().removeIf(entry -> currentTime - entry.getValue() > MINECART_PENDING_TIMEOUT);
         }, 1200L, 1200L); // 每分钟清理一次
     }
-    
+
     @EventHandler(priority = EventPriority.NORMAL)
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
@@ -72,35 +72,39 @@ public class PlayerInteractListener implements Listener {
         // 处理选区工具（可在config中配置，默认金锄头）
         // 只处理主手事件，避免主手和副手各触发一次导致消息重复
         // 允许拥有 metro.admin 或 metro.stop.create 权限的玩家使用选区工具
-        Material selectionTool = plugin.getSelectionTool();
-        if (OwnershipUtil.canCreateStop(player) 
+        Material selectionTool = plugin.getConfigFacade().getSelectionTool();
+        if (OwnershipUtil.canCreateStop(player)
                 && player.getInventory().getItemInMainHand().getType() == selectionTool
                 && event.getHand() == EquipmentSlot.HAND) {
             if (action == Action.LEFT_CLICK_BLOCK) {
                 selectionManager.setCorner1(player, clickedBlock.getLocation());
                 player.sendMessage(plugin.getLanguageManager().getMessage("selection.corner1_set",
-                        LanguageManager.put(LanguageManager.args(), "location", clickedBlock.getLocation().getBlockX() + ", " + clickedBlock.getLocation().getBlockY() + ", " + clickedBlock.getLocation().getBlockZ())));
+                        LanguageManager.put(LanguageManager.args(), "location",
+                                clickedBlock.getLocation().getBlockX() + ", " + clickedBlock.getLocation().getBlockY()
+                                        + ", " + clickedBlock.getLocation().getBlockZ())));
                 event.setCancelled(true);
                 return;
             } else if (action == Action.RIGHT_CLICK_BLOCK) {
                 selectionManager.setCorner2(player, clickedBlock.getLocation());
                 player.sendMessage(plugin.getLanguageManager().getMessage("selection.corner2_set",
-                        LanguageManager.put(LanguageManager.args(), "location", clickedBlock.getLocation().getBlockX() + ", " + clickedBlock.getLocation().getBlockY() + ", " + clickedBlock.getLocation().getBlockZ())));
+                        LanguageManager.put(LanguageManager.args(), "location",
+                                clickedBlock.getLocation().getBlockX() + ", " + clickedBlock.getLocation().getBlockY()
+                                        + ", " + clickedBlock.getLocation().getBlockZ())));
                 event.setCancelled(true);
                 return;
             }
         }
-        
+
         // 如果不是右键点击方块，不处理
         if (action != Action.RIGHT_CLICK_BLOCK || clickedBlock == null) {
             return;
         }
-        
+
         // 检查点击的是否是铁轨
         if (!clickedBlock.getType().name().contains("RAIL")) {
             return;
         }
-        
+
         // 防止短时间内多次点击
         UUID playerId = player.getUniqueId();
         long currentTime = System.currentTimeMillis();
@@ -112,11 +116,11 @@ public class PlayerInteractListener implements Listener {
                 return;
             }
         }
-        
+
         // 在处理之前先检查点击的站点
         StopManager stopManager = plugin.getStopManager();
         Stop stop = stopManager.getStopContainingLocation(clickedBlock.getLocation());
-        
+
         // 如果找到了停靠区，检查是否有待处理的矿车
         if (stop != null) {
             String stopId = stop.getId();
@@ -133,35 +137,38 @@ public class PlayerInteractListener implements Listener {
                 }
             }
         }
-        
+
         // 检查是否是停靠点并处理
         boolean handled = checkAndHandleStopPoint(player, clickedBlock.getLocation());
-        
+
         // 如果成功处理了停靠点，更新点击时间并取消事件
         if (handled) {
             lastInteractTime.put(playerId, currentTime);
             event.setCancelled(true);
-            plugin.debug("interaction_flow", "Handled stop interaction for player=" + player.getName() + ", location=" + clickedBlock.getLocation());
-            
+            plugin.debug("interaction_flow", "Handled stop interaction for player=" + player.getName() + ", location="
+                    + clickedBlock.getLocation());
+
             // 设置一个任务，在冷却时间后清除记录
-            SchedulerUtil.entityRun(plugin, player, () -> lastInteractTime.remove(playerId), INTERACT_COOLDOWN / 50, -1);
+            SchedulerUtil.entityRun(plugin, player, () -> lastInteractTime.remove(playerId), INTERACT_COOLDOWN / 50,
+                    -1);
         }
     }
-    
+
     /**
      * 检查并处理停靠点交互
+     * 
      * @return 是否成功处理了停靠点
      */
     private boolean checkAndHandleStopPoint(Player player, Location location) {
         if (!player.hasPermission("metro.use")) {
             return false;
         }
-        
+
         StopManager stopManager = plugin.getStopManager();
-        
+
         // 检查点击位置是否在任何停靠区内
         Stop stop = stopManager.getStopContainingLocation(location);
-        
+
         // 如果找到了包含点击位置的停靠区
         if (stop != null) {
             // 确保停靠区已配置停靠点
@@ -169,34 +176,34 @@ public class PlayerInteractListener implements Listener {
                 player.sendMessage(plugin.getLanguageManager().getMessage("interact.stop_no_point"));
                 return false;
             }
-            
+
             // 找到停靠区并且是铁轨，处理上车逻辑
             handleStopPoint(player, stop);
             return true;
         }
-        
+
         return false;
     }
-    
+
     /**
      * 处理停靠点交互
      */
     private void handleStopPoint(Player player, Stop stop) {
         // 检查停靠区是否在任何线路上
         LineManager lineManager = plugin.getLineManager();
-        
+
         Line line = null;
         List<Line> candidateLines = lineManager.getLinesForStop(stop.getId());
         if (!candidateLines.isEmpty()) {
             line = candidateLines.get(0);
         }
-        
+
         if (line == null) {
             player.sendMessage(plugin.getLanguageManager().getMessage("interact.stop_no_line"));
             plugin.debug("interaction_flow", "No line found for stop=" + stop.getId());
             return;
         }
-        
+
         // 检查该站点是否为终点站
         String nextStopId = line.getNextStopId(stop.getId());
         if (nextStopId == null) {
@@ -204,80 +211,85 @@ public class PlayerInteractListener implements Listener {
             player.sendMessage(plugin.getLanguageManager().getMessage("interact.terminal_stop"));
             return;
         }
-        
+
         // 记录该站点有矿车正在处理中
         pendingMinecarts.put(stop.getId(), System.currentTimeMillis());
-        plugin.debug("interaction_flow", "Preparing minecart for player=" + player.getName() + ", line=" + line.getId() + ", stop=" + stop.getId());
-        
+        plugin.debug("interaction_flow", "Preparing minecart for player=" + player.getName() + ", line=" + line.getId()
+                + ", stop=" + stop.getId());
+
         // 显示线路信息
         showLineInfo(player, stop, line);
-        
+
         // 播放车辆到站音乐 - 在右键点击后立即播放
         playStationArrivalSound(player);
-        
+
         // 生成矿车
         spawnMinecart(player, stop, line);
     }
-    
+
     /**
      * 显示线路信息
      */
     private void showLineInfo(Player player, Stop stop, Line line) {
         // 获取下一停靠区信息
         String nextStopId = line.getNextStopId(stop.getId());
-        
+
         if (nextStopId == null) {
             // 如果当前站已经是终点站，不需要显示信息
             return;
         }
-        
+
         Stop nextStop = plugin.getStopManager().getStop(nextStopId);
         String nextStopName = nextStop != null ? nextStop.getName() : nextStopId;
-        
+
         // 显示ActionBar信息
         String message = plugin.getLanguageManager().getMessage("interact.actionbar_line_info",
                 LanguageManager.put(LanguageManager.put(LanguageManager.args(),
                         "line_name", line.getName()), "next_stop_name", nextStopName));
         player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(message));
     }
-    
+
     /**
      * 播放车辆到站音乐
      */
     private void playStationArrivalSound(Player player) {
-        if (plugin.isStationArrivalSoundEnabled() && !plugin.getStationArrivalNotes().isEmpty()) {
-            SoundUtil.playNoteSequence(plugin, player, plugin.getStationArrivalNotes(), plugin.getStationArrivalInitialDelay());
+        if (plugin.getConfigFacade().isStationArrivalSoundEnabled()
+                && !plugin.getConfigFacade().getStationArrivalNotes().isEmpty()) {
+            SoundUtil.playNoteSequence(plugin, player, plugin.getConfigFacade().getStationArrivalNotes(),
+                    plugin.getConfigFacade().getStationArrivalInitialDelay());
         }
     }
-    
+
     /**
      * 生成矿车
      */
     private void spawnMinecart(Player player, Stop stop, Line line) {
         Location location = stop.getStopPointLocation();
         float yaw = stop.getLaunchYaw();
-        
+
         if (location != null) {
             final String stopId = stop.getId();
-            
+
             // 创建一个新位置，保留原来的坐标但使用停靠区的发车朝向
             Location spawnLocation = location.clone();
             // 反转Yaw值，使矿车外观朝向与移动方向一致
             spawnLocation.setYaw(yaw);
-            
+
             // 获取矿车生成延迟
-            long spawnDelay = plugin.getCartSpawnDelay();
-            
+            long spawnDelay = plugin.getConfigFacade().getCartSpawnDelay();
+
             // 显示等待信息
             player.sendMessage(plugin.getLanguageManager().getMessage("interact.train_coming"));
-            
+
             // 延迟生成矿车，使用实体调度器以确保在正确的线程执行
             SchedulerUtil.regionRun(plugin, location, () -> {
                 try {
                     // 生成矿车实体
                     Minecart minecart = (Minecart) location.getWorld().spawnEntity(spawnLocation, EntityType.MINECART);
-                    
+
                     // 设置矿车属性
+                    minecart.getPersistentDataContainer().set(MetroConstants.getMinecartKey(),
+                            org.bukkit.persistence.PersistentDataType.BYTE, (byte) 1);
                     minecart.setCustomName(MetroConstants.METRO_MINECART_NAME);
                     minecart.setCustomNameVisible(false);
                     minecart.setPersistent(false);
@@ -287,11 +299,11 @@ public class PlayerInteractListener implements Listener {
 
                     double max_speed = line.getMaxSpeed();
                     if (max_speed == -1.0)
-                        max_speed = plugin.getCartSpeed();
-                    
+                        max_speed = plugin.getConfigFacade().getCartSpeed();
+
                     // 设置矿车的最大速度，只在创建时设置一次
                     minecart.setMaxSpeed(max_speed);
-                    
+
                     // 将玩家放入矿车
                     if (!minecart.addPassenger(player)) {
                         // 如果上车失败，可能需要处理，例如取消任务或通知玩家
@@ -300,16 +312,18 @@ public class PlayerInteractListener implements Listener {
                         player.sendMessage(plugin.getLanguageManager().getMessage("interact.train_error"));
                         return;
                     }
-                    
+
                     // 显示待乘车信息
-                    player.sendMessage(plugin.getLanguageManager().getMessage("interact.train_spawned", 
-                            LanguageManager.put(LanguageManager.args(), "departure_seconds", String.valueOf(plugin.getCartDepartureDelay() / 20))));
+                    player.sendMessage(plugin.getLanguageManager().getMessage("interact.train_spawned",
+                            LanguageManager.put(LanguageManager.args(), "departure_seconds",
+                                    String.valueOf(plugin.getConfigFacade().getCartDepartureDelay() / 20))));
 
                     // 创建列车任务，使用TrainMovementTask处理等待发车和发车逻辑
                     // 这将触发handleArrivalAtStation方法，显示等待信息、播放等待音乐，然后延迟发车
                     TrainMovementTask.startTrainTask(plugin, minecart, player, line.getId(), stop.getId());
-                    plugin.debug("interaction_flow", "Minecart spawned and task started for player=" + player.getName() + ", line=" + line.getId() + ", stop=" + stop.getId());
-                    
+                    plugin.debug("interaction_flow", "Minecart spawned and task started for player=" + player.getName()
+                            + ", line=" + line.getId() + ", stop=" + stop.getId());
+
                     // 清除该站点的矿车等待状态
                     pendingMinecarts.remove(stopId);
                 } catch (Exception e) {
@@ -330,4 +344,4 @@ public class PlayerInteractListener implements Listener {
         lastInteractTime.clear();
         pendingMinecarts.clear();
     }
-} 
+}
