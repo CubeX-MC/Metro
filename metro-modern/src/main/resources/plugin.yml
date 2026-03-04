@@ -9,11 +9,6 @@ website: https://cubexmc.org
 softdepend:
   - ViaVersion
 
-commands:
-  m:
-    description: Metro Command
-    aliases: [metro]
-    usage: "§cUsage: /m <line|stop|gui|reload> [parameters...]"
 
 permissions:
   metro.admin:

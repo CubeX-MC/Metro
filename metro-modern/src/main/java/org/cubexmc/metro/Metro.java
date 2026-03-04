@@ -2,13 +2,20 @@ package org.cubexmc.metro;
 
 import java.io.File;
 import org.bukkit.Bukkit;
-import org.bukkit.command.PluginCommand;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Minecart;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.cubexmc.metro.command.MetroAdminCommand;
-import org.cubexmc.metro.command.MetroAdminTabCompleter;
+
+import cloud.commandframework.annotations.AnnotationParser;
+import cloud.commandframework.execution.CommandExecutionCoordinator;
+import cloud.commandframework.meta.SimpleCommandMeta;
+import cloud.commandframework.paper.PaperCommandManager;
+
+import org.cubexmc.metro.command.newcmd.LineCommand;
+import org.cubexmc.metro.command.newcmd.MetroMainCommand;
+import org.cubexmc.metro.command.newcmd.StopCommand;
 import org.cubexmc.metro.config.ConfigFacade;
 import org.cubexmc.metro.gui.GuiListener;
 import org.cubexmc.metro.gui.GuiManager;
@@ -41,6 +48,8 @@ public final class Metro extends JavaPlugin {
     private PlayerMoveListener playerMoveListener;
     private GuiListener guiListener;
     private TrainDisplayController trainDisplayController;
+    private PaperCommandManager<CommandSender> commandManager;
+    private AnnotationParser<CommandSender> annotationParser;
     private Object autoSaveTaskId;
 
     @Override
@@ -81,15 +90,41 @@ public final class Metro extends JavaPlugin {
         scoreboardManager = new ScoreboardManager(this);
         MetroConstants.initialize(this);
 
-        // 注册命令
-        PluginCommand metroCommand = getCommand("m");
-        if (metroCommand == null) {
-            getLogger().severe("Command 'm' is missing in plugin.yml, disabling plugin.");
+        // 注册命令 (Cloud Command Framework)
+        try {
+            commandManager = new PaperCommandManager<>(
+                    this,
+                    CommandExecutionCoordinator.simpleCoordinator(),
+                    java.util.function.Function.identity(),
+                    java.util.function.Function.identity());
+
+            // 自动注册桥接（处理 Bukkit 原生 aliases）
+            if (commandManager.hasCapability(cloud.commandframework.bukkit.CloudBukkitCapabilities.BRIGADIER)) {
+                commandManager.registerBrigadier();
+            }
+            if (commandManager
+                    .hasCapability(cloud.commandframework.bukkit.CloudBukkitCapabilities.ASYNCHRONOUS_COMPLETION)) {
+                commandManager.registerAsynchronousCompletions();
+            }
+
+            annotationParser = new AnnotationParser<>(
+                    commandManager,
+                    CommandSender.class,
+                    parameters -> SimpleCommandMeta.empty());
+
+            // 解析并注册带有 @Command 注解的类
+            annotationParser.parse(new MetroMainCommand(this, lineManager, stopManager));
+            annotationParser.parse(new LineCommand(this, lineManager, stopManager));
+            annotationParser.parse(new StopCommand(this, stopManager));
+
+            getLogger().info("Cloud Command Framework initialized successfully.");
+
+        } catch (Exception e) {
+            getLogger().severe("Failed to initialize Cloud Command Framework:");
+            e.printStackTrace();
             Bukkit.getPluginManager().disablePlugin(this);
             return;
         }
-        metroCommand.setExecutor(new MetroAdminCommand(this));
-        metroCommand.setTabCompleter(new MetroAdminTabCompleter(this));
 
         // 注册事件监听器
         this.playerInteractListener = new PlayerInteractListener(this);

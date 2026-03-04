@@ -95,6 +95,22 @@
             <artifactId>adventure-text-serializer-legacy</artifactId>
             <version>4.13.0</version>
         </dependency>
+        <!-- Cloud Command Framework -->
+        <dependency>
+            <groupId>cloud.commandframework</groupId>
+            <artifactId>cloud-paper</artifactId>
+            <version>1.8.4</version>
+        </dependency>
+        <dependency>
+            <groupId>cloud.commandframework</groupId>
+            <artifactId>cloud-annotations</artifactId>
+            <version>1.8.4</version>
+        </dependency>
+        <dependency>
+            <groupId>cloud.commandframework</groupId>
+            <artifactId>cloud-minecraft-extras</artifactId>
+            <version>1.8.4</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -129,6 +145,14 @@
                                 <relocation>
                                     <pattern>net.megavex.scoreboardlibrary</pattern>
                                     <shadedPattern>org.cubexmc.metro.lib.scoreboardlibrary</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>cloud.commandframework</pattern>
+                                    <shadedPattern>org.cubexmc.metro.lib.cloud</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>io.leangen.geantyref</pattern>
+                                    <shadedPattern>org.cubexmc.metro.lib.geantyref</shadedPattern>
                                 </relocation>
                             </relocations>
                             <filters>
