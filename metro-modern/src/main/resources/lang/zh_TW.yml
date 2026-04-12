@@ -44,6 +44,7 @@ line:
   help_trust: "&6/m line trust <路線ID> <玩家> &f- 授予路線管理權限"
   help_untrust: "&6/m line untrust <路線ID> <玩家> &f- 移除路線管理權限"
   help_owner: "&6/m line owner <路線ID> <玩家> &f- 轉移路線所有權"
+  help_clonereverse: "&6/m line clonereverse <source_id> <new_id> [suffix] &f- 反向克隆路線"
   
   usage_create: "&c用法: /m line create <路線ID> <\"顯示名稱\">"
   usage_delete: "&c用法: /m line delete <路線ID>"
@@ -73,6 +74,8 @@ line:
   setterminus_success: "&a成功設定路線 {line_id} 的終點方向名稱為: {terminus_name}"
   rename_success: "&a成功將路線 {line_id} 重新命名為: {new_name}"
   rename_fail: "&c重新命名路線失敗，請檢查路線ID是否存在。"
+  clone_success: "&a成功生成對向路線: {new_line_id}"
+  clone_fail: "&c生成對向路線失敗，請檢查路線ID是否已存在。"
   setmaxspeed_success: "&a成功設定路線 {line_id} 的最大速度為: {max_speed}"
   setmaxspeed_invalid: "&c無效的速度值。速度必須為正數。"
   addstop_success: "&a成功將停靠區 {stop_id} 新增至路線 {line_id}"
@@ -318,6 +321,7 @@ gui:
     can_manage: "&a✔ 可管理"
     view_only: "&c✖ 僅查看"
     click_view: "&e左鍵 &7查看站點列表"
+    click_settings: "&e右鍵 &7進行設定"
     click_view_variants: "&e點擊查看變體"
   stop_list:
     title_all: "站點列表 &a[全部]"
@@ -333,8 +337,16 @@ gui:
     start_stop: "&a起點站"
     end_stop: "&c終點站"
     click_tp: "&e左鍵 &7傳送到此站點"
-    click_remove: "&e右鍵 &7從路線移除"
+    click_remove: "&eShift+左鍵 &7從路線移除"
+    click_settings: "&e右鍵 &7打開站點設定"
+    settings: "&b路線設定"
+    settings_lore: "&7點擊進入路線設定界面"
     stop_not_exist: "&c站點不存在"
+    add_stop: "&a新增站點"
+    add_stop_lore: "&7點擊從所有站點中選擇新增"
+  add_stop_list:
+    title: "&8選擇要新增的站點"
+    click_add: "&a左鍵 &7新增至此路線"
   control:
     prev_page: "&e◀ 上一頁"
     next_page: "&e下一頁 ▶"
@@ -354,3 +366,30 @@ gui:
     prev_page: "&e◀ 上一頁"
     next_page: "&e下一頁 ▶"
     page_info: "&f第 {page} / {total} 頁"
+  line_settings:
+    title: "&8路線設定: "
+    rename: "&a重新命名路線"
+    rename_lore: "&7點擊在聊天欄中輸入新名稱"
+    set_speed: "&b修改最大速度"
+    set_speed_lore: "&7點擊在聊天欄中輸入新速度"
+    set_price: "&6設定乘車票價"
+    set_price_lore: "&7點擊在聊天欄中輸入新票價"
+    clone_reverse: "&e生成對向路線"
+    clone_reverse_lore: "&7自動反向複製該路線及其所有站點"
+    delete: "&c刪除路線"
+    delete_lore: "&7點擊永久刪除此路線"
+  stop_settings:
+    title: "&8站點設定: "
+    rename: "&a重新命名站點"
+    rename_lore: "&7點擊在聊天欄中輸入新名稱"
+    delete: "&c刪除站點"
+    delete_lore: "&7點擊永久刪除此站點"
+chat:
+  enter_new_name: "&a請輸入新的名稱。輸入 'cancel' 或 '取消' 取消操作。"
+  enter_new_speed: "&a請輸入新的速度數值。輸入 'cancel' 或 '取消' 取消操作。"
+  enter_new_price: "&a請輸入新的票價數值。輸入 'cancel' 或 '取消' 取消操作。"
+  enter_clone_info: "&a請輸入新路線ID和站點後綴(可選)，用空格分隔。例如: line1_rev _rev"
+
+economy:
+  insufficient_funds: "&c餘額不足。此次乘車需要: {price}"
+  paid_boarding: "&a乘車扣費成功，已扣除 {price}。"

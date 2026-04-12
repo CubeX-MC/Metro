@@ -44,6 +44,7 @@ line:
   help_trust: "&6/m line trust <line_id> <player> &f- Add a line administrator"
   help_untrust: "&6/m line untrust <line_id> <player> &f- Remove a line administrator"
   help_owner: "&6/m line owner <line_id> <player> &f- Transfer line ownership"
+  help_clonereverse: "&6/m line clonereverse <source_id> <new_id> [suffix] &f- Clone line in reverse"
   
   usage_create: "&cUsage: /m line create <line_id> <\"display_name\">"
   usage_delete: "&cUsage: /m line delete <line_id>"
@@ -73,6 +74,8 @@ line:
   setterminus_success: "&aSuccessfully set line {line_id} terminus direction name to: {terminus_name}"
   rename_success: "&aSuccessfully renamed line {line_id} to: {new_name}"
   rename_fail: "&cFailed to rename line, please check if line ID exists."
+  clone_success: "&aSuccessfully generated reverse line: {new_line_id}"
+  clone_fail: "&cFailed to generate reverse line, please check if line ID already exists."
   setmaxspeed_success: "&aSuccessfully set line {line_id} maximum speed to: {max_speed}"
   setmaxspeed_invalid: "&cInvalid speed value. Speed must be a positive number."
   addstop_success: "&aSuccessfully added stop {stop_id} to line {line_id}"
@@ -293,6 +296,7 @@ gui:
     can_manage: "&a✔ Can Manage"
     view_only: "&c✖ View Only"
     click_view: "&eLeft-click &7to view stops"
+    click_settings: "&eRight-click &7for settings"
     click_view_variants: "&eClick to view variants"
   stop_list:
     title_all: "Stop List &a[All]"
@@ -308,8 +312,16 @@ gui:
     start_stop: "&aStart Station"
     end_stop: "&cTerminal Station"
     click_tp: "&eLeft-click &7to teleport"
-    click_remove: "&eRight-click &7to remove from line"
+    click_remove: "&eShift+Left-click &7to remove from line"
+    click_settings: "&eRight-click &7to open stop settings"
+    settings: "&bLine Settings"
+    settings_lore: "&7Click to open line settings"
     stop_not_exist: "&cStop does not exist"
+    add_stop: "&aAdd Stop"
+    add_stop_lore: "&7Click to select and add a stop"
+  add_stop_list:
+    title: "&8Select stop to add"
+    click_add: "&aLeft-click &7to add to this line"
   control:
     prev_page: "&e◀ Previous"
     next_page: "&eNext ▶"
@@ -329,6 +341,25 @@ gui:
     prev_page: "&e◀ Previous"
     next_page: "&eNext ▶"
     page_info: "&fPage {page} / {total}"
+
+  line_settings:
+    title: "&8Line Settings: "
+    rename: "&aRename Line"
+    rename_lore: "&7Click to type a new name in chat"
+    set_speed: "&bChange Max Speed"
+    set_speed_lore: "&7Click to type a new speed in chat"
+    set_price: "&6Set Ticket Price"
+    set_price_lore: "&7Click to type a new price in chat"
+    clone_reverse: "&eGenerate Reverse Line"
+    clone_reverse_lore: "&7Automatically clone this line and its stops in reverse"
+    delete: "&cDelete Line"
+    delete_lore: "&7Click to permanently delete this line"
+  stop_settings:
+    title: "&8Stop Settings: "
+    rename: "&aRename Stop"
+    rename_lore: "&7Click to type a new name in chat"
+    delete: "&cDelete Stop"
+    delete_lore: "&7Click to permanently delete this stop"
 
 # Passenger Related Messages
 passenger:
@@ -355,3 +386,13 @@ vehicle:
   terminal_arrived: "&aArrived at terminal station: {terminal_stop_name}"
   auto_depart: "&aAuto departure: From {current_stop_name} to {next_stop_name}"
   passenger_exit: "&6Player has alighted, will not auto depart"
+
+chat:
+  enter_new_name: "&aPlease enter the new name. Type 'cancel' to cancel."
+  enter_new_speed: "&aPlease enter the new speed. Type 'cancel' to cancel."
+  enter_new_price: "&aPlease enter the new ticket price. Type 'cancel' to cancel."
+  enter_clone_info: "&aPlease enter new line ID and stop suffix (optional), separated by space. Example: line1_rev _rev"
+
+economy:
+  insufficient_funds: "&cInsufficient funds. This ride costs: {price}"
+  paid_boarding: "&aSuccessfully boarded. {price} has been deducted."

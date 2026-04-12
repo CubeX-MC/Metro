@@ -2,6 +2,7 @@ package org.cubexmc.metro.model;
 
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
+import org.cubexmc.metro.spatial.Range3D;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -272,6 +273,16 @@ public class Stop {
         return x >= cachedMinX && x <= cachedMaxX && 
                y >= cachedMinY && y <= cachedMaxY && 
                z >= cachedMinZ && z <= cachedMaxZ;
+    }
+    
+    /**
+     * 获取停靠区的3D范围表示，用于空间树索引
+     * 
+     * @return Range3D实例，如果边界未确立则返回null
+     */
+    public Range3D getRange3D() {
+        if (!boundsCached) return null;
+        return new Range3D(cachedMinX, cachedMinY, cachedMinZ, cachedMaxX, cachedMaxY, cachedMaxZ);
     }
     
     /**

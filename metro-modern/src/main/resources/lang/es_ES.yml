@@ -44,6 +44,7 @@ line:
   help_trust: "&6/m line trust <line_id> <jugador> &f- Añadir administrador de la línea"
   help_untrust: "&6/m line untrust <line_id> <jugador> &f- Quitar administrador de la línea"
   help_owner: "&6/m line owner <line_id> <jugador> &f- Transferir propiedad de la línea"
+  help_clonereverse: "&6/m line clonereverse <source_id> <new_id> [suffix] &f- Clonar línea en reverso"
   
   usage_create: "&cUso: /m line create <line_id> <\"nombre_mostrar\">"
   usage_delete: "&cUso: /m line delete <line_id>"
@@ -70,6 +71,8 @@ line:
   setterminus_success: "&aNombre de dirección terminal de línea {line_id} establecido exitosamente a: {terminus_name}"
   rename_success: "&aLínea {line_id} renombrada exitosamente a: {new_name}"
   rename_fail: "&cFallo al renombrar línea, verifica si la ID de línea existe."
+  clone_success: "&aLínea inversa generada exitosamente: {new_line_id}"
+  clone_fail: "&cFallo al generar la línea inversa, verifica si la ID ya existe."
   setmaxspeed_success: "&aVelocidad máxima de línea {line_id} establecida exitosamente a: {max_speed}"
   setmaxspeed_invalid: "&cValor de velocidad inválido. La velocidad debe ser un número positivo."
   addstop_success: "&aÁrea de parada {stop_id} añadida exitosamente a línea {line_id}"
@@ -307,8 +310,16 @@ gui:
     start_stop: "&aEstación Inicial"
     end_stop: "&cEstación Terminal"
     click_tp: "&eClic izq. &7para teletransportar"
-    click_remove: "&eClic der. &7para quitar de línea"
+    click_remove: "&eShift+Clic izq. &7para quitar de línea"
+    click_settings: "&eClic der. &7para abrir ajustes de parada"
+    settings: "&bAjustes de Línea"
+    settings_lore: "&7Haz clic para abrir los ajustes de la línea"
     stop_not_exist: "&cLa parada no existe"
+    add_stop: "&aAñadir parada"
+    add_stop_lore: "&7Haz clic para seleccionar y añadir una parada"
+  add_stop_list:
+    title: "&8Selecciona parada para añadir"
+    click_add: "&aClic izquierdo &7para añadir a esta línea"
   control:
     prev_page: "&e◀ Anterior"
     next_page: "&eSiguiente ▶"
@@ -322,6 +333,23 @@ gui:
     filter_lore_mine: "&7Clic para mostrar todas"
   common:
     id: "&7ID: &f{id}"
+
+  line_settings:
+    title: "&8Ajustes de Línea: "
+    rename: "&aRenombrar Línea"
+    rename_lore: "&7Haz clic para ingresar nuevo nombre en el chat"
+    set_speed: "&bModificar Vel. Máx"
+    set_speed_lore: "&7Haz clic para ingresar nueva vel. en el chat"
+    clone_reverse: "&eGenerar Línea Inversa"
+    clone_reverse_lore: "&7Clonar automáticamente esta línea y paradas en sentido inverso"
+    delete: "&cEliminar Línea"
+    delete_lore: "&7Haz clic para eliminar permanentemente"
+  stop_settings:
+    title: "&8Ajustes de Parada: "
+    rename: "&aRenombrar Parada"
+    rename_lore: "&7Haz clic para ingresar nuevo nombre en el chat"
+    delete: "&cEliminar Parada"
+    delete_lore: "&7Haz clic para eliminar permanentemente"
 
 # Relacionado con escucha de movimiento
 movement:
@@ -344,3 +372,13 @@ vehicle:
   terminal_arrived: "&aEstación terminal alcanzada: {terminal_stop_name}"
   auto_depart: "&aSalida automática: de {current_stop_name} a {next_stop_name}"
   passenger_exit: "&6El jugador se ha bajado, no saldrá automáticamente" 
+
+chat:
+  enter_new_name: "&aPor favor ingresa el nuevo nombre. Escribe 'cancel' para abortar."
+  enter_new_speed: "&aPor favor ingresa el nuevo valor de velocidad. Escribe 'cancel' para abortar."
+  enter_new_price: "&aPor favor ingresa el nuevo precio del billete. Escribe 'cancel' para abortar."
+  enter_clone_info: "&aPor favor ingresa la nueva ID de línea y el sufijo de parada (opcional), separados por espacio. Ej: line1_rev _rev"
+
+economy:
+  insufficient_funds: "&cFondos insuficientes. Este viaje cuesta: {price}"
+  paid_boarding: "&aHas subido con éxito. Se han deducido {price}."

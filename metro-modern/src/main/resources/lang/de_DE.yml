@@ -44,6 +44,7 @@ line:
   help_trust: "&6/m line trust <line_id> <spieler> &f- Linienadministrator hinzufügen"
   help_untrust: "&6/m line untrust <line_id> <spieler> &f- Linienadministrator entfernen"
   help_owner: "&6/m line owner <line_id> <spieler> &f- Linienbesitz übertragen"
+  help_clonereverse: "&6/m line clonereverse <source_id> <new_id> [suffix] &f- Linie rückwärts klonen"
   
   usage_create: "&cVerwendung: /m line create <line_id> <\"anzeigename\">"
   usage_delete: "&cVerwendung: /m line delete <line_id>"
@@ -70,6 +71,8 @@ line:
   setterminus_success: "&aEndstation-Richtungsname der Linie {line_id} erfolgreich festgelegt auf: {terminus_name}"
   rename_success: "&aLinie {line_id} erfolgreich umbenannt zu: {new_name}"
   rename_fail: "&cUmbenennung der Linie fehlgeschlagen, prüfe ob Linien-ID existiert."
+  clone_success: "&aGegenrichtungslinie erfolgreich generiert: {new_line_id}"
+  clone_fail: "&cGenerieren der Gegenrichtungslinie fehlgeschlagen, prüfe ob Linien-ID existiert."
   setmaxspeed_success: "&aMaximalgeschwindigkeit der Linie {line_id} erfolgreich festgelegt auf: {max_speed}"
   setmaxspeed_invalid: "&cUngültiger Geschwindigkeitswert. Geschwindigkeit muss eine positive Zahl sein."
   addstop_success: "&aHaltebereich {stop_id} erfolgreich zur Linie {line_id} hinzugefügt"
@@ -307,8 +310,16 @@ gui:
     start_stop: "&aStarthaltestelle"
     end_stop: "&cEndhaltestelle"
     click_tp: "&eLinksklick &7zum Teleportieren"
-    click_remove: "&eRechtsklick &7zum Entfernen"
+    click_remove: "&eShift+Linksklick &7zum Entfernen"
+    click_settings: "&eRechtsklick &7um Stationseinstellungen zu öffnen"
+    settings: "&bLinieneinstellungen"
+    settings_lore: "&7Klicken um Linieneinstellungen zu öffnen"
     stop_not_exist: "&cHaltestelle existiert nicht"
+    add_stop: "&aHaltestelle hinzufügen"
+    add_stop_lore: "&7Klicken, um eine Haltestelle auszuwählen und hinzuzufügen"
+  add_stop_list:
+    title: "&8Haltestelle zum Hinzufügen auswählen"
+    click_add: "&aLinksklick &7zum Hinzufügen zu dieser Linie"
   control:
     prev_page: "&e◀ Zurück"
     next_page: "&eWeiter ▶"
@@ -322,6 +333,29 @@ gui:
     filter_lore_mine: "&7Klicke für alle"
   common:
     id: "&7ID: &f{id}"
+chat:
+  enter_new_name: "&aBitte neuen Namen eingeben. 'cancel' zum Abbrechen."
+  enter_new_speed: "&aBitte neuen Geschwindigkeitswert eingeben. 'cancel' zum Abbrechen."
+  enter_clone_info: "&aBitte neue Linien-ID und Stationssuffix (optional) durch Leerzeichen getrennt eingeben. Bsp: line1_rev _rev"
+
+  line_settings:
+    title: "&8Linieneinstellungen: "
+    rename: "&aLinie umbenennen"
+    rename_lore: "&7Klicken, um neuen Namen im Chat einzugeben"
+    set_speed: "&bMax. Geschw. ändern"
+    set_speed_lore: "&7Klicken, um neue Geschw. im Chat einzugeben"
+    set_price: "&6Ticketpreis festlegen"
+    set_price_lore: "&7Klicken, um neuen Preis im Chat einzugeben"
+    clone_reverse: "&eGegenrichtungslinie generieren"
+    clone_reverse_lore: "&7Linie und Stationen automatisch in Gegenrichtung klonen"
+    delete: "&cLinie löschen"
+    delete_lore: "&7Klicken, um Linie permanent zu löschen"
+  stop_settings:
+    title: "&8Haltestelleneinstellungen: "
+    rename: "&aHaltestelle umbenennen"
+    rename_lore: "&7Klicken, um neuen Namen im Chat einzugeben"
+    delete: "&cHaltestelle löschen"
+    delete_lore: "&7Klicken, um Haltestelle permanent zu löschen"
 
 # Bewegungs-Listener bezogen
 movement:
@@ -344,3 +378,13 @@ vehicle:
   terminal_arrived: "&aEndstation erreicht: {terminal_stop_name}"
   auto_depart: "&aAutomatische Abfahrt: von {current_stop_name} nach {next_stop_name}"
   passenger_exit: "&6Spieler ist ausgestiegen, fährt nicht automatisch ab" 
+
+chat:
+  enter_new_name: "&aBitte neuen Namen eingeben. Tippe 'cancel' zum Abbrechen."
+  enter_new_speed: "&aBitte neuen Geschwindigkeitswert eingeben. Tippe 'cancel' zum Abbrechen."
+  enter_new_price: "&aBitte neuen Ticketpreis eingeben. Tippe 'cancel' zum Abbrechen."
+  enter_clone_info: "&aBitte neue Linien-ID und Haltestellen-Suffix (optional) getrennt durch ein Leerzeichen eingeben. Bsp: line1_rev _rev"
+
+economy:
+  insufficient_funds: "&cUnzureichendes Guthaben. Diese Fahrt kostet: {price}"
+  paid_boarding: "&aErfolgreich eingestiegen. {price} wurden abgebucht."

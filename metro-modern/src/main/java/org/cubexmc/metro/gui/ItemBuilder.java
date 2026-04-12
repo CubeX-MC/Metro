@@ -4,9 +4,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
+import org.cubexmc.metro.util.ColorUtil;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -30,7 +30,7 @@ public class ItemBuilder {
 
     public ItemBuilder name(String name) {
         if (meta != null) {
-            meta.setDisplayName(ChatColor.translateAlternateColorCodes('&', name));
+            meta.setDisplayName(ColorUtil.colorize(name));
         }
         return this;
     }
@@ -38,7 +38,7 @@ public class ItemBuilder {
     public ItemBuilder lore(String... lore) {
         if (meta != null) {
             List<String> loreList = Arrays.stream(lore)
-                    .map(s -> ChatColor.translateAlternateColorCodes('&', s))
+                    .map(ColorUtil::colorize)
                     .collect(Collectors.toList());
             meta.setLore(loreList);
         }
@@ -48,7 +48,7 @@ public class ItemBuilder {
     public ItemBuilder lore(List<String> lore) {
         if (meta != null) {
             List<String> loreList = lore.stream()
-                    .map(s -> ChatColor.translateAlternateColorCodes('&', s))
+                    .map(ColorUtil::colorize)
                     .collect(Collectors.toList());
             meta.setLore(loreList);
         }

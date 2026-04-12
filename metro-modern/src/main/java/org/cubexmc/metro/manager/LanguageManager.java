@@ -8,8 +8,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 
-import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.cubexmc.metro.util.ColorUtil;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.update.LanguageUpdater;
 
@@ -138,7 +138,7 @@ public class LanguageManager {
         
         // 获取消息并替换颜色代码
         String message = langConfig.getString(key);
-        return ChatColor.translateAlternateColorCodes('&', message);
+        return ColorUtil.colorize(message);
     }
 
     /**

@@ -44,6 +44,7 @@ line:
   help_trust: "&6/m line trust <line_id> <speler> &f- Voeg een lijnbeheerder toe"
   help_untrust: "&6/m line untrust <line_id> <speler> &f- Verwijder een lijnbeheerder"
   help_owner: "&6/m line owner <line_id> <speler> &f- Draag lijnbezit over"
+  help_clonereverse: "&6/m line clonereverse <source_id> <new_id> [suffix] &f- Lijn omgekeerd klonen"
   
   usage_create: "&cGebruik: /m line create <line_id> <\"weergavenaam\">"
   usage_delete: "&cGebruik: /m line delete <line_id>"
@@ -70,6 +71,8 @@ line:
   setterminus_success: "&aEindstation richtingnaam van lijn {line_id} succesvol ingesteld op: {terminus_name}"
   rename_success: "&aLijn {line_id} succesvol hernoemd naar: {new_name}"
   rename_fail: "&cHernoemen van lijn mislukt, controleer of lijn ID bestaat."
+  clone_success: "&aTegenrichtinglijn succesvol gegenereerd: {new_line_id}"
+  clone_fail: "&cGenereren van tegenrichtinglijn mislukt, controleer of lijn ID al bestaat."
   setmaxspeed_success: "&aMaximumsnelheid van lijn {line_id} succesvol ingesteld op: {max_speed}"
   setmaxspeed_invalid: "&cOngeldige snelheidswaarde. Snelheid moet een positief getal zijn."
   addstop_success: "&aStopgebied {stop_id} succesvol toegevoegd aan lijn {line_id}"
@@ -307,8 +310,16 @@ gui:
     start_stop: "&aStartstation"
     end_stop: "&cEindstation"
     click_tp: "&eLinkermuisklik &7om te teleporteren"
-    click_remove: "&eRechtermuisklik &7om te verwijderen"
+    click_remove: "&eShift+Linkermuisklik &7om te verwijderen"
+    click_settings: "&eRechtermuisklik &7om stopinstellingen te openen"
+    settings: "&bLijninstellingen"
+    settings_lore: "&7Klik om lijninstellingen te openen"
     stop_not_exist: "&cHalte bestaat niet"
+    add_stop: "&aHalte toevoegen"
+    add_stop_lore: "&7Klik om een halte te selecteren en toe te voegen"
+  add_stop_list:
+    title: "&8Selecteer halte om toe te voegen"
+    click_add: "&aLinkerklik &7om aan deze lijn toe te voegen"
   control:
     prev_page: "&e◀ Vorige"
     next_page: "&eVolgende ▶"
@@ -322,6 +333,25 @@ gui:
     filter_lore_mine: "&7Klik voor alle"
   common:
     id: "&7ID: &f{id}"
+
+  line_settings:
+    title: "&8Lijninstellingen: "
+    rename: "&aLijn Hernoemen"
+    rename_lore: "&7Klik om nieuwe naam in chat in te voeren"
+    set_speed: "&bMax Snelheid Wijzigen"
+    set_speed_lore: "&7Klik om nieuwe snelheid in chat in te voeren"
+    set_price: "&6Ticketprijs Instellen"
+    set_price_lore: "&7Klik om nieuwe prijs in chat in te voeren"
+    clone_reverse: "&eTegenrichtinglijn Genereren"
+    clone_reverse_lore: "&7Kloon deze lijn en stops automatisch in omgekeerde richting"
+    delete: "&cLijn Verwijderen"
+    delete_lore: "&7Klik om deze lijn permanent te verwijderen"
+  stop_settings:
+    title: "&8Stopinstellingen: "
+    rename: "&aStop Hernoemen"
+    rename_lore: "&7Klik om nieuwe naam in chat in te voeren"
+    delete: "&cStop Verwijderen"
+    delete_lore: "&7Klik om deze stop permanent te verwijderen"
 
 # Beweging luisteren gerelateerd
 movement:
@@ -344,3 +374,13 @@ vehicle:
   terminal_arrived: "&aEindstation bereikt: {terminal_stop_name}"
   auto_depart: "&aAutomatisch vertrek: van {current_stop_name} naar {next_stop_name}"
   passenger_exit: "&6Speler is uitgestapt, vertrekt niet automatisch" 
+
+chat:
+  enter_new_name: "&aVoer een nieuwe naam in. Typ 'cancel' om te annuleren."
+  enter_new_speed: "&aVoer een nieuwe snelheid in. Typ 'cancel' om te annuleren."
+  enter_new_price: "&aVoer een nieuwe ticketprijs in. Typ 'cancel' om te annuleren."
+  enter_clone_info: "&aVoer nieuwe lijn ID en stop achtervoegsel (optioneel) in, gescheiden door spatie. Vb: line1_rev _rev"
+
+economy:
+  insufficient_funds: "&cOnvoldoende saldo. Deze rit kost: {price}"
+  paid_boarding: "&aSuccesvol ingestapt. {price} is afgeschreven."

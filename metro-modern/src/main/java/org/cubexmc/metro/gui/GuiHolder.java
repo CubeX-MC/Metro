@@ -18,7 +18,11 @@ public class GuiHolder implements InventoryHolder {
         LINE_VARIANTS,  // 线路变体列表
         STOP_VARIANTS,  // 站点变体列表
         LINE_DETAIL,    // 线路详情
-        STOP_DETAIL     // 站点详情
+        STOP_DETAIL,    // 站点详情
+        ADD_STOP_LIST,  // 添加站点列表
+        ADD_STOP_VARIANTS, // 添加站点变体列表
+        LINE_SETTINGS,  // 线路设置
+        STOP_SETTINGS   // 站点设置
     }
     
     private final GuiType type;

@@ -110,65 +110,84 @@ public class ScoreboardManager {
         playerCurrentLine.put(playerId, line.getId());
     }
 
-    /**
-     * 构建或更新 Sidebar 组件线
-     */
     private void updateLines(Sidebar sidebar, Line line, String currentStopId, String nextStopId) {
         List<String> stopIds = line.getOrderedStopIds();
         StopManager stopManager = plugin.getStopManager();
         LineManager lineManager = plugin.getLineManager();
 
         LegacyComponentSerializer serializer = LegacyComponentSerializer.legacyAmpersand();
-        String currentStopStyle = plugin.getConfig().getString("scoreboard.styles.current_stop", "&f");
-        String nextStopStyle = plugin.getConfig().getString("scoreboard.styles.next_stop", "&a");
-        String otherStopsStyle = plugin.getConfig().getString("scoreboard.styles.other_stops", "&7");
-        String lineSymbol = plugin.getConfig().getString("scoreboard.line_symbol", "■");
+        
+        String styleCurrent = plugin.getConfigFacade().getSbStyleCurrent();
+        String stylePassed = plugin.getConfigFacade().getSbStylePassed();
+        String styleWaitingNext = plugin.getConfigFacade().getSbStyleWaitingNext();
+        String styleMovingNext = plugin.getConfigFacade().getSbStyleMovingNext();
+        String styleTerminal = plugin.getConfigFacade().getSbStyleTerminal();
+        String styleFolding = plugin.getConfigFacade().getSbStyleFolding();
+        String styleNext = plugin.getConfigFacade().getSbStyleNext();
+        String lineSymbol = plugin.getConfigFacade().getLineSymbol();
 
         int currentStopIndex = currentStopId != null ? stopIds.indexOf(currentStopId) : -1;
         int nextStopIndex = nextStopId != null ? stopIds.indexOf(nextStopId) : -1;
+        
+        boolean isWaiting = (currentStopId != null);
+        
+        // Determine the start index for our display
+        int startIndex = isWaiting ? currentStopIndex : (nextStopIndex != -1 ? nextStopIndex - 1 : 0);
+        if (startIndex < 0) startIndex = 0;
+        
+        boolean dots = stopIds.size() > 9;
+        int maxStations = dots ? 7 : 8;
+        
+        java.util.List<String> displayStops = new java.util.ArrayList<>();
+        for (int i = startIndex; i < stopIds.size(); i++) {
+            if (displayStops.size() >= maxStations) break;
+            displayStops.add(stopIds.get(i));
+        }
+        
+        String terminalStopId = null;
+        if (displayStops.size() < stopIds.size() - startIndex) {
+            terminalStopId = stopIds.get(stopIds.size() - 1);
+        }
 
         SidebarComponent.Builder componentBuilder = SidebarComponent.builder();
-        int maxLines = Math.min(stopIds.size(), 15); // Minecraft 限制侧边栏最多15行
 
-        for (int i = 0; i < maxLines; i++) {
-            String stopId = stopIds.get(i);
+        for (int i = 0; i < displayStops.size(); i++) {
+            String stopId = displayStops.get(i);
             Stop stop = stopManager.getStop(stopId);
-            if (stop == null)
-                continue;
+            if (stop == null) continue;
 
-            String displayName = stop.getName();
-
-            // 构建换乘信息
-            StringBuilder transferInfo = new StringBuilder();
-            List<String> transferableLines = stop.getTransferableLines();
-            if (transferableLines != null && !transferableLines.isEmpty()) {
-                for (String transferLineId : transferableLines) {
-                    if (transferLineId.equals(line.getId()))
-                        continue;
-                    Line transferLine = lineManager.getLine(transferLineId);
-                    if (transferLine != null) {
-                        transferInfo.append(transferLine.getColor()).append(lineSymbol).append(" ");
-                    }
-                }
-            }
-
-            // 决定行样式前缀
             String prefix;
-            if (i == currentStopIndex) {
-                prefix = currentStopStyle;
-            } else if (i == nextStopIndex) {
-                prefix = nextStopStyle;
+            if (i == 0) {
+               if (isWaiting) {
+                   prefix = styleCurrent;
+               } else {
+                   prefix = stylePassed;
+               }
+            } else if (i == 1 && !isWaiting) {
+               prefix = styleMovingNext;
             } else {
-                prefix = otherStopsStyle;
+               prefix = isWaiting && i == 1 ? styleWaitingNext : styleNext;
             }
 
-            // 整合整行内容并反序列化为 Adventure Component
-            String rawLine = prefix + displayName + (transferInfo.length() > 0 ? " " + transferInfo : "");
+            String rawLine = buildStopLine(stop, line, prefix, lineSymbol, lineManager);
             Component lineComponent = serializer.deserialize(rawLine)
-                    // 防止 italic 被全局覆盖
                     .decoration(TextDecoration.ITALIC, false);
-
             componentBuilder.addComponent(SidebarComponent.staticLine(lineComponent));
+        }
+
+        if (terminalStopId != null) {
+            if (dots) {
+                Component foldingComponent = serializer.deserialize(styleFolding)
+                        .decoration(TextDecoration.ITALIC, false);
+                componentBuilder.addComponent(SidebarComponent.staticLine(foldingComponent));
+            }
+            Stop terminalStop = stopManager.getStop(terminalStopId);
+            if (terminalStop != null) {
+                String rawLine = buildStopLine(terminalStop, line, styleTerminal, lineSymbol, lineManager);
+                Component lineComponent = serializer.deserialize(rawLine)
+                        .decoration(TextDecoration.ITALIC, false);
+                componentBuilder.addComponent(SidebarComponent.staticLine(lineComponent));
+            }
         }
 
         Component titleComponent = Component.text(line.getName(), NamedTextColor.GOLD).decorate(TextDecoration.BOLD);
@@ -178,6 +197,22 @@ public class ScoreboardManager {
                 SidebarComponent.staticLine(titleComponent),
                 componentBuilder.build());
         layout.apply(sidebar);
+    }
+
+    private String buildStopLine(Stop stop, Line currentLine, String prefix, String lineSymbol, LineManager lineManager) {
+        String displayName = stop.getName();
+        StringBuilder transferInfo = new StringBuilder();
+        List<String> transferableLines = stop.getTransferableLines();
+        if (transferableLines != null && !transferableLines.isEmpty()) {
+            for (String transferLineId : transferableLines) {
+                if (transferLineId.equals(currentLine.getId())) continue;
+                Line transferLine = lineManager.getLine(transferLineId);
+                if (transferLine != null) {
+                    transferInfo.append(transferLine.getColor()).append(lineSymbol).append(" ");
+                }
+            }
+        }
+        return prefix + displayName + (transferInfo.length() > 0 ? " " + transferInfo : "");
     }
 
     /**

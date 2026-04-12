@@ -17,6 +17,7 @@ public class Line {
     private String color; // 线路颜色
     private String terminusName; // 终点站方向名称
     private Double maxSpeed; // 线路最大速度
+    private double ticketPrice; // 线路乘车价格
     private UUID owner; // 线路所有者 UUID，null 表示服务器所有
     private final Set<UUID> admins; // 线路管理员 UUID 集合
     private String worldName; // 线路所在世界名称，null 表示还未添加任何站点
@@ -34,6 +35,7 @@ public class Line {
         this.color = "&f"; // 默认白色
         this.terminusName = ""; // 默认空
         this.maxSpeed = null; // 默认使用config.yml中的maxspeed
+        this.ticketPrice = 0.0; // 默认免费
         this.admins = new HashSet<>();
     }
     
@@ -118,6 +120,24 @@ public class Line {
      */
     public void setMaxSpeed(Double maxSpeed) {
         this.maxSpeed = maxSpeed;
+    }
+    
+    /**
+     * 获取线路乘车价格
+     * 
+     * @return 乘车价格
+     */
+    public double getTicketPrice() {
+        return ticketPrice;
+    }
+    
+    /**
+     * 设置线路乘车价格
+     * 
+     * @param ticketPrice 新的价格
+     */
+    public void setTicketPrice(double ticketPrice) {
+        this.ticketPrice = Math.max(0.0, ticketPrice);
     }
     
     /**

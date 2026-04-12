@@ -62,14 +62,14 @@ public class GuiManager {
         holder.setInventory(inv);
         
         // 线路管理按钮
-        inv.setItem(11, new ItemBuilder(Material.MINECART)
+        inv.setItem(11, new ItemBuilder(Material.RAIL)
                 .name(msg("gui.main_menu.line_manage"))
                 .lore(msg("gui.main_menu.line_manage_lore1"), 
                       msg("gui.main_menu.line_manage_lore2"))
                 .build());
         
         // 站点管理按钮
-        inv.setItem(15, new ItemBuilder(Material.RAIL)
+        inv.setItem(15, new ItemBuilder(Material.MINECART)
                 .name(msg("gui.main_menu.stop_manage"))
                 .lore(msg("gui.main_menu.stop_manage_lore1"), 
                       msg("gui.main_menu.stop_manage_lore2"))
@@ -165,6 +165,9 @@ public class GuiManager {
                 }
                 lore.add("");
                 lore.add(msg("gui.line_list.click_view"));
+                if (OwnershipUtil.canManageLine(player, representative)) {
+                    lore.add(msg("gui.line_list.click_settings"));
+                }
             }
             
             // 根据线路颜色选择羊毛颜色
@@ -340,6 +343,9 @@ public class GuiManager {
                         lore.add(msg("gui.stop_list.no_stoppoint"));
                     }
                 }
+                if (OwnershipUtil.canManageStop(player, representative)) {
+                    lore.add(msg("gui.line_list.click_settings"));
+                }
             }
             
             inv.setItem(slot, new ItemBuilder(Material.OAK_SIGN)
@@ -419,9 +425,160 @@ public class GuiManager {
                     lore.add(msg("gui.stop_list.no_stoppoint"));
                 }
             }
+            if (OwnershipUtil.canManageStop(player, stop)) {
+                lore.add(msg("gui.line_list.click_settings"));
+            }
             
             inv.setItem(slot, new ItemBuilder(Material.OAK_SIGN)
                     .name("&a" + stop.getId()) // Use ID as name
+                    .lore(lore)
+                    .build());
+        }
+        
+        addVariantNavigationControls(inv, page, totalPages);
+        
+        player.openInventory(inv);
+    }
+    
+    /**
+     * 打开添加站点列表
+     */
+    public void openAddStopList(Player player, String lineId, int page, boolean showOnlyMine) {
+        GuiHolder holder = new GuiHolder(GuiType.ADD_STOP_LIST);
+        holder.setData("lineId", lineId);
+        holder.setData("page", page);
+        holder.setData("showOnlyMine", showOnlyMine);
+        
+        // 获取站点列表
+        List<Stop> allStops = plugin.getStopManager().getAllStopIds().stream()
+                .map(id -> plugin.getStopManager().getStop(id))
+                .filter(stop -> stop != null)
+                .collect(Collectors.toList());
+        
+        // 筛选
+        List<Stop> filteredStops;
+        if (showOnlyMine && !OwnershipUtil.hasAdminBypass(player)) {
+            filteredStops = allStops.stream()
+                    .filter(stop -> OwnershipUtil.canManageStop(player, stop))
+                    .collect(Collectors.toList());
+        } else {
+            filteredStops = allStops;
+        }
+        
+        // 过滤掉已经在该线路中的站点
+        Line line = plugin.getLineManager().getLine(lineId);
+        if (line != null) {
+            filteredStops = filteredStops.stream()
+                    .filter(stop -> !line.containsStop(stop.getId()))
+                    .collect(Collectors.toList());
+        }
+        
+        // 按名称分组
+        Map<String, List<Stop>> groupedStops = filteredStops.stream()
+                .collect(Collectors.groupingBy(Stop::getName));
+        
+        // 排序名称
+        List<String> sortedNames = new ArrayList<>(groupedStops.keySet());
+        sortedNames.sort(String::compareTo);
+        
+        holder.setData("stopNames", sortedNames);
+        holder.setData("groupedStops", groupedStops);
+        
+        // 计算分页
+        int totalPages = Math.max(1, (int) Math.ceil((double) sortedNames.size() / ITEMS_PER_PAGE));
+        page = Math.min(page, totalPages - 1);
+        page = Math.max(0, page);
+        holder.setData("page", page);
+        holder.setData("totalPages", totalPages);
+        
+        String title = ChatColor.translateAlternateColorCodes('&', msg("gui.add_stop_list.title"));
+        Inventory inv = Bukkit.createInventory(holder, 54, title);
+        holder.setInventory(inv);
+        
+        // 填充站点物品
+        int start = page * ITEMS_PER_PAGE;
+        int end = Math.min(start + ITEMS_PER_PAGE, sortedNames.size());
+        
+        for (int i = start; i < end; i++) {
+            String name = sortedNames.get(i);
+            List<Stop> variants = groupedStops.get(name);
+            Stop representative = variants.get(0);
+            int slot = i - start;
+            
+            List<String> lore = new ArrayList<>();
+            
+            if (variants.size() > 1) {
+                lore.add(msg("gui.common.variants", "count", String.valueOf(variants.size())));
+                lore.add("");
+                lore.add(msg("gui.stop_list.click_view_variants"));
+            } else {
+                lore.add(msg("gui.common.id", "id", representative.getId()));
+                lore.add("");
+                lore.add(msg("gui.add_stop_list.click_add"));
+            }
+            
+            inv.setItem(slot, new ItemBuilder(Material.OAK_SIGN)
+                    .name("&a" + name)
+                    .lore(lore)
+                    .build());
+        }
+        
+        // 底部控制栏
+        addControlBar(inv, page, totalPages, showOnlyMine);
+        // 覆盖返回按钮，返回到线路详情
+        inv.setItem(SLOT_BACK, new ItemBuilder(Material.DARK_OAK_DOOR)
+                .name(msg("gui.control.back_line_list"))
+                .build());
+                
+        player.openInventory(inv);
+    }
+    
+    /**
+     * 打开添加站点变体列表
+     */
+    public void openAddStopVariants(Player player, String lineId, String stopName, int page) {
+        GuiHolder holder = new GuiHolder(GuiType.ADD_STOP_VARIANTS);
+        holder.setData("lineId", lineId);
+        holder.setData("page", page);
+        holder.setData("stopName", stopName);
+        
+        Line line = plugin.getLineManager().getLine(lineId);
+        if (line == null) return;
+        
+        // 获取该名称的所有站点，过滤掉已经在该线路中的
+        List<Stop> variants = plugin.getStopManager().getAllStopIds().stream()
+                .map(id -> plugin.getStopManager().getStop(id))
+                .filter(stop -> stop != null && stop.getName().equals(stopName))
+                .filter(stop -> !line.containsStop(stop.getId()))
+                .sorted(Comparator.comparing(Stop::getId))
+                .collect(Collectors.toList());
+                
+        holder.setData("stops", variants);
+        
+        int totalPages = Math.max(1, (int) Math.ceil((double) variants.size() / ITEMS_PER_PAGE));
+        page = Math.min(page, totalPages - 1);
+        page = Math.max(0, page);
+        holder.setData("page", page);
+        holder.setData("totalPages", totalPages);
+        
+        String title = ChatColor.translateAlternateColorCodes('&', stopName + " - " + msg("gui.add_stop_list.title"));
+        Inventory inv = Bukkit.createInventory(holder, 54, title);
+        holder.setInventory(inv);
+        
+        int start = page * ITEMS_PER_PAGE;
+        int end = Math.min(start + ITEMS_PER_PAGE, variants.size());
+        
+        for (int i = start; i < end; i++) {
+            Stop stop = variants.get(i);
+            int slot = i - start;
+            
+            List<String> lore = new ArrayList<>();
+            lore.add(msg("gui.common.id", "id", stop.getId()));
+            lore.add("");
+            lore.add(msg("gui.add_stop_list.click_add"));
+            
+            inv.setItem(slot, new ItemBuilder(Material.OAK_SIGN)
+                    .name("&a" + stop.getId())
                     .lore(lore)
                     .build());
         }
@@ -485,6 +642,7 @@ public class GuiManager {
                     lore.add(msg("gui.line_detail.click_tp"));
                 }
                 if (canManage) {
+                    lore.add(msg("gui.line_detail.click_settings"));
                     lore.add(msg("gui.line_detail.click_remove"));
                 }
                 
@@ -533,6 +691,20 @@ public class GuiManager {
         inv.setItem(SLOT_BACK, new ItemBuilder(Material.DARK_OAK_DOOR)
                 .name(msg("gui.control.back_line_list"))
                 .build());
+                
+        // 添加站点按钮
+        if (canManage) {
+            inv.setItem(SLOT_FILTER, new ItemBuilder(Material.EMERALD_BLOCK)
+                    .name(msg("gui.line_detail.add_stop"))
+                    .lore(msg("gui.line_detail.add_stop_lore"))
+                    .build());
+                    
+            // 线路设置按钮
+            inv.setItem(50, new ItemBuilder(Material.ANVIL)
+                    .name(msg("gui.line_detail.settings"))
+                    .lore(msg("gui.line_detail.settings_lore"))
+                    .build());
+        }
         
         player.openInventory(inv);
     }
@@ -581,6 +753,110 @@ public class GuiManager {
                     .name(msg("gui.control.next_page"))
                     .build());
         }
+    }
+    
+    /**
+     * 打开线路设置
+     */
+    public void openLineSettings(Player player, String lineId) {
+        Line line = plugin.getLineManager().getLine(lineId);
+        if (line == null) return;
+        
+        GuiHolder holder = new GuiHolder(GuiType.LINE_SETTINGS);
+        holder.setData("lineId", lineId);
+        
+        Inventory inv = Bukkit.createInventory(holder, 27, 
+                ChatColor.translateAlternateColorCodes('&', msg("gui.line_settings.title") + line.getName()));
+        holder.setInventory(inv);
+        
+        // 填充背景
+        ItemStack filler = new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE).name(" ").build();
+        for (int i = 0; i < 27; i++) inv.setItem(i, filler);
+        
+        // 重命名按钮
+        inv.setItem(9, new ItemBuilder(Material.NAME_TAG)
+                .name(msg("gui.line_settings.rename"))
+                .lore(msg("gui.line_settings.rename_lore"))
+                .build());
+                
+        // 修改最高速度按钮
+        inv.setItem(11, new ItemBuilder(Material.MINECART)
+                .name(msg("gui.line_settings.set_speed"))
+                .lore(msg("gui.line_settings.set_speed_lore"))
+                .build());
+                
+        // 设置票价按钮
+        inv.setItem(13, new ItemBuilder(Material.EMERALD)
+                .name(msg("gui.line_settings.set_price"))
+                .lore(msg("gui.line_settings.set_price_lore"))
+                .build());
+                
+        // 生成对向线路按钮
+        inv.setItem(15, new ItemBuilder(Material.COMPARATOR)
+                .name(msg("gui.line_settings.clone_reverse"))
+                .lore(msg("gui.line_settings.clone_reverse_lore"))
+                .build());
+                
+        // 删除线路按钮
+        inv.setItem(17, new ItemBuilder(Material.BARRIER)
+                .name(msg("gui.line_settings.delete"))
+                .lore(msg("gui.line_settings.delete_lore"))
+                .build());
+                
+        // 返回按钮
+        inv.setItem(22, new ItemBuilder(Material.DARK_OAK_DOOR)
+                .name(msg("gui.control.back_line_list"))
+                .build());
+                
+        player.openInventory(inv);
+    }
+
+    /**
+     * 打开站点设置
+     */
+    public void openStopSettings(Player player, String stopId) {
+        openStopSettings(player, stopId, null);
+    }
+
+    /**
+     * 打开站点设置
+     */
+    public void openStopSettings(Player player, String stopId, String fromLineId) {
+        Stop stop = plugin.getStopManager().getStop(stopId);
+        if (stop == null) return;
+        
+        GuiHolder holder = new GuiHolder(GuiType.STOP_SETTINGS);
+        holder.setData("stopId", stopId);
+        if (fromLineId != null) {
+            holder.setData("fromLineId", fromLineId);
+        }
+        
+        Inventory inv = Bukkit.createInventory(holder, 27, 
+                ChatColor.translateAlternateColorCodes('&', msg("gui.stop_settings.title") + stop.getName()));
+        holder.setInventory(inv);
+        
+        // 填充背景
+        ItemStack filler = new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE).name(" ").build();
+        for (int i = 0; i < 27; i++) inv.setItem(i, filler);
+        
+        // 重命名按钮
+        inv.setItem(11, new ItemBuilder(Material.NAME_TAG)
+                .name(msg("gui.stop_settings.rename"))
+                .lore(msg("gui.stop_settings.rename_lore"))
+                .build());
+                
+        // 删除站点按钮
+        inv.setItem(15, new ItemBuilder(Material.BARRIER)
+                .name(msg("gui.stop_settings.delete"))
+                .lore(msg("gui.stop_settings.delete_lore"))
+                .build());
+                
+        // 返回按钮
+        inv.setItem(22, new ItemBuilder(Material.DARK_OAK_DOOR)
+                .name(msg("gui.control.back_main"))
+                .build());
+                
+        player.openInventory(inv);
     }
     
     /**

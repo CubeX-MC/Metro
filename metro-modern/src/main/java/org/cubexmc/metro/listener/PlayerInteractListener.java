@@ -212,6 +212,36 @@ public class PlayerInteractListener implements Listener {
             return;
         }
 
+        // --- 经济扣费逻辑 ---
+        if (plugin.getConfig().getBoolean("economy.enabled", true)) {
+            double price = line.getTicketPrice();
+            if (price > 0) {
+                org.cubexmc.metro.integration.VaultIntegration vault = plugin.getVaultIntegration();
+                if (vault != null && vault.isEnabled()) {
+                    if (!vault.has(player, price)) {
+                        String priceFormatted = vault.format(price);
+                        player.sendMessage(plugin.getLanguageManager().getMessage("economy.insufficient_funds",
+                                LanguageManager.put(LanguageManager.args(), "price", priceFormatted)));
+                        return;
+                    }
+                    if (vault.withdraw(player, price)) {
+                        String priceFormatted = vault.format(price);
+                        player.sendMessage(plugin.getLanguageManager().getMessage("economy.paid_boarding",
+                                LanguageManager.put(LanguageManager.args(), "price", priceFormatted)));
+                        // 费用打给线路所有者
+                        if (line.getOwner() != null) {
+                            vault.deposit(line.getOwner(), price);
+                        }
+                    } else {
+                        // 扣费失败
+                        player.sendMessage(org.bukkit.ChatColor.RED + "Transaction failed.");
+                        return;
+                    }
+                }
+            }
+        }
+        // ------------------
+
         // 记录该站点有矿车正在处理中
         pendingMinecarts.put(stop.getId(), System.currentTimeMillis());
         plugin.debug("interaction_flow", "Preparing minecart for player=" + player.getName() + ", line=" + line.getId()

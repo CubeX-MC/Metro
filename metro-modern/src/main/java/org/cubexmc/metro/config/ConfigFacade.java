@@ -2,9 +2,9 @@ package org.cubexmc.metro.config;
 
 import java.util.List;
 
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.cubexmc.metro.Metro;
+import org.cubexmc.metro.util.ColorUtil;
 
 /**
  * Centralized read access and memory cache for plugin configuration values.
@@ -61,7 +61,38 @@ public class ConfigFacade {
     private List<String> arrivalNotes;
     private int arrivalInitialDelay;
     private boolean enableParticles;
+    
+    // Scoreboard
     private boolean isScoreboardEnabled;
+    private String sbStyleCurrent;
+    private String sbStylePassed;
+    private String sbStyleWaitingNext;
+    private String sbStyleMovingNext;
+    private String sbStyleTerminal;
+    private String sbStyleNext;
+    private String sbStyleOther;
+    private String sbStyleFolding;
+    private String lineSymbol;
+
+    // Speed Control
+    private String speedControlMode;
+    private java.util.Map<String, java.util.Map<String, Double>> blockSpeedMap;
+
+    // Map Integration
+    private boolean mapIntegrationEnabled;
+    private String mapProvider;
+    private String mapMarkerSetLabel;
+    private boolean mapDefaultVisible;
+    private int mapLineWidth;
+    private boolean mapShowStopMarkers;
+    private boolean mapShowTransferInfo;
+
+    // Portals
+    private boolean portalsEnabled;
+    private String portalTriggerBlock;
+    private int portalTeleportDelay;
+    private boolean portalEffectParticles;
+    private boolean portalEffectSound;
 
     private boolean stationArrivalSoundEnabled;
     private List<String> stationArrivalNotes;
@@ -138,7 +169,56 @@ public class ConfigFacade {
         arrivalNotes = plugin.getConfig().getStringList("sounds.arrival.notes");
         arrivalInitialDelay = plugin.getConfig().getInt("sounds.arrival.initial_delay", 0);
         enableParticles = plugin.getConfig().getBoolean("particles.enabled", true);
+        
         isScoreboardEnabled = plugin.getConfig().getBoolean("scoreboard.enabled", true);
+        sbStyleCurrent = colorize(plugin.getConfig().getString("scoreboard.styles.current_stop", "&6☛ &l"));
+        sbStylePassed = colorize(plugin.getConfig().getString("scoreboard.styles.passed_stop", "&8▼ &7&o"));
+        sbStyleWaitingNext = colorize(plugin.getConfig().getString("scoreboard.styles.waiting_next_stop", "&f▽ &l"));
+        sbStyleMovingNext = colorize(plugin.getConfig().getString("scoreboard.styles.moving_next_stop", "&6☛ &l"));
+        sbStyleTerminal = colorize(plugin.getConfig().getString("scoreboard.styles.terminal_stop", " ◇ &f&n"));
+        sbStyleNext = colorize(plugin.getConfig().getString("scoreboard.styles.next_stop", "&a○ "));
+        sbStyleOther = colorize(plugin.getConfig().getString("scoreboard.styles.other_stops", "&7· "));
+        sbStyleFolding = colorize(plugin.getConfig().getString("scoreboard.styles.folding_symbol", "     &8...     "));
+        lineSymbol = plugin.getConfig().getString("scoreboard.line_symbol", "❙");
+
+        speedControlMode = plugin.getConfig().getString("speed_control.mode", "VANILLA_MOMENTUM");
+        blockSpeedMap = new java.util.HashMap<>();
+        if (plugin.getConfig().isConfigurationSection("speed_control.worlds")) {
+            org.bukkit.configuration.ConfigurationSection worldsSection = plugin.getConfig().getConfigurationSection("speed_control.worlds");
+            for (String worldName : worldsSection.getKeys(false)) {
+                java.util.Map<String, Double> worldMap = new java.util.HashMap<>();
+                org.bukkit.configuration.ConfigurationSection blockSection = worldsSection.getConfigurationSection(worldName);
+                if (blockSection != null) {
+                    for (String blockName : blockSection.getKeys(false)) {
+                        worldMap.put(blockName.toUpperCase(), blockSection.getDouble(blockName));
+                    }
+                }
+                blockSpeedMap.put(worldName, worldMap);
+            }
+        } else if (plugin.getConfig().isConfigurationSection("speed_control.block_speed_map")) {
+             // 兼容老版本配置
+             java.util.Map<String, Double> defaultMap = new java.util.HashMap<>();
+             for (String key : plugin.getConfig().getConfigurationSection("speed_control.block_speed_map").getKeys(false)) {
+                 defaultMap.put(key.toUpperCase(), plugin.getConfig().getDouble("speed_control.block_speed_map." + key));
+             }
+             blockSpeedMap.put("default", defaultMap);
+        }
+
+        // Map Integration
+        mapIntegrationEnabled = plugin.getConfig().getBoolean("map_integration.enabled", false);
+        mapProvider = plugin.getConfig().getString("map_integration.provider", "BLUEMAP").toUpperCase();
+        mapMarkerSetLabel = plugin.getConfig().getString("map_integration.marker_set_label", "Metro Network");
+        mapDefaultVisible = plugin.getConfig().getBoolean("map_integration.default_visible", true);
+        mapLineWidth = plugin.getConfig().getInt("map_integration.line_width", 3);
+        mapShowStopMarkers = plugin.getConfig().getBoolean("map_integration.show_stop_markers", true);
+        mapShowTransferInfo = plugin.getConfig().getBoolean("map_integration.show_transfer_info", true);
+
+        // Portals
+        portalsEnabled = plugin.getConfig().getBoolean("portals.enabled", true);
+        portalTriggerBlock = plugin.getConfig().getString("portals.trigger_block", "END_PORTAL_FRAME").toUpperCase();
+        portalTeleportDelay = plugin.getConfig().getInt("portals.teleport_delay", 5);
+        portalEffectParticles = plugin.getConfig().getBoolean("portals.effects.particles", true);
+        portalEffectSound = plugin.getConfig().getBoolean("portals.effects.sound", true);
 
         stationArrivalSoundEnabled = plugin.getConfig().getBoolean("sounds.station_arrival.enabled", true);
         stationArrivalNotes = plugin.getConfig().getStringList("sounds.station_arrival.notes");
@@ -327,6 +407,24 @@ public class ConfigFacade {
         return isScoreboardEnabled;
     }
 
+    public String getSbStyleCurrent() { return sbStyleCurrent; }
+    public String getSbStylePassed() { return sbStylePassed; }
+    public String getSbStyleWaitingNext() { return sbStyleWaitingNext; }
+    public String getSbStyleMovingNext() { return sbStyleMovingNext; }
+    public String getSbStyleTerminal() { return sbStyleTerminal; }
+    public String getSbStyleNext() { return sbStyleNext; }
+    public String getSbStyleOther() { return sbStyleOther; }
+    public String getSbStyleFolding() { return sbStyleFolding; }
+    public String getLineSymbol() { return lineSymbol; }
+
+    public String getSpeedControlMode() {
+        return speedControlMode;
+    }
+
+    public java.util.Map<String, java.util.Map<String, Double>> getBlockSpeedMap() {
+        return blockSpeedMap;
+    }
+
     public boolean isStationArrivalSoundEnabled() {
         return stationArrivalSoundEnabled;
     }
@@ -399,6 +497,22 @@ public class ConfigFacade {
     }
 
     private String colorize(String text) {
-        return ChatColor.translateAlternateColorCodes('&', text);
+        return ColorUtil.colorize(text);
     }
+
+    // Map Integration Getters
+    public boolean isMapIntegrationEnabled() { return mapIntegrationEnabled; }
+    public String getMapProvider() { return mapProvider; }
+    public String getMapMarkerSetLabel() { return mapMarkerSetLabel; }
+    public boolean isMapDefaultVisible() { return mapDefaultVisible; }
+    public int getMapLineWidth() { return mapLineWidth; }
+    public boolean isMapShowStopMarkers() { return mapShowStopMarkers; }
+    public boolean isMapShowTransferInfo() { return mapShowTransferInfo; }
+
+    // Portal Getters
+    public boolean isPortalsEnabled() { return portalsEnabled; }
+    public String getPortalTriggerBlock() { return portalTriggerBlock; }
+    public int getPortalTeleportDelay() { return portalTeleportDelay; }
+    public boolean isPortalEffectParticles() { return portalEffectParticles; }
+    public boolean isPortalEffectSound() { return portalEffectSound; }
 }

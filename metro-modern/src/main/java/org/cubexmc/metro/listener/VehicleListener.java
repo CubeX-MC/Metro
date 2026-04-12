@@ -12,9 +12,12 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.vehicle.VehicleDamageEvent;
 import org.bukkit.event.vehicle.VehicleExitEvent;
 import org.bukkit.event.vehicle.VehicleMoveEvent;
+import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.Vector;
 import org.cubexmc.metro.Metro;
+import org.cubexmc.metro.event.TrainEnterStopEvent;
+import org.cubexmc.metro.event.TrainExitStopEvent;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.util.LocationUtil;
 import org.cubexmc.metro.util.MetroConstants;
@@ -26,9 +29,11 @@ import org.cubexmc.metro.util.SchedulerUtil;
 public class VehicleListener implements Listener {
 
     private final Metro plugin;
+    private final org.bukkit.NamespacedKey CURRENT_STOP_KEY;
 
     public VehicleListener(Metro plugin) {
         this.plugin = plugin;
+        this.CURRENT_STOP_KEY = new org.bukkit.NamespacedKey(plugin, "current_stop_id");
     }
 
     /**
@@ -95,17 +100,76 @@ public class VehicleListener implements Listener {
         }
 
         Minecart minecart = (Minecart) vehicle;
+        PersistentDataContainer pdc = minecart.getPersistentDataContainer();
 
         // 检查是否是Metro的矿车
-        if (!minecart.getPersistentDataContainer().has(MetroConstants.getMinecartKey(),
-                org.bukkit.persistence.PersistentDataType.BYTE)) {
+        if (!pdc.has(MetroConstants.getMinecartKey(), PersistentDataType.BYTE)) {
             return;
         }
 
         Location from = event.getFrom();
         Location to = event.getTo();
+        
+        // --- 区域事件 (Event-Driven Architecture) 火力侦测 ---
+        StopManager stopManager = plugin.getStopManager();
+        org.cubexmc.metro.model.Stop currentStop = stopManager.getStopContainingLocation(to);
+        String currentStopId = currentStop != null ? currentStop.getId() : null;
+        String previousStopId = pdc.get(CURRENT_STOP_KEY, PersistentDataType.STRING);
+        
+        if (currentStopId != null && !currentStopId.equals(previousStopId)) {
+            // 进入了新站
+            pdc.set(CURRENT_STOP_KEY, PersistentDataType.STRING, currentStopId);
+            TrainEnterStopEvent enterEvent = new TrainEnterStopEvent(minecart, currentStop);
+            org.bukkit.Bukkit.getPluginManager().callEvent(enterEvent);
+        } else if (currentStopId == null && previousStopId != null) {
+            // 离开了老站
+            org.cubexmc.metro.model.Stop previousStop = stopManager.getStop(previousStopId);
+            pdc.remove(CURRENT_STOP_KEY);
+            if (previousStop != null) {
+                TrainExitStopEvent exitEvent = new TrainExitStopEvent(minecart, previousStop);
+                org.bukkit.Bukkit.getPluginManager().callEvent(exitEvent);
+            }
+        }
 
         if (LocationUtil.isOnRail(to)) {
+            // BLOCK_BASED 控制逻辑
+            if ("BLOCK_BASED".equalsIgnoreCase(plugin.getConfigFacade().getSpeedControlMode())) {
+                org.bukkit.block.Block blockBelow = to.getBlock().getRelative(org.bukkit.block.BlockFace.DOWN);
+                String blockTypeName = blockBelow.getType().name();
+                java.util.Map<String, java.util.Map<String, Double>> allWorldsMap = plugin.getConfigFacade().getBlockSpeedMap();
+                
+                String worldName = to.getWorld().getName();
+                java.util.Map<String, Double> speedMap = allWorldsMap.get(worldName);
+                if (speedMap == null || speedMap.isEmpty()) {
+                    speedMap = allWorldsMap.get("default");
+                }
+                
+                if (speedMap != null) {
+                    if (speedMap.containsKey(blockTypeName)) {
+                        minecart.setMaxSpeed(0.4 * speedMap.get(blockTypeName));
+                    } else if (speedMap.containsKey("DEFAULT")) {
+                        minecart.setMaxSpeed(0.4 * speedMap.get("DEFAULT"));
+                    } else {
+                        minecart.setMaxSpeed(0.4);
+                    }
+                } else {
+                    minecart.setMaxSpeed(0.4);
+                }
+            }
+
+            // ---- 传送门检测 ----
+            if (plugin.getConfigFacade().isPortalsEnabled() && plugin.getPortalManager() != null) {
+                org.bukkit.block.Block blockBelow = to.getBlock().getRelative(org.bukkit.block.BlockFace.DOWN);
+                String triggerBlockType = plugin.getConfigFacade().getPortalTriggerBlock();
+                if (blockBelow.getType().name().equals(triggerBlockType)) {
+                    org.cubexmc.metro.model.Portal portal = plugin.getPortalManager().getPortalAt(to);
+                    if (portal != null) {
+                        plugin.getPortalManager().teleportMinecart(minecart, portal);
+                        return; // 传送后不再处理后续逻辑
+                    }
+                }
+            }
+
             // 限制上坡速度为0.4，防止到达坡顶后倒退
             if (to.getY() > from.getY()) {
                 Vector direction = LocationUtil.getDirectionVector(from, to);

@@ -17,6 +17,9 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.model.Stop;
+import org.cubexmc.metro.spatial.Octree;
+import org.cubexmc.metro.spatial.Point3D;
+import org.cubexmc.metro.spatial.Range3D;
 
 /**
  * 管理停靠区数据的加载、保存和访问
@@ -29,8 +32,8 @@ public class StopManager {
 
     // 缓存数据
     private final Map<String, Stop> stops = new HashMap<>();
-    // 轻量级按世界索引，减少高频位置查询遍历范围
-    private final Map<String, List<Stop>> worldStopIndex = new HashMap<>();
+    // 将原先的按世界存放的List轻量级索引升级为八叉树空间索引 (Octree)，降低查询复杂度至 O(log N)
+    private final Map<String, Octree<Stop>> worldStopIndex = new HashMap<>();
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     private volatile boolean isDirty = false;
@@ -406,16 +409,11 @@ public class StopManager {
         }
         lock.readLock().lock();
         try {
-            List<Stop> candidateStops = worldStopIndex.get(location.getWorld().getName());
-            if (candidateStops == null || candidateStops.isEmpty()) {
+            Octree<Stop> octree = worldStopIndex.get(location.getWorld().getName());
+            if (octree == null) {
                 return null;
             }
-            for (Stop stop : candidateStops) {
-                if (stop.isInStop(location)) {
-                    return stop;
-                }
-            }
-            return null;
+            return octree.firstRange(new Point3D(location));
         } finally {
             lock.readLock().unlock();
         }
@@ -522,7 +520,12 @@ public class StopManager {
         if (worldName == null || worldName.isEmpty()) {
             return;
         }
-        worldStopIndex.computeIfAbsent(worldName, key -> new ArrayList<>()).add(stop);
+        Range3D range = stop.getRange3D();
+        if (range == null) return;
+        
+        Octree<Stop> octree = worldStopIndex.computeIfAbsent(worldName, key -> 
+            new Octree<>(new Range3D(-30000000, -64, -30000000, 30000000, 320, 30000000), 12, 8));
+        octree.insert(range, stop);
     }
 
     private void deindexStop(Stop stop) {
@@ -533,13 +536,12 @@ public class StopManager {
         if (worldName == null || worldName.isEmpty()) {
             return;
         }
-        List<Stop> indexedStops = worldStopIndex.get(worldName);
-        if (indexedStops == null) {
-            return;
-        }
-        indexedStops.remove(stop);
-        if (indexedStops.isEmpty()) {
-            worldStopIndex.remove(worldName);
+        Range3D range = stop.getRange3D();
+        if (range == null) return;
+        
+        Octree<Stop> octree = worldStopIndex.get(worldName);
+        if (octree != null) {
+            octree.remove(range);
         }
     }
 }

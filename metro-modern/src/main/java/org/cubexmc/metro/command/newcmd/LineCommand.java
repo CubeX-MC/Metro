@@ -38,22 +38,47 @@ public class LineCommand {
     @CommandMethod("m|metro line|l")
     @CommandDescription("Show Line Help Menu")
     public void help(CommandSender sender) {
+        showHelp(sender, 1);
+    }
+
+    @CommandMethod("m|metro line|l help [page]")
+    @CommandDescription("Show Line Help Menu Page")
+    public void helpPage(CommandSender sender, @Argument("page") Integer page) {
+        showHelp(sender, page == null ? 1 : page);
+    }
+
+    private void showHelp(CommandSender sender, int page) {
         org.cubexmc.metro.manager.LanguageManager lang = plugin.getLanguageManager();
-        sender.sendMessage(lang.getMessage("line.help_header"));
-        sender.sendMessage(lang.getMessage("line.help_create"));
-        sender.sendMessage(lang.getMessage("line.help_delete"));
-        sender.sendMessage(lang.getMessage("line.help_list"));
-        sender.sendMessage(lang.getMessage("line.help_setcolor"));
-        sender.sendMessage(lang.getMessage("line.help_setterminus"));
-        sender.sendMessage(lang.getMessage("line.help_setmaxspeed"));
-        sender.sendMessage(lang.getMessage("line.help_addstop"));
-        sender.sendMessage(lang.getMessage("line.help_delstop"));
-        sender.sendMessage(lang.getMessage("line.help_stops"));
-        sender.sendMessage(lang.getMessage("line.help_rename"));
-        sender.sendMessage(lang.getMessage("line.help_info"));
-        sender.sendMessage(lang.getMessage("line.help_trust"));
-        sender.sendMessage(lang.getMessage("line.help_untrust"));
-        sender.sendMessage(lang.getMessage("line.help_owner"));
+        java.util.List<String> helpList = java.util.Arrays.asList(
+                lang.getMessage("line.help_create"),
+                lang.getMessage("line.help_delete"),
+                lang.getMessage("line.help_list"),
+                lang.getMessage("line.help_setcolor"),
+                lang.getMessage("line.help_setterminus"),
+                lang.getMessage("line.help_setmaxspeed"),
+                lang.getMessage("line.help_addstop"),
+                lang.getMessage("line.help_delstop"),
+                lang.getMessage("line.help_stops"),
+                lang.getMessage("line.help_rename"),
+                lang.getMessage("line.help_info"),
+                lang.getMessage("line.help_trust"),
+                lang.getMessage("line.help_untrust"),
+                lang.getMessage("line.help_owner"),
+                lang.getMessage("line.help_clonereverse"),
+                lang.getMessage("line.help_setprice")
+        );
+
+        int pageSize = 8;
+        int totalPages = (int) Math.ceil((double) helpList.size() / pageSize);
+        if (page < 1) page = 1;
+        if (page > totalPages) page = totalPages;
+
+        sender.sendMessage(lang.getMessage("line.help_header") + " §e(" + page + "/" + totalPages + ")");
+        int start = (page - 1) * pageSize;
+        int end = Math.min(start + pageSize, helpList.size());
+        for (int i = start; i < end; i++) {
+            sender.sendMessage(helpList.get(i));
+        }
     }
 
     @CommandMethod("m|metro line|l list")
@@ -211,6 +236,69 @@ public class LineCommand {
                             "stop_id", stopId), "line_name", line.getName())));
         } else {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.delstop_fail"));
+        }
+    }
+
+    @CommandMethod("m|metro line|l clonereverse <sourceId> <newId>")
+    @CommandDescription("Clone a line and its stops in reverse order")
+    public void cloneReverse(Player player, @Argument("sourceId") String sourceId, @Argument("newId") String newId) {
+        cloneReverseWithSuffix(player, sourceId, newId, "_rev");
+    }
+
+    @CommandMethod("m|metro line|l clonereverse <sourceId> <newId> <stopIdSuffix>")
+    @CommandDescription("Clone a line and its stops in reverse order with custom suffix")
+    public void cloneReverseWithSuffix(Player player, @Argument("sourceId") String sourceId, @Argument("newId") String newId, @Argument("stopIdSuffix") String stopIdSuffix) {
+        Line sourceLine = lineManager.getLine(sourceId);
+        if (sourceLine == null) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
+                    LanguageManager.put(LanguageManager.args(), "line_id", sourceId)));
+            return;
+        }
+        if (!OwnershipUtil.canManageLine(player, sourceLine)) {
+            String ownerName = sourceLine.getOwner() == null ? "Server" : sourceLine.getOwner().toString();
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_manage",
+                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
+                            "line_id", sourceLine.getId()), "owner", ownerName), "admins", "none")));
+            return;
+        }
+        if (!OwnershipUtil.canCreateLine(player)) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_create"));
+            return;
+        }
+
+        if (lineManager.cloneReverseLine(sourceId, newId, stopIdSuffix, player.getUniqueId())) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.clone_success",
+                    LanguageManager.put(LanguageManager.args(), "new_line_id", newId)));
+        } else {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.clone_fail"));
+        }
+    }
+
+    @CommandMethod("m|metro line|l setprice <id> <price>")
+    @CommandDescription("Set the ticket price for a metro line")
+    public void setPrice(Player player, @Argument("id") String id, @Argument("price") double price) {
+        Line line = lineManager.getLine(id);
+        if (line == null) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
+                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
+            return;
+        }
+        if (!OwnershipUtil.canManageLine(player, line)) {
+            player.sendMessage("No permission.");
+            return;
+        }
+
+        if (price < 0) {
+            player.sendMessage(ChatColor.RED + "Price cannot be negative.");
+            return;
+        }
+
+        if (lineManager.setLineTicketPrice(id, price)) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.setprice_success",
+                    LanguageManager.put(LanguageManager.put(LanguageManager.args(),
+                            "line_name", line.getName()), "price", String.valueOf(price))));
+        } else {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.setprice_fail"));
         }
     }
 }

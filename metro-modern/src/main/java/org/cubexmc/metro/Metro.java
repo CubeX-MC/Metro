@@ -17,6 +17,7 @@ import org.cubexmc.metro.command.newcmd.LineCommand;
 import org.cubexmc.metro.command.newcmd.MetroMainCommand;
 import org.cubexmc.metro.command.newcmd.StopCommand;
 import org.cubexmc.metro.config.ConfigFacade;
+import org.cubexmc.metro.gui.ChatInputManager;
 import org.cubexmc.metro.gui.GuiListener;
 import org.cubexmc.metro.gui.GuiManager;
 import net.megavex.scoreboardlibrary.api.ScoreboardLibrary;
@@ -42,6 +43,7 @@ public final class Metro extends JavaPlugin {
     private org.cubexmc.metro.train.ScoreboardManager scoreboardManager;
     private SelectionManager selectionManager;
     private GuiManager guiManager;
+    private ChatInputManager chatInputManager;
     private ConfigFacade configFacade;
     private PlayerInteractListener playerInteractListener;
     private VehicleListener vehicleListener;
@@ -50,6 +52,8 @@ public final class Metro extends JavaPlugin {
     private TrainDisplayController trainDisplayController;
     private PaperCommandManager<CommandSender> commandManager;
     private AnnotationParser<CommandSender> annotationParser;
+    private org.cubexmc.metro.manager.PortalManager portalManager;
+    private org.cubexmc.metro.integration.VaultIntegration vaultIntegration;
     private Object autoSaveTaskId;
 
     @Override
@@ -78,6 +82,19 @@ public final class Metro extends JavaPlugin {
         this.stopManager = new StopManager(this);
         this.selectionManager = new SelectionManager();
         this.guiManager = new GuiManager(this);
+        this.chatInputManager = new ChatInputManager(this);
+        Bukkit.getPluginManager().registerEvents(this.chatInputManager, this);
+
+        // 初始化传送门管理器
+        this.portalManager = new org.cubexmc.metro.manager.PortalManager(this);
+
+        // 初始化经济集成
+        this.vaultIntegration = new org.cubexmc.metro.integration.VaultIntegration(this);
+        if (this.vaultIntegration.isEnabled()) {
+            getLogger().info("Vault economy integration enabled.");
+        } else {
+            getLogger().info("Vault economy not found or disabled.");
+        }
 
         // 初始化计分板库
         try {
@@ -116,6 +133,7 @@ public final class Metro extends JavaPlugin {
             annotationParser.parse(new MetroMainCommand(this, lineManager, stopManager));
             annotationParser.parse(new LineCommand(this, lineManager, stopManager));
             annotationParser.parse(new StopCommand(this, stopManager));
+            annotationParser.parse(new org.cubexmc.metro.command.newcmd.PortalCommand(this));
 
             getLogger().info("Cloud Command Framework initialized successfully.");
 
@@ -169,6 +187,20 @@ public final class Metro extends JavaPlugin {
                 }
             }
         }, 100L); // 5 seconds after startup
+
+        // 网页地图集成（BlueMap / Dynmap）
+        // 两个集成类内部会自动检查 config 和 classpath，只有满足条件时才加载
+        try {
+            new org.cubexmc.metro.integration.BlueMapIntegration(this).enable();
+        } catch (Throwable e) {
+            getLogger().info("BlueMap API not found, skipping BlueMap integration.");
+        }
+
+        try {
+            new org.cubexmc.metro.integration.DynmapIntegration(this).enable();
+        } catch (Throwable e) {
+            getLogger().info("Dynmap API not found, skipping Dynmap integration.");
+        }
 
         getLogger().info("Metro(Modern) has been enabled!");
     }
@@ -314,6 +346,10 @@ public final class Metro extends JavaPlugin {
         return guiManager;
     }
 
+    public ChatInputManager getChatInputManager() {
+        return chatInputManager;
+    }
+
     public ConfigFacade getConfigFacade() {
         return configFacade;
     }
@@ -342,5 +378,13 @@ public final class Metro extends JavaPlugin {
             return;
         }
         getLogger().info("[DEBUG][" + category + "] " + message);
+    }
+
+    public org.cubexmc.metro.manager.PortalManager getPortalManager() {
+        return portalManager;
+    }
+
+    public org.cubexmc.metro.integration.VaultIntegration getVaultIntegration() {
+        return vaultIntegration;
     }
 }

@@ -142,6 +142,13 @@ sounds:
     notes:
     - NOTE,18,0.3,CLICKS,0
 
+# 经济系统配置
+# Economy Settings
+economy:
+  # 是否启用经济系统收费功能
+  # Enable economy system billing features
+  enabled: true
+
 # 计分板配置
 # Scoreboard Configuration
 scoreboard:
@@ -153,23 +160,101 @@ scoreboard:
   styles:
     # 当前站点样式
     # Current stop style
-    current_stop: '&f● '
-    # 下一站样式
-    # Next stop style
+    current_stop: '&6☛ &l'
+    # 经过站点样式
+    # Passed stop style
+    passed_stop: '&8▼ &7&o'
+    # 等待发车时的途径站点样式
+    # Waiting next stop style
+    waiting_next_stop: '&f▽ &l'
+    # 行驶中的途径站点样式
+    # Moving next stop style
+    moving_next_stop: '&6☛ &l'
+    # 终点站样式
+    # Terminal stop style
+    terminal_stop: ' ◇ &f&n'
+    # 普通下站样式 (兼容用途)
+    # Next stop style (fallback)
     next_stop: '&a○ '
-    # 其他站点样式
-    # Other stops style
+    # 其他站点样式 (兼容用途)
+    # Other stops style (fallback)
     other_stops: '&7· '
+    # 折叠省略符
+    # Folding symbol
+    folding_symbol: '     &8...     '
   # 线路标识符配置
   # Line identifier configuration
   line_symbol: ❙ # 所有线路统一使用的标识符，将根据线路颜色自动着色
 # Identifier used for all lines, will be colored automatically based on line color
 
+# 速度控制相关设置
+# Speed Control Settings
+speed_control:
+  # 控速模式: VANILLA_MOMENTUM (原版推力惯性) 或 BLOCK_BASED (根据铁轨下方方块实时控速)
+  # Speed control mode: VANILLA_MOMENTUM (Vanilla momentum) or BLOCK_BASED (Real-time speed control based on blocks below rails)
+  mode: VANILLA_MOMENTUM
+  # 铁轨下方方块速度映射表 (仅在 BLOCK_BASED 开启时有效) 可以按世界分组配置
+  # Block speed mapping table (only effective when BLOCK_BASED is enabled). Can be configured per world
+  worlds:
+    default:
+      SOUL_SAND: 0.2
+      STONE_BRICKS: 0.6
+      EMERALD_BLOCK: 1.2
+      AIR: 0.4
+    world_nether:
+      EMERALD_BLOCK: 0.8
+
+# 网页地图集成配置
+# Web Map Integration Settings
+map_integration:
+  # 是否启用网页地图集成（在BlueMap/Dynmap/Squaremap上显示地铁线路）
+  # Enable web map integration (display metro lines on BlueMap/Dynmap/Squaremap)
+  enabled: false
+  # 地图插件提供者: BLUEMAP, DYNMAP, SQUAREMAP
+  # Map plugin provider: BLUEMAP, DYNMAP, SQUAREMAP
+  provider: BLUEMAP
+  # MarkerSet 标签（在地图图层面板中显示的名称）
+  # MarkerSet label (displayed in the map layer panel)
+  marker_set_label: 'Metro Network'
+  # 是否默认在地图上显示（用户可以在网页地图上手动开关此图层）
+  # Whether to show on map by default (users can toggle this layer on the web map)
+  default_visible: true
+  # 线路默认宽度（像素）
+  # Default line width (in pixels)
+  line_width: 3
+  # 是否为每个站点显示 POI 标记
+  # Whether to show POI markers for each stop
+  show_stop_markers: true
+  # 是否在站点 POI 标记上显示换乘信息
+  # Whether to show transfer information on stop POI markers
+  show_transfer_info: true
+
+# 矿车传送门设置
+# Minecart Portal Settings
+portals:
+  # 是否启用矿车传送门功能
+  # Enable minecart portal feature
+  enabled: true
+  # 传送门触发方块（铁轨下方的方块类型）
+  # Portal trigger block (block type below the rail)
+  trigger_block: END_PORTAL_FRAME
+  # 传送前延迟（单位tick，20tick=1秒）
+  # Teleport delay (in ticks, 20 ticks = 1 second)
+  teleport_delay: 5
+  # 传送特效
+  # Teleport effects
+  effects:
+    # 是否显示粒子效果
+    # Whether to show particle effects
+    particles: true
+    # 是否播放传送音效
+    # Whether to play teleport sound
+    sound: true
+
 # 一般设置
 # General Settings
 settings:
   selection_tool: GOLDEN_SHOVEL
-  # 默认语言设置 (支持: zh_CN, zh_TW, en_US, de_DE, es_ES, nl_NL)
   # Default language setting (Supported: zh_CN, zh_TW, en_US, de_DE, es_ES, nl_NL)
   default_language: en_US
   # 安全模式：开启后保护乘客免受三类干扰

@@ -10,20 +10,25 @@ import org.bukkit.entity.Minecart;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 import org.bukkit.Bukkit;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.HandlerList;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.event.MetroTrainArrivalEvent;
 import org.cubexmc.metro.event.MetroTrainDepartureEvent;
-import org.cubexmc.metro.manager.LineManager;
-import org.cubexmc.metro.manager.StopManager;
+import org.cubexmc.metro.event.TrainEnterStopEvent;
+import org.cubexmc.metro. manager.LineManager;
+import org.cubexmc.metro. manager.StopManager;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Stop;
 import org.cubexmc.metro.util.SchedulerUtil;
 
 /**
  * 负责控制单个矿车从一个停靠区直接移动到下一个停靠区
- * 同时负责所有与乘客显示相关的逻辑
+ * (Phase 2 重构：从 Runnable 轮询改为基于 Listener 事件驱动)
  */
-public class TrainMovementTask implements Runnable {
+public class TrainMovementTask implements Listener {
 
     // 列车状态枚举
     public enum TrainState {
@@ -39,7 +44,6 @@ public class TrainMovementTask implements Runnable {
     private String currentStopId;
     private String targetStopId;
     private TrainState currentState;
-    private Object taskId; // 保存任务ID，可以是BukkitTask或Folia的ScheduledTask
 
     /**
      * 创建一个新的列车移动任务
@@ -92,19 +96,10 @@ public class TrainMovementTask implements Runnable {
     }
 
     /**
-     * 设置任务ID
-     * 
-     * @param taskId 任务ID对象
-     */
-    public void setTaskId(Object taskId) {
-        this.taskId = taskId;
-    }
-
-    /**
-     * 取消任务
+     * 取消任务及注销监听器
      */
     public void cancel() {
-        SchedulerUtil.cancelTask(taskId);
+        HandlerList.unregisterAll(this);
         debugTrain("Task cancelled for passenger=" + safePassengerName() + ", currentStop=" + currentStopId
                 + ", targetStop=" + targetStopId);
     }
@@ -146,12 +141,10 @@ public class TrainMovementTask implements Runnable {
         }
     }
 
-    @Override
-    public void run() {
-        // 如果矿车不存在或没有目标，取消任务
-        if (minecart == null || minecart.isDead()
-                || targetStopId == null && currentState != TrainState.STOPPED_AT_STATION) {
-            cancel();
+    @EventHandler(priority = EventPriority.NORMAL)
+    public void onTrainEnterStop(TrainEnterStopEvent event) {
+        // 确保是我们在控制的矿车
+        if (!event.getMinecart().equals(this.minecart)) {
             return;
         }
 
@@ -161,86 +154,27 @@ public class TrainMovementTask implements Runnable {
             return;
         }
 
-        // 维护矿车基本属性
-        maintainMinecartProperties();
-
-        // 获取目标停靠区
-        Stop targetStop = plugin.getStopManager().getStop(targetStopId);
-        if (targetStopId != null && (targetStop == null || targetStop.getStopPointLocation() == null)) {
-            // 目标停靠区无效或没有停靠点，取消任务
-            cancel();
-            return;
-        }
-
-        // 根据当前状态执行不同的逻辑
-        switch (currentState) {
-            case STOPPED_AT_STATION:
-                minecart.setVelocity(new Vector(0, 0, 0));
-                break;
-            case MOVING_IN_STATION:
-                handleMovingInStation(targetStop);
-                break;
-            case MOVING_BETWEEN_STATIONS:
-                handleMovingBetweenStations(targetStop);
-                break;
-        }
-    }
-
-    /**
-     * 维护矿车基本属性（扩展点保留，当前不执行任何操作）
-     */
-    private void maintainMinecartProperties() {
-        // 速度补偿已移除：弯道减速由玩家自行控制，无法统一处理
-    }
-
-    /**
-     * 处理在站内移动状态
-     */
-    private void handleMovingInStation(Stop targetStop) {
-        Location currentLocation = minecart.getLocation();
-        Location targetLocation = targetStop.getStopPointLocation();
-
-        // 计算当前位置到目标点的距离
-        double distance = currentLocation.distance(targetLocation);
-
-        // 判断是否非常接近停车点
-        if (distance < 0.8) {
-            // 到达停车点，变更状态为停站状态
-            transitionToStoppedAtStation();
-            return;
-        }
-
-        // 检查是否仍在站台区域内
-        boolean isInStopArea = targetStop.isInStop(currentLocation);
-        if (!isInStopArea) {
-            // 离开站台区域，变更状态为站间行驶
-            transitionToMovingBetweenStations();
-            return;
-        }
-    }
-
-    /**
-     * 处理站间行驶状态
-     */
-    private void handleMovingBetweenStations(Stop targetStop) {
-        Location currentLocation = minecart.getLocation();
-        // Location targetLocation = targetStop.getStopPointLocation();
-
-        // 检查是否进入站台区域
-        boolean isInStopArea = targetStop.isInStop(currentLocation);
-        if (isInStopArea) {
-            // 进入站台区域，变更状态为站内移动
-            transitionToMovingInStation(targetStop);
-            // return;
+        Stop enteredStop = event.getStop();
+        
+        // 只有当进入的站点是我们的目标站点时，才处理进站和停车逻辑
+        if (targetStopId != null && targetStopId.equals(enteredStop.getId())) {
+             // 进站触发事件
+             transitionToMovingInStation(enteredStop);
+             // 立刻停稳并发车 (消除距离判断)
+             transitionToStoppedAtStation(enteredStop);
         }
     }
 
     /**
      * 转换到停站状态
      */
-    private void transitionToStoppedAtStation() {
-        // 停止矿车
+    private void transitionToStoppedAtStation(Stop stop) {
+        // Vector Snapping: 强制绝对居中并完全停止动能
         minecart.setVelocity(new Vector(0, 0, 0));
+        Location snapLocation = stop.getStopPointLocation().clone();
+        snapLocation.setX(snapLocation.getBlockX() + 0.5);
+        snapLocation.setZ(snapLocation.getBlockZ() + 0.5);
+        minecart.teleport(snapLocation);
 
         // 更新状态
         TrainState previousState = currentState;
@@ -280,17 +214,11 @@ public class TrainMovementTask implements Runnable {
      * 转换到站间行驶状态
      */
     private void transitionToMovingBetweenStations() {
-        // 更新状态
-        // TrainState previousState = currentState;
         TrainState previousState = currentState;
         currentState = TrainState.MOVING_BETWEEN_STATIONS;
         debugTrain("State transition " + previousState + " -> " + currentState + " for passenger=" + safePassengerName()
                 + ", currentStop=" + currentStopId + ", targetStop=" + targetStopId);
 
-        // 离开站台区域后提速到全速
-        // updateMinecartVelocity(plugin.getConfigFacade().getCartSpeed());
-
-        // 更新计分板
         updateScoreboardBasedOnState();
     }
 
@@ -333,11 +261,11 @@ public class TrainMovementTask implements Runnable {
             targetStopId = null;
 
             Stop currentStop = plugin.getStopManager().getStop(currentStopId);
-            Bukkit.getPluginManager().callEvent(new MetroTrainArrivalEvent(minecart, passenger, line, currentStop, true,
+            org.bukkit.Bukkit.getPluginManager().callEvent(new MetroTrainArrivalEvent(minecart, passenger, line, currentStop, true,
                     MetroTrainArrivalEvent.ArrivalType.DOCKED));
         } else {
             Stop currentStop = plugin.getStopManager().getStop(currentStopId);
-            Bukkit.getPluginManager().callEvent(new MetroTrainArrivalEvent(minecart, passenger, line, currentStop,
+            org.bukkit.Bukkit.getPluginManager().callEvent(new MetroTrainArrivalEvent(minecart, passenger, line, currentStop,
                     false, MetroTrainArrivalEvent.ArrivalType.DOCKED));
 
             // 更新计分板（上车后首次显示 / 到站后刷新）
@@ -370,15 +298,14 @@ public class TrainMovementTask implements Runnable {
         }
 
         // 触发发车事件
-        Bukkit.getPluginManager()
+        org.bukkit.Bukkit.getPluginManager()
                 .callEvent(new MetroTrainDepartureEvent(minecart, passenger, line, currentStop, nextStop));
 
         // 设置矿车初始速度
         initMinecartVelocity(currentStop.getLaunchYaw(), plugin.getConfigFacade().getCartSpeed() * 0.5);
 
-        // 更新状态为站内移动
-        currentState = TrainState.MOVING_IN_STATION;
-        updateScoreboardBasedOnState();
+        // 更新状态为站间行驶 (取代站内移动)
+        transitionToMovingBetweenStations();
     }
 
     /**
@@ -481,9 +408,8 @@ public class TrainMovementTask implements Runnable {
 
         // 创建一个新的TrainMovementTask，初始状态为停站状态
         TrainMovementTask trainTask = new TrainMovementTask(plugin, minecart, passenger, lineId, currentStopId);
-        // 使用实体调度器来支持 Folia
-        Object taskId = SchedulerUtil.entityRun(plugin, minecart, trainTask, 1L, 1L); // 立即开始，每tick运行一次
-        trainTask.setTaskId(taskId);
+        // 确立为由事件驱动的架构，直接注册自己
+        org.bukkit.Bukkit.getPluginManager().registerEvents(trainTask, plugin);
 
         // 设置任务的目标站点为下一站
         String nextStopId = line.getNextStopId(currentStopId);

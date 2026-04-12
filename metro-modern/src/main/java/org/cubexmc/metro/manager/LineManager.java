@@ -18,6 +18,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.model.Line;
+import org.cubexmc.metro.model.Stop;
 
 /**
  * 线路管理器，负责线路数据的加载、保存和操作
@@ -87,6 +88,10 @@ public class LineManager {
                         line.setMaxSpeed(maxSpeed);
                     }
 
+                    // 加载乘车价格
+                    double ticketPrice = config.getDouble(lineId + ".ticket_price", 0.0);
+                    line.setTicketPrice(ticketPrice);
+
                     String ownerString = config.getString(lineId + ".owner");
                     if (ownerString != null && !ownerString.isEmpty()) {
                         try {
@@ -151,6 +156,7 @@ public class LineManager {
                     config.set(lineId + ".color", line.getColor());
                     config.set(lineId + ".terminus_name", line.getTerminusName());
                     config.set(lineId + ".max_speed", line.getMaxSpeed() != null ? line.getMaxSpeed() : null);
+                    config.set(lineId + ".ticket_price", line.getTicketPrice() > 0 ? line.getTicketPrice() : null);
                     config.set(lineId + ".owner", line.getOwner() != null ? line.getOwner().toString() : null);
 
                     List<String> adminStrings = new ArrayList<>();
@@ -197,6 +203,7 @@ public class LineManager {
                     config.set(lineId + ".color", line.getColor());
                     config.set(lineId + ".terminus_name", line.getTerminusName());
                     config.set(lineId + ".max_speed", line.getMaxSpeed() != null ? line.getMaxSpeed() : null);
+                    config.set(lineId + ".ticket_price", line.getTicketPrice() > 0 ? line.getTicketPrice() : null);
                     config.set(lineId + ".owner", line.getOwner() != null ? line.getOwner().toString() : null);
 
                     List<String> adminStrings = new ArrayList<>();
@@ -227,6 +234,7 @@ public class LineManager {
             lock.readLock().unlock();
         }
     }
+
 
     public boolean createLine(String lineId, String name, UUID ownerId) {
         lock.writeLock().lock();
@@ -487,6 +495,28 @@ public class LineManager {
         return true;
     }
 
+    /**
+     * 设置线路乘车价格
+     * 
+     * @param lineId 线路ID
+     * @param ticketPrice 新价格
+     * @return 是否成功
+     */
+    public boolean setLineTicketPrice(String lineId, double ticketPrice) {
+        lock.writeLock().lock();
+        try {
+            Line line = lines.get(lineId);
+            if (line == null) {
+                return false;
+            }
+            line.setTicketPrice(ticketPrice);
+        } finally {
+            lock.writeLock().unlock();
+        }
+        saveConfig();
+        return true;
+    }
+
     public boolean setLineOwner(String lineId, UUID ownerId) {
         lock.writeLock().lock();
         try {
@@ -561,5 +591,87 @@ public class LineManager {
                 stopToLinesIndex.remove(stopId);
             }
         }
+    }
+
+    /**
+     * 反向克隆线路和站点
+     * 
+     * @param sourceLineId 要克隆的源线路ID
+     * @param newLineId 新的对向线路ID
+     * @param stopIdSuffix 站点ID后缀
+     * @param ownerId 新线路及站点的所有者
+     * @return 是否成功
+     */
+    public boolean cloneReverseLine(String sourceLineId, String newLineId, String stopIdSuffix, UUID ownerId) {
+        lock.writeLock().lock();
+        try {
+            Line sourceLine = lines.get(sourceLineId);
+            if (sourceLine == null) {
+                return false;
+            }
+            if (lines.containsKey(newLineId)) {
+                return false;
+            }
+
+            // 1. 创建新线路
+            Line newLine = new Line(newLineId, sourceLine.getName());
+            newLine.setOwner(ownerId);
+            newLine.setColor(sourceLine.getColor());
+            newLine.setMaxSpeed(sourceLine.getMaxSpeed());
+            newLine.setWorldName(sourceLine.getWorldName());
+            
+            // 复制管理员
+            if (sourceLine.getAdmins() != null) {
+                Set<UUID> newAdmins = new HashSet<>(sourceLine.getAdmins());
+                if (ownerId != null) {
+                    newAdmins.add(ownerId);
+                }
+                newLine.setAdmins(newAdmins);
+            }
+
+            lines.put(newLineId, newLine);
+
+            // 2. 倒序克隆站点
+            StopManager stopManager = plugin.getStopManager();
+            List<String> sourceStops = sourceLine.getOrderedStopIds();
+            for (int i = sourceStops.size() - 1; i >= 0; i--) {
+                String oldStopId = sourceStops.get(i);
+                Stop oldStop = stopManager.getStop(oldStopId);
+                if (oldStop == null) continue;
+
+                String newStopId = oldStopId + stopIdSuffix;
+                Stop newStop = stopManager.getStop(newStopId);
+                
+                if (newStop == null) {
+                    // 创建新站点
+                    newStop = stopManager.createStop(newStopId, oldStop.getName(), oldStop.getCorner1(), oldStop.getCorner2(), ownerId);
+                    if (newStop != null) {
+                        // 旋转发车朝向 180 度
+                        float newYaw = (oldStop.getLaunchYaw() + 180.0f) % 360.0f;
+                        if (newYaw > 180.0f) newYaw -= 360.0f;
+                        if (newYaw < -180.0f) newYaw += 360.0f;
+                        
+                        stopManager.setStopPoint(newStopId, oldStop.getStopPointLocation(), newYaw);
+                        
+                        // 复制站点管理员
+                        for (UUID adminId : oldStop.getAdmins()) {
+                            if (adminId != null) {
+                                stopManager.addStopAdmin(newStopId, adminId);
+                            }
+                        }
+                    }
+                }
+                
+                // 将站点添加到新线路
+                newLine.addStop(newStopId, -1);
+            }
+            
+            indexLineStops(newLine);
+        } finally {
+            lock.writeLock().unlock();
+        }
+        
+        saveConfig();
+        return true;
     }
 }

@@ -37,26 +37,49 @@ public class StopCommand {
     @CommandMethod("m|metro stop|s")
     @CommandDescription("Show Stop Help Menu")
     public void help(CommandSender sender) {
+        showHelp(sender, 1);
+    }
+
+    @CommandMethod("m|metro stop|s help [page]")
+    @CommandDescription("Show Stop Help Menu Page")
+    public void helpPage(CommandSender sender, @Argument("page") Integer page) {
+        showHelp(sender, page == null ? 1 : page);
+    }
+
+    private void showHelp(CommandSender sender, int page) {
         org.cubexmc.metro.manager.LanguageManager lang = plugin.getLanguageManager();
-        sender.sendMessage(lang.getMessage("stop.help_header"));
-        sender.sendMessage(lang.getMessage("stop.help_create"));
-        sender.sendMessage(lang.getMessage("stop.help_delete"));
-        sender.sendMessage(lang.getMessage("stop.help_list"));
-        sender.sendMessage(lang.getMessage("stop.help_setcorners"));
-        sender.sendMessage(lang.getMessage("stop.help_setpoint"));
-        sender.sendMessage(lang.getMessage("stop.help_addtransfer"));
-        sender.sendMessage(lang.getMessage("stop.help_deltransfer"));
-        sender.sendMessage(lang.getMessage("stop.help_listtransfers"));
-        sender.sendMessage(lang.getMessage("stop.help_settitle"));
-        sender.sendMessage(lang.getMessage("stop.help_deltitle"));
-        sender.sendMessage(lang.getMessage("stop.help_listtitles"));
-        sender.sendMessage(lang.getMessage("stop.help_rename"));
-        sender.sendMessage(lang.getMessage("stop.help_info"));
-        sender.sendMessage(lang.getMessage("stop.help_tp"));
-        sender.sendMessage(lang.getMessage("stop.help_trust"));
-        sender.sendMessage(lang.getMessage("stop.help_untrust"));
-        sender.sendMessage(lang.getMessage("stop.help_owner"));
-        sender.sendMessage(lang.getMessage("stop.help_link"));
+        java.util.List<String> helpList = java.util.Arrays.asList(
+                lang.getMessage("stop.help_create"),
+                lang.getMessage("stop.help_delete"),
+                lang.getMessage("stop.help_list"),
+                lang.getMessage("stop.help_setcorners"),
+                lang.getMessage("stop.help_setpoint"),
+                lang.getMessage("stop.help_addtransfer"),
+                lang.getMessage("stop.help_deltransfer"),
+                lang.getMessage("stop.help_listtransfers"),
+                lang.getMessage("stop.help_settitle"),
+                lang.getMessage("stop.help_deltitle"),
+                lang.getMessage("stop.help_listtitles"),
+                lang.getMessage("stop.help_rename"),
+                lang.getMessage("stop.help_info"),
+                lang.getMessage("stop.help_tp"),
+                lang.getMessage("stop.help_trust"),
+                lang.getMessage("stop.help_untrust"),
+                lang.getMessage("stop.help_owner"),
+                lang.getMessage("stop.help_link")
+        );
+
+        int pageSize = 8;
+        int totalPages = (int) Math.ceil((double) helpList.size() / pageSize);
+        if (page < 1) page = 1;
+        if (page > totalPages) page = totalPages;
+
+        sender.sendMessage(lang.getMessage("stop.help_header") + " §e(" + page + "/" + totalPages + ")");
+        int start = (page - 1) * pageSize;
+        int end = Math.min(start + pageSize, helpList.size());
+        for (int i = start; i < end; i++) {
+            sender.sendMessage(helpList.get(i));
+        }
     }
 
     @CommandMethod("m|metro stop|s list")
