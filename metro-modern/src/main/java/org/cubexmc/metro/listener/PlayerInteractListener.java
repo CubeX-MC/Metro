@@ -45,11 +45,9 @@ public class PlayerInteractListener implements Listener {
 
     // 用于防止短时间内多次点击触发多次调用
     private final Map<UUID, Long> lastInteractTime = new ConcurrentHashMap<>();
-    private static final int INTERACT_COOLDOWN = 2000; // 点击冷却时间，单位毫秒
 
     // 用于跟踪站点的矿车生成状态，键为站点ID，值为时间戳
     private final Map<String, Long> pendingMinecarts = new ConcurrentHashMap<>();
-    private static final int MINECART_PENDING_TIMEOUT = 60000; // 矿车最大等待时间，单位毫秒
     private final Object pendingMinecartCleanupTaskId;
 
     public PlayerInteractListener(Metro plugin) {
@@ -59,7 +57,8 @@ public class PlayerInteractListener implements Listener {
         // 定期清理过期的矿车等待记录
         this.pendingMinecartCleanupTaskId = SchedulerUtil.globalRun(plugin, () -> {
             long currentTime = System.currentTimeMillis();
-            pendingMinecarts.entrySet().removeIf(entry -> currentTime - entry.getValue() > MINECART_PENDING_TIMEOUT);
+            long timeout = plugin.getConfigFacade().getMinecartPendingTimeout();
+            pendingMinecarts.entrySet().removeIf(entry -> currentTime - entry.getValue() > timeout);
         }, 1200L, 1200L); // 每分钟清理一次
     }
 
@@ -108,18 +107,19 @@ public class PlayerInteractListener implements Listener {
         // 防止短时间内多次点击
         UUID playerId = player.getUniqueId();
         long currentTime = System.currentTimeMillis();
+        long cooldown = plugin.getConfigFacade().getInteractCooldown();
         if (lastInteractTime.containsKey(playerId)) {
             long lastTime = lastInteractTime.get(playerId);
-            if (currentTime - lastTime < INTERACT_COOLDOWN) {
+            if (currentTime - lastTime < cooldown) {
                 // 如果冷却时间内再次点击，取消事件并返回
                 event.setCancelled(true);
                 return;
             }
         }
 
-        // 在处理之前先检查点击的站点
+        // 发现玩家可能会点到多个相互重叠的 stop (比如复线和双向站), 此时选择最优方向的 Stop
         StopManager stopManager = plugin.getStopManager();
-        Stop stop = stopManager.getStopContainingLocation(clickedBlock.getLocation());
+        Stop stop = stopManager.getBestStopContainingLocation(clickedBlock.getLocation(), player.getLocation().getYaw());
 
         // 如果找到了停靠区，检查是否有待处理的矿车
         if (stop != null) {
@@ -127,7 +127,8 @@ public class PlayerInteractListener implements Listener {
             if (pendingMinecarts.containsKey(stopId)) {
                 // 该站点已有矿车在等待玩家上车
                 long pendingTime = pendingMinecarts.get(stopId);
-                if (currentTime - pendingTime < MINECART_PENDING_TIMEOUT) {
+                long timeout = plugin.getConfigFacade().getMinecartPendingTimeout();
+                if (currentTime - pendingTime < timeout) {
                     player.sendMessage(plugin.getLanguageManager().getMessage("interact.train_pending"));
                     event.setCancelled(true);
                     return;
@@ -149,7 +150,7 @@ public class PlayerInteractListener implements Listener {
                     + clickedBlock.getLocation());
 
             // 设置一个任务，在冷却时间后清除记录
-            SchedulerUtil.entityRun(plugin, player, () -> lastInteractTime.remove(playerId), INTERACT_COOLDOWN / 50,
+            SchedulerUtil.entityRun(plugin, player, () -> lastInteractTime.remove(playerId), cooldown / 50,
                     -1);
         }
     }
@@ -167,7 +168,7 @@ public class PlayerInteractListener implements Listener {
         StopManager stopManager = plugin.getStopManager();
 
         // 检查点击位置是否在任何停靠区内
-        Stop stop = stopManager.getStopContainingLocation(location);
+        Stop stop = stopManager.getBestStopContainingLocation(location, player.getLocation().getYaw());
 
         // 如果找到了包含点击位置的停靠区
         if (stop != null) {

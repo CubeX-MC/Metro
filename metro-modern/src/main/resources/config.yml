@@ -237,7 +237,7 @@ portals:
   enabled: true
   # 传送门触发方块（铁轨下方的方块类型）
   # Portal trigger block (block type below the rail)
-  trigger_block: END_PORTAL_FRAME
+  trigger_block: CRYING_OBSIDIAN
   # 传送前延迟（单位tick，20tick=1秒）
   # Teleport delay (in ticks, 20 ticks = 1 second)
   teleport_delay: 5
@@ -281,6 +281,12 @@ settings:
   # 矿车发车延迟（上车后多久自动发车，单位tick，20tick=1秒）
   # Minecart departure delay (how long after boarding for the cart to depart automatically, in ticks, 20 ticks = 1 second)
   cart_departure_delay: 100
+  # 交互冷却时间（单位：毫秒）
+  # Interact cooldown time (in milliseconds)
+  interact_cooldown: 2000
+  # 矿车生成等待超时（单位：毫秒）
+  # Minecart pending timeout (in milliseconds)
+  minecart_pending_timeout: 60000
   # 调试日志配置（仅用于排障）
   # Debug logging configuration (for troubleshooting only)
   debug:

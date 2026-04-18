@@ -389,6 +389,7 @@ chat:
   enter_new_speed: "&a请输入新的速度数值。输入 'cancel' 或 '取消' 取消操作。"
   enter_new_price: "&a请输入新的票价数值。输入 'cancel' 或 '取消' 取消操作。"
   enter_clone_info: "&a请输入新线路ID和站点后缀(可选)，用空格分隔。例如: line1_rev _rev"
+  input_cancelled: "&c已取消输入。"
 
 economy:
   insufficient_funds: "&c余额不足。此次乘车需要: {price}"

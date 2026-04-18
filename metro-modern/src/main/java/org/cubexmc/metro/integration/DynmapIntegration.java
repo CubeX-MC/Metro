@@ -82,9 +82,27 @@ public class DynmapIntegration {
      * 强制刷新网页地图上的地铁线路标记。
      */
     public void refresh() {
-        if (markerApi != null) {
+        if (!plugin.getConfigFacade().isMapIntegrationEnabled() || !"DYNMAP".equalsIgnoreCase(plugin.getConfigFacade().getMapProvider())) {
+            disable();
+            return;
+        }
+
+        if (!enabled) {
+            enable();
+        } else if (markerApi != null) {
             renderMetroNetwork();
         }
+    }
+
+    public void disable() {
+        if (markerApi != null) {
+            MarkerSet markerSet = markerApi.getMarkerSet(MARKER_SET_ID);
+            if (markerSet != null) {
+                markerSet.deleteMarkerSet();
+            }
+        }
+        enabled = false;
+        plugin.getLogger().info("[Dynmap] Metro markers removed.");
     }
 
     public boolean isEnabled() {

@@ -72,12 +72,13 @@ public class Portal {
 
     /**
      * 检查给定位置的方块坐标是否匹配此传送门入口
+     * 允许 Y 轴有 ±1 的误差，因为玩家创建坐标和矿车经过坐标可能微小不一致。
      */
     public boolean matchesLocation(Location loc) {
         if (loc == null || loc.getWorld() == null) return false;
         return loc.getWorld().getName().equals(worldName)
                 && loc.getBlockX() == x
-                && loc.getBlockY() == y
+                && Math.abs(loc.getBlockY() - y) <= 1
                 && loc.getBlockZ() == z;
     }
 

@@ -12,6 +12,7 @@ import cloud.commandframework.annotations.AnnotationParser;
 import cloud.commandframework.execution.CommandExecutionCoordinator;
 import cloud.commandframework.meta.SimpleCommandMeta;
 import cloud.commandframework.paper.PaperCommandManager;
+import cloud.commandframework.context.CommandContext;
 
 import org.cubexmc.metro.command.newcmd.LineCommand;
 import org.cubexmc.metro.command.newcmd.MetroMainCommand;
@@ -55,6 +56,10 @@ public final class Metro extends JavaPlugin {
     private org.cubexmc.metro.manager.PortalManager portalManager;
     private org.cubexmc.metro.integration.VaultIntegration vaultIntegration;
     private Object autoSaveTaskId;
+
+    private org.cubexmc.metro.integration.BlueMapIntegration blueMapIntegration;
+    private org.cubexmc.metro.integration.DynmapIntegration dynmapIntegration;
+    private org.cubexmc.metro.integration.SquaremapIntegration squaremapIntegration;
 
     @Override
     public void onEnable() {
@@ -129,10 +134,12 @@ public final class Metro extends JavaPlugin {
                     CommandSender.class,
                     parameters -> SimpleCommandMeta.empty());
 
+            registerSuggestionProviders();
+
             // 解析并注册带有 @Command 注解的类
             annotationParser.parse(new MetroMainCommand(this, lineManager, stopManager));
             annotationParser.parse(new LineCommand(this, lineManager, stopManager));
-            annotationParser.parse(new StopCommand(this, stopManager));
+            annotationParser.parse(new StopCommand(this, stopManager, lineManager));
             annotationParser.parse(new org.cubexmc.metro.command.newcmd.PortalCommand(this));
 
             getLogger().info("Cloud Command Framework initialized successfully.");
@@ -173,7 +180,7 @@ public final class Metro extends JavaPlugin {
         // ==== BACKWARD COMPATIBILITY ====
         // Sweep worlds for name-based minecarts missing the PDC tag and apply it.
         // Doing this delayed allows worlds to fully load.
-        Bukkit.getScheduler().runTaskLater(this, () -> {
+        org.cubexmc.metro.util.SchedulerUtil.globalRun(this, () -> {
             for (org.bukkit.World world : Bukkit.getWorlds()) {
                 for (org.bukkit.entity.Entity entity : world.getEntitiesByClass(org.bukkit.entity.Minecart.class)) {
                     if (org.cubexmc.metro.util.MetroConstants.METRO_MINECART_NAME.equals(entity.getCustomName()) &&
@@ -186,20 +193,29 @@ public final class Metro extends JavaPlugin {
                     }
                 }
             }
-        }, 100L); // 5 seconds after startup
+        }, 100L, -1L); // 5 seconds after startup
 
-        // 网页地图集成（BlueMap / Dynmap）
-        // 两个集成类内部会自动检查 config 和 classpath，只有满足条件时才加载
+        // 网页地图集成（BlueMap / Dynmap / Squaremap）
+        // 集成类内部会自动检查 config 和 classpath，只有满足条件时才加载
         try {
-            new org.cubexmc.metro.integration.BlueMapIntegration(this).enable();
+            this.blueMapIntegration = new org.cubexmc.metro.integration.BlueMapIntegration(this);
+            this.blueMapIntegration.enable();
         } catch (Throwable e) {
             getLogger().info("BlueMap API not found, skipping BlueMap integration.");
         }
 
         try {
-            new org.cubexmc.metro.integration.DynmapIntegration(this).enable();
+            this.dynmapIntegration = new org.cubexmc.metro.integration.DynmapIntegration(this);
+            this.dynmapIntegration.enable();
         } catch (Throwable e) {
             getLogger().info("Dynmap API not found, skipping Dynmap integration.");
+        }
+
+        try {
+            this.squaremapIntegration = new org.cubexmc.metro.integration.SquaremapIntegration(this);
+            this.squaremapIntegration.enable();
+        } catch (Throwable e) {
+            getLogger().info("Squaremap API not found, skipping Squaremap integration.");
         }
 
         getLogger().info("Metro(Modern) has been enabled!");
@@ -207,6 +223,17 @@ public final class Metro extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        // 关闭地图集成并清理标记
+        if (this.blueMapIntegration != null) {
+            this.blueMapIntegration.disable();
+        }
+        if (this.dynmapIntegration != null) {
+            this.dynmapIntegration.disable();
+        }
+        if (this.squaremapIntegration != null) {
+            this.squaremapIntegration.disable();
+        }
+
         // 主动清理任务与显示，避免 reload 残留状态
         if (playerMoveListener != null) {
             playerMoveListener.shutdown();
@@ -380,11 +407,36 @@ public final class Metro extends JavaPlugin {
         getLogger().info("[DEBUG][" + category + "] " + message);
     }
 
+    public void refreshMapIntegrations() {
+        if (this.blueMapIntegration != null) {
+            this.blueMapIntegration.refresh();
+        }
+        if (this.dynmapIntegration != null) {
+            this.dynmapIntegration.refresh();
+        }
+        if (this.squaremapIntegration != null) {
+            this.squaremapIntegration.refresh();
+        }
+    }
+
     public org.cubexmc.metro.manager.PortalManager getPortalManager() {
         return portalManager;
     }
 
     public org.cubexmc.metro.integration.VaultIntegration getVaultIntegration() {
         return vaultIntegration;
+    }
+
+    private void registerSuggestionProviders() {
+        commandManager.parserRegistry().registerSuggestionProvider("lineIds", this::lineIdSuggestions);
+        commandManager.parserRegistry().registerSuggestionProvider("stopIds", this::stopIdSuggestions);
+    }
+
+    private java.util.List<String> lineIdSuggestions(final CommandContext<CommandSender> context, final String input) {
+        return lineManager.getAllLines().stream().map(org.cubexmc.metro.model.Line::getId).toList();
+    }
+
+    private java.util.List<String> stopIdSuggestions(final CommandContext<CommandSender> context, final String input) {
+        return new java.util.ArrayList<>(stopManager.getAllStopIds());
     }
 }

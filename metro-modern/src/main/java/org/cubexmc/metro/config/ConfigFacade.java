@@ -107,6 +107,8 @@ public class ConfigFacade {
     private double cartSpeed;
     private long cartSpawnDelay;
     private long cartDepartureDelay;
+    private long interactCooldown;
+    private long minecartPendingTimeout;
     private boolean debugEnabled;
     private boolean safeModeEnabled;
     private boolean safeModeEntityPushProtection;
@@ -215,7 +217,7 @@ public class ConfigFacade {
 
         // Portals
         portalsEnabled = plugin.getConfig().getBoolean("portals.enabled", true);
-        portalTriggerBlock = plugin.getConfig().getString("portals.trigger_block", "END_PORTAL_FRAME").toUpperCase();
+        portalTriggerBlock = plugin.getConfig().getString("portals.trigger_block", "CRYING_OBSIDIAN").toUpperCase();
         portalTeleportDelay = plugin.getConfig().getInt("portals.teleport_delay", 5);
         portalEffectParticles = plugin.getConfig().getBoolean("portals.effects.particles", true);
         portalEffectSound = plugin.getConfig().getBoolean("portals.effects.sound", true);
@@ -233,6 +235,8 @@ public class ConfigFacade {
         cartSpeed = plugin.getConfig().getDouble("settings.cart_speed", 0.3);
         cartSpawnDelay = plugin.getConfig().getLong("settings.cart_spawn_delay", 60L);
         cartDepartureDelay = plugin.getConfig().getLong("settings.cart_departure_delay", 100L);
+        interactCooldown = plugin.getConfig().getLong("settings.interact_cooldown", 2000L);
+        minecartPendingTimeout = plugin.getConfig().getLong("settings.minecart_pending_timeout", 60000L);
         debugEnabled = plugin.getConfig().getBoolean("settings.debug.enabled", false);
         safeModeEnabled = plugin.getConfig().getBoolean("settings.safe_mode.enabled", true);
         safeModeEntityPushProtection = plugin.getConfig().getBoolean("settings.safe_mode.entity_push_protection", true);
@@ -463,6 +467,14 @@ public class ConfigFacade {
 
     public long getCartDepartureDelay() {
         return cartDepartureDelay;
+    }
+
+    public long getInteractCooldown() {
+        return interactCooldown;
+    }
+
+    public long getMinecartPendingTimeout() {
+        return minecartPendingTimeout;
     }
 
     public boolean isDebugEnabled() {

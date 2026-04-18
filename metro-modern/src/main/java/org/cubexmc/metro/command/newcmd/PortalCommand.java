@@ -37,7 +37,15 @@ public class PortalCommand {
             return;
         }
 
-        Location loc = sender.getLocation();
+        // 优先获取玩家视线瞄准的方块（如果是铁轨），否则使用玩家脚下坐标
+        org.bukkit.block.Block targetBlock = sender.getTargetBlockExact(5);
+        Location loc;
+        if (targetBlock != null && targetBlock.getType().name().contains("RAIL")) {
+            loc = targetBlock.getLocation();
+        } else {
+            loc = sender.getLocation();
+        }
+
         portalManager.createPortal(id, loc);
         sender.sendMessage(ChatColor.GREEN + "传送门 '" + id + "' 已创建于 "
                 + loc.getBlockX() + ", " + loc.getBlockY() + ", " + loc.getBlockZ()

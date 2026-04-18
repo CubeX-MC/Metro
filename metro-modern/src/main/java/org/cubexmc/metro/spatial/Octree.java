@@ -1,5 +1,7 @@
 package org.cubexmc.metro.spatial;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -89,6 +91,31 @@ public class Octree<T> {
                 }
             }
             return null;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public List<T> getAllRanges(Point3D point) {
+        List<T> results = new ArrayList<>();
+        lock.readLock().lock();
+        try {
+            if (!boundary.contains(point)) return results;
+
+            for (Map.Entry<Range3D, T> entry : items.entrySet()) {
+                if (entry.getKey().contains(point)) {
+                    results.add(entry.getValue());
+                }
+            }
+
+            if (children != null) {
+                for (Octree<T> child : children) {
+                    if (child.boundary.contains(point)) {
+                        results.addAll(child.getAllRanges(point));
+                    }
+                }
+            }
+            return results;
         } finally {
             lock.readLock().unlock();
         }

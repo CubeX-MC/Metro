@@ -176,9 +176,16 @@ public class PortalManager {
 
         final Player finalPassenger = passenger;
 
+        org.cubexmc.metro.train.TrainMovementTask oldTask = org.cubexmc.metro.train.TrainMovementTask.getTaskFor(sourceCart);
+        if (oldTask != null) {
+            oldTask.setTeleporting(true); // 通知任务即将传送，即使抛出乘客也不要自动 cancel
+        }
+
         // 先弹出乘客再做传送
         if (passenger != null) {
             sourceCart.eject();
+            // 注意：弹出后 TrainMovementTask 会检查 isPassengerStillRiding() 然后调用 cancel()
+            // 如果不屏蔽该检查，整个任务在传送冷却 delay 期间就会被注销了
         }
 
         // 复制 PDC 数据
@@ -187,12 +194,15 @@ public class PortalManager {
 
         int teleportDelay = plugin.getConfigFacade().getPortalTeleportDelay();
 
-        // 使用调度器延迟执行传送
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            // 移除原矿车
-            sourceCart.remove();
+        // 延迟移除原矿车
+        org.cubexmc.metro.util.SchedulerUtil.entityRun(plugin, sourceCart, () -> {
+            if (sourceCart.isValid()) {
+                sourceCart.remove();
+            }
+        }, teleportDelay, -1L);
 
-            // 在目标位置生成新矿车
+        // 延迟在目标位置生成新矿车并传送乘客
+        org.cubexmc.metro.util.SchedulerUtil.regionRun(plugin, destination, () -> {
             World destWorld = destination.getWorld();
             if (destWorld == null) return;
 
@@ -211,26 +221,43 @@ public class PortalManager {
 
             // 传送乘客（如果有）
             if (finalPassenger != null && finalPassenger.isOnline()) {
-                finalPassenger.teleport(destination);
+                org.cubexmc.metro.util.SchedulerUtil.teleportEntity(finalPassenger, destination).thenAccept(success -> {
+                    if (success && finalPassenger.isOnline() && newCart.isValid()) {
+                        // 传送完成后，让乘客上车
+                        org.cubexmc.metro.util.SchedulerUtil.entityRun(plugin, newCart, () -> {
+                            if (finalPassenger.isOnline() && newCart.isValid()) {
+                                newCart.addPassenger(finalPassenger);
 
-                // 再延迟1 tick 让乘客上车（确保世界加载完成）
-                Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    if (finalPassenger.isOnline() && newCart.isValid()) {
-                        newCart.addPassenger(finalPassenger);
+                                // 转移 TrainMovementTask (接管新矿车)
+                                if (oldTask != null) {
+                                    oldTask.transferMinecart(newCart);
+                                }
 
-                        // 给矿车一个初始速度
-                        float yaw = destination.getYaw();
-                        double rad = Math.toRadians(yaw);
-                        Vector direction = new Vector(-Math.sin(rad), 0, Math.cos(rad)).normalize();
-                        newCart.setVelocity(direction.multiply(plugin.getConfigFacade().getCartSpeed()));
+                                // 给矿车一个初始速度
+                                float yaw = destination.getYaw();
+                                double rad = Math.toRadians(yaw);
+                                Vector direction = new Vector(-Math.sin(rad), 0, Math.cos(rad)).normalize();
+                                newCart.setVelocity(direction.multiply(plugin.getConfigFacade().getCartSpeed()));
+                            }
+                        }, 2L, -1L);
                     }
-                }, 2L);
+                });
+            } else {
+                // 如果没有乘客，也要给空车一个初始速度
+                // 转移 TrainMovementTask (接管新矿车)
+                if (oldTask != null) {
+                    oldTask.transferMinecart(newCart);
+                }
+                float yaw = destination.getYaw();
+                double rad = Math.toRadians(yaw);
+                Vector direction = new Vector(-Math.sin(rad), 0, Math.cos(rad)).normalize();
+                newCart.setVelocity(direction.multiply(plugin.getConfigFacade().getCartSpeed()));
             }
 
             // 出口特效
             playEffects(destination);
 
-        }, teleportDelay);
+        }, teleportDelay, -1L);
 
         // 冻结乘客（如果有延迟且有乘客）
         if (finalPassenger != null && teleportDelay > 0) {

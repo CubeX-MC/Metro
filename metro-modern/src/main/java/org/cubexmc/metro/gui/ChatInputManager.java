@@ -40,13 +40,13 @@ public class ChatInputManager implements Listener {
             ChatInputCallback callback = pendingInputs.remove(uuid);
             
             if (input.equalsIgnoreCase("cancel") || input.equalsIgnoreCase("取消")) {
-                player.sendMessage("§c已取消输入。 / Input cancelled.");
+                player.sendMessage(plugin.getLanguageManager().getMessage("chat.input_cancelled"));
                 // Execute a specific cancel block if needed, or simply return.
-                Bukkit.getScheduler().runTask(plugin, () -> callback.onCancel());
+                org.cubexmc.metro.util.SchedulerUtil.entityRun(plugin, player, () -> callback.onCancel(), 0L, -1L);
                 return;
             }
             
-            Bukkit.getScheduler().runTask(plugin, () -> callback.onInput(input));
+            org.cubexmc.metro.util.SchedulerUtil.entityRun(plugin, player, () -> callback.onInput(input), 0L, -1L);
         }
     }
 

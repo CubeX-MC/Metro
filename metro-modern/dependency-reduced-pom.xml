@@ -240,6 +240,12 @@
       <version>3.7-beta-6</version>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>xyz.jpenilla</groupId>
+      <artifactId>squaremap-api</artifactId>
+      <version>1.3.12</version>
+      <scope>provided</scope>
+    </dependency>
   </dependencies>
   <properties>
     <final.name>${base.name}-${project.parent.version}</final.name>

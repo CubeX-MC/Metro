@@ -36,6 +36,39 @@ public class GuiManager {
     private static final int SLOT_BACK = 46;
     private static final int SLOT_PAGE_INFO = 47;
     
+    @FunctionalInterface
+    private interface ItemPopulator<T> {
+        void populate(Inventory inv, T item, int slot);
+    }
+
+    @FunctionalInterface
+    private interface ControlBarPopulator {
+        void populate(Inventory inv, int page, int totalPages);
+    }
+
+    private <T> void renderPaginatedList(Player player, GuiHolder holder, String title, List<T> items, int requestedPage, ItemPopulator<T> populator, ControlBarPopulator controlBar) {
+        int totalPages = Math.max(1, (int) Math.ceil((double) items.size() / ITEMS_PER_PAGE));
+        int page = Math.min(requestedPage, totalPages - 1);
+        page = Math.max(0, page);
+        holder.setData("page", page);
+        holder.setData("totalPages", totalPages);
+        
+        Inventory inv = Bukkit.createInventory(holder, 54, title);
+        holder.setInventory(inv);
+        
+        int start = page * ITEMS_PER_PAGE;
+        int end = Math.min(start + ITEMS_PER_PAGE, items.size());
+        
+        for (int i = start; i < end; i++) {
+            T item = items.get(i);
+            int slot = i - start;
+            populator.populate(inv, item, slot);
+        }
+        
+        controlBar.populate(inv, page, totalPages);
+        player.openInventory(inv);
+    }
+    
     public GuiManager(Metro plugin) {
         this.plugin = plugin;
     }
@@ -123,27 +156,12 @@ public class GuiManager {
         holder.setData("lineNames", sortedNames);
         holder.setData("groupedLines", groupedLines);
         
-        // 计算分页
-        int totalPages = Math.max(1, (int) Math.ceil((double) sortedNames.size() / ITEMS_PER_PAGE));
-        page = Math.min(page, totalPages - 1);
-        page = Math.max(0, page);
-        holder.setData("page", page);
-        holder.setData("totalPages", totalPages);
-        
         String titleKey = showOnlyMine ? "gui.line_list.title_mine" : "gui.line_list.title_all";
         String title = ChatColor.translateAlternateColorCodes('&', msg(titleKey));
-        Inventory inv = Bukkit.createInventory(holder, 54, title);
-        holder.setInventory(inv);
         
-        // 填充线路物品
-        int start = page * ITEMS_PER_PAGE;
-        int end = Math.min(start + ITEMS_PER_PAGE, sortedNames.size());
-        
-        for (int i = start; i < end; i++) {
-            String name = sortedNames.get(i);
+        renderPaginatedList(player, holder, title, sortedNames, page, (inv, name, slot) -> {
             List<Line> variants = groupedLines.get(name);
             Line representative = variants.get(0);
-            int slot = i - start;
             
             List<String> lore = new ArrayList<>();
             
@@ -170,19 +188,13 @@ public class GuiManager {
                 }
             }
             
-            // 根据线路颜色选择羊毛颜色
             Material material = getWoolByColor(representative.getColor());
             
             inv.setItem(slot, new ItemBuilder(material)
                     .name((representative.getColor() != null ? representative.getColor() : "&f") + name)
                     .lore(lore)
                     .build());
-        }
-        
-        // 底部控制栏
-        addControlBar(inv, page, totalPages, showOnlyMine);
-        
-        player.openInventory(inv);
+        }, (inv, p, tp) -> addControlBar(inv, p, tp, showOnlyMine));
     }
     
     /**
@@ -201,23 +213,9 @@ public class GuiManager {
                 
         holder.setData("lines", variants);
         
-        int totalPages = Math.max(1, (int) Math.ceil((double) variants.size() / ITEMS_PER_PAGE));
-        page = Math.min(page, totalPages - 1);
-        page = Math.max(0, page);
-        holder.setData("page", page);
-        holder.setData("totalPages", totalPages);
-        
         String title = ChatColor.translateAlternateColorCodes('&', lineName + " - " + msg("gui.common.variants_title"));
-        Inventory inv = Bukkit.createInventory(holder, 54, title);
-        holder.setInventory(inv);
         
-        int start = page * ITEMS_PER_PAGE;
-        int end = Math.min(start + ITEMS_PER_PAGE, variants.size());
-        
-        for (int i = start; i < end; i++) {
-            Line line = variants.get(i);
-            int slot = i - start;
-            
+        renderPaginatedList(player, holder, title, variants, page, (inv, line, slot) -> {
             List<String> lore = new ArrayList<>();
             lore.add(msg("gui.common.id", "id", line.getId()));
             lore.add(msg("gui.line_list.stop_count", "count", String.valueOf(line.getOrderedStopIds().size())));
@@ -239,11 +237,7 @@ public class GuiManager {
                     .name((line.getColor() != null ? line.getColor() : "&f") + line.getId()) // Use ID as name here to distinguish
                     .lore(lore)
                     .build());
-        }
-        
-        addVariantNavigationControls(inv, page, totalPages);
-        
-        player.openInventory(inv);
+        }, (inv, p, tp) -> addVariantNavigationControls(inv, p, tp));
     }
 
     /**
@@ -284,27 +278,12 @@ public class GuiManager {
         holder.setData("stopNames", sortedNames);
         holder.setData("groupedStops", groupedStops);
         
-        // 计算分页
-        int totalPages = Math.max(1, (int) Math.ceil((double) sortedNames.size() / ITEMS_PER_PAGE));
-        page = Math.min(page, totalPages - 1);
-        page = Math.max(0, page);
-        holder.setData("page", page);
-        holder.setData("totalPages", totalPages);
-        
         String titleKey = showOnlyMine ? "gui.stop_list.title_mine" : "gui.stop_list.title_all";
         String title = ChatColor.translateAlternateColorCodes('&', msg(titleKey));
-        Inventory inv = Bukkit.createInventory(holder, 54, title);
-        holder.setInventory(inv);
         
-        // 填充站点物品
-        int start = page * ITEMS_PER_PAGE;
-        int end = Math.min(start + ITEMS_PER_PAGE, sortedNames.size());
-        
-        for (int i = start; i < end; i++) {
-            String name = sortedNames.get(i);
+        renderPaginatedList(player, holder, title, sortedNames, page, (inv, name, slot) -> {
             List<Stop> variants = groupedStops.get(name);
             Stop representative = variants.get(0);
-            int slot = i - start;
             
             List<String> lore = new ArrayList<>();
             
@@ -352,12 +331,7 @@ public class GuiManager {
                     .name("&a" + name)
                     .lore(lore)
                     .build());
-        }
-        
-        // 底部控制栏
-        addControlBar(inv, page, totalPages, showOnlyMine);
-        
-        player.openInventory(inv);
+        }, (inv, p, tp) -> addControlBar(inv, p, tp, showOnlyMine));
     }
 
     /**
@@ -377,23 +351,9 @@ public class GuiManager {
                 
         holder.setData("stops", variants);
         
-        int totalPages = Math.max(1, (int) Math.ceil((double) variants.size() / ITEMS_PER_PAGE));
-        page = Math.min(page, totalPages - 1);
-        page = Math.max(0, page);
-        holder.setData("page", page);
-        holder.setData("totalPages", totalPages);
-        
         String title = ChatColor.translateAlternateColorCodes('&', stopName + " - " + msg("gui.common.variants_title"));
-        Inventory inv = Bukkit.createInventory(holder, 54, title);
-        holder.setInventory(inv);
         
-        int start = page * ITEMS_PER_PAGE;
-        int end = Math.min(start + ITEMS_PER_PAGE, variants.size());
-        
-        for (int i = start; i < end; i++) {
-            Stop stop = variants.get(i);
-            int slot = i - start;
-            
+        renderPaginatedList(player, holder, title, variants, page, (inv, stop, slot) -> {
             List<String> lore = new ArrayList<>();
             lore.add(msg("gui.common.id", "id", stop.getId()));
             
@@ -433,11 +393,7 @@ public class GuiManager {
                     .name("&a" + stop.getId()) // Use ID as name
                     .lore(lore)
                     .build());
-        }
-        
-        addVariantNavigationControls(inv, page, totalPages);
-        
-        player.openInventory(inv);
+        }, (inv, p, tp) -> addVariantNavigationControls(inv, p, tp));
     }
     
     /**
@@ -484,26 +440,11 @@ public class GuiManager {
         holder.setData("stopNames", sortedNames);
         holder.setData("groupedStops", groupedStops);
         
-        // 计算分页
-        int totalPages = Math.max(1, (int) Math.ceil((double) sortedNames.size() / ITEMS_PER_PAGE));
-        page = Math.min(page, totalPages - 1);
-        page = Math.max(0, page);
-        holder.setData("page", page);
-        holder.setData("totalPages", totalPages);
-        
         String title = ChatColor.translateAlternateColorCodes('&', msg("gui.add_stop_list.title"));
-        Inventory inv = Bukkit.createInventory(holder, 54, title);
-        holder.setInventory(inv);
         
-        // 填充站点物品
-        int start = page * ITEMS_PER_PAGE;
-        int end = Math.min(start + ITEMS_PER_PAGE, sortedNames.size());
-        
-        for (int i = start; i < end; i++) {
-            String name = sortedNames.get(i);
+        renderPaginatedList(player, holder, title, sortedNames, page, (inv, name, slot) -> {
             List<Stop> variants = groupedStops.get(name);
             Stop representative = variants.get(0);
-            int slot = i - start;
             
             List<String> lore = new ArrayList<>();
             
@@ -521,16 +462,13 @@ public class GuiManager {
                     .name("&a" + name)
                     .lore(lore)
                     .build());
-        }
-        
-        // 底部控制栏
-        addControlBar(inv, page, totalPages, showOnlyMine);
-        // 覆盖返回按钮，返回到线路详情
-        inv.setItem(SLOT_BACK, new ItemBuilder(Material.DARK_OAK_DOOR)
-                .name(msg("gui.control.back_line_list"))
-                .build());
-                
-        player.openInventory(inv);
+        }, (inv, p, tp) -> {
+            addControlBar(inv, p, tp, showOnlyMine);
+            // 覆盖返回按钮，返回到线路详情
+            inv.setItem(SLOT_BACK, new ItemBuilder(Material.DARK_OAK_DOOR)
+                    .name(msg("gui.control.back_line_list"))
+                    .build());
+        });
     }
     
     /**
@@ -555,23 +493,9 @@ public class GuiManager {
                 
         holder.setData("stops", variants);
         
-        int totalPages = Math.max(1, (int) Math.ceil((double) variants.size() / ITEMS_PER_PAGE));
-        page = Math.min(page, totalPages - 1);
-        page = Math.max(0, page);
-        holder.setData("page", page);
-        holder.setData("totalPages", totalPages);
-        
         String title = ChatColor.translateAlternateColorCodes('&', stopName + " - " + msg("gui.add_stop_list.title"));
-        Inventory inv = Bukkit.createInventory(holder, 54, title);
-        holder.setInventory(inv);
         
-        int start = page * ITEMS_PER_PAGE;
-        int end = Math.min(start + ITEMS_PER_PAGE, variants.size());
-        
-        for (int i = start; i < end; i++) {
-            Stop stop = variants.get(i);
-            int slot = i - start;
-            
+        renderPaginatedList(player, holder, title, variants, page, (inv, stop, slot) -> {
             List<String> lore = new ArrayList<>();
             lore.add(msg("gui.common.id", "id", stop.getId()));
             lore.add("");
@@ -581,11 +505,7 @@ public class GuiManager {
                     .name("&a" + stop.getId())
                     .lore(lore)
                     .build());
-        }
-        
-        addVariantNavigationControls(inv, page, totalPages);
-        
-        player.openInventory(inv);
+        }, (inv, p, tp) -> addVariantNavigationControls(inv, p, tp));
     }
     
     /**
@@ -604,37 +524,24 @@ public class GuiManager {
         holder.setData("page", page);
         
         List<String> stopIds = line.getOrderedStopIds();
-        int totalPages = Math.max(1, (int) Math.ceil((double) stopIds.size() / ITEMS_PER_PAGE));
-        page = Math.min(page, totalPages - 1);
-        page = Math.max(0, page);
-        holder.setData("page", page);
-        holder.setData("totalPages", totalPages);
         
         String coloredName = (line.getColor() != null ? line.getColor() : "") + line.getName();
         String title = ChatColor.translateAlternateColorCodes('&', 
                 msg("gui.line_detail.title") + coloredName);
-        Inventory inv = Bukkit.createInventory(holder, 54, title);
-        holder.setInventory(inv);
         
         boolean canManage = OwnershipUtil.canManageLine(player, line);
         
-        // 填充站点物品
-        int start = page * ITEMS_PER_PAGE;
-        int end = Math.min(start + ITEMS_PER_PAGE, stopIds.size());
-        
-        for (int i = start; i < end; i++) {
-            String stopId = stopIds.get(i);
+        renderPaginatedList(player, holder, title, stopIds, page, (inv, stopId, slot) -> {
             Stop stop = plugin.getStopManager().getStop(stopId);
-            int slot = i - start;
             
             List<String> lore = new ArrayList<>();
-            lore.add(msg("gui.line_detail.index", "index", String.valueOf(i + 1)));
+            lore.add(msg("gui.line_detail.index", "index", String.valueOf(slot + page * ITEMS_PER_PAGE + 1)));
             
             if (stop != null) {
                 lore.add(msg("gui.common.id", "id", stop.getId()));
-                if (i == 0) {
+                if (slot + page * ITEMS_PER_PAGE == 0) {
                     lore.add(msg("gui.line_detail.start_stop"));
-                } else if (i == stopIds.size() - 1) {
+                } else if (slot + page * ITEMS_PER_PAGE == stopIds.size() - 1) {
                     lore.add(msg("gui.line_detail.end_stop"));
                 }
                 lore.add("");
@@ -657,56 +564,54 @@ public class GuiManager {
                         .lore(lore)
                         .build());
             }
-        }
-        
-        // 底部控制栏（简化版）
-        ItemStack filler = new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE)
-                .name(" ")
-                .build();
-        for (int i = 36; i < 54; i++) {
-            inv.setItem(i, filler);
-        }
-        
-        // 上一页
-        if (page > 0) {
-            inv.setItem(SLOT_PREV_PAGE, new ItemBuilder(Material.ARROW)
-                    .name(msg("gui.control.prev_page"))
+        }, (inv, p, tp) -> {
+            // 底部控制栏（简化版）
+            ItemStack filler = new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE)
+                    .name(" ")
+                    .build();
+            for (int i = 36; i < 54; i++) {
+                inv.setItem(i, filler);
+            }
+            
+            // 上一页
+            if (p > 0) {
+                inv.setItem(SLOT_PREV_PAGE, new ItemBuilder(Material.ARROW)
+                        .name(msg("gui.control.prev_page"))
+                        .build());
+            }
+            
+            // 页码信息
+            inv.setItem(SLOT_PAGE_INFO, new ItemBuilder(Material.PAPER)
+                    .name(msg("gui.control.page_info", "current", String.valueOf(p + 1), "total", String.valueOf(tp)))
+                    .lore(msg("gui.control.stop_count", "count", String.valueOf(stopIds.size())))
                     .build());
-        }
-        
-        // 页码信息
-        inv.setItem(SLOT_PAGE_INFO, new ItemBuilder(Material.PAPER)
-                .name(msg("gui.control.page_info", "current", String.valueOf(page + 1), "total", String.valueOf(totalPages)))
-                .lore(msg("gui.control.stop_count", "count", String.valueOf(stopIds.size())))
-                .build());
-        
-        // 下一页
-        if (page < totalPages - 1) {
-            inv.setItem(SLOT_NEXT_PAGE, new ItemBuilder(Material.ARROW)
-                    .name(msg("gui.control.next_page"))
-                    .build());
-        }
-        
-        // 返回按钮
-        inv.setItem(SLOT_BACK, new ItemBuilder(Material.DARK_OAK_DOOR)
-                .name(msg("gui.control.back_line_list"))
-                .build());
-                
-        // 添加站点按钮
-        if (canManage) {
-            inv.setItem(SLOT_FILTER, new ItemBuilder(Material.EMERALD_BLOCK)
-                    .name(msg("gui.line_detail.add_stop"))
-                    .lore(msg("gui.line_detail.add_stop_lore"))
+            
+            // 下一页
+            if (p < tp - 1) {
+                inv.setItem(SLOT_NEXT_PAGE, new ItemBuilder(Material.ARROW)
+                        .name(msg("gui.control.next_page"))
+                        .build());
+            }
+            
+            // 返回按钮
+            inv.setItem(SLOT_BACK, new ItemBuilder(Material.DARK_OAK_DOOR)
+                    .name(msg("gui.control.back_line_list"))
                     .build());
                     
-            // 线路设置按钮
-            inv.setItem(50, new ItemBuilder(Material.ANVIL)
-                    .name(msg("gui.line_detail.settings"))
-                    .lore(msg("gui.line_detail.settings_lore"))
-                    .build());
-        }
-        
-        player.openInventory(inv);
+            // 添加站点按钮
+            if (canManage) {
+                inv.setItem(SLOT_FILTER, new ItemBuilder(Material.EMERALD_BLOCK)
+                        .name(msg("gui.line_detail.add_stop"))
+                        .lore(msg("gui.line_detail.add_stop_lore"))
+                        .build());
+                        
+                // 线路设置按钮
+                inv.setItem(50, new ItemBuilder(Material.ANVIL)
+                        .name(msg("gui.line_detail.settings"))
+                        .lore(msg("gui.line_detail.settings_lore"))
+                        .build());
+            }
+        });
     }
     
     /**

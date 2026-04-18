@@ -420,6 +420,44 @@ public class StopManager {
     }
 
     /**
+     * 查找最匹配给定位置及偏航角的停靠区
+     * 
+     * @param location 要检查的位置
+     * @param playerYaw 玩家偏航角
+     * @return 包含该位置的停靠区中最符合方向的一个，如果没有则返回null
+     */
+    public Stop getBestStopContainingLocation(Location location, float playerYaw) {
+        if (location == null || location.getWorld() == null) {
+            return null;
+        }
+        lock.readLock().lock();
+        try {
+            Octree<Stop> octree = worldStopIndex.get(location.getWorld().getName());
+            if (octree == null) {
+                return null;
+            }
+            List<Stop> foundStops = octree.getAllRanges(new Point3D(location));
+            if (foundStops.isEmpty()) {
+                return null;
+            }
+            Stop bestStop = foundStops.get(0);
+            double minDiff = Double.MAX_VALUE;
+            for (Stop stop : foundStops) {
+                double stopYaw = stop.getLaunchYaw();
+                double diff = Math.abs((stopYaw - playerYaw + 360) % 360);
+                diff = Math.min(diff, 360 - diff);
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    bestStop = stop;
+                }
+            }
+            return bestStop;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    /**
      * 获取所有停靠区ID
      * 
      * @return 所有停靠区ID的集合

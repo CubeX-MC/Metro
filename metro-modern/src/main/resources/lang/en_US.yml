@@ -392,6 +392,7 @@ chat:
   enter_new_speed: "&aPlease enter the new speed. Type 'cancel' to cancel."
   enter_new_price: "&aPlease enter the new ticket price. Type 'cancel' to cancel."
   enter_clone_info: "&aPlease enter new line ID and stop suffix (optional), separated by space. Example: line1_rev _rev"
+  input_cancelled: "&cInput cancelled."
 
 economy:
   insufficient_funds: "&cInsufficient funds. This ride costs: {price}"

@@ -78,7 +78,26 @@ public class BlueMapIntegration {
      * 可在管理员编辑线路后手动调用。
      */
     public void refresh() {
-        BlueMapAPI.getInstance().ifPresent(this::renderMetroNetwork);
+        if (!plugin.getConfigFacade().isMapIntegrationEnabled() || !"BLUEMAP".equalsIgnoreCase(plugin.getConfigFacade().getMapProvider())) {
+            disable();
+            return;
+        }
+
+        if (!enabled) {
+            enable();
+        } else {
+            BlueMapAPI.getInstance().ifPresent(this::renderMetroNetwork);
+        }
+    }
+
+    public void disable() {
+        BlueMapAPI.getInstance().ifPresent(api -> {
+            for (BlueMapMap map : api.getMaps()) {
+                map.getMarkerSets().remove(MARKER_SET_ID);
+            }
+        });
+        enabled = false;
+        plugin.getLogger().info("[BlueMap] Metro markers removed.");
     }
 
     public boolean isEnabled() {
@@ -113,10 +132,15 @@ public class BlueMapIntegration {
         // 获取该世界对应的 BlueMap 世界和地图
         for (BlueMapMap map : api.getMaps()) {
             BlueMapWorld bmWorld = map.getWorld();
-            // BlueMap world id 可能以 minecraft:overworld 之类的格式出现
-            // 这里用 contains 做宽松匹配
             String bmWorldId = bmWorld.getId();
-            if (!bmWorldId.contains(worldName) && !worldName.contains(bmWorldId)) {
+            
+            // 严格匹配世界名称，避免 world 匹配到 world_nether 的情况
+            boolean match = bmWorldId.equalsIgnoreCase(worldName);
+            if (!match && bmWorldId.contains(":")) {
+                String[] parts = bmWorldId.split(":");
+                match = parts[parts.length - 1].equalsIgnoreCase(worldName);
+            }
+            if (!match) {
                 continue;
             }
 

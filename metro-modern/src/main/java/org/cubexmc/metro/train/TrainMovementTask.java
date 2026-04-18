@@ -14,6 +14,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.HandlerList;
+import org.bukkit.event.vehicle.VehicleMoveEvent;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.event.MetroTrainArrivalEvent;
 import org.cubexmc.metro.event.MetroTrainDepartureEvent;
@@ -37,13 +38,17 @@ public class TrainMovementTask implements Listener {
         MOVING_BETWEEN_STATIONS // 车在行驶，不在站台区域内
     }
 
+    // 全局管理活动的任务，便于传送门等系统在替换矿车实体时进行交接
+    private static final java.util.Map<java.util.UUID, TrainMovementTask> activeTasks = new java.util.concurrent.ConcurrentHashMap<>();
+
     private final Metro plugin;
-    private final Minecart minecart;
+    private Minecart minecart;
     private final Player passenger;
     private final Line line;
     private String currentStopId;
     private String targetStopId;
     private TrainState currentState;
+    private boolean isTeleporting = false; // 用于告知任务当前正在经过传送门，切勿取消任务
 
     /**
      * 创建一个新的列车移动任务
@@ -99,9 +104,33 @@ public class TrainMovementTask implements Listener {
      * 取消任务及注销监听器
      */
     public void cancel() {
+        if (minecart != null) {
+            activeTasks.remove(minecart.getUniqueId());
+        }
         HandlerList.unregisterAll(this);
         debugTrain("Task cancelled for passenger=" + safePassengerName() + ", currentStop=" + currentStopId
                 + ", targetStop=" + targetStopId);
+    }
+
+    /**
+     * 辅助方法：供 PortalManager 等系统在不得不销毁旧矿车并创建新矿车时，将该任务的所有权和监听转移给新矿车
+     */
+    public void transferMinecart(Minecart newCart) {
+        if (this.minecart != null) {
+            activeTasks.remove(this.minecart.getUniqueId());
+        }
+        this.minecart = newCart;
+        this.isTeleporting = false; // 传送门交接完毕，解除传送标记
+        activeTasks.put(newCart.getUniqueId(), this);
+        debugTrain("Transferred movement task to new minecart UUID=" + newCart.getUniqueId());
+    }
+
+    public void setTeleporting(boolean teleporting) {
+        this.isTeleporting = teleporting;
+    }
+
+    public static TrainMovementTask getTaskFor(Minecart cart) {
+        return activeTasks.get(cart.getUniqueId());
     }
 
     private void debugTrain(String message) {
@@ -148,8 +177,8 @@ public class TrainMovementTask implements Listener {
             return;
         }
 
-        // 检查玩家是否仍在矿车中
-        if (!isPassengerStillRiding()) {
+        // 检查玩家是否仍在矿车中 (除非正在被传送)
+        if (!isTeleporting && !isTeleporting && !isPassengerStillRiding()) {
             handlePassengerExit();
             return;
         }
@@ -158,10 +187,52 @@ public class TrainMovementTask implements Listener {
         
         // 只有当进入的站点是我们的目标站点时，才处理进站和停车逻辑
         if (targetStopId != null && targetStopId.equals(enteredStop.getId())) {
-             // 进站触发事件
+             // 进站触发事件，变更状态为站内移动
              transitionToMovingInStation(enteredStop);
-             // 立刻停稳并发车 (消除距离判断)
-             transitionToStoppedAtStation(enteredStop);
+             // 我们在这个版本中移除了“立刻停稳”的硬代码，
+             // 让 onVehicleMove 负责后续的减速和停车捕捉
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onVehicleMove(VehicleMoveEvent event) {
+        if (!event.getVehicle().equals(this.minecart)) {
+            return;
+        }
+
+        if (currentState == TrainState.MOVING_IN_STATION) {
+            Stop targetStop = plugin.getStopManager().getStop(targetStopId);
+            if (targetStop == null || targetStop.getStopPointLocation() == null) {
+                return;
+            }
+
+            Location currentLocation = minecart.getLocation();
+            Location targetLocation = targetStop.getStopPointLocation();
+
+            if (!currentLocation.getWorld().equals(targetLocation.getWorld())) {
+                return;
+            }
+
+            double distance = currentLocation.distance(targetLocation);
+
+            // 到达停车点 (距离 < 0.8)
+            if (distance < 0.8) {
+                transitionToStoppedAtStation(targetStop);
+                return;
+            }
+
+            // 计算减速曲线 (缩放距离，站台15格内非线性减速)
+            double defaultMaxSpeed = plugin.getConfigFacade().getCartSpeed();
+            double minSpeed = 0.1; // 最低速度，避免停在半路
+            double speedRatio = Math.min(1.0, distance / 15.0);
+            double targetSpeed = minSpeed + (defaultMaxSpeed - minSpeed) * Math.pow(speedRatio, 0.7);
+
+            // 拦截并覆盖 VehicleListener(NORMAL) 计算出的速度
+            // 如果 VehicleListener 把速度设为0(比如冻结中)，我们就不拉高它
+            double currentMaxSpeed = minecart.getMaxSpeed();
+            if (currentMaxSpeed > 0.0) {
+                minecart.setMaxSpeed(Math.min(currentMaxSpeed, targetSpeed));
+            }
         }
     }
 
@@ -171,10 +242,11 @@ public class TrainMovementTask implements Listener {
     private void transitionToStoppedAtStation(Stop stop) {
         // Vector Snapping: 强制绝对居中并完全停止动能
         minecart.setVelocity(new Vector(0, 0, 0));
+        minecart.setMaxSpeed(0); // 防止等待期间玩家手操移动
         Location snapLocation = stop.getStopPointLocation().clone();
         snapLocation.setX(snapLocation.getBlockX() + 0.5);
         snapLocation.setZ(snapLocation.getBlockZ() + 0.5);
-        minecart.teleport(snapLocation);
+        SchedulerUtil.teleportEntity(minecart, snapLocation);
 
         // 更新状态
         TrainState previousState = currentState;
@@ -219,6 +291,9 @@ public class TrainMovementTask implements Listener {
         debugTrain("State transition " + previousState + " -> " + currentState + " for passenger=" + safePassengerName()
                 + ", currentStop=" + currentStopId + ", targetStop=" + targetStopId);
 
+        if (passenger != null && passenger.isOnline()) {
+            passenger.sendTitle("", "", 0, 0, 0); // 清除等待显示的Title和Actionbar
+        }
         updateScoreboardBasedOnState();
     }
 
@@ -300,6 +375,12 @@ public class TrainMovementTask implements Listener {
         // 触发发车事件
         org.bukkit.Bukkit.getPluginManager()
                 .callEvent(new MetroTrainDepartureEvent(minecart, passenger, line, currentStop, nextStop));
+
+        // 恢复默认最大速度（防止矿车卡在上一站设置的maxSpeed=0）
+        double max_speed = line.getMaxSpeed();
+        if (max_speed == -1.0)
+            max_speed = plugin.getConfigFacade().getCartSpeed();
+        minecart.setMaxSpeed(max_speed);
 
         // 设置矿车初始速度
         initMinecartVelocity(currentStop.getLaunchYaw(), plugin.getConfigFacade().getCartSpeed() * 0.5);
@@ -410,10 +491,15 @@ public class TrainMovementTask implements Listener {
         TrainMovementTask trainTask = new TrainMovementTask(plugin, minecart, passenger, lineId, currentStopId);
         // 确立为由事件驱动的架构，直接注册自己
         org.bukkit.Bukkit.getPluginManager().registerEvents(trainTask, plugin);
+        activeTasks.put(minecart.getUniqueId(), trainTask);
 
         // 设置任务的目标站点为下一站
         String nextStopId = line.getNextStopId(currentStopId);
         trainTask.targetStopId = nextStopId;
+
+        // 生成初始立刻锁定速度，防止在发车前被动力铁轨推出
+        minecart.setMaxSpeed(0);
+        minecart.setVelocity(new Vector(0, 0, 0));
 
         // 执行到站处理，这会显示等待信息并设置延迟发车
         // 传递true表示矿车刚刚生成，避免把目的地设置为当前站
@@ -432,10 +518,8 @@ public class TrainMovementTask implements Listener {
                 // 在激活的动力铁轨上设置更高的最大速度
                 // minecart.setMaxSpeed(speed);
                 // 设置实际速度
-                // launchYaw is the direction the train should travel.
                 // Bukkit yaw: 0=south(+Z), 90=west(-X), 180=north(-Z), -90=east(+X)
-                // +180° inverts the direction so the cart moves away from the stop point,
-                // correcting the previously reversed travel direction.
+                // 移除之前错误的 +180 修正，改回原版不修正的方向
                 double launchRad = Math.toRadians(yaw);
                 Vector direction = new Vector(
                         -Math.sin(launchRad),

@@ -132,7 +132,14 @@ public class VehicleListener implements Listener {
         }
 
         if (LocationUtil.isOnRail(to)) {
+            if (minecart.getMaxSpeed() == 0.0) {
+                // 如果被 TrainMovementTask 冻结，强制停止所有的微小位移
+                minecart.setVelocity(new Vector(0, 0, 0));
+                return;
+            }
+
             // BLOCK_BASED 控制逻辑
+            // 忽略已经被 TrainMovementTask 设置为停站状态 (maxSpeed == 0) 的矿车
             if ("BLOCK_BASED".equalsIgnoreCase(plugin.getConfigFacade().getSpeedControlMode())) {
                 org.bukkit.block.Block blockBelow = to.getBlock().getRelative(org.bukkit.block.BlockFace.DOWN);
                 String blockTypeName = blockBelow.getType().name();
@@ -159,19 +166,41 @@ public class VehicleListener implements Listener {
 
             // ---- 传送门检测 ----
             if (plugin.getConfigFacade().isPortalsEnabled() && plugin.getPortalManager() != null) {
-                org.bukkit.block.Block blockBelow = to.getBlock().getRelative(org.bukkit.block.BlockFace.DOWN);
                 String triggerBlockType = plugin.getConfigFacade().getPortalTriggerBlock();
+                org.bukkit.block.Block blockBelow = to.getBlock().getRelative(org.bukkit.block.BlockFace.DOWN);
+                org.bukkit.block.Block blockBelow2 = blockBelow.getRelative(org.bukkit.block.BlockFace.DOWN);
+                
+                boolean isTriggered = false;
+                org.bukkit.block.Block matchedBlock = null;
+
+                // 矿车的坐标可能飘忽不定，如果 to.getBlock() 正好是铁轨，则 blockBelow 是支撑方块。
                 if (blockBelow.getType().name().equals(triggerBlockType)) {
+                    isTriggered = true;
+                } else if (blockBelow2.getType().name().equals(triggerBlockType)) {
+                    // 如果 to.getBlock() 是铁轨上方的空气方块，则 blockBelow 是铁轨，blockBelow2 是支撑方块。
+                    isTriggered = true;
+                } else if (to.getBlock().getType().name().equals(triggerBlockType)) {
+                    // 防呆：有时候玩家直接把铁轨铺在非常特殊的高度上。
+                    isTriggered = true;
+                }
+
+                if (isTriggered) {
                     org.cubexmc.metro.model.Portal portal = plugin.getPortalManager().getPortalAt(to);
+                    if (portal == null) {
+                        // 尝试往下偏移一格检测（有时玩家脚踩位置低于/高于实际判定中心）
+                        portal = plugin.getPortalManager().getPortalAt(to.clone().subtract(0, 1, 0));
+                    }
                     if (portal != null) {
                         plugin.getPortalManager().teleportMinecart(minecart, portal);
                         return; // 传送后不再处理后续逻辑
+                    } else {
+                        plugin.getLogger().warning("[Debug-Portal] 矿车经过了触发方块 (" + triggerBlockType + ")，但该坐标 " + to.getBlockX() + " " + to.getBlockY() + " " + to.getBlockZ() + " 并没有绑定任何传送门入口！请重新站在上面执行 /metro portal create");
                     }
                 }
             }
 
             // 限制上坡速度为0.4，防止到达坡顶后倒退
-            if (to.getY() > from.getY()) {
+            if (minecart.getMaxSpeed() > 0.0 && to.getY() > from.getY()) {
                 Vector direction = LocationUtil.getDirectionVector(from, to);
                 minecart.setVelocity(direction.multiply(0.4));
             }
