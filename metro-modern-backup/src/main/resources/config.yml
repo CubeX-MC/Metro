@@ -1,0 +1,205 @@
+# Metro 配置文件
+# Metro Configuration File
+
+# Title 显示配置
+# Title Display Configuration
+titles:
+  # 停靠区显示（包含进入时和持续显示）
+  # Stop Area Display (includes entering and continuous display)
+  stop_continuous:
+    enabled: true
+    # 刷新间隔，单位tick
+    # Refresh interval in ticks
+    interval: 40
+    # 是否在站台区域始终显示信息，true为持续显示，false为仅在进入时显示一次
+    # Whether to always display information in the station area. true for continuous display, false for displaying only once upon entry
+    always: true
+    # 普通站点
+    # Normal station
+    title: '&b{stop_name}'
+    subtitle: '&d➔ {terminus_name} &8| &e» {next_stop_name} &8| &a⇄ {stop_transfers}'
+    actionbar: '&fRight-click rail to board &7[&r{line_color_code}{line}&7]'
+    # 始发站特殊显示
+    # Special display for starting station
+    start_stop:
+      title: '&b{stop_name}'
+      subtitle: '&d➔ {terminus_name} &8| &fOrigin &8| &a⇄ {stop_transfers}'
+      actionbar: '&fRight-click rail to board &7[&r{line_color_code}{line}&7]'
+    # 终点站特殊显示
+    # Special display for terminal station
+    end_stop:
+      title: '&b{stop_name}'
+      subtitle: '&c🛑 Terminal Station &8| &a⇄ {stop_transfers}'
+      actionbar: '&cEnd of line. Please allow passengers to exit.'
+    # 以下选项仅在 always=false 时生效
+    # The following options are effective only when always=false
+    fade_in: 10
+    stay: 40
+    fade_out: 10
+  
+  # 到达站台时显示的title
+  # Title displayed upon arrival at the station
+  arrive_stop:
+    enabled: true
+    title: '&b{stop_name}'
+    subtitle: '&7Next: &e{next_stop_name} &8| &a⇄ {stop_transfers}'
+    fade_in: 10
+    stay: 40
+    fade_out: 10
+  
+  # 终点站显示
+  # Terminal station display
+  terminal_stop:
+    enabled: true
+    title: '&b{stop_name}'
+    subtitle: '&c🛑 Terminal &8| &a⇄ {stop_transfers}'
+    fade_in: 10
+    stay: 60
+    fade_out: 10
+  
+  # 乘客上车后行程信息
+  # Trip information after passenger boards
+  departure:
+    enabled: true
+    # 刷新间隔，单位tick
+    # Refresh interval in ticks
+    interval: 40
+    title: '&e» {next_stop_name}'
+    subtitle: '&d➔ {terminus_name}'
+    actionbar: '&7Departing... Please stand clear of the doors.'
+    fade_in: 5
+    stay: 40
+    fade_out: 5
+  
+  # 乘客等待发车时的信息
+  # Information while passenger is waiting for departure
+  waiting:
+    enabled: true
+    # 刷新间隔，单位tick
+    # Refresh interval in ticks
+    interval: 20
+    title: '&fDeparting Soon'
+    subtitle: '&7Current: &a{stop_name} &8| &7Next: &e{next_stop_name}'
+    actionbar: '&e⚠ Departing in &c{countdown}s'
+
+# 音乐配置
+# Sound Configuration
+sounds:
+  # 发车时播放的音乐（模拟地铁发车前的提示音）
+  # Sound played on departure (simulates pre-departure announcement)
+  departure:
+    enabled: true
+    # 播放前的初始延迟（单位tick，20tick=1秒）
+    # Initial delay before playing (in ticks, 20 ticks = 1 second)
+    initial_delay: 0
+    # 音符序列，格式为 "类型,音高,音量,乐器,延迟"
+    # Note sequence, format: "TYPE,PITCH,VOLUME,INSTRUMENT,DELAY"
+    # 类型可以是 NOTE (音符盒音符) 或 CUSTOM (自定义声音)
+    # TYPE can be NOTE (noteblock sound) or CUSTOM (custom sound)
+    # 音高范围：0-24 (对应F#3到F#5)
+    # PITCH range: 0-24 (corresponds to F#3 to F#5)
+    # 音量范围：0.0-1.0
+    # VOLUME range: 0.0-1.0
+    # 对于NOTE，乐器可以是：PIANO, BASS, SNARE, CLICKS, BASS_DRUM, BELL, FLUTE, CHIME, GUITAR, XYLOPHONE, IRON_XYLOPHONE, COW_BELL, DIDGERIDOO, BIT, BANJO, PLING
+    # For NOTE, INSTRUMENT can be: PIANO, BASS, SNARE, CLICKS, BASS_DRUM, BELL, FLUTE, CHIME, GUITAR, XYLOPHONE, IRON_XYLOPHONE, COW_BELL, DIDGERIDOO, BIT, BANJO, PLING
+    notes:
+    - NOTE,18,1.0,PLING,0
+    - NOTE,18,1.0,PLING,4
+  
+  # 到站时播放的音乐（模拟车内到站提示音）
+  # Sound played on arrival (simulates in-train arrival announcement)
+  arrival:
+    enabled: true
+    # 播放前的初始延迟（单位tick，20tick=1秒）
+    # Initial delay before playing (in ticks, 20 ticks = 1 second)
+    initial_delay: 20
+    notes:
+    - NOTE,6,0.8,CHIME,0
+    - NOTE,10,0.9,CHIME,4
+    - NOTE,13,1.0,CHIME,8
+  
+  # 车辆到站时播放的音乐（模拟站台列车进站声音）
+  # Sound played when train arrives at station (simulates platform arrival sound)
+  station_arrival:
+    enabled: true
+    # 播放前的初始延迟（单位tick，20tick=1秒）
+    # Initial delay before playing (in ticks, 20 ticks = 1 second)
+    initial_delay: 0
+    notes:
+    - NOTE,1,0.5,BASS_DRUM,0
+    - NOTE,5,0.3,SNARE,5
+  
+  # 等待发车时循环播放的提示音乐
+  # Looping sound played while waiting for departure
+  waiting:
+    enabled: true
+    # 播放前的初始延迟（单位tick，20tick=1秒）
+    # Initial delay before playing (in ticks, 20 ticks = 1 second)
+    initial_delay: 0
+    # 循环间隔（单位tick，20tick=1秒）多长时间播放一次
+    # Loop interval (in ticks, 20 ticks = 1 second), how often to play
+    interval: 20
+    notes:
+    - NOTE,18,0.3,CLICKS,0
+
+# 计分板配置
+# Scoreboard Configuration
+scoreboard:
+  # 是否启用计分板（暂不支持Folia）
+  # Enable scoreboard (Does not support Folia)
+  enabled: true
+  # 站点显示样式
+  # Stop display styles
+  styles:
+    # 当前站点样式
+    # Current stop style
+    current_stop: '&f● '
+    # 下一站样式
+    # Next stop style
+    next_stop: '&a○ '
+    # 其他站点样式
+    # Other stops style
+    other_stops: '&7· '
+  # 线路标识符配置
+  # Line identifier configuration
+  line_symbol: ❙ # 所有线路统一使用的标识符，将根据线路颜色自动着色
+# Identifier used for all lines, will be colored automatically based on line color
+
+# 一般设置
+# General Settings
+settings:
+  selection_tool: GOLDEN_SHOVEL
+  # 默认语言设置 (支持: zh_CN - 中文, en_US - 英文)
+  # Default language setting (Supported: zh_CN - Chinese, en_US - English)
+  default_language: en_US
+  # 矿车移动速度
+  # Minecart movement speed
+  cart_speed: 0.3
+  # 矿车生成延迟（右键铁轨后多久生成矿车，单位tick，20tick=1秒）
+  # Minecart spawn delay (how long after right-clicking the rail to spawn, in ticks, 20 ticks = 1 second)
+  cart_spawn_delay: 60
+  # 矿车消失延迟（下车后多久矿车消失，单位tick，20tick=1秒）
+  # Minecart despawn delay (how long after dismounting for the cart to disappear, in ticks, 20 ticks = 1 second)
+  cart_despawn_delay: 0
+  # 矿车发车延迟（上车后多久自动发车，单位tick，20tick=1秒）
+  # Minecart departure delay (how long after boarding for the cart to depart automatically, in ticks, 20 ticks = 1 second)
+  cart_departure_delay: 100
+
+# 脱轨相关设置
+# Derailment Settings
+derailment:
+  # 爆炸功能
+  # Explosion feature
+  explosion:
+    # 设置为 true 开启此功能, false 关闭
+    # Set to true to enable this feature, false to disable
+    enabled: false
+    # 爆炸威力 (4.0 相当于TNT)
+    # Explosion power (4.0 is equivalent to TNT)
+    power: 4.0
+    # 爆炸是否引起火灾
+    # Whether the explosion causes fire
+    set_fire: false
+    # 爆炸是否破坏方块
+    # Whether the explosion breaks blocks
+    break_blocks: false

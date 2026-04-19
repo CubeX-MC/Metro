@@ -1,0 +1,17 @@
+# Metro插件线路配置文件
+# 
+# 格式:
+# line_id:
+#   name: 线路显示名称
+#   ordered_platform_ids: 
+#     - platform_id1
+#     - platform_id2
+#     ...
+#
+# 示例:
+# line1:
+#   name: 1号线 - 东西向
+#   ordered_platform_ids:
+#     - east_station_north_platform
+#     - central_station_east_platform
+#     - west_station_south_platform 

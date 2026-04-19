@@ -1,0 +1,17 @@
+# Metro插件停靠区配置文件
+# 
+# 格式:
+# stop_id:
+#   name: 停靠区显示名称
+#   corner1: world,x,y,z
+#   corner2: world,x,y,z
+#   stopPoint: world,x,y,z
+#   launchYaw: 0.0
+#
+# 示例:
+# central:
+#   name: 中央站
+#   corner1: world,100,64,100
+#   corner2: world,110,70,110
+#   stopPoint: world,105,65,105
+#   launchYaw: 90.0 
