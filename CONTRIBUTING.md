@@ -18,7 +18,7 @@
 
 - CI must pass on `main` and on your branch.
 - Coverage and SpotBugs checks must pass.
-- For runtime-impacting changes, run manual checks from `metro-modern/docs/regression-baseline.md`.
+- For runtime-impacting changes, run manual checks from `docs/regression-baseline.md`.
 
 ## Coding Conventions
 
@@ -28,6 +28,6 @@
 
 ## Release Preparation
 
-- Follow `metro-modern/docs/release-checklist.md`.
+- Follow `docs/release-checklist.md`.
 - Ensure language keys remain consistent across locale files.
 - Update `CHANGELOG.md` for user-visible changes.
