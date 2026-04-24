@@ -3,7 +3,7 @@
   <parent>
     <artifactId>metro-parent</artifactId>
     <groupId>org.cubexmc</groupId>
-    <version>1.1.4</version>
+    <version>1.1.5</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>metro</artifactId>
@@ -39,7 +39,7 @@
                   <shadedPattern>org.cubexmc.metro.lib.scoreboardlibrary</shadedPattern>
                 </relocation>
                 <relocation>
-                  <pattern>cloud.commandframework</pattern>
+                  <pattern>org.incendo.cloud</pattern>
                   <shadedPattern>org.cubexmc.metro.lib.cloud</shadedPattern>
                 </relocation>
                 <relocation>

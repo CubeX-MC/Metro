@@ -1,9 +1,9 @@
 package org.cubexmc.metro.command.newcmd;
 
-import cloud.commandframework.annotations.Argument;
-import cloud.commandframework.annotations.CommandDescription;
-import cloud.commandframework.annotations.CommandMethod;
-import cloud.commandframework.annotations.CommandPermission;
+import org.incendo.cloud.annotations.Argument;
+import org.incendo.cloud.annotations.CommandDescription;
+import org.incendo.cloud.annotations.Command;
+import org.incendo.cloud.annotations.Permission;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.cubexmc.metro.Metro;
@@ -24,13 +24,13 @@ public class MetroMainCommand {
         this.stopManager = stopManager;
     }
 
-    @CommandMethod("m|metro")
+    @Command("m|metro")
     @CommandDescription("Metro Main Command")
     public void root(CommandSender sender) {
         help(sender);
     }
 
-    @CommandMethod("m|metro help")
+    @Command("m|metro help")
     @CommandDescription("Show Metro Help Menu")
     public void help(CommandSender sender) {
         org.cubexmc.metro.manager.LanguageManager lang = plugin.getLanguageManager();
@@ -41,16 +41,16 @@ public class MetroMainCommand {
         sender.sendMessage(lang.getMessage("command.help_stop"));
     }
 
-    @CommandMethod("m|metro gui")
+    @Command("m|metro gui")
     @CommandDescription("Open the Metro GUI")
-    @CommandPermission("metro.gui")
+    @Permission("metro.gui")
     public void gui(Player player) {
         plugin.getGuiManager().openMainMenu(player);
     }
 
-    @CommandMethod("m|metro reload")
+    @Command("m|metro reload")
     @CommandDescription("Reload Metro configuration")
-    @CommandPermission("metro.admin")
+    @Permission("metro.admin")
     public void reload(CommandSender sender) {
         if (sender instanceof Player player) {
             if (!OwnershipUtil.hasAdminBypass(player)) {

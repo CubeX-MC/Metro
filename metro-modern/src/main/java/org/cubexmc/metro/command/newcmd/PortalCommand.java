@@ -1,9 +1,9 @@
 package org.cubexmc.metro.command.newcmd;
 
-import cloud.commandframework.annotations.Argument;
-import cloud.commandframework.annotations.CommandDescription;
-import cloud.commandframework.annotations.CommandMethod;
-import cloud.commandframework.annotations.CommandPermission;
+import org.incendo.cloud.annotations.Argument;
+import org.incendo.cloud.annotations.CommandDescription;
+import org.incendo.cloud.annotations.Command;
+import org.incendo.cloud.annotations.Permission;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
@@ -28,9 +28,9 @@ public class PortalCommand {
         this.portalManager = plugin.getPortalManager();
     }
 
-    @CommandMethod("m|metro portal create <id>")
+    @Command("m|metro portal create <id>")
     @CommandDescription("在当前位置创建一个传送门入口")
-    @CommandPermission("metro.admin")
+    @Permission("metro.admin")
     public void createPortal(Player sender, @Argument("id") String id) {
         if (portalManager.getPortal(id) != null) {
             sender.sendMessage(ChatColor.RED + "传送门 '" + id + "' 已存在！");
@@ -53,9 +53,9 @@ public class PortalCommand {
         sender.sendMessage(ChatColor.YELLOW + "请使用 /metro portal setdest " + id + " 设置目标位置。");
     }
 
-    @CommandMethod("m|metro portal setdest <id>")
+    @Command("m|metro portal setdest <id>")
     @CommandDescription("将当前位置设置为传送门的目标位置")
-    @CommandPermission("metro.admin")
+    @Permission("metro.admin")
     public void setDestination(Player sender, @Argument("id") String id) {
         if (!portalManager.setDestination(id, sender.getLocation())) {
             sender.sendMessage(ChatColor.RED + "传送门 '" + id + "' 不存在！");
@@ -69,9 +69,9 @@ public class PortalCommand {
                 + " (" + loc.getWorld().getName() + ")");
     }
 
-    @CommandMethod("m|metro portal link <id1> <id2>")
+    @Command("m|metro portal link <id1> <id2>")
     @CommandDescription("双向配对两个传送门")
-    @CommandPermission("metro.admin")
+    @Permission("metro.admin")
     public void linkPortals(Player sender,
                             @Argument("id1") String id1,
                             @Argument("id2") String id2) {
@@ -82,9 +82,9 @@ public class PortalCommand {
         sender.sendMessage(ChatColor.GREEN + "传送门 '" + id1 + "' ↔ '" + id2 + "' 已双向配对。");
     }
 
-    @CommandMethod("m|metro portal delete <id>")
+    @Command("m|metro portal delete <id>")
     @CommandDescription("删除一个传送门")
-    @CommandPermission("metro.admin")
+    @Permission("metro.admin")
     public void deletePortal(Player sender, @Argument("id") String id) {
         if (!portalManager.deletePortal(id)) {
             sender.sendMessage(ChatColor.RED + "传送门 '" + id + "' 不存在！");
@@ -93,9 +93,9 @@ public class PortalCommand {
         sender.sendMessage(ChatColor.GREEN + "传送门 '" + id + "' 已删除。");
     }
 
-    @CommandMethod("m|metro portal list")
+    @Command("m|metro portal list")
     @CommandDescription("列出所有传送门")
-    @CommandPermission("metro.admin")
+    @Permission("metro.admin")
     public void listPortals(CommandSender sender) {
         List<Portal> allPortals = portalManager.getAllPortals();
         if (allPortals.isEmpty()) {
@@ -116,9 +116,9 @@ public class PortalCommand {
         }
     }
 
-    @CommandMethod("m|metro portal reload")
+    @Command("m|metro portal reload")
     @CommandDescription("重新加载传送门配置")
-    @CommandPermission("metro.admin")
+    @Permission("metro.admin")
     public void reloadPortals(CommandSender sender) {
         portalManager.load();
         sender.sendMessage(ChatColor.GREEN + "传送门配置已重新加载。共 " + portalManager.getAllPortals().size() + " 个传送门。");

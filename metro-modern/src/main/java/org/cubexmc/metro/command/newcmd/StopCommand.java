@@ -1,9 +1,10 @@
 package org.cubexmc.metro.command.newcmd;
 
-import cloud.commandframework.annotations.Argument;
-import cloud.commandframework.annotations.CommandDescription;
-import cloud.commandframework.annotations.CommandMethod;
-import cloud.commandframework.annotations.specifier.Greedy;
+import org.incendo.cloud.annotations.Argument;
+import org.incendo.cloud.annotations.CommandDescription;
+import org.incendo.cloud.annotations.Command;
+import org.incendo.cloud.annotation.specifier.Greedy;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -46,13 +47,13 @@ public class StopCommand {
         this.lineManager = lineManager;
     }
 
-    @CommandMethod("m|metro stop|s")
+    @Command("m|metro stop|s")
     @CommandDescription("Show Stop Help Menu")
     public void help(CommandSender sender) {
         showHelp(sender, 1);
     }
 
-    @CommandMethod("m|metro stop|s help [page]")
+    @Command("m|metro stop|s help [page]")
     @CommandDescription("Show Stop Help Menu Page")
     public void helpPage(CommandSender sender, @Argument("page") Integer page) {
         showHelp(sender, page == null ? 1 : page);
@@ -94,7 +95,7 @@ public class StopCommand {
         }
     }
 
-    @CommandMethod("m|metro stop|s list")
+    @Command("m|metro stop|s list")
     @CommandDescription("List all metro stops")
     public void list(Player player) {
         List<Stop> stops = new ArrayList<>(stopManager.getAllStopIds().stream()
@@ -121,7 +122,7 @@ public class StopCommand {
         }
     }
 
-    @CommandMethod("m|metro stop|s create <id> <name>")
+    @Command("m|metro stop|s create <id> <name>")
     @CommandDescription("Create a new metro stop")
     public void create(Player player, @Argument("id") String id, @Greedy @Argument("name") String name) {
         if (!OwnershipUtil.canCreateStop(player)) {
@@ -150,7 +151,7 @@ public class StopCommand {
         }
     }
 
-    @CommandMethod("m|metro stop|s delete <id>")
+    @Command("m|metro stop|s delete <id>")
     @CommandDescription("Delete a metro stop")
     public void delete(Player player, @Argument(value = "id", suggestions = "stopIds") String id) {
         Stop stop = stopManager.getStop(id);
@@ -174,7 +175,7 @@ public class StopCommand {
         }
     }
 
-    @CommandMethod("m|metro stop|s tp <id>")
+    @Command("m|metro stop|s tp <id>")
     @CommandDescription("Teleport to a metro stop")
     public void tp(Player player, @Argument(value = "id", suggestions = "stopIds") String id) {
         Stop stop = stopManager.getStop(id);
@@ -210,7 +211,7 @@ public class StopCommand {
         return stopComponent;
     }
 
-    @CommandMethod("m|metro stop|s setcorners <id>")
+    @Command("m|metro stop|s setcorners <id>")
     @CommandDescription("Set stop corners from current selection")
     public void setCorners(Player player, @Argument(value = "id", suggestions = "stopIds") String id) {
         Stop stop = stopManager.getStop(id);
@@ -237,7 +238,7 @@ public class StopCommand {
         }
     }
 
-    @CommandMethod("m|metro stop|s setpoint [id] [yaw]")
+    @Command("m|metro stop|s setpoint [id] [yaw]")
     @CommandDescription("Set stop point at player position")
     public void setPoint(Player player,
                          @Argument(value = "id", suggestions = "stopIds") String id,
@@ -288,7 +289,7 @@ public class StopCommand {
         }
     }
 
-    @CommandMethod("m|metro stop|s addtransfer <id> <lineId>")
+    @Command("m|metro stop|s addtransfer <id> <lineId>")
     @CommandDescription("Add transferable line to stop")
     public void addTransfer(Player player,
                             @Argument(value = "id", suggestions = "stopIds") String id,
@@ -320,7 +321,7 @@ public class StopCommand {
         }
     }
 
-    @CommandMethod("m|metro stop|s deltransfer <id> <lineId>")
+    @Command("m|metro stop|s deltransfer <id> <lineId>")
     @CommandDescription("Remove transferable line from stop")
     public void delTransfer(Player player,
                             @Argument(value = "id", suggestions = "stopIds") String id,
@@ -352,7 +353,7 @@ public class StopCommand {
         }
     }
 
-    @CommandMethod("m|metro stop|s listtransfers <id>")
+    @Command("m|metro stop|s listtransfers <id>")
     @CommandDescription("List transferable lines for stop")
     public void listTransfers(Player player, @Argument(value = "id", suggestions = "stopIds") String id) {
         Stop stop = stopManager.getStop(id);
@@ -381,7 +382,7 @@ public class StopCommand {
         }
     }
 
-    @CommandMethod("m|metro stop|s settitle <id> <titleType> <titleKey> <titleValue>")
+    @Command("m|metro stop|s settitle <id> <titleType> <titleKey> <titleValue>")
     @CommandDescription("Set custom title entry for stop")
     public void setTitle(Player player,
                          @Argument(value = "id", suggestions = "stopIds") String id,
@@ -422,7 +423,7 @@ public class StopCommand {
                         "stop_name", stop.getName()), "title_type", titleType), "title_key", titleKey), "title_value", titleValue)));
     }
 
-    @CommandMethod("m|metro stop|s deltitle <id> <titleType> [titleKey]")
+    @Command("m|metro stop|s deltitle <id> <titleType> [titleKey]")
     @CommandDescription("Delete custom title entry for stop")
     public void delTitle(Player player,
                          @Argument(value = "id", suggestions = "stopIds") String id,
@@ -485,7 +486,7 @@ public class StopCommand {
                         "stop_name", stop.getName()), "title_type", titleType), "title_key", titleKey)));
     }
 
-    @CommandMethod("m|metro stop|s listtitles <id>")
+    @Command("m|metro stop|s listtitles <id>")
     @CommandDescription("List custom title config")
     public void listTitles(Player player, @Argument(value = "id", suggestions = "stopIds") String id) {
         Stop stop = stopManager.getStop(id);
@@ -515,7 +516,7 @@ public class StopCommand {
         }
     }
 
-    @CommandMethod("m|metro stop|s rename <id> <name>")
+    @Command("m|metro stop|s rename <id> <name>")
     @CommandDescription("Rename stop display name")
     public void rename(Player player, @Argument(value = "id", suggestions = "stopIds") String id, @Greedy @Argument("name") String name) {
         Stop stop = stopManager.getStop(id);
@@ -539,7 +540,7 @@ public class StopCommand {
         }
     }
 
-    @CommandMethod("m|metro stop|s info <id>")
+    @Command("m|metro stop|s info <id>")
     @CommandDescription("Show stop details")
     public void info(Player player, @Argument(value = "id", suggestions = "stopIds") String id) {
         Stop stop = stopManager.getStop(id);
@@ -600,7 +601,7 @@ public class StopCommand {
         }
     }
 
-    @CommandMethod("m|metro stop|s trust <id> <playerName>")
+    @Command("m|metro stop|s trust <id> <playerName>")
     @CommandDescription("Grant stop admin")
     public void trust(Player player,
                       @Argument(value = "id", suggestions = "stopIds") String id,
@@ -634,7 +635,7 @@ public class StopCommand {
         }
     }
 
-    @CommandMethod("m|metro stop|s untrust <id> <playerName>")
+    @Command("m|metro stop|s untrust <id> <playerName>")
     @CommandDescription("Revoke stop admin")
     public void untrust(Player player,
                         @Argument(value = "id", suggestions = "stopIds") String id,
@@ -666,7 +667,7 @@ public class StopCommand {
         }
     }
 
-    @CommandMethod("m|metro stop|s owner <id> <playerName>")
+    @Command("m|metro stop|s owner <id> <playerName>")
     @CommandDescription("Transfer stop ownership")
     public void owner(Player player,
                       @Argument(value = "id", suggestions = "stopIds") String id,
@@ -696,7 +697,7 @@ public class StopCommand {
         }
     }
 
-    @CommandMethod("m|metro stop|s link <action> <stopId> <lineId>")
+    @Command("m|metro stop|s link <action> <stopId> <lineId>")
     @CommandDescription("Allow or deny linking a line to a stop")
     public void link(Player player,
                      @Argument("action") String action,

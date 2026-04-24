@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.cubexmc</groupId>
         <artifactId>metro-parent</artifactId>
-        <version>1.1.4</version>
+        <version>1.1.5</version>
     </parent>
 
     <artifactId>metro</artifactId>
@@ -122,19 +122,19 @@
         </dependency>
         <!-- Cloud Command Framework -->
         <dependency>
-            <groupId>cloud.commandframework</groupId>
+            <groupId>org.incendo</groupId>
             <artifactId>cloud-paper</artifactId>
-            <version>1.8.4</version>
+            <version>2.0.0-beta.10</version>
         </dependency>
         <dependency>
-            <groupId>cloud.commandframework</groupId>
+            <groupId>org.incendo</groupId>
             <artifactId>cloud-annotations</artifactId>
-            <version>1.8.4</version>
+            <version>2.0.0</version>
         </dependency>
         <dependency>
-            <groupId>cloud.commandframework</groupId>
+            <groupId>org.incendo</groupId>
             <artifactId>cloud-minecraft-extras</artifactId>
-            <version>1.8.4</version>
+            <version>2.0.0-beta.10</version>
         </dependency>
         <!-- BlueMap API (optional soft dependency) -->
         <dependency>
@@ -193,7 +193,7 @@
                                     <shadedPattern>org.cubexmc.metro.lib.scoreboardlibrary</shadedPattern>
                                 </relocation>
                                 <relocation>
-                                    <pattern>cloud.commandframework</pattern>
+                                    <pattern>org.incendo.cloud</pattern>
                                     <shadedPattern>org.cubexmc.metro.lib.cloud</shadedPattern>
                                 </relocation>
                                 <relocation>

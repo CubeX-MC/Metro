@@ -1,9 +1,10 @@
 package org.cubexmc.metro.command.newcmd;
 
-import cloud.commandframework.annotations.Argument;
-import cloud.commandframework.annotations.CommandDescription;
-import cloud.commandframework.annotations.CommandMethod;
-import cloud.commandframework.annotations.specifier.Greedy;
+import org.incendo.cloud.annotations.Argument;
+import org.incendo.cloud.annotations.CommandDescription;
+import org.incendo.cloud.annotations.Command;
+import org.incendo.cloud.annotation.specifier.Greedy;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
@@ -39,13 +40,13 @@ public class LineCommand {
         this.stopManager = stopManager;
     }
 
-    @CommandMethod("m|metro line|l")
+    @Command("m|metro line|l")
     @CommandDescription("Show Line Help Menu")
     public void help(CommandSender sender) {
         showHelp(sender, 1);
     }
 
-    @CommandMethod("m|metro line|l help [page]")
+    @Command("m|metro line|l help [page]")
     @CommandDescription("Show Line Help Menu Page")
     public void helpPage(CommandSender sender, @Argument("page") Integer page) {
         showHelp(sender, page == null ? 1 : page);
@@ -85,7 +86,7 @@ public class LineCommand {
         }
     }
 
-    @CommandMethod("m|metro line|l list")
+    @Command("m|metro line|l list")
     @CommandDescription("List all metro lines")
     public void list(CommandSender sender) {
         Collection<Line> lines = lineManager.getAllLines();
@@ -101,7 +102,7 @@ public class LineCommand {
         }
     }
 
-    @CommandMethod("m|metro line|l create <id> <name>")
+    @Command("m|metro line|l create <id> <name>")
     @CommandDescription("Create a new metro line")
     public void create(Player player, @Argument("id") String id, @Greedy @Argument("name") String name) {
         if (!OwnershipUtil.canCreateLine(player)) {
@@ -118,7 +119,7 @@ public class LineCommand {
         }
     }
 
-    @CommandMethod("m|metro line|l delete <id>")
+    @Command("m|metro line|l delete <id>")
     @CommandDescription("Delete a metro line")
     public void delete(Player player, @Argument(value = "id", suggestions = "lineIds") String id) {
         Line line = lineManager.getLine(id);
@@ -143,7 +144,7 @@ public class LineCommand {
         }
     }
 
-    @CommandMethod("m|metro line|l rename <id> <name>")
+    @Command("m|metro line|l rename <id> <name>")
     @CommandDescription("Rename a metro line")
     public void rename(Player player, @Argument(value = "id", suggestions = "lineIds") String id, @Greedy @Argument("name") String name) {
         Line line = lineManager.getLine(id);
@@ -168,7 +169,7 @@ public class LineCommand {
         }
     }
 
-    @CommandMethod("m|metro line|l setcolor <id> <color>")
+    @Command("m|metro line|l setcolor <id> <color>")
     @CommandDescription("Set the color of a metro line")
     public void setColor(Player player, @Argument(value = "id", suggestions = "lineIds") String id, @Argument("color") String color) {
         Line line = lineManager.getLine(id);
@@ -193,7 +194,7 @@ public class LineCommand {
         }
     }
 
-    @CommandMethod("m|metro line|l setterminus <id> <terminus>")
+    @Command("m|metro line|l setterminus <id> <terminus>")
     @CommandDescription("Set terminus name for a line")
     public void setTerminus(Player player, @Argument(value = "id", suggestions = "lineIds") String id, @Greedy @Argument("terminus") String terminus) {
         Line line = lineManager.getLine(id);
@@ -215,7 +216,7 @@ public class LineCommand {
         }
     }
 
-    @CommandMethod("m|metro line|l setmaxspeed <id> <speed>")
+    @Command("m|metro line|l setmaxspeed <id> <speed>")
     @CommandDescription("Set max speed for a line")
     public void setMaxSpeed(Player player, @Argument(value = "id", suggestions = "lineIds") String id, @Argument("speed") double speed) {
         Line line = lineManager.getLine(id);
@@ -240,7 +241,7 @@ public class LineCommand {
         }
     }
 
-    @CommandMethod("m|metro line|l addstop <lineId> <stopId> [index]")
+    @Command("m|metro line|l addstop <lineId> <stopId> [index]")
     @CommandDescription("Add a stop to a line")
     public void addStop(Player player,
                         @Argument(value = "lineId", suggestions = "lineIds") String lineId,
@@ -305,7 +306,7 @@ public class LineCommand {
         }
     }
 
-    @CommandMethod("m|metro line|l delstop <lineId> <stopId>")
+    @Command("m|metro line|l delstop <lineId> <stopId>")
     @CommandDescription("Remove a stop from a line")
     public void delStop(Player player, @Argument(value = "lineId", suggestions = "lineIds") String lineId, @Argument(value = "stopId", suggestions = "stopIds") String stopId) {
         Line line = lineManager.getLine(lineId);
@@ -333,7 +334,7 @@ public class LineCommand {
         }
     }
 
-    @CommandMethod("m|metro line|l stops <id>")
+    @Command("m|metro line|l stops <id>")
     @CommandDescription("List all stops in line")
     public void stops(Player player, @Argument(value = "id", suggestions = "lineIds") String id) {
         Line line = lineManager.getLine(id);
@@ -378,7 +379,7 @@ public class LineCommand {
         }
     }
 
-    @CommandMethod("m|metro line|l info <id>")
+    @Command("m|metro line|l info <id>")
     @CommandDescription("Show line details")
     public void info(Player player, @Argument(value = "id", suggestions = "lineIds") String id) {
         Line line = lineManager.getLine(id);
@@ -427,7 +428,7 @@ public class LineCommand {
         }
     }
 
-    @CommandMethod("m|metro line|l trust <id> <playerName>")
+    @Command("m|metro line|l trust <id> <playerName>")
     @CommandDescription("Grant line admin")
     public void trust(Player player,
                       @Argument(value = "id", suggestions = "lineIds") String id,
@@ -461,7 +462,7 @@ public class LineCommand {
         }
     }
 
-    @CommandMethod("m|metro line|l untrust <id> <playerName>")
+    @Command("m|metro line|l untrust <id> <playerName>")
     @CommandDescription("Revoke line admin")
     public void untrust(Player player,
                         @Argument(value = "id", suggestions = "lineIds") String id,
@@ -493,7 +494,7 @@ public class LineCommand {
         }
     }
 
-    @CommandMethod("m|metro line|l owner <id> <playerName>")
+    @Command("m|metro line|l owner <id> <playerName>")
     @CommandDescription("Transfer line ownership")
     public void owner(Player player,
                       @Argument(value = "id", suggestions = "lineIds") String id,
@@ -523,13 +524,13 @@ public class LineCommand {
         }
     }
 
-    @CommandMethod("m|metro line|l clonereverse <sourceId> <newId>")
+    @Command("m|metro line|l clonereverse <sourceId> <newId>")
     @CommandDescription("Clone a line and its stops in reverse order")
     public void cloneReverse(Player player, @Argument(value = "sourceId", suggestions = "lineIds") String sourceId, @Argument("newId") String newId) {
         cloneReverseWithSuffix(player, sourceId, newId, "_rev");
     }
 
-    @CommandMethod("m|metro line|l clonereverse <sourceId> <newId> <stopIdSuffix>")
+    @Command("m|metro line|l clonereverse <sourceId> <newId> <stopIdSuffix>")
     @CommandDescription("Clone a line and its stops in reverse order with custom suffix")
     public void cloneReverseWithSuffix(Player player, @Argument(value = "sourceId", suggestions = "lineIds") String sourceId, @Argument("newId") String newId, @Argument("stopIdSuffix") String stopIdSuffix) {
         Line sourceLine = lineManager.getLine(sourceId);
@@ -558,7 +559,7 @@ public class LineCommand {
         }
     }
 
-    @CommandMethod("m|metro line|l setprice <id> <price>")
+    @Command("m|metro line|l setprice <id> <price>")
     @CommandDescription("Set the ticket price for a metro line")
     public void setPrice(Player player, @Argument(value = "id", suggestions = "lineIds") String id, @Argument("price") double price) {
         Line line = lineManager.getLine(id);

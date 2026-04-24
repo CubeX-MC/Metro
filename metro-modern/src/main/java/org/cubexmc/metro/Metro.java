@@ -8,11 +8,11 @@ import org.bukkit.entity.Minecart;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import cloud.commandframework.annotations.AnnotationParser;
-import cloud.commandframework.execution.CommandExecutionCoordinator;
-import cloud.commandframework.meta.SimpleCommandMeta;
-import cloud.commandframework.paper.PaperCommandManager;
-import cloud.commandframework.context.CommandContext;
+import org.incendo.cloud.annotations.AnnotationParser;
+import org.incendo.cloud.context.CommandInput;
+import org.incendo.cloud.context.CommandContext;
+import org.incendo.cloud.execution.ExecutionCoordinator;
+import org.incendo.cloud.paper.LegacyPaperCommandManager;
 
 import org.cubexmc.metro.command.newcmd.LineCommand;
 import org.cubexmc.metro.command.newcmd.MetroMainCommand;
@@ -51,7 +51,7 @@ public final class Metro extends JavaPlugin {
     private PlayerMoveListener playerMoveListener;
     private GuiListener guiListener;
     private TrainDisplayController trainDisplayController;
-    private PaperCommandManager<CommandSender> commandManager;
+    private org.incendo.cloud.CommandManager<CommandSender> commandManager;
     private AnnotationParser<CommandSender> annotationParser;
     private org.cubexmc.metro.manager.PortalManager portalManager;
     private org.cubexmc.metro.integration.VaultIntegration vaultIntegration;
@@ -114,33 +114,71 @@ public final class Metro extends JavaPlugin {
 
         // 注册命令 (Cloud Command Framework)
         try {
-            commandManager = new PaperCommandManager<>(
-                    this,
-                    CommandExecutionCoordinator.simpleCoordinator(),
-                    java.util.function.Function.identity(),
-                    java.util.function.Function.identity());
+            try {
+                // 尝试寻找 Paper 1.20.5+ 新引入的生命周期事件类
+                Class.forName("io.papermc.paper.plugin.lifecycle.event.LifecycleEventManager");
+                final Class<?> cssClass = Class.forName("io.papermc.paper.command.brigadier.CommandSourceStack");
+                
+                @SuppressWarnings({"unchecked", "rawtypes"})
+                org.incendo.cloud.SenderMapper<?, CommandSender> mapper = org.incendo.cloud.SenderMapper.create(
+                    source -> {
+                        try {
+                            return (CommandSender) source.getClass().getMethod("getSender").invoke(source);
+                        } catch (Exception e) {
+                            throw new RuntimeException("Failed to map CommandSourceStack to CommandSender", e);
+                        }
+                    },
+                    sender -> java.lang.reflect.Proxy.newProxyInstance(
+                        cssClass.getClassLoader(),
+                        new Class<?>[]{cssClass},
+                        (proxy, method, args) -> {
+                            String name = method.getName();
+                            if ("getSender".equals(name)) return sender;
+                            if ("getLocation".equals(name)) return sender instanceof org.bukkit.entity.Entity ? ((org.bukkit.entity.Entity) sender).getLocation() : null;
+                            if ("getExecutor".equals(name)) return sender instanceof org.bukkit.entity.Entity ? sender : null;
+                            if ("toString".equals(name)) return "CommandSourceStackProxy[" + sender.getName() + "]";
+                            if ("equals".equals(name)) return args != null && args.length == 1 && proxy == args[0];
+                            if ("hashCode".equals(name)) return System.identityHashCode(proxy);
+                            return null;
+                        }
+                    )
+                );
+                
+                commandManager = (org.incendo.cloud.CommandManager<CommandSender>) org.incendo.cloud.paper.PaperCommandManager.builder((org.incendo.cloud.SenderMapper) mapper)
+                        .executionCoordinator(ExecutionCoordinator.simpleCoordinator())
+                        .buildOnEnable(this);
+                        
+                getLogger().info("已加载新版 PaperCommandManager (1.20.5+)");
+            } catch (ClassNotFoundException e) {
+                // 如果抛出异常，说明找不到那个类，当前是老版本服务器 (1.18 - 1.20.4)
+                // 回退使用 Legacy 版
+                org.incendo.cloud.paper.LegacyPaperCommandManager<CommandSender> legacyManager = org.incendo.cloud.paper.LegacyPaperCommandManager.createNative(
+                        this,
+                        ExecutionCoordinator.simpleCoordinator());
 
-            // 自动注册桥接（处理 Bukkit 原生 aliases）
-            if (commandManager.hasCapability(cloud.commandframework.bukkit.CloudBukkitCapabilities.BRIGADIER)) {
-                commandManager.registerBrigadier();
-            }
-            if (commandManager
-                    .hasCapability(cloud.commandframework.bukkit.CloudBukkitCapabilities.ASYNCHRONOUS_COMPLETION)) {
-                commandManager.registerAsynchronousCompletions();
+                // 老版本通常需要手动注册 Brigadier 和 Asynchronous Completion
+                if (legacyManager.hasCapability(org.incendo.cloud.bukkit.CloudBukkitCapabilities.NATIVE_BRIGADIER)) {
+                    legacyManager.registerBrigadier();
+                }
+                if (legacyManager.hasCapability(org.incendo.cloud.bukkit.CloudBukkitCapabilities.ASYNCHRONOUS_COMPLETION)) {
+                    legacyManager.registerAsynchronousCompletions();
+                }
+                
+                commandManager = legacyManager;
+                getLogger().info("已加载兼容版 LegacyPaperCommandManager (1.20.4 及以下)");
             }
 
-            annotationParser = new AnnotationParser<>(
-                    commandManager,
-                    CommandSender.class,
-                    parameters -> SimpleCommandMeta.empty());
+            annotationParser = new AnnotationParser<>(commandManager, CommandSender.class);
 
             registerSuggestionProviders();
 
             // 解析并注册带有 @Command 注解的类
-            annotationParser.parse(new MetroMainCommand(this, lineManager, stopManager));
-            annotationParser.parse(new LineCommand(this, lineManager, stopManager));
-            annotationParser.parse(new StopCommand(this, stopManager, lineManager));
-            annotationParser.parse(new org.cubexmc.metro.command.newcmd.PortalCommand(this));
+            annotationParser.parse(
+                new MetroMainCommand(this, lineManager, stopManager),
+                new LineCommand(this, lineManager, stopManager),
+                new StopCommand(this, stopManager, lineManager),
+                new org.cubexmc.metro.command.newcmd.PortalCommand(this)
+            );
 
             getLogger().info("Cloud Command Framework initialized successfully.");
 
@@ -428,15 +466,26 @@ public final class Metro extends JavaPlugin {
     }
 
     private void registerSuggestionProviders() {
-        commandManager.parserRegistry().registerSuggestionProvider("lineIds", this::lineIdSuggestions);
-        commandManager.parserRegistry().registerSuggestionProvider("stopIds", this::stopIdSuggestions);
+        commandManager.parserRegistry().registerSuggestionProvider("lineIds",
+                (context, input) -> toSuggestionsFuture(lineIdSuggestions(context, input)));
+        commandManager.parserRegistry().registerSuggestionProvider("stopIds",
+                (context, input) -> toSuggestionsFuture(stopIdSuggestions(context, input)));
     }
 
-    private java.util.List<String> lineIdSuggestions(final CommandContext<CommandSender> context, final String input) {
+    private Iterable<String> lineIdSuggestions(final CommandContext<CommandSender> context, final CommandInput input) {
         return lineManager.getAllLines().stream().map(org.cubexmc.metro.model.Line::getId).toList();
     }
 
-    private java.util.List<String> stopIdSuggestions(final CommandContext<CommandSender> context, final String input) {
+    private Iterable<String> stopIdSuggestions(final CommandContext<CommandSender> context, final CommandInput input) {
         return new java.util.ArrayList<>(stopManager.getAllStopIds());
+    }
+
+    private java.util.concurrent.CompletableFuture<? extends Iterable<? extends org.incendo.cloud.suggestion.Suggestion>> toSuggestionsFuture(
+            final Iterable<String> values) {
+        final java.util.List<org.incendo.cloud.suggestion.Suggestion> suggestions = new java.util.ArrayList<>();
+        for (final String value : values) {
+            suggestions.add(org.incendo.cloud.suggestion.Suggestion.suggestion(value));
+        }
+        return java.util.concurrent.CompletableFuture.completedFuture(suggestions);
     }
 }
