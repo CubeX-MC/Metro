@@ -1,7 +1,0 @@
-I have successfully identified the issue and fixed the build errors related to the Squaremap integration.
-The issue was that `api.getWorldIfPossible(...)` was removed or not part of the `xyz.jpenilla.squaremap.api.Squaremap` interface in the specific `1.3.12` version that was added as a dependency.
-Instead, the correct way to get the world in this version is through `api.getWorldIfEnabled(xyz.jpenilla.squaremap.api.BukkitAdapter.worldIdentifier(bukkitWorld))`.
-
-I have updated `SquaremapIntegration.java` to use the correct API method and confirmed that `mvn clean package` now successfully compiles the plugin without any errors.
-
-Are there any other tasks or optimizations you would like me to work on?

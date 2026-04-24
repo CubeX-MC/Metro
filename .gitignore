@@ -90,3 +90,7 @@ logs/
 
 # 依赖目录
 node_modules/
+
+Plugins/
+newnan-plugins/
+metro-modern-backup/
