@@ -20,6 +20,7 @@ import org.cubexmc.metro.model.Stop;
 import org.cubexmc.metro.spatial.Octree;
 import org.cubexmc.metro.spatial.Point3D;
 import org.cubexmc.metro.spatial.Range3D;
+import org.cubexmc.metro.update.DataFileUpdater;
 
 /**
  * 管理停靠区数据的加载、保存和访问
@@ -68,6 +69,9 @@ public class StopManager {
             if (stopsSection != null) {
                 Set<String> stopIds = stopsSection.getKeys(false);
                 for (String stopId : stopIds) {
+                    if (DataFileUpdater.SCHEMA_VERSION_KEY.equals(stopId)) {
+                        continue;
+                    }
                     ConfigurationSection stopSection = stopsSection.getConfigurationSection(stopId);
                     if (stopSection != null) {
                         try {
@@ -90,6 +94,7 @@ public class StopManager {
 
     public void saveConfig() {
         this.isDirty = true;
+        plugin.requestMapIntegrationRefresh();
     }
 
     public void processAsyncSave() {
@@ -466,6 +471,15 @@ public class StopManager {
         lock.readLock().lock();
         try {
             return new java.util.HashSet<>(stops.keySet());
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public List<Stop> getAllStops() {
+        lock.readLock().lock();
+        try {
+            return new ArrayList<>(stops.values());
         } finally {
             lock.readLock().unlock();
         }

@@ -9,6 +9,9 @@ website: https://cubexmc.org
 softdepend:
   - ViaVersion
   - Vault
+  - BlueMap
+  - dynmap
+  - squaremap
 
 
 permissions:

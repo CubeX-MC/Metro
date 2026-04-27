@@ -269,6 +269,18 @@ settings:
     # 矿车伤害保护：阻止其他玩家攻击/破坏地铁矿车
     # Minecart damage protection: prevent other players from attacking/breaking the metro minecart
     damage_protection: true
+    # 行驶辅助：在普通铁轨上失速时，只对活动地铁矿车补充最小动量
+    # Movement assist: restore minimal momentum for active metro minecarts stalled on normal rails
+    movement_assist: true
+    # 乘客拆轨保护：玩家乘坐 Metro 矿车时禁止破坏铁轨
+    # Passenger rail break protection: prevent players riding Metro minecarts from breaking rails
+    passenger_rail_break_protection: true
+    # 判定为失速的水平速度阈值
+    # Horizontal speed threshold used to detect stalls
+    min_cruise_speed: 0.08
+    # 失速检测间隔，单位tick；只按活动矿车数量运行
+    # Stall recovery interval in ticks; runs only per active metro minecart
+    stall_recovery_ticks: 8
   # 矿车移动速度
   # Minecart movement speed
   cart_speed: 0.3

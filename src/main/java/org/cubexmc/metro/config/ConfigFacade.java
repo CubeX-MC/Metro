@@ -113,6 +113,10 @@ public class ConfigFacade {
     private boolean safeModeEnabled;
     private boolean safeModeEntityPushProtection;
     private boolean safeModeDamageProtection;
+    private boolean safeModeMovementAssist;
+    private boolean safeModePassengerRailBreakProtection;
+    private double safeModeMinCruiseSpeed;
+    private long safeModeStallRecoveryTicks;
 
     private Material selectionTool;
     private String selectionToolName;
@@ -241,6 +245,10 @@ public class ConfigFacade {
         safeModeEnabled = plugin.getConfig().getBoolean("settings.safe_mode.enabled", true);
         safeModeEntityPushProtection = plugin.getConfig().getBoolean("settings.safe_mode.entity_push_protection", true);
         safeModeDamageProtection = plugin.getConfig().getBoolean("settings.safe_mode.damage_protection", true);
+        safeModeMovementAssist = plugin.getConfig().getBoolean("settings.safe_mode.movement_assist", true);
+        safeModePassengerRailBreakProtection = plugin.getConfig().getBoolean("settings.safe_mode.passenger_rail_break_protection", true);
+        safeModeMinCruiseSpeed = plugin.getConfig().getDouble("settings.safe_mode.min_cruise_speed", 0.08);
+        safeModeStallRecoveryTicks = plugin.getConfig().getLong("settings.safe_mode.stall_recovery_ticks", 8L);
 
         String toolName = plugin.getConfig().getString("settings.selection_tool", "GOLDEN_SHOVEL");
         try {
@@ -491,6 +499,22 @@ public class ConfigFacade {
 
     public boolean isSafeModeDamageProtection() {
         return safeModeEnabled && safeModeDamageProtection;
+    }
+
+    public boolean isSafeModeMovementAssist() {
+        return safeModeEnabled && safeModeMovementAssist;
+    }
+
+    public boolean isSafeModePassengerRailBreakProtection() {
+        return safeModeEnabled && safeModePassengerRailBreakProtection;
+    }
+
+    public double getSafeModeMinCruiseSpeed() {
+        return safeModeMinCruiseSpeed;
+    }
+
+    public long getSafeModeStallRecoveryTicks() {
+        return safeModeStallRecoveryTicks;
     }
 
     public boolean isDebugCategoryEnabled(String category) {

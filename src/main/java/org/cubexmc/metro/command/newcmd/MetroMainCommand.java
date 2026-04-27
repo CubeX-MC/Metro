@@ -10,6 +10,7 @@ import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.update.ConfigUpdater;
+import org.cubexmc.metro.update.DataFileUpdater;
 import org.cubexmc.metro.util.OwnershipUtil;
 
 public class MetroMainCommand {
@@ -63,8 +64,15 @@ public class MetroMainCommand {
         plugin.reloadConfig();
         ConfigUpdater.applyDefaults(plugin, "config.yml");
         plugin.getConfigFacade().reload();
+        DataFileUpdater.migrateAll(plugin);
         lineManager.reload();
         stopManager.reload();
+        if (plugin.getPortalManager() != null) {
+            plugin.getPortalManager().load();
+        }
+        if (plugin.getRailProtectionManager() != null) {
+            plugin.getRailProtectionManager().rebuildAll();
+        }
         plugin.getLanguageManager().loadLanguages();
 
         plugin.refreshMapIntegrations();

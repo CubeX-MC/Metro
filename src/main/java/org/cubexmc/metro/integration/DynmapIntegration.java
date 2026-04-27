@@ -6,6 +6,7 @@ import org.bukkit.plugin.Plugin;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.StopManager;
+import org.cubexmc.metro.model.RoutePoint;
 import org.cubexmc.metro.model.Stop;
 import org.dynmap.DynmapCommonAPI;
 import org.dynmap.markers.Marker;
@@ -73,7 +74,7 @@ public class DynmapIntegration {
             return;
         }
 
-        plugin.getLogger().info("[Dynmap] Dynmap API detected. Rendering metro network on map...");
+        plugin.getLogger().info("[Dynmap] Dynmap API detected. Rendering metro stops on map...");
         renderMetroNetwork();
         enabled = true;
     }
@@ -131,86 +132,102 @@ public class DynmapIntegration {
 
         markerSet.setHideByDefault(!plugin.getConfigFacade().isMapDefaultVisible());
 
-        List<org.cubexmc.metro.model.Line> allLines = lineManager.getAllLines();
-        if (allLines == null || allLines.isEmpty()) {
-            return;
+        for (org.cubexmc.metro.model.Line line : lineManager.getAllLines()) {
+            renderRoute(markerSet, line);
         }
 
-        for (org.cubexmc.metro.model.Line line : allLines) {
-            renderLine(markerSet, line, stopManager);
+        if (plugin.getConfigFacade().isMapShowStopMarkers()) {
+            List<Stop> allStops = stopManager.getAllStops();
+            if (allStops == null || allStops.isEmpty()) {
+                return;
+            }
+            for (Stop stop : allStops) {
+                renderStop(markerSet, stop);
+            }
         }
     }
 
-    private void renderLine(MarkerSet markerSet, org.cubexmc.metro.model.Line line, StopManager stopManager) {
-        String worldName = line.getWorldName();
-        if (worldName == null) return;
+    private void renderRoute(MarkerSet markerSet, org.cubexmc.metro.model.Line line) {
+        List<RoutePoint> routePoints = line.getRoutePoints();
+        if (routePoints.size() < 2) {
+            return;
+        }
 
-        List<String> stopIds = line.getOrderedStopIds();
-        if (stopIds.isEmpty()) return;
-
-        // 收集折线的坐标
+        String worldName = routePoints.get(0).worldName();
         List<Double> xList = new ArrayList<>();
         List<Double> yList = new ArrayList<>();
         List<Double> zList = new ArrayList<>();
-
-        for (String stopId : stopIds) {
-            Stop stop = stopManager.getStop(stopId);
-            if (stop == null || stop.getStopPointLocation() == null) continue;
-
-            Location loc = stop.getStopPointLocation();
-            xList.add(loc.getX());
-            yList.add(loc.getY());
-            zList.add(loc.getZ());
-
-            // 为每个站点添加标记（如果配置启用）
-            if (plugin.getConfigFacade().isMapShowStopMarkers()) {
-                String markerId = "poi_" + line.getId() + "_" + stopId;
-                String stopLabel = (stop.getName() != null && !stop.getName().isEmpty())
-                        ? stop.getName() : stopId;
-
-                Marker marker = markerSet.createMarker(
-                        markerId,
-                        stopLabel,
-                        worldName,
-                        loc.getX(), loc.getY(), loc.getZ(),
-                        markerApi.getMarkerIcon(MarkerIcon.DEFAULT),
-                        false
-                );
-
-                if (marker != null) {
-                    // 悬浮时显示站名和线路信息
-                    marker.setDescription("<b>" + stopLabel + "</b><br>Line: " + line.getName());
-                }
+        for (RoutePoint point : routePoints) {
+            if (!worldName.equals(point.worldName())) {
+                continue;
             }
+            xList.add(point.x());
+            yList.add(point.y());
+            zList.add(point.z());
+        }
+        if (xList.size() < 2) {
+            return;
         }
 
-        if (xList.size() < 2) return;
-
-        // 转为数组
         double[] x = xList.stream().mapToDouble(Double::doubleValue).toArray();
         double[] y = yList.stream().mapToDouble(Double::doubleValue).toArray();
         double[] z = zList.stream().mapToDouble(Double::doubleValue).toArray();
 
-        // 创建折线标记
-        String lineMarkerId = "line_" + line.getId();
         PolyLineMarker polyLine = markerSet.createPolyLineMarker(
-                lineMarkerId,
+                "route_" + line.getId(),
                 line.getName() + " (" + line.getId() + ")",
-                false,  // non-html label
+                false,
                 worldName,
                 x, y, z,
-                false   // not persistent (we manage lifecycle)
+                false
         );
 
         if (polyLine != null) {
-            int color = parseLineColorRGB(line.getColor());
-            polyLine.setLineStyle(plugin.getConfigFacade().getMapLineWidth(), 0.8, color);
+            polyLine.setLineStyle(plugin.getConfigFacade().getMapLineWidth(), 0.8, parseLineColorRGB(line.getColor()));
         }
     }
 
-    /**
-     * 将 Minecraft 聊天颜色代码转换为 Dynmap RGB int (0xRRGGBB)。
-     */
+    private void renderStop(MarkerSet markerSet, Stop stop) {
+        if (stop == null || stop.getStopPointLocation() == null) return;
+        Location loc = stop.getStopPointLocation();
+        if (loc.getWorld() == null) return;
+
+        String stopLabel = (stop.getName() != null && !stop.getName().isEmpty())
+                ? stop.getName() : stop.getId();
+
+        Marker marker = markerSet.createMarker(
+                "stop_" + stop.getId(),
+                stopLabel,
+                loc.getWorld().getName(),
+                loc.getX(), loc.getY(), loc.getZ(),
+                markerApi.getMarkerIcon(MarkerIcon.DEFAULT),
+                false
+        );
+
+        if (marker != null) {
+            marker.setDescription(buildStopDescription(stop));
+        }
+    }
+
+    private String buildStopDescription(Stop stop) {
+        List<String> parts = new ArrayList<>();
+        String stopLabel = (stop.getName() != null && !stop.getName().isEmpty()) ? stop.getName() : stop.getId();
+        parts.add("<b>" + stopLabel + "</b>");
+
+        List<org.cubexmc.metro.model.Line> servedLines = plugin.getLineManager().getLinesForStop(stop.getId());
+        if (!servedLines.isEmpty()) {
+            parts.add("Lines: " + servedLines.stream()
+                    .map(line -> line.getName() + " (" + line.getId() + ")")
+                    .reduce((left, right) -> left + ", " + right)
+                    .orElse(""));
+        }
+        List<String> transfers = stop.getTransferableLines();
+        if (plugin.getConfigFacade().isMapShowTransferInfo() && !transfers.isEmpty()) {
+            parts.add("Transfers: " + String.join(", ", transfers));
+        }
+        return String.join("<br>", parts);
+    }
+
     private int parseLineColorRGB(String chatColor) {
         if (chatColor == null || chatColor.isEmpty()) {
             return 0xFFFFFF;
@@ -218,22 +235,22 @@ public class DynmapIntegration {
 
         char code = chatColor.charAt(chatColor.length() - 1);
         return switch (code) {
-            case '0' -> 0x000000;   // 黑色
-            case '1' -> 0x0000AA;   // 深蓝
-            case '2' -> 0x00AA00;   // 深绿
-            case '3' -> 0x00AAAA;   // 深青
-            case '4' -> 0xAA0000;   // 深红
-            case '5' -> 0xAA00AA;   // 深紫
-            case '6' -> 0xFFAA00;   // 金色
-            case '7' -> 0xAAAAAA;   // 灰色
-            case '8' -> 0x555555;   // 深灰
-            case '9' -> 0x5555FF;   // 蓝色
-            case 'a' -> 0x55FF55;   // 绿色
-            case 'b' -> 0x55FFFF;   // 青色
-            case 'c' -> 0xFF5555;   // 红色
-            case 'd' -> 0xFF55FF;   // 粉色
-            case 'e' -> 0xFFFF55;   // 黄色
-            default  -> 0xFFFFFF;   // 白色
+            case '0' -> 0x000000;
+            case '1' -> 0x0000AA;
+            case '2' -> 0x00AA00;
+            case '3' -> 0x00AAAA;
+            case '4' -> 0xAA0000;
+            case '5' -> 0xAA00AA;
+            case '6' -> 0xFFAA00;
+            case '7' -> 0xAAAAAA;
+            case '8' -> 0x555555;
+            case '9' -> 0x5555FF;
+            case 'a' -> 0x55FF55;
+            case 'b' -> 0x55FFFF;
+            case 'c' -> 0xFF5555;
+            case 'd' -> 0xFF55FF;
+            case 'e' -> 0xFFFF55;
+            default  -> 0xFFFFFF;
         };
     }
 }

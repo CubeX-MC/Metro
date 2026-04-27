@@ -23,6 +23,7 @@ import org.cubexmc.metro. manager.LineManager;
 import org.cubexmc.metro. manager.StopManager;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Stop;
+import org.cubexmc.metro.util.LocationUtil;
 import org.cubexmc.metro.util.SchedulerUtil;
 
 /**
@@ -49,6 +50,8 @@ public class TrainMovementTask implements Listener {
     private String targetStopId;
     private TrainState currentState;
     private boolean isTeleporting = false; // 用于告知任务当前正在经过传送门，切勿取消任务
+    private Vector lastTravelDirection;
+    private Object movementAssistTaskId;
 
     /**
      * 创建一个新的列车移动任务
@@ -107,6 +110,7 @@ public class TrainMovementTask implements Listener {
         if (minecart != null) {
             activeTasks.remove(minecart.getUniqueId());
         }
+        stopMovementAssist();
         HandlerList.unregisterAll(this);
         debugTrain("Task cancelled for passenger=" + safePassengerName() + ", currentStop=" + currentStopId
                 + ", targetStop=" + targetStopId);
@@ -122,6 +126,9 @@ public class TrainMovementTask implements Listener {
         this.minecart = newCart;
         this.isTeleporting = false; // 传送门交接完毕，解除传送标记
         activeTasks.put(newCart.getUniqueId(), this);
+        if (currentState == TrainState.MOVING_BETWEEN_STATIONS) {
+            startMovementAssist();
+        }
         debugTrain("Transferred movement task to new minecart UUID=" + newCart.getUniqueId());
     }
 
@@ -178,7 +185,7 @@ public class TrainMovementTask implements Listener {
         }
 
         // 检查玩家是否仍在矿车中 (除非正在被传送)
-        if (!isTeleporting && !isTeleporting && !isPassengerStillRiding()) {
+        if (!isTeleporting && !isPassengerStillRiding()) {
             handlePassengerExit();
             return;
         }
@@ -199,6 +206,10 @@ public class TrainMovementTask implements Listener {
         if (!event.getVehicle().equals(this.minecart)) {
             return;
         }
+        if (line != null) {
+            plugin.getRouteRecorder().sample(line.getId(), minecart, event.getTo());
+        }
+        updateLastTravelDirection(event.getFrom(), event.getTo());
 
         if (currentState == TrainState.MOVING_IN_STATION) {
             Stop targetStop = plugin.getStopManager().getStop(targetStopId);
@@ -243,9 +254,13 @@ public class TrainMovementTask implements Listener {
         // Vector Snapping: 强制绝对居中并完全停止动能
         minecart.setVelocity(new Vector(0, 0, 0));
         minecart.setMaxSpeed(0); // 防止等待期间玩家手操移动
+        stopMovementAssist();
         Location snapLocation = stop.getStopPointLocation().clone();
         snapLocation.setX(snapLocation.getBlockX() + 0.5);
         snapLocation.setZ(snapLocation.getBlockZ() + 0.5);
+        if (line != null) {
+            plugin.getRouteRecorder().sample(line.getId(), minecart, snapLocation);
+        }
         SchedulerUtil.teleportEntity(minecart, snapLocation);
 
         // 更新状态
@@ -267,6 +282,8 @@ public class TrainMovementTask implements Listener {
      * 转换到站内移动状态
      */
     private void transitionToMovingInStation(Stop targetStop) {
+        stopMovementAssist();
+
         // 更新状态
         TrainState previousState = currentState;
         currentState = TrainState.MOVING_IN_STATION;
@@ -371,6 +388,9 @@ public class TrainMovementTask implements Listener {
         if (currentStop == null || nextStop == null) {
             return;
         }
+        if (line != null) {
+            plugin.getRouteRecorder().sample(line.getId(), minecart, currentStop.getStopPointLocation());
+        }
 
         // 触发发车事件
         org.bukkit.Bukkit.getPluginManager()
@@ -387,6 +407,7 @@ public class TrainMovementTask implements Listener {
 
         // 更新状态为站间行驶 (取代站内移动)
         transitionToMovingBetweenStations();
+        startMovementAssist();
     }
 
     /**
@@ -416,6 +437,12 @@ public class TrainMovementTask implements Listener {
             return;
         }
         debugTrain("Terminal station reached for passenger=" + safePassengerName() + ", stop=" + currentStopId);
+        org.cubexmc.metro.manager.RouteRecorder.FinishResult routeResult =
+                plugin.getRouteRecorder().finishIfRecording(line.getId(), minecart);
+        if (routeResult.status() == org.cubexmc.metro.manager.RouteRecorder.FinishResult.Status.TOO_FEW_POINTS) {
+            plugin.getLogger().warning("[RouteRecorder] Route recording for line " + line.getId()
+                    + " reached the terminal but only collected " + routeResult.pointCount() + " point(s).");
+        }
 
         // 3秒后自动下车，并移除矿车 - 使用实体调度器确保与矿车实体绑定
         SchedulerUtil.entityRun(plugin, minecart, (Runnable) () -> {
@@ -525,9 +552,77 @@ public class TrainMovementTask implements Listener {
                         -Math.sin(launchRad),
                         0,
                         Math.cos(launchRad));
+                lastTravelDirection = direction.clone().normalize();
                 // minecart.setVelocity(direction.multiply(speed));
                 minecart.setVelocity(direction.multiply(0.4)); // 设置原版初始速度
             }
         }
+    }
+
+    private void startMovementAssist() {
+        stopMovementAssist();
+        if (!plugin.getConfigFacade().isSafeModeMovementAssist() || minecart == null) {
+            return;
+        }
+        long interval = Math.max(1L, plugin.getConfigFacade().getSafeModeStallRecoveryTicks());
+        movementAssistTaskId = SchedulerUtil.entityRun(plugin, minecart, this::recoverStalledMinecart, interval, interval);
+    }
+
+    private void stopMovementAssist() {
+        SchedulerUtil.cancelTask(movementAssistTaskId);
+        movementAssistTaskId = null;
+    }
+
+    private void recoverStalledMinecart() {
+        if (!plugin.getConfigFacade().isSafeModeMovementAssist()) {
+            stopMovementAssist();
+            return;
+        }
+        if (minecart == null || minecart.isDead() || !minecart.isValid()) {
+            cancel();
+            return;
+        }
+        if (currentState != TrainState.MOVING_BETWEEN_STATIONS || minecart.getMaxSpeed() <= 0.0) {
+            return;
+        }
+        if (!isPassengerStillRiding()) {
+            handlePassengerExit();
+            return;
+        }
+        if (!LocationUtil.isOnRail(minecart.getLocation()) || lastTravelDirection == null) {
+            return;
+        }
+
+        Vector velocity = minecart.getVelocity();
+        double horizontalSpeed = Math.sqrt(velocity.getX() * velocity.getX() + velocity.getZ() * velocity.getZ());
+        double minCruiseSpeed = Math.max(0.01, plugin.getConfigFacade().getSafeModeMinCruiseSpeed());
+        if (horizontalSpeed >= minCruiseSpeed) {
+            return;
+        }
+
+        double targetSpeed = resolveAssistSpeed(minCruiseSpeed);
+        Vector assistedVelocity = lastTravelDirection.clone().normalize().multiply(targetSpeed);
+        minecart.setVelocity(assistedVelocity);
+    }
+
+    private double resolveAssistSpeed(double minCruiseSpeed) {
+        double configuredSpeed = plugin.getConfigFacade().getCartSpeed();
+        double maxSpeed = minecart.getMaxSpeed();
+        double targetSpeed = configuredSpeed > 0.0 ? Math.min(configuredSpeed, maxSpeed) : maxSpeed;
+        return Math.max(minCruiseSpeed, targetSpeed);
+    }
+
+    private void updateLastTravelDirection(Location from, Location to) {
+        if (currentState == TrainState.STOPPED_AT_STATION || from == null || to == null) {
+            return;
+        }
+        if (from.getWorld() == null || to.getWorld() == null || !from.getWorld().equals(to.getWorld())) {
+            return;
+        }
+        Vector direction = to.toVector().subtract(from.toVector());
+        if (direction.lengthSquared() < 0.0001) {
+            return;
+        }
+        lastTravelDirection = direction.normalize();
     }
 }

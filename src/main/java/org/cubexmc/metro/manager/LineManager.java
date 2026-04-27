@@ -18,7 +18,9 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.model.Line;
+import org.cubexmc.metro.model.RoutePoint;
 import org.cubexmc.metro.model.Stop;
+import org.cubexmc.metro.update.DataFileUpdater;
 
 /**
  * 线路管理器，负责线路数据的加载、保存和操作
@@ -58,6 +60,9 @@ public class LineManager {
 
             if (linesSection != null) {
                 for (String lineId : linesSection.getKeys(false)) {
+                    if (DataFileUpdater.SCHEMA_VERSION_KEY.equals(lineId)) {
+                        continue;
+                    }
                     String name = config.getString(lineId + ".name");
                     if (name == null || name.isBlank()) {
                         plugin.getLogger().warning("Line " + lineId + " is missing name, using line id as fallback.");
@@ -69,6 +74,18 @@ public class LineManager {
                     List<String> stopIds = config.getStringList(lineId + ".ordered_stop_ids");
                     for (String stopId : stopIds) {
                         line.addStop(stopId, -1);
+                    }
+
+                    List<String> routePointStrings = config.getStringList(lineId + ".route_points");
+                    if (routePointStrings != null && !routePointStrings.isEmpty()) {
+                        List<RoutePoint> routePoints = new ArrayList<>();
+                        for (String routePointString : routePointStrings) {
+                            RoutePoint routePoint = RoutePoint.fromConfigString(routePointString);
+                            if (routePoint != null) {
+                                routePoints.add(routePoint);
+                            }
+                        }
+                        line.setRoutePoints(routePoints);
                     }
 
                     // 加载颜色和终点站方向
@@ -91,6 +108,8 @@ public class LineManager {
                     // 加载乘车价格
                     double ticketPrice = config.getDouble(lineId + ".ticket_price", 0.0);
                     line.setTicketPrice(ticketPrice);
+
+                    line.setRailProtected(config.getBoolean(lineId + ".rail_protected", false));
 
                     String ownerString = config.getString(lineId + ".owner");
                     if (ownerString != null && !ownerString.isEmpty()) {
@@ -135,6 +154,7 @@ public class LineManager {
 
     public void saveConfig() {
         this.isDirty = true;
+        plugin.requestMapIntegrationRefresh();
     }
 
     public void processAsyncSave() {
@@ -153,10 +173,12 @@ public class LineManager {
                     String lineId = line.getId();
                     config.set(lineId + ".name", line.getName());
                     config.set(lineId + ".ordered_stop_ids", line.getOrderedStopIds());
+                    config.set(lineId + ".route_points", routePointsToConfig(line));
                     config.set(lineId + ".color", line.getColor());
                     config.set(lineId + ".terminus_name", line.getTerminusName());
                     config.set(lineId + ".max_speed", line.getMaxSpeed() != null ? line.getMaxSpeed() : null);
                     config.set(lineId + ".ticket_price", line.getTicketPrice() > 0 ? line.getTicketPrice() : null);
+                    config.set(lineId + ".rail_protected", line.isRailProtected() ? true : null);
                     config.set(lineId + ".owner", line.getOwner() != null ? line.getOwner().toString() : null);
 
                     List<String> adminStrings = new ArrayList<>();
@@ -200,10 +222,12 @@ public class LineManager {
                     String lineId = line.getId();
                     config.set(lineId + ".name", line.getName());
                     config.set(lineId + ".ordered_stop_ids", line.getOrderedStopIds());
+                    config.set(lineId + ".route_points", routePointsToConfig(line));
                     config.set(lineId + ".color", line.getColor());
                     config.set(lineId + ".terminus_name", line.getTerminusName());
                     config.set(lineId + ".max_speed", line.getMaxSpeed() != null ? line.getMaxSpeed() : null);
                     config.set(lineId + ".ticket_price", line.getTicketPrice() > 0 ? line.getTicketPrice() : null);
+                    config.set(lineId + ".rail_protected", line.isRailProtected() ? true : null);
                     config.set(lineId + ".owner", line.getOwner() != null ? line.getOwner().toString() : null);
 
                     List<String> adminStrings = new ArrayList<>();
@@ -249,6 +273,7 @@ public class LineManager {
             lock.writeLock().unlock();
         }
         saveConfig();
+        rebuildRailProtection(lineId);
         return true;
     }
 
@@ -268,6 +293,7 @@ public class LineManager {
             lock.writeLock().unlock();
         }
         saveConfig();
+        rebuildRailProtection(lineId);
         return true;
     }
 
@@ -405,6 +431,9 @@ public class LineManager {
      */
     public void reload() {
         loadConfig();
+        if (plugin.getRailProtectionManager() != null) {
+            plugin.getRailProtectionManager().rebuildAll();
+        }
     }
 
     /**
@@ -517,6 +546,54 @@ public class LineManager {
         return true;
     }
 
+    public boolean setLineRoutePoints(String lineId, List<RoutePoint> routePoints) {
+        lock.writeLock().lock();
+        try {
+            Line line = lines.get(lineId);
+            if (line == null) {
+                return false;
+            }
+            line.setRoutePoints(routePoints);
+        } finally {
+            lock.writeLock().unlock();
+        }
+        saveConfig();
+        rebuildRailProtection(lineId);
+        return true;
+    }
+
+    public boolean clearLineRoutePoints(String lineId) {
+        lock.writeLock().lock();
+        try {
+            Line line = lines.get(lineId);
+            if (line == null) {
+                return false;
+            }
+            line.clearRoutePoints();
+        } finally {
+            lock.writeLock().unlock();
+        }
+        saveConfig();
+        rebuildRailProtection(lineId);
+        return true;
+    }
+
+    public boolean setLineRailProtected(String lineId, boolean protectedRail) {
+        lock.writeLock().lock();
+        try {
+            Line line = lines.get(lineId);
+            if (line == null) {
+                return false;
+            }
+            line.setRailProtected(protectedRail);
+        } finally {
+            lock.writeLock().unlock();
+        }
+        saveConfig();
+        rebuildRailProtection(lineId);
+        return true;
+    }
+
     public boolean setLineOwner(String lineId, UUID ownerId) {
         lock.writeLock().lock();
         try {
@@ -591,6 +668,18 @@ public class LineManager {
                 stopToLinesIndex.remove(stopId);
             }
         }
+    }
+
+    private List<String> routePointsToConfig(Line line) {
+        List<RoutePoint> routePoints = line.getRoutePoints();
+        if (routePoints.isEmpty()) {
+            return null;
+        }
+        List<String> values = new ArrayList<>();
+        for (RoutePoint routePoint : routePoints) {
+            values.add(routePoint.toConfigString());
+        }
+        return values;
     }
 
     /**
@@ -673,5 +762,11 @@ public class LineManager {
         
         saveConfig();
         return true;
+    }
+
+    private void rebuildRailProtection(String lineId) {
+        if (plugin.getRailProtectionManager() != null) {
+            plugin.getRailProtectionManager().rebuildLine(lineId);
+        }
     }
 }

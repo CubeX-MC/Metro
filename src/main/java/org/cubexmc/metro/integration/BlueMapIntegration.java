@@ -7,18 +7,17 @@ import de.bluecolored.bluemap.api.markers.LineMarker;
 import de.bluecolored.bluemap.api.markers.MarkerSet;
 import de.bluecolored.bluemap.api.markers.POIMarker;
 import de.bluecolored.bluemap.api.math.Color;
-import de.bluecolored.bluemap.api.math.Line;
 
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.StopManager;
+import org.cubexmc.metro.model.RoutePoint;
 import org.cubexmc.metro.model.Stop;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.logging.Level;
+import java.util.function.Consumer;
 
 /**
  * 可选的 BlueMap 集成模块。
@@ -30,7 +29,10 @@ public class BlueMapIntegration {
     private static final String MARKER_SET_ID = "metro_network";
 
     private final Metro plugin;
+    private final Consumer<BlueMapAPI> enableListener = this::handleBlueMapEnabled;
+    private final Consumer<BlueMapAPI> disableListener = this::handleBlueMapDisabled;
     private boolean enabled = false;
+    private boolean listenersRegistered = false;
 
     public BlueMapIntegration(Metro plugin) {
         this.plugin = plugin;
@@ -61,16 +63,11 @@ public class BlueMapIntegration {
             return;
         }
 
-        BlueMapAPI.onEnable(api -> {
-            plugin.getLogger().info("[BlueMap] BlueMap API detected. Rendering metro network on map...");
-            renderMetroNetwork(api);
-            enabled = true;
-        });
-
-        BlueMapAPI.onDisable(api -> {
-            enabled = false;
-            plugin.getLogger().info("[BlueMap] BlueMap API disabled. Metro markers removed.");
-        });
+        if (!listenersRegistered) {
+            BlueMapAPI.onEnable(enableListener);
+            BlueMapAPI.onDisable(disableListener);
+            listenersRegistered = true;
+        }
     }
 
     /**
@@ -96,6 +93,11 @@ public class BlueMapIntegration {
                 map.getMarkerSets().remove(MARKER_SET_ID);
             }
         });
+        if (listenersRegistered) {
+            BlueMapAPI.unregisterListener(enableListener);
+            BlueMapAPI.unregisterListener(disableListener);
+            listenersRegistered = false;
+        }
         enabled = false;
         plugin.getLogger().info("[BlueMap] Metro markers removed.");
     }
@@ -106,6 +108,17 @@ public class BlueMapIntegration {
 
     // ========== 核心渲染逻辑 ==========
 
+    private void handleBlueMapEnabled(BlueMapAPI api) {
+        plugin.getLogger().info("[BlueMap] BlueMap API detected. Rendering metro stops on map...");
+        renderMetroNetwork(api);
+        enabled = true;
+    }
+
+    private void handleBlueMapDisabled(BlueMapAPI api) {
+        enabled = false;
+        plugin.getLogger().info("[BlueMap] BlueMap API disabled. Metro markers removed.");
+    }
+
     private void renderMetroNetwork(BlueMapAPI api) {
         LineManager lineManager = plugin.getLineManager();
         StopManager stopManager = plugin.getStopManager();
@@ -115,124 +128,146 @@ public class BlueMapIntegration {
             map.getMarkerSets().remove(MARKER_SET_ID);
         }
 
-        List<org.cubexmc.metro.model.Line> allLines = lineManager.getAllLines();
-        if (allLines == null || allLines.isEmpty()) {
-            return;
+        for (org.cubexmc.metro.model.Line line : lineManager.getAllLines()) {
+            renderRoute(api, line);
         }
 
-        for (org.cubexmc.metro.model.Line line : allLines) {
-            renderLine(api, line, stopManager);
+        if (plugin.getConfigFacade().isMapShowStopMarkers()) {
+            List<Stop> allStops = stopManager.getAllStops();
+            if (allStops == null || allStops.isEmpty()) {
+                return;
+            }
+            for (Stop stop : allStops) {
+                renderStop(api, stop);
+            }
         }
     }
 
-    private void renderLine(BlueMapAPI api, org.cubexmc.metro.model.Line line, StopManager stopManager) {
-        String worldName = line.getWorldName();
-        if (worldName == null) return;
+    private void renderRoute(BlueMapAPI api, org.cubexmc.metro.model.Line line) {
+        List<RoutePoint> routePoints = line.getRoutePoints();
+        if (routePoints.size() < 2) {
+            return;
+        }
+
+        String worldName = routePoints.get(0).worldName();
+        for (BlueMapMap map : api.getMaps()) {
+            if (!matchesWorld(map, worldName)) {
+                continue;
+            }
+
+            MarkerSet markerSet = getMarkerSet(map);
+            de.bluecolored.bluemap.api.math.Line.Builder lineBuilder =
+                    de.bluecolored.bluemap.api.math.Line.builder();
+            int pointCount = 0;
+            for (RoutePoint point : routePoints) {
+                if (worldName.equals(point.worldName())) {
+                    lineBuilder.addPoint(new com.flowpowered.math.vector.Vector3d(point.x(), point.y(), point.z()));
+                    pointCount++;
+                }
+            }
+            if (pointCount < 2) {
+                return;
+            }
+
+            LineMarker lineMarker = LineMarker.builder()
+                    .label(line.getName() + " (" + line.getId() + ")")
+                    .line(lineBuilder.build())
+                    .lineColor(parseLineColor(line.getColor()))
+                    .lineWidth(plugin.getConfigFacade().getMapLineWidth())
+                    .build();
+            markerSet.put("route_" + line.getId(), lineMarker);
+        }
+    }
+
+    private void renderStop(BlueMapAPI api, Stop stop) {
+        if (stop == null || stop.getStopPointLocation() == null) return;
+
+        Location loc = stop.getStopPointLocation();
+        if (loc.getWorld() == null) return;
+
+        String worldName = loc.getWorld().getName();
 
         // 获取该世界对应的 BlueMap 世界和地图
         for (BlueMapMap map : api.getMaps()) {
-            BlueMapWorld bmWorld = map.getWorld();
-            String bmWorldId = bmWorld.getId();
-            
-            // 严格匹配世界名称，避免 world 匹配到 world_nether 的情况
-            boolean match = bmWorldId.equalsIgnoreCase(worldName);
-            if (!match && bmWorldId.contains(":")) {
-                String[] parts = bmWorldId.split(":");
-                match = parts[parts.length - 1].equalsIgnoreCase(worldName);
-            }
-            if (!match) {
+            if (!matchesWorld(map, worldName)) {
                 continue;
             }
 
             // 获取或创建 MarkerSet
-            String markerLabel = plugin.getConfigFacade().getMapMarkerSetLabel();
-            boolean defaultVisible = plugin.getConfigFacade().isMapDefaultVisible();
-            MarkerSet markerSet = map.getMarkerSets().computeIfAbsent(
-                    MARKER_SET_ID,
-                    id -> MarkerSet.builder()
-                            .label(markerLabel)
-                            .defaultHidden(!defaultVisible)
-                            .build()
-            );
+            MarkerSet markerSet = getMarkerSet(map);
 
-            List<String> stopIds = line.getOrderedStopIds();
-            if (stopIds.isEmpty()) continue;
-
-            Color lineColor = parseLineColor(line.getColor());
-
-            // 构建折线：依次连接各站点
-            de.bluecolored.bluemap.api.math.Line.Builder lineBuilder =
-                    de.bluecolored.bluemap.api.math.Line.builder();
-            boolean hasPoints = false;
-
-            for (int i = 0; i < stopIds.size(); i++) {
-                Stop stop = stopManager.getStop(stopIds.get(i));
-                if (stop == null || stop.getStopPointLocation() == null) continue;
-
-                Location loc = stop.getStopPointLocation();
-                lineBuilder.addPoint(
-                        new com.flowpowered.math.vector.Vector3d(loc.getX(), loc.getY(), loc.getZ())
-                );
-                hasPoints = true;
-
-                // 为每个站点添加 POI 标记（如果配置启用）
-                if (plugin.getConfigFacade().isMapShowStopMarkers()) {
-                    String poiId = "poi_" + line.getId() + "_" + stop.getId();
-                    String label = (stop.getName() != null && !stop.getName().isEmpty()) ? stop.getName() : stop.getId();
-                    POIMarker poi = POIMarker.builder()
-                            .label(label)
-                            .position(loc.getX(), loc.getY(), loc.getZ())
-                            .build();
-                    markerSet.put(poiId, poi);
-                }
-            }
-
-            if (!hasPoints) continue;
-
-            // 创建线路折线标记
-            try {
-                String lineMarkerId = "line_" + line.getId();
-                LineMarker lineMarker = LineMarker.builder()
-                        .label(line.getName() + " (" + line.getId() + ")")
-                        .line(lineBuilder.build())
-                        .lineColor(lineColor)
-                        .lineWidth(plugin.getConfigFacade().getMapLineWidth())
-                        .build();
-                markerSet.put(lineMarkerId, lineMarker);
-            } catch (Exception e) {
-                plugin.getLogger().log(Level.WARNING,
-                        "[BlueMap] Failed to create line marker for " + line.getId(), e);
-            }
+            String label = (stop.getName() != null && !stop.getName().isEmpty()) ? stop.getName() : stop.getId();
+            POIMarker poi = POIMarker.builder()
+                    .label(label)
+                    .position(loc.getX(), loc.getY(), loc.getZ())
+                    .build();
+            poi.setDetail(buildStopDetail(stop));
+            markerSet.put("stop_" + stop.getId(), poi);
         }
     }
 
-    /**
-     * 将 Minecraft 聊天颜色代码转换为 BlueMap RGBA Color。
-     */
+    private boolean matchesWorld(BlueMapMap map, String worldName) {
+        BlueMapWorld bmWorld = map.getWorld();
+        String bmWorldId = bmWorld.getId();
+        boolean match = bmWorldId.equalsIgnoreCase(worldName);
+        if (!match && bmWorldId.contains(":")) {
+            String[] parts = bmWorldId.split(":");
+            match = parts[parts.length - 1].equalsIgnoreCase(worldName);
+        }
+        return match;
+    }
+
+    private MarkerSet getMarkerSet(BlueMapMap map) {
+        String markerLabel = plugin.getConfigFacade().getMapMarkerSetLabel();
+        boolean defaultVisible = plugin.getConfigFacade().isMapDefaultVisible();
+        return map.getMarkerSets().computeIfAbsent(
+                MARKER_SET_ID,
+                id -> MarkerSet.builder()
+                        .label(markerLabel)
+                        .defaultHidden(!defaultVisible)
+                        .build()
+        );
+    }
+
+    private String buildStopDetail(Stop stop) {
+        List<String> detail = new ArrayList<>();
+        List<org.cubexmc.metro.model.Line> servedLines = plugin.getLineManager().getLinesForStop(stop.getId());
+        if (!servedLines.isEmpty()) {
+            detail.add("<b>Lines:</b> " + servedLines.stream()
+                    .map(line -> line.getName() + " (" + line.getId() + ")")
+                    .reduce((left, right) -> left + ", " + right)
+                    .orElse(""));
+        }
+        List<String> transfers = stop.getTransferableLines();
+        if (plugin.getConfigFacade().isMapShowTransferInfo() && !transfers.isEmpty()) {
+            detail.add("<b>Transfers:</b> " + String.join(", ", transfers));
+        }
+        return String.join("<br>", detail);
+    }
+
     private Color parseLineColor(String chatColor) {
         if (chatColor == null || chatColor.isEmpty()) {
-            return new Color(255, 255, 255, 255); // 白色
+            return new Color(255, 255, 255, 255);
         }
 
-        // 去掉 & 前缀取最后一个颜色字符
         char code = chatColor.charAt(chatColor.length() - 1);
         return switch (code) {
-            case '0' -> new Color(0, 0, 0, 255);        // 黑色
-            case '1' -> new Color(0, 0, 170, 255);       // 深蓝
-            case '2' -> new Color(0, 170, 0, 255);       // 深绿
-            case '3' -> new Color(0, 170, 170, 255);     // 深青
-            case '4' -> new Color(170, 0, 0, 255);       // 深红
-            case '5' -> new Color(170, 0, 170, 255);     // 深紫
-            case '6' -> new Color(255, 170, 0, 255);     // 金色
-            case '7' -> new Color(170, 170, 170, 255);   // 灰色
-            case '8' -> new Color(85, 85, 85, 255);      // 深灰
-            case '9' -> new Color(85, 85, 255, 255);     // 蓝色
-            case 'a' -> new Color(85, 255, 85, 255);     // 绿色
-            case 'b' -> new Color(85, 255, 255, 255);    // 青色
-            case 'c' -> new Color(255, 85, 85, 255);     // 红色
-            case 'd' -> new Color(255, 85, 255, 255);    // 粉色
-            case 'e' -> new Color(255, 255, 85, 255);    // 黄色
-            default  -> new Color(255, 255, 255, 255);   // 白色
+            case '0' -> new Color(0, 0, 0, 255);
+            case '1' -> new Color(0, 0, 170, 255);
+            case '2' -> new Color(0, 170, 0, 255);
+            case '3' -> new Color(0, 170, 170, 255);
+            case '4' -> new Color(170, 0, 0, 255);
+            case '5' -> new Color(170, 0, 170, 255);
+            case '6' -> new Color(255, 170, 0, 255);
+            case '7' -> new Color(170, 170, 170, 255);
+            case '8' -> new Color(85, 85, 85, 255);
+            case '9' -> new Color(85, 85, 255, 255);
+            case 'a' -> new Color(85, 255, 85, 255);
+            case 'b' -> new Color(85, 255, 255, 255);
+            case 'c' -> new Color(255, 85, 85, 255);
+            case 'd' -> new Color(255, 85, 255, 255);
+            case 'e' -> new Color(255, 255, 85, 255);
+            default  -> new Color(255, 255, 255, 255);
         };
     }
 }

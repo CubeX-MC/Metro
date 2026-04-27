@@ -3,15 +3,17 @@
 # 格式:
 # line_id:
 #   name: 线路显示名称
-#   ordered_platform_ids: 
-#     - platform_id1
-#     - platform_id2
+#   ordered_stop_ids:
+#     - stop_id1
+#     - stop_id2
 #     ...
+#   route_points: []
+#   rail_protected: false
 #
 # 示例:
 # line1:
 #   name: 1号线 - 东西向
-#   ordered_platform_ids:
-#     - east_station_north_platform
-#     - central_station_east_platform
-#     - west_station_south_platform 
+#   ordered_stop_ids:
+#     - east_station
+#     - central_station
+#     - west_station

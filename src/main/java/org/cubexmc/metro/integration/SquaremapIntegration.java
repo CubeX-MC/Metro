@@ -5,6 +5,7 @@ import org.bukkit.Location;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.StopManager;
+import org.cubexmc.metro.model.RoutePoint;
 import org.cubexmc.metro.model.Stop;
 import xyz.jpenilla.squaremap.api.Key;
 import xyz.jpenilla.squaremap.api.Point;
@@ -59,7 +60,7 @@ public class SquaremapIntegration {
             return;
         }
 
-        plugin.getLogger().info("[Squaremap] API detected. Rendering metro network on map...");
+        plugin.getLogger().info("[Squaremap] API detected. Rendering metro stops on map...");
         renderMetroNetwork();
         enabled = true;
     }
@@ -111,17 +112,28 @@ public class SquaremapIntegration {
                 provider.clearMarkers();
             }
 
-            List<org.cubexmc.metro.model.Line> allLines = lineManager.getAllLines();
-            if (allLines == null || allLines.isEmpty()) {
-                return;
-            }
-
             String layerLabel = plugin.getConfigFacade().getMapMarkerSetLabel();
             boolean defaultVisible = plugin.getConfigFacade().isMapDefaultVisible();
 
-            for (org.cubexmc.metro.model.Line line : allLines) {
-                String worldName = line.getWorldName();
-                if (worldName == null) continue;
+            for (org.cubexmc.metro.model.Line line : lineManager.getAllLines()) {
+                renderRoute(api, layerLabel, defaultVisible, line);
+            }
+
+            if (!plugin.getConfigFacade().isMapShowStopMarkers()) {
+                return;
+            }
+
+            List<Stop> allStops = stopManager.getAllStops();
+            if (allStops == null || allStops.isEmpty()) {
+                return;
+            }
+
+            for (Stop stop : allStops) {
+                if (stop == null || stop.getStopPointLocation() == null || stop.getStopPointLocation().getWorld() == null) {
+                    continue;
+                }
+
+                String worldName = stop.getStopPointLocation().getWorld().getName();
 
                 org.bukkit.World bukkitWorld = Bukkit.getWorld(worldName);
                 if (bukkitWorld == null) continue;
@@ -135,7 +147,7 @@ public class SquaremapIntegration {
                         return p;
                     });
 
-                    renderLine(provider, line, stopManager);
+                    renderStop(provider, stop);
                 });
             }
         } catch (Exception e) {
@@ -143,49 +155,88 @@ public class SquaremapIntegration {
         }
     }
 
-    private void renderLine(SimpleLayerProvider provider, org.cubexmc.metro.model.Line line, StopManager stopManager) {
-        List<String> stopIds = line.getOrderedStopIds();
-        if (stopIds.isEmpty()) return;
-
-        List<Point> points = new ArrayList<>();
-
-        for (String stopId : stopIds) {
-            Stop stop = stopManager.getStop(stopId);
-            if (stop == null || stop.getStopPointLocation() == null) continue;
-
-            Location loc = stop.getStopPointLocation();
-            points.add(Point.of(loc.getX(), loc.getZ()));
-
-            // 添加站点标记
-            if (plugin.getConfigFacade().isMapShowStopMarkers()) {
-                String stopLabel = (stop.getName() != null && !stop.getName().isEmpty()) ? stop.getName() : stopId;
-                String poiId = ("poi_" + line.getId() + "_" + stopId).toLowerCase();
-
-                Marker poi = Marker.circle(Point.of(loc.getX(), loc.getZ()), 3.0);
-                
-                poi.markerOptions(MarkerOptions.builder()
-                        .hoverTooltip("<b>" + stopLabel + "</b><br>Line: " + line.getName())
-                        .fillColor(parseLineColor(line.getColor()))
-                        .strokeColor(Color.BLACK)
-                        .strokeWeight(1)
-                        .build());
-
-                provider.addMarker(Key.of(poiId), poi);
-            }
+    private void renderRoute(Squaremap api, String layerLabel, boolean defaultVisible, org.cubexmc.metro.model.Line line) {
+        List<RoutePoint> routePoints = line.getRoutePoints();
+        if (routePoints.size() < 2) {
+            return;
         }
 
-        if (points.size() < 2) return;
+        String worldName = routePoints.get(0).worldName();
+        org.bukkit.World bukkitWorld = Bukkit.getWorld(worldName);
+        if (bukkitWorld == null) {
+            return;
+        }
 
-        String lineMarkerId = ("line_" + line.getId()).toLowerCase();
-        Marker polyline = Marker.polyline(points);
+        api.getWorldIfEnabled(xyz.jpenilla.squaremap.api.BukkitAdapter.worldIdentifier(bukkitWorld)).ifPresent(world -> {
+            SimpleLayerProvider provider = layerProviders.computeIfAbsent(worldName, k -> {
+                SimpleLayerProvider p = SimpleLayerProvider.builder(layerLabel)
+                        .defaultHidden(!defaultVisible)
+                        .build();
+                world.layerRegistry().register(Key.of(LAYER_ID), p);
+                return p;
+            });
 
-        polyline.markerOptions(MarkerOptions.builder()
-                .strokeColor(parseLineColor(line.getColor()))
-                .strokeWeight(plugin.getConfigFacade().getMapLineWidth())
-                .hoverTooltip(line.getName() + " (" + line.getId() + ")")
+            List<Point> points = new ArrayList<>();
+            for (RoutePoint routePoint : routePoints) {
+                if (worldName.equals(routePoint.worldName())) {
+                    points.add(Point.of(routePoint.x(), routePoint.z()));
+                }
+            }
+            if (points.size() < 2) {
+                return;
+            }
+
+            Marker polyline = Marker.polyline(points);
+            polyline.markerOptions(MarkerOptions.builder()
+                    .strokeColor(parseLineColor(line.getColor()))
+                    .strokeWeight(plugin.getConfigFacade().getMapLineWidth())
+                    .hoverTooltip(line.getName() + " (" + line.getId() + ")")
+                    .build());
+            provider.addMarker(Key.of(("route_" + line.getId()).toLowerCase()), polyline);
+        });
+    }
+
+    private void renderStop(SimpleLayerProvider provider, Stop stop) {
+        Location loc = stop.getStopPointLocation();
+        String stopLabel = (stop.getName() != null && !stop.getName().isEmpty()) ? stop.getName() : stop.getId();
+        String poiId = ("stop_" + stop.getId()).toLowerCase();
+
+        Marker poi = Marker.circle(Point.of(loc.getX(), loc.getZ()), 3.0);
+        poi.markerOptions(MarkerOptions.builder()
+                .hoverTooltip(buildStopTooltip(stop))
+                .fillColor(getStopColor(stop))
+                .strokeColor(Color.BLACK)
+                .strokeWeight(1)
                 .build());
 
-        provider.addMarker(Key.of(lineMarkerId), polyline);
+        provider.addMarker(Key.of(poiId), poi);
+    }
+
+    private String buildStopTooltip(Stop stop) {
+        List<String> parts = new ArrayList<>();
+        String stopLabel = (stop.getName() != null && !stop.getName().isEmpty()) ? stop.getName() : stop.getId();
+        parts.add("<b>" + stopLabel + "</b>");
+
+        List<org.cubexmc.metro.model.Line> servedLines = plugin.getLineManager().getLinesForStop(stop.getId());
+        if (!servedLines.isEmpty()) {
+            parts.add("Lines: " + servedLines.stream()
+                    .map(line -> line.getName() + " (" + line.getId() + ")")
+                    .reduce((left, right) -> left + ", " + right)
+                    .orElse(""));
+        }
+        List<String> transfers = stop.getTransferableLines();
+        if (plugin.getConfigFacade().isMapShowTransferInfo() && !transfers.isEmpty()) {
+            parts.add("Transfers: " + String.join(", ", transfers));
+        }
+        return String.join("<br>", parts);
+    }
+
+    private Color getStopColor(Stop stop) {
+        List<org.cubexmc.metro.model.Line> servedLines = plugin.getLineManager().getLinesForStop(stop.getId());
+        if (servedLines.isEmpty()) {
+            return Color.WHITE;
+        }
+        return parseLineColor(servedLines.get(0).getColor());
     }
 
     private Color parseLineColor(String chatColor) {

@@ -11,6 +11,7 @@ import org.bukkit.entity.Player;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.manager.PortalManager;
 import org.cubexmc.metro.model.Portal;
+import org.cubexmc.metro.update.DataFileUpdater;
 
 import java.util.List;
 
@@ -120,6 +121,7 @@ public class PortalCommand {
     @CommandDescription("重新加载传送门配置")
     @Permission("metro.admin")
     public void reloadPortals(CommandSender sender) {
+        DataFileUpdater.migratePortals(plugin);
         portalManager.load();
         sender.sendMessage(ChatColor.GREEN + "传送门配置已重新加载。共 " + portalManager.getAllPortals().size() + " 个传送门。");
     }

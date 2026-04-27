@@ -28,11 +28,13 @@ import org.cubexmc.metro.listener.PlayerInteractListener;
 import org.cubexmc.metro.listener.PlayerMoveListener;
 import org.cubexmc.metro.listener.VehicleListener;
 import org.cubexmc.metro.manager.LineManager;
+import org.cubexmc.metro.manager.RailProtectionManager;
 import org.cubexmc.metro.manager.SelectionManager;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.train.ScoreboardManager;
 import org.cubexmc.metro.train.TrainDisplayController;
 import org.cubexmc.metro.update.ConfigUpdater;
+import org.cubexmc.metro.update.DataFileUpdater;
 import org.cubexmc.metro.util.MetroConstants;
 
 public final class Metro extends JavaPlugin {
@@ -54,12 +56,15 @@ public final class Metro extends JavaPlugin {
     private org.incendo.cloud.CommandManager<CommandSender> commandManager;
     private AnnotationParser<CommandSender> annotationParser;
     private org.cubexmc.metro.manager.PortalManager portalManager;
+    private org.cubexmc.metro.manager.RouteRecorder routeRecorder;
+    private RailProtectionManager railProtectionManager;
     private org.cubexmc.metro.integration.VaultIntegration vaultIntegration;
     private Object autoSaveTaskId;
 
     private org.cubexmc.metro.integration.BlueMapIntegration blueMapIntegration;
     private org.cubexmc.metro.integration.DynmapIntegration dynmapIntegration;
     private org.cubexmc.metro.integration.SquaremapIntegration squaremapIntegration;
+    private boolean mapRefreshQueued = false;
 
     @Override
     public void onEnable() {
@@ -78,16 +83,20 @@ public final class Metro extends JavaPlugin {
 
         // 初始化默认配置文件
         createDefaultConfigFiles();
+        DataFileUpdater.migrateAll(this);
 
         // 初始化语言管理器（内部会自动更新语言文件）
         this.languageManager = new LanguageManager(this);
 
         // 初始化管理器
         this.lineManager = new LineManager(this);
+        this.railProtectionManager = new RailProtectionManager(this);
+        this.railProtectionManager.rebuildAll();
         this.stopManager = new StopManager(this);
         this.selectionManager = new SelectionManager();
         this.guiManager = new GuiManager(this);
         this.chatInputManager = new ChatInputManager(this);
+        this.routeRecorder = new org.cubexmc.metro.manager.RouteRecorder(this);
         Bukkit.getPluginManager().registerEvents(this.chatInputManager, this);
 
         // 初始化传送门管理器
@@ -200,6 +209,7 @@ public final class Metro extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(playerMoveListener, this);
         Bukkit.getPluginManager().registerEvents(guiListener, this);
         Bukkit.getPluginManager().registerEvents(trainDisplayController, this);
+        Bukkit.getPluginManager().registerEvents(railProtectionManager, this);
 
         // 注册bstats
         int pluginId = 25825; // <-- Replace with the id of your plugin!
@@ -306,6 +316,9 @@ public final class Metro extends JavaPlugin {
 
         if (autoSaveTaskId != null) {
             org.cubexmc.metro.util.SchedulerUtil.cancelTask(autoSaveTaskId);
+        }
+        if (routeRecorder != null) {
+            routeRecorder.cancelAll();
         }
         if (lineManager != null) {
             lineManager.forceSaveSync();
@@ -457,8 +470,27 @@ public final class Metro extends JavaPlugin {
         }
     }
 
+    public void requestMapIntegrationRefresh() {
+        if (this.configFacade == null || !this.configFacade.isMapIntegrationEnabled() || mapRefreshQueued) {
+            return;
+        }
+        mapRefreshQueued = true;
+        org.cubexmc.metro.util.SchedulerUtil.globalRun(this, () -> {
+            mapRefreshQueued = false;
+            refreshMapIntegrations();
+        }, 1L, -1L);
+    }
+
     public org.cubexmc.metro.manager.PortalManager getPortalManager() {
         return portalManager;
+    }
+
+    public org.cubexmc.metro.manager.RouteRecorder getRouteRecorder() {
+        return routeRecorder;
+    }
+
+    public RailProtectionManager getRailProtectionManager() {
+        return railProtectionManager;
     }
 
     public org.cubexmc.metro.integration.VaultIntegration getVaultIntegration() {

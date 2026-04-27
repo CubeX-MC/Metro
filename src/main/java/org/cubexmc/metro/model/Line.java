@@ -14,10 +14,12 @@ public class Line {
     private String id;
     private String name;
     private final List<String> orderedStopIds;
+    private List<RoutePoint> routePoints;
     private String color; // 线路颜色
     private String terminusName; // 终点站方向名称
     private Double maxSpeed; // 线路最大速度
     private double ticketPrice; // 线路乘车价格
+    private boolean railProtected; // 是否保护已记录线路上的铁轨
     private UUID owner; // 线路所有者 UUID，null 表示服务器所有
     private final Set<UUID> admins; // 线路管理员 UUID 集合
     private String worldName; // 线路所在世界名称，null 表示还未添加任何站点
@@ -32,10 +34,12 @@ public class Line {
         this.id = id;
         this.name = name;
         this.orderedStopIds = new ArrayList<>();
+        this.routePoints = new ArrayList<>();
         this.color = "&f"; // 默认白色
         this.terminusName = ""; // 默认空
         this.maxSpeed = null; // 默认使用config.yml中的maxspeed
         this.ticketPrice = 0.0; // 默认免费
+        this.railProtected = false;
         this.admins = new HashSet<>();
     }
     
@@ -139,6 +143,14 @@ public class Line {
     public void setTicketPrice(double ticketPrice) {
         this.ticketPrice = Math.max(0.0, ticketPrice);
     }
+
+    public boolean isRailProtected() {
+        return railProtected;
+    }
+
+    public void setRailProtected(boolean railProtected) {
+        this.railProtected = railProtected;
+    }
     
     /**
      * 获取有序停靠区ID列表
@@ -147,6 +159,25 @@ public class Line {
      */
     public List<String> getOrderedStopIds() {
         return new ArrayList<>(orderedStopIds);
+    }
+
+    public List<RoutePoint> getRoutePoints() {
+        return new ArrayList<>(routePoints);
+    }
+
+    public void setRoutePoints(Collection<RoutePoint> routePoints) {
+        this.routePoints = new ArrayList<>();
+        if (routePoints != null) {
+            for (RoutePoint point : routePoints) {
+                if (point != null) {
+                    this.routePoints.add(point);
+                }
+            }
+        }
+    }
+
+    public void clearRoutePoints() {
+        routePoints.clear();
     }
     
     /**

@@ -13,6 +13,7 @@ import org.bukkit.entity.Player;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.manager.LanguageManager;
 import org.cubexmc.metro.manager.LineManager;
+import org.cubexmc.metro.manager.RouteRecorder;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Stop;
@@ -70,7 +71,11 @@ public class LineCommand {
                 lang.getMessage("line.help_untrust"),
                 lang.getMessage("line.help_owner"),
                 lang.getMessage("line.help_clonereverse"),
-                lang.getMessage("line.help_setprice")
+                lang.getMessage("line.help_setprice"),
+                ChatColor.YELLOW + "/metro line recordroute <id>" + ChatColor.GRAY + " - Record route points for online maps",
+                ChatColor.YELLOW + "/metro line clearroute <id>" + ChatColor.GRAY + " - Clear recorded route points",
+                ChatColor.YELLOW + "/metro line routeinfo <id>" + ChatColor.GRAY + " - Show recorded route status",
+                ChatColor.YELLOW + "/metro line protect <id> <on|off|status>" + ChatColor.GRAY + " - Protect recorded route rails"
         );
 
         int pageSize = 8;
@@ -425,6 +430,155 @@ public class LineCommand {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.info_stops_item",
                     LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
                             "index", String.valueOf(i + 1)), "stop_id", stopId), "stop_name", stop.getName())));
+        }
+    }
+
+    @Command("m|metro line|l protect <id> <mode>")
+    @CommandDescription("Enable, disable, or inspect rail protection for a line")
+    public void protectRoute(Player player,
+                             @Argument(value = "id", suggestions = "lineIds") String id,
+                             @Argument("mode") String mode) {
+        Line line = lineManager.getLine(id);
+        if (line == null) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
+                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
+            return;
+        }
+        if (!OwnershipUtil.canManageLine(player, line)) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_manage",
+                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
+                            "line_id", line.getId()), "owner", formatOwner(line.getOwner())), "admins", formatAdmins(line.getAdmins()))));
+            return;
+        }
+
+        String normalizedMode = mode.toLowerCase(java.util.Locale.ROOT);
+        if ("status".equals(normalizedMode)) {
+            sendProtectionStatus(player, line);
+            return;
+        }
+
+        Boolean enabled = parseToggle(normalizedMode);
+        if (enabled == null) {
+            player.sendMessage(ChatColor.RED + "Usage: /metro line protect <id> <on|off|status>");
+            return;
+        }
+        if (!lineManager.setLineRailProtected(id, enabled)) {
+            player.sendMessage(ChatColor.RED + "Failed to update rail protection for line " + id + ".");
+            return;
+        }
+
+        Line updatedLine = lineManager.getLine(id);
+        player.sendMessage(ChatColor.GREEN + "Rail protection for line " + id + " is now "
+                + (enabled ? "enabled" : "disabled") + ".");
+        if (updatedLine != null) {
+            sendProtectionStatus(player, updatedLine);
+        }
+    }
+
+    @Command("m|metro line|l recordroute <id>")
+    @CommandDescription("Start or finish recording route points for a line")
+    public void recordRoute(Player player, @Argument(value = "id", suggestions = "lineIds") String id) {
+        Line line = lineManager.getLine(id);
+        if (line == null) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
+                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
+            return;
+        }
+        if (!OwnershipUtil.canManageLine(player, line)) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_manage",
+                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
+                            "line_id", line.getId()), "owner", formatOwner(line.getOwner())), "admins", formatAdmins(line.getAdmins()))));
+            return;
+        }
+
+        RouteRecorder recorder = plugin.getRouteRecorder();
+        if (recorder.isRecording(id)) {
+            RouteRecorder.FinishResult result = recorder.stopAndSave(id);
+            switch (result.status()) {
+                case SAVED -> player.sendMessage(ChatColor.GREEN + "Saved " + result.pointCount()
+                        + " route points for line " + id + ".");
+                case TOO_FEW_POINTS -> player.sendMessage(ChatColor.RED + "Route recording stopped, but only "
+                        + result.pointCount() + " point(s) were collected. Ride the line farther and try again.");
+                case FAILED -> player.sendMessage(ChatColor.RED + "Failed to save route points for line " + id + ".");
+                case NOT_RECORDING -> player.sendMessage(ChatColor.YELLOW + "Line " + id + " is not currently recording.");
+            }
+            return;
+        }
+
+        if (recorder.start(id)) {
+            player.sendMessage(ChatColor.GREEN + "Started route recording for line " + id + ".");
+            player.sendMessage(ChatColor.GRAY + "Ride this line in a Metro minecart. Run the command again to save, or let a non-circular line reach its terminal.");
+        } else {
+            player.sendMessage(ChatColor.YELLOW + "Line " + id + " is already recording.");
+        }
+    }
+
+    @Command("m|metro line|l clearroute <id>")
+    @CommandDescription("Clear recorded route points for a line")
+    public void clearRoute(Player player, @Argument(value = "id", suggestions = "lineIds") String id) {
+        Line line = lineManager.getLine(id);
+        if (line == null) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
+                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
+            return;
+        }
+        if (!OwnershipUtil.canManageLine(player, line)) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_manage",
+                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
+                            "line_id", line.getId()), "owner", formatOwner(line.getOwner())), "admins", formatAdmins(line.getAdmins()))));
+            return;
+        }
+
+        plugin.getRouteRecorder().clearActive(id);
+        int previousCount = line.getRoutePoints().size();
+        if (lineManager.clearLineRoutePoints(id)) {
+            player.sendMessage(ChatColor.GREEN + "Cleared " + previousCount + " route point(s) for line " + id + ".");
+        } else {
+            player.sendMessage(ChatColor.RED + "Failed to clear route points for line " + id + ".");
+        }
+    }
+
+    @Command("m|metro line|l routeinfo <id>")
+    @CommandDescription("Show recorded route point status for a line")
+    public void routeInfo(Player player, @Argument(value = "id", suggestions = "lineIds") String id) {
+        Line line = lineManager.getLine(id);
+        if (line == null) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
+                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
+            return;
+        }
+
+        RouteRecorder recorder = plugin.getRouteRecorder();
+        player.sendMessage(ChatColor.GOLD + "Route info for " + line.getName() + " (" + line.getId() + ")");
+        player.sendMessage(ChatColor.GRAY + "Saved points: " + ChatColor.WHITE + line.getRoutePoints().size());
+        sendProtectionStatus(player, line);
+        if (recorder.isRecording(id)) {
+            UUID cartId = recorder.getRecordingCartId(id);
+            player.sendMessage(ChatColor.GRAY + "Recording: " + ChatColor.GREEN + "active");
+            player.sendMessage(ChatColor.GRAY + "Buffered points: " + ChatColor.WHITE + recorder.getActivePointCount(id));
+            player.sendMessage(ChatColor.GRAY + "Bound cart: " + ChatColor.WHITE + (cartId == null ? "waiting for first train" : cartId.toString()));
+        } else {
+            player.sendMessage(ChatColor.GRAY + "Recording: " + ChatColor.WHITE + "inactive");
+        }
+    }
+
+    private Boolean parseToggle(String mode) {
+        return switch (mode) {
+            case "on", "true", "enable", "enabled" -> true;
+            case "off", "false", "disable", "disabled" -> false;
+            default -> null;
+        };
+    }
+
+    private void sendProtectionStatus(Player player, Line line) {
+        int protectedBlocks = plugin.getRailProtectionManager() == null
+                ? 0
+                : plugin.getRailProtectionManager().getProtectedBlockCount(line.getId());
+        player.sendMessage(ChatColor.GRAY + "Rail protection: "
+                + (line.isRailProtected() ? ChatColor.GREEN + "enabled" : ChatColor.WHITE + "disabled"));
+        player.sendMessage(ChatColor.GRAY + "Protected rail blocks: " + ChatColor.WHITE + protectedBlocks);
+        if (line.isRailProtected() && protectedBlocks == 0) {
+            player.sendMessage(ChatColor.YELLOW + "No protected rails were indexed. Record the route after rails are built, then try again.");
         }
     }
 
