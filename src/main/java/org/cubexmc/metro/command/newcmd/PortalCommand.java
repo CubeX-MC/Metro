@@ -145,19 +145,22 @@ public class PortalCommand {
                 LanguageManager.put(LanguageManager.args(), "portal_id", id)));
     }
 
-    @Command("m|metro portal list")
+    @Command("m|metro portal list [page]")
     @CommandDescription("列出所有传送门")
     @Permission("metro.admin")
-    public void listPortals(CommandSender sender) {
+    public void listPortals(CommandSender sender, @Argument("page") Integer page) {
         List<Portal> allPortals = portalService.listPortals();
         if (allPortals.isEmpty()) {
             sender.sendMessage(plugin.getLanguageManager().getMessage("portal.list_empty"));
             return;
         }
 
-        sender.sendMessage(plugin.getLanguageManager().getMessage("portal.list_header",
-                LanguageManager.put(LanguageManager.args(), "count", String.valueOf(allPortals.size()))));
-        for (Portal p : allPortals) {
+        CommandDisplayService.Page<Portal> portalPage = displayService.paginate(allPortals, page);
+        sender.sendMessage(displayService.pageHeader(
+                plugin.getLanguageManager().getMessage("portal.list_header",
+                        LanguageManager.put(LanguageManager.args(), "count", String.valueOf(allPortals.size()))),
+                portalPage));
+        for (Portal p : portalPage.items()) {
             String linked = p.getLinkedPortalId() != null
                     ? plugin.getLanguageManager().getMessage("portal.list_linked",
                             LanguageManager.put(LanguageManager.args(), "linked_portal_id", p.getLinkedPortalId()))

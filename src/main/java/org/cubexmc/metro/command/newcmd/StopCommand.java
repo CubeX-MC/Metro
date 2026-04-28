@@ -20,96 +20,39 @@ import org.cubexmc.metro.model.Stop;
 import org.cubexmc.metro.service.CommandDisplayService;
 import org.cubexmc.metro.service.StopCommandService;
 import org.cubexmc.metro.util.OwnershipUtil;
-import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.chat.TextComponent;
-import net.md_5.bungee.api.chat.hover.content.Text;
-
-import java.util.List;
-import java.util.Map;
 
 public class StopCommand {
 
-    private static final List<String> HELP_KEYS = List.of(
-            "stop.help_create",
-            "stop.help_delete",
-            "stop.help_list",
-            "stop.help_setcorners",
-            "stop.help_setpoint",
-            "stop.help_addtransfer",
-            "stop.help_deltransfer",
-            "stop.help_listtransfers",
-            "stop.help_settitle",
-            "stop.help_deltitle",
-            "stop.help_listtitles",
-            "stop.help_rename",
-            "stop.help_info",
-            "stop.help_tp",
-            "stop.help_trust",
-            "stop.help_untrust",
-            "stop.help_owner",
-            "stop.help_link"
-    );
-
     private final Metro plugin;
     private final StopManager stopManager;
-    private final LineManager lineManager;
     private final CommandGuard guard;
-    private final CommandDisplayService displayService;
     private final StopCommandService stopService;
+    private final StopCommandView view;
 
     public StopCommand(Metro plugin, StopManager stopManager, LineManager lineManager) {
         this.plugin = plugin;
         this.stopManager = stopManager;
-        this.lineManager = lineManager;
         this.guard = new CommandGuard(plugin, lineManager, stopManager);
-        this.displayService = new CommandDisplayService();
         this.stopService = new StopCommandService(stopManager);
+        this.view = new StopCommandView(plugin, stopManager, lineManager, guard, new CommandDisplayService());
     }
 
     @Command("m|metro stop|s")
     @CommandDescription("Show Stop Help Menu")
     public void help(CommandSender sender) {
-        showHelp(sender, 1);
+        view.showHelp(sender, 1);
     }
 
     @Command("m|metro stop|s help [page]")
     @CommandDescription("Show Stop Help Menu Page")
     public void helpPage(CommandSender sender, @Argument("page") Integer page) {
-        showHelp(sender, page);
+        view.showHelp(sender, page);
     }
 
-    private void showHelp(CommandSender sender, Integer page) {
-        org.cubexmc.metro.manager.LanguageManager lang = plugin.getLanguageManager();
-        CommandDisplayService.HelpPage helpPage = displayService.helpPage(key -> lang.getMessage(key),
-                "stop.help_header", HELP_KEYS, page);
-        sender.sendMessage(helpPage.header());
-        for (String helpLine : helpPage.lines()) {
-            sender.sendMessage(helpLine);
-        }
-    }
-
-    @Command("m|metro stop|s list")
+    @Command("m|metro stop|s list [page]")
     @CommandDescription("List all metro stops")
-    public void list(Player player) {
-        List<Stop> stops = stopService.listStops();
-        if (stops.isEmpty()) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.list_empty"));
-        } else {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.list_header"));
-
-            for (int i = 0; i < stops.size(); i++) {
-                Stop stop = stops.get(i);
-                TextComponent message = new TextComponent(plugin.getLanguageManager().getMessage(
-                        "stop.list_prefix",
-                        LanguageManager.put(LanguageManager.args(), "index", String.valueOf(i + 1))));
-                message.addExtra(createTeleportComponent(stop));
-                String suffixText = plugin.getLanguageManager().getMessage("stop.list_suffix",
-                        LanguageManager.put(LanguageManager.args(), "stop_id", stop.getId()));
-                message.addExtra(new TextComponent(" " + suffixText));
-                player.spigot().sendMessage(message);
-            }
-        }
+    public void list(Player player, @Argument("page") Integer page) {
+        view.listStops(player, stopService.listStops(), page);
     }
 
     @Command("m|metro stop|s create <id> <name>")
@@ -179,19 +122,6 @@ public class StopCommand {
                         LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName())));
             }
         });
-    }
-
-    private TextComponent createTeleportComponent(Stop stop) {
-        TextComponent stopComponent = new TextComponent(stop.getName());
-        if (stop.getStopPointLocation() != null) {
-            stopComponent
-                    .setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/metro stop tp " + stop.getId()));
-            String hoverText = plugin.getLanguageManager().getMessage(
-                    "command.teleport_to",
-                    LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName()));
-            stopComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(hoverText)));
-        }
-        return stopComponent;
     }
 
     @Command("m|metro stop|s setcorners <id>")
@@ -301,24 +231,7 @@ public class StopCommand {
         if (stop == null) {
             return;
         }
-        List<String> transferIds = stopManager.getTransferableLines(id);
-        if (transferIds.isEmpty()) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.transfers_empty",
-                    LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName())));
-            return;
-        }
-        player.sendMessage(plugin.getLanguageManager().getMessage("stop.transfers_header",
-                LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName())));
-        for (String lineId : transferIds) {
-            Line line = lineManager.getLine(lineId);
-            if (line == null) {
-                player.sendMessage(plugin.getLanguageManager().getMessage("stop.transfers_invalid",
-                        LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
-            } else {
-                player.sendMessage(plugin.getLanguageManager().getMessage("stop.transfers_format",
-                        LanguageManager.put(LanguageManager.args(), "line_name", line.getName())));
-            }
-        }
+        view.listTransfers(player, stop);
     }
 
     @Command("m|metro stop|s settitle <id> <titleType> <titleKey> <titleValue>")
@@ -408,25 +321,7 @@ public class StopCommand {
         if (stop == null) {
             return;
         }
-        boolean hasAny = false;
-        player.sendMessage(plugin.getLanguageManager().getMessage("stop.listtitles_header",
-                LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName())));
-        for (String type : StopCommandService.TITLE_TYPES) {
-            Map<String, String> values = stop.getCustomTitle(type);
-            if (values == null || values.isEmpty()) {
-                continue;
-            }
-            hasAny = true;
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.listtitles_type",
-                    LanguageManager.put(LanguageManager.args(), "title_type", type)));
-            for (Map.Entry<String, String> entry : values.entrySet()) {
-                player.sendMessage(plugin.getLanguageManager().getMessage("stop.listtitles_item",
-                        LanguageManager.put(LanguageManager.put(LanguageManager.args(), "title_key", entry.getKey()), "title_value", entry.getValue())));
-            }
-        }
-        if (!hasAny) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.listtitles_empty"));
-        }
+        view.listTitles(player, stop);
     }
 
     @Command("m|metro stop|s rename <id> <name>")
@@ -452,56 +347,7 @@ public class StopCommand {
         if (stop == null) {
             return;
         }
-        player.sendMessage(plugin.getLanguageManager().getMessage("stop.info_header",
-                LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName())));
-        player.sendMessage(plugin.getLanguageManager().getMessage("stop.info_name",
-                LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName())));
-        player.sendMessage(plugin.getLanguageManager().getMessage("stop.info_id",
-                LanguageManager.put(LanguageManager.args(), "stop_id", stop.getId())));
-        player.sendMessage(plugin.getLanguageManager().getMessage("stop.info_corner1",
-                LanguageManager.put(LanguageManager.args(), "corner1", locationText(stop.getCorner1()))));
-        player.sendMessage(plugin.getLanguageManager().getMessage("stop.info_corner2",
-                LanguageManager.put(LanguageManager.args(), "corner2", locationText(stop.getCorner2()))));
-        player.sendMessage(plugin.getLanguageManager().getMessage("stop.info_stoppoint",
-                LanguageManager.put(LanguageManager.args(), "stoppoint", locationText(stop.getStopPointLocation()))));
-        player.sendMessage(plugin.getLanguageManager().getMessage("stop.info_owner",
-                LanguageManager.put(LanguageManager.args(), "owner", guard.formatOwner(stop.getOwner()))));
-        player.sendMessage(plugin.getLanguageManager().getMessage("stop.info_admins",
-                LanguageManager.put(LanguageManager.args(), "admins", guard.formatAdmins(stop.getAdmins()))));
-
-        String linkedLines = stop.getLinkedLineIds().isEmpty()
-                ? plugin.getLanguageManager().getMessage("ownership.none")
-                : String.join(", ", stop.getLinkedLineIds());
-        player.sendMessage(plugin.getLanguageManager().getMessage("stop.info_linked_lines",
-                LanguageManager.put(LanguageManager.args(), "lines", linkedLines)));
-
-        List<String> transferIds = stopManager.getTransferableLines(id);
-        if (transferIds.isEmpty()) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.info_no_transfers"));
-        } else {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.info_transfers_header"));
-            for (String transferId : transferIds) {
-                Line transferLine = lineManager.getLine(transferId);
-                if (transferLine == null) {
-                    player.sendMessage(plugin.getLanguageManager().getMessage("stop.info_transfer_item_invalid",
-                            LanguageManager.put(LanguageManager.args(), "line_id", transferId)));
-                } else {
-                    player.sendMessage(plugin.getLanguageManager().getMessage("stop.info_transfer_item",
-                            LanguageManager.put(LanguageManager.put(LanguageManager.args(), "line_id", transferLine.getId()), "line_name", transferLine.getName())));
-                }
-            }
-        }
-
-        List<Line> parentLines = lineManager.getLinesForStop(id);
-        if (parentLines.isEmpty()) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.info_no_parent_lines"));
-            return;
-        }
-        player.sendMessage(plugin.getLanguageManager().getMessage("stop.info_parent_lines_header"));
-        for (Line line : parentLines) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.info_parent_line_item",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.args(), "line_id", line.getId()), "line_name", line.getName())));
-        }
+        view.sendInfo(player, stop);
     }
 
     @Command("m|metro stop|s trust <id> <playerName>")
@@ -614,10 +460,4 @@ public class StopCommand {
         player.sendMessage(plugin.getLanguageManager().getMessage("stop.usage_link"));
     }
 
-    private String locationText(Location location) {
-        if (location == null || location.getWorld() == null) {
-            return plugin.getLanguageManager().getMessage("ownership.none");
-        }
-        return location.getWorld().getName() + " " + location.getBlockX() + "," + location.getBlockY() + "," + location.getBlockZ();
-    }
 }

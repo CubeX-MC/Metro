@@ -459,7 +459,7 @@ PortalCommandService
    - [x] 将传送门列表展示数据和 reload 流程收敛到 `PortalCommandService`。
    - [x] 新增 `CommandDisplayService`，统一 Line/Stop/Portal 命令帮助展示、分页和页码夹取。
    - [x] 将线路/站点列表数据准备和稳定排序迁移到对应 command service。
-   - [ ] 继续收敛命令展示逻辑和页码校验。
+   - [x] 继续收敛命令展示逻辑和页码校验。
 
 命令类只负责：
 
@@ -476,7 +476,7 @@ PortalCommandService
    - [x] 站点创建 ID、停靠点、标题类型/键、link action 已在 `StopCommandService` 中校验。
    - [x] 传送门创建 ID、入口位置、目标位置和配对目标已在 `PortalCommandService` 中校验。
    - [x] 帮助页页码校验已迁移到 `CommandDisplayService`。
-   - [ ] 列表类命令如需分页时继续复用统一页码校验。
+   - [x] 列表类命令如需分页时继续复用统一页码校验。
 
 6. 增加命令测试：
    - create/delete/rename 权限。
@@ -501,7 +501,7 @@ PortalCommandService
 
 实现方法：
 
-1. 增加通用确认 GUI：
+1. [x] 增加通用确认 GUI：
 
 ```text
 GuiType.CONFIRM_ACTION
@@ -651,7 +651,7 @@ CANCELLED
 /m line protect <id> off
 ```
 
-5. 增加 GUI 入口。
+5. [x] 增加 GUI 入口。
 
 6. 增加测试：
    - route points 插值。

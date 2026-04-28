@@ -8,12 +8,15 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.manager.LanguageManager;
+import org.cubexmc.metro.manager.RouteRecorder;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Stop;
 import org.cubexmc.metro.util.OwnershipUtil;
 import org.cubexmc.metro.util.SchedulerUtil;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * GUI 事件监听器
@@ -27,6 +30,8 @@ public class GuiListener implements Listener {
     private static final int SLOT_FILTER = 49;
     private static final int SLOT_NEXT_PAGE = 53;
     private static final int SLOT_BACK = 46;
+    private static final int SLOT_CONFIRM = 11;
+    private static final int SLOT_CANCEL = 15;
     
     // 主菜单槽位
     private static final int SLOT_LINE_MANAGE = 11;
@@ -73,6 +78,7 @@ public class GuiListener implements Listener {
             case LINE_BOARDING_CHOICE -> handleLineBoardingChoiceClick(player, holder, slot, event.isRightClick());
             case LINE_SETTINGS -> handleLineSettingsClick(player, holder, slot);
             case STOP_SETTINGS -> handleStopSettingsClick(player, holder, slot);
+            case CONFIRM_ACTION -> handleConfirmActionClick(player, holder, slot);
             case STOP_DETAIL -> {
                 // STOP_DETAIL is reserved for future expansion.
             }
@@ -439,13 +445,8 @@ public class GuiListener implements Listener {
                 if (isShiftClick) {
                     // Shift+点击从线路移除站点
                     if (OwnershipUtil.canManageLine(player, line)) {
-                        if (plugin.getLineManager().delStopFromLine(lineId, stopId)) {
-                            player.sendMessage(plugin.getLanguageManager().getMessage("line.delstop_success",
-                                    LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                                            "stop_id", stopId), "line_id", lineId)));
-                            // 刷新界面
-                            plugin.getGuiManager().openLineDetail(player, lineId, page);
-                        }
+                        plugin.getGuiManager().openConfirmAction(player, "REMOVE_STOP_FROM_LINE",
+                                stopId, stop.getName(), lineId, page);
                     }
                 } else if (isRightClick) {
                     // 右键打开该站点的设置页面
@@ -604,6 +605,32 @@ public class GuiListener implements Listener {
         }
 
         switch (slot) {
+            case 1 -> { // Route recording
+                handleRouteRecordingToggle(player, line);
+                plugin.getGuiManager().openLineSettings(player, lineId);
+            }
+            case 3 -> { // Route info
+                sendRouteInfo(player, line);
+                plugin.getGuiManager().openLineSettings(player, lineId);
+            }
+            case 5 -> { // Clear route
+                plugin.getGuiManager().openConfirmAction(player, "CLEAR_ROUTE",
+                        lineId, line.getName(), null, 0);
+            }
+            case 7 -> { // Rail protection toggle
+                boolean enabled = !line.isRailProtected();
+                if (plugin.getLineManager().setLineRailProtected(lineId, enabled)) {
+                    player.sendMessage(plugin.getLanguageManager().getMessage("line.protect_updated",
+                            args("line_id", lineId,
+                                    "state", plugin.getLanguageManager().getMessage(enabled
+                                            ? "line.protect_state_enabled"
+                                            : "line.protect_state_disabled"))));
+                } else {
+                    player.sendMessage(plugin.getLanguageManager().getMessage("line.protect_update_fail",
+                            LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
+                }
+                plugin.getGuiManager().openLineSettings(player, lineId);
+            }
             case 9 -> { // Rename
                 plugin.getChatInputManager().requestInput(player, plugin.getLanguageManager().getMessage("chat.enter_new_name"), new ChatInputManager.ChatInputCallback() {
                     @Override
@@ -695,17 +722,78 @@ public class GuiListener implements Listener {
                 });
             }
             case 17 -> { // Delete
-                if (plugin.getLineManager().deleteLine(lineId)) {
-                    player.sendMessage(plugin.getLanguageManager().getMessage("line.delete_success",
-                            LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
-                } else {
-                    player.sendMessage(plugin.getLanguageManager().getMessage("line.delete_fail"));
-                }
-                plugin.getGuiManager().openLineList(player, 0, false);
+                plugin.getGuiManager().openConfirmAction(player, "DELETE_LINE",
+                        lineId, line.getName(), null, 0);
             }
             case 22 -> { // Back
                 plugin.getGuiManager().openLineList(player, 0, false);
             }
+        }
+    }
+
+    private void handleRouteRecordingToggle(Player player, Line line) {
+        String lineId = line.getId();
+        RouteRecorder recorder = plugin.getRouteRecorder();
+        if (recorder.isRecording(lineId)) {
+            RouteRecorder.FinishResult result = recorder.stopAndSave(lineId);
+            switch (result.status()) {
+                case SAVED -> player.sendMessage(plugin.getLanguageManager().getMessage("line.record_saved",
+                        args("line_id", lineId, "point_count", String.valueOf(result.pointCount()))));
+                case TOO_FEW_POINTS -> player.sendMessage(plugin.getLanguageManager().getMessage("line.record_too_few",
+                        LanguageManager.put(LanguageManager.args(), "point_count", String.valueOf(result.pointCount()))));
+                case FAILED -> player.sendMessage(plugin.getLanguageManager().getMessage("line.record_failed",
+                        LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
+                case NOT_RECORDING -> player.sendMessage(plugin.getLanguageManager().getMessage("line.record_not_recording",
+                        LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
+            }
+            return;
+        }
+
+        if (recorder.start(lineId)) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.record_started",
+                    LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.record_hint"));
+        } else {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.record_already",
+                    LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
+        }
+    }
+
+    private void sendRouteInfo(Player player, Line line) {
+        RouteRecorder recorder = plugin.getRouteRecorder();
+        player.sendMessage(plugin.getLanguageManager().getMessage("line.routeinfo_header",
+                args("line_name", line.getName(), "line_id", line.getId())));
+        player.sendMessage(plugin.getLanguageManager().getMessage("line.routeinfo_saved_points",
+                LanguageManager.put(LanguageManager.args(), "point_count", String.valueOf(line.getRoutePoints().size()))));
+        player.sendMessage(plugin.getLanguageManager().getMessage("line.protect_status",
+                LanguageManager.put(LanguageManager.args(), "state", plugin.getLanguageManager().getMessage(line.isRailProtected()
+                        ? "line.protect_state_enabled"
+                        : "line.protect_state_disabled"))));
+        int protectedBlocks = plugin.getRailProtectionManager() == null
+                ? 0
+                : plugin.getRailProtectionManager().getProtectedBlockCount(line.getId());
+        player.sendMessage(plugin.getLanguageManager().getMessage("line.protect_blocks",
+                LanguageManager.put(LanguageManager.args(), "count", String.valueOf(protectedBlocks))));
+        if (line.isRailProtected() && protectedBlocks == 0) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.protect_no_blocks"));
+        }
+        if (recorder.isRecording(line.getId())) {
+            UUID cartId = recorder.getRecordingCartId(line.getId());
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.routeinfo_recording",
+                    LanguageManager.put(LanguageManager.args(), "state",
+                            plugin.getLanguageManager().getMessage("line.routeinfo_recording_active"))));
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.routeinfo_buffered_points",
+                    LanguageManager.put(LanguageManager.args(), "point_count",
+                            String.valueOf(recorder.getActivePointCount(line.getId())))));
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.routeinfo_bound_cart",
+                    LanguageManager.put(LanguageManager.args(), "cart_id",
+                            cartId == null
+                                    ? plugin.getLanguageManager().getMessage("line.routeinfo_waiting_cart")
+                                    : cartId.toString())));
+        } else {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.routeinfo_recording",
+                    LanguageManager.put(LanguageManager.args(), "state",
+                            plugin.getLanguageManager().getMessage("line.routeinfo_recording_inactive"))));
         }
     }
 
@@ -739,18 +827,8 @@ public class GuiListener implements Listener {
                 });
             }
             case 15 -> { // Delete
-                if (plugin.getStopManager().deleteStop(stopId)) {
-                    player.sendMessage(plugin.getLanguageManager().getMessage("stop.delete_success",
-                            LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
-                } else {
-                    player.sendMessage(plugin.getLanguageManager().getMessage("stop.delete_not_found",
-                            LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
-                }
-                if (fromLineId != null) {
-                    plugin.getGuiManager().openLineDetail(player, fromLineId, 0);
-                } else {
-                    plugin.getGuiManager().openStopList(player, 0, false);
-                }
+                plugin.getGuiManager().openConfirmAction(player, "DELETE_STOP",
+                        stopId, stop.getName(), fromLineId, 0);
             }
             case 22 -> { // Back
                 if (fromLineId != null) {
@@ -760,6 +838,105 @@ public class GuiListener implements Listener {
                 }
             }
         }
+    }
+
+    private void handleConfirmActionClick(Player player, GuiHolder holder, int slot) {
+        if (slot == SLOT_CANCEL || slot == 22) {
+            reopenConfirmSource(player, holder);
+            return;
+        }
+        if (slot != SLOT_CONFIRM) {
+            return;
+        }
+
+        String action = holder.getData("action");
+        switch (action) {
+            case "DELETE_LINE" -> confirmDeleteLine(player, holder);
+            case "DELETE_STOP" -> confirmDeleteStop(player, holder);
+            case "REMOVE_STOP_FROM_LINE" -> confirmRemoveStopFromLine(player, holder);
+            case "CLEAR_ROUTE" -> confirmClearRoute(player, holder);
+            default -> reopenConfirmSource(player, holder);
+        }
+    }
+
+    private void confirmDeleteLine(Player player, GuiHolder holder) {
+        String lineId = holder.getData("targetId");
+        if (plugin.getLineManager().deleteLine(lineId)) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.delete_success",
+                    LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
+        } else {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.delete_fail",
+                    LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
+        }
+        plugin.getGuiManager().openLineList(player, 0, false);
+    }
+
+    private void confirmDeleteStop(Player player, GuiHolder holder) {
+        String stopId = holder.getData("targetId");
+        String fromLineId = holder.getData("lineId");
+        if (plugin.getStopManager().deleteStop(stopId)) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("stop.delete_success",
+                    LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
+        } else {
+            player.sendMessage(plugin.getLanguageManager().getMessage("stop.delete_not_found",
+                    LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
+        }
+        if (fromLineId != null) {
+            plugin.getGuiManager().openLineDetail(player, fromLineId, 0);
+        } else {
+            plugin.getGuiManager().openStopList(player, 0, false);
+        }
+    }
+
+    private void confirmRemoveStopFromLine(Player player, GuiHolder holder) {
+        String stopId = holder.getData("targetId");
+        String lineId = holder.getData("lineId");
+        int returnPage = holder.getData("returnPage", 0);
+        if (plugin.getLineManager().delStopFromLine(lineId, stopId)) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.delstop_success",
+                    LanguageManager.put(LanguageManager.put(LanguageManager.args(),
+                            "stop_id", stopId), "line_id", lineId)));
+        } else {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.delstop_fail"));
+        }
+        plugin.getGuiManager().openLineDetail(player, lineId, returnPage);
+    }
+
+    private void confirmClearRoute(Player player, GuiHolder holder) {
+        String lineId = holder.getData("targetId");
+        Line line = plugin.getLineManager().getLine(lineId);
+        int previousPointCount = line == null ? 0 : line.getRoutePoints().size();
+        plugin.getRouteRecorder().clearActive(lineId);
+        if (plugin.getLineManager().clearLineRoutePoints(lineId)) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.clearroute_success",
+                    args("line_id", lineId, "point_count", String.valueOf(previousPointCount))));
+        } else {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.clearroute_fail",
+                    LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
+        }
+        plugin.getGuiManager().openLineSettings(player, lineId);
+    }
+
+    private void reopenConfirmSource(Player player, GuiHolder holder) {
+        String action = holder.getData("action");
+        String targetId = holder.getData("targetId");
+        String lineId = holder.getData("lineId");
+        int returnPage = holder.getData("returnPage", 0);
+        switch (action) {
+            case "DELETE_LINE" -> plugin.getGuiManager().openLineSettings(player, targetId);
+            case "DELETE_STOP" -> plugin.getGuiManager().openStopSettings(player, targetId, lineId);
+            case "REMOVE_STOP_FROM_LINE" -> plugin.getGuiManager().openLineDetail(player, lineId, returnPage);
+            case "CLEAR_ROUTE" -> plugin.getGuiManager().openLineSettings(player, targetId);
+            default -> player.closeInventory();
+        }
+    }
+
+    private Map<String, Object> args(Object... replacements) {
+        Map<String, Object> args = LanguageManager.args();
+        for (int i = 0; i < replacements.length - 1; i += 2) {
+            LanguageManager.put(args, String.valueOf(replacements[i]), replacements[i + 1]);
+        }
+        return args;
     }
 }
 

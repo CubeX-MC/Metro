@@ -66,6 +66,13 @@ class CommandDisplayServiceTest {
     }
 
     @Test
+    void shouldAppendPageInfoToArbitraryHeaders() {
+        CommandDisplayService.Page<String> page = service.paginate(List.of("a", "b", "c"), 2, 2);
+
+        assertEquals("Header §e(2/2)", service.pageHeader("Header", page));
+    }
+
+    @Test
     void shouldBuildNonPagedHelpSectionFromKeys() {
         CommandDisplayService.HelpSection section = service.helpSection(key -> "msg:" + key,
                 "header", List.of("one", "two"));

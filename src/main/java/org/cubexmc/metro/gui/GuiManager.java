@@ -757,6 +757,30 @@ public class GuiManager {
                 .name(msg("gui.line_settings.rename"))
                 .lore(msg("gui.line_settings.rename_lore"))
                 .build());
+
+        boolean recording = plugin.getRouteRecorder().isRecording(lineId);
+        inv.setItem(1, new ItemBuilder(recording ? Material.REDSTONE_TORCH : Material.MINECART)
+                .name(msg(recording ? "gui.line_settings.record_stop" : "gui.line_settings.record_start"))
+                .lore(msg(recording ? "gui.line_settings.record_stop_lore" : "gui.line_settings.record_start_lore"))
+                .build());
+
+        inv.setItem(3, new ItemBuilder(Material.COMPASS)
+                .name(msg("gui.line_settings.route_info"))
+                .lore(msg("gui.line_settings.route_info_lore",
+                        "point_count", String.valueOf(line.getRoutePoints().size())))
+                .build());
+
+        inv.setItem(5, new ItemBuilder(Material.TNT)
+                .name(msg("gui.line_settings.clear_route"))
+                .lore(msg("gui.line_settings.clear_route_lore"))
+                .build());
+
+        inv.setItem(7, new ItemBuilder(line.isRailProtected() ? Material.IRON_BARS : Material.RAIL)
+                .name(msg(line.isRailProtected()
+                        ? "gui.line_settings.protection_on"
+                        : "gui.line_settings.protection_off"))
+                .lore(msg("gui.line_settings.protection_lore"))
+                .build());
                 
         // 修改最高速度按钮
         inv.setItem(11, new ItemBuilder(Material.MINECART)
@@ -835,6 +859,54 @@ public class GuiManager {
                 .name(msg("gui.control.back_main"))
                 .build());
                 
+        player.openInventory(inv);
+    }
+
+    /**
+     * 打开危险操作确认界面。
+     */
+    public void openConfirmAction(Player player, String action, String targetId, String targetName,
+                                  String lineId, int returnPage) {
+        GuiHolder holder = new GuiHolder(GuiType.CONFIRM_ACTION);
+        holder.setData("action", action);
+        holder.setData("targetId", targetId);
+        holder.setData("targetName", targetName);
+        holder.setData("lineId", lineId);
+        holder.setData("returnPage", returnPage);
+
+        Inventory inv = Bukkit.createInventory(holder, 27,
+                ChatColor.translateAlternateColorCodes('&', msg("gui.confirm.title")));
+        holder.setInventory(inv);
+
+        ItemStack filler = new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE).name(" ").build();
+        for (int i = 0; i < 27; i++) {
+            inv.setItem(i, filler);
+        }
+
+        String target = targetName == null || targetName.isBlank() ? targetId : targetName + " (" + targetId + ")";
+        String messageKey = switch (action) {
+            case "DELETE_LINE" -> "gui.confirm.delete_line";
+            case "DELETE_STOP" -> "gui.confirm.delete_stop";
+            case "REMOVE_STOP_FROM_LINE" -> "gui.confirm.remove_stop_from_line";
+            case "CLEAR_ROUTE" -> "gui.confirm.clear_route";
+            default -> "gui.confirm.generic";
+        };
+
+        inv.setItem(11, new ItemBuilder(Material.LIME_CONCRETE)
+                .name(msg("gui.confirm.confirm"))
+                .lore(msg(messageKey, "target", target),
+                        msg("gui.confirm.warning"),
+                        "",
+                        msg("gui.confirm.confirm_lore"))
+                .build());
+        inv.setItem(15, new ItemBuilder(Material.RED_CONCRETE)
+                .name(msg("gui.confirm.cancel"))
+                .lore(msg("gui.confirm.cancel_lore"))
+                .build());
+        inv.setItem(22, new ItemBuilder(Material.DARK_OAK_DOOR)
+                .name(msg("gui.common.back"))
+                .build());
+
         player.openInventory(inv);
     }
 

@@ -52,8 +52,12 @@ public class CommandDisplayService {
         List<String> lines = keyPage.items().stream()
                 .map(messageResolver)
                 .toList();
-        String header = messageResolver.apply(headerKey) + " §e(" + keyPage.page() + "/" + keyPage.totalPages() + ")";
+        String header = pageHeader(messageResolver.apply(headerKey), keyPage);
         return new HelpPage(header, lines, keyPage.page(), keyPage.totalPages());
+    }
+
+    public String pageHeader(String header, Page<?> page) {
+        return header + " §e(" + page.page() + "/" + page.totalPages() + ")";
     }
 
     public HelpSection helpSection(Function<String, String> messageResolver,
