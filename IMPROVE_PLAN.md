@@ -449,7 +449,8 @@ PortalCommandService
    - [x] 先抽出共享 `CommandGuard`，统一线路/站点查找、权限失败提示和 owner/admin 占位符格式化。
    - [x] 新增 `LineCommandService`，迁移线路写操作和基础参数校验。
    - [x] 新增 `StopCommandService`，迁移站点写操作和基础参数校验。
-   - [ ] 继续将线路、站点、传送门的业务写操作迁移到 service。
+   - [x] 新增 `PortalCommandService`，迁移传送门写操作和基础参数校验。
+   - [ ] 继续收敛命令展示逻辑和页码校验。
 
 命令类只负责：
 
@@ -464,7 +465,8 @@ PortalCommandService
    - 页码范围校验。
    - [x] 线路创建/反向克隆 ID、线路颜色、最大速度、票价已在 `LineCommandService` 中校验。
    - [x] 站点创建 ID、停靠点、标题类型/键、link action 已在 `StopCommandService` 中校验。
-   - [ ] 传送门和页码校验继续迁移。
+   - [x] 传送门创建 ID、入口位置、目标位置和配对目标已在 `PortalCommandService` 中校验。
+   - [ ] 页码校验继续迁移。
 
 6. 增加命令测试：
    - create/delete/rename 权限。

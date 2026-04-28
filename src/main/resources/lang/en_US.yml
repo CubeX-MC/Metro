@@ -151,6 +151,22 @@ portal:
   usage_setdest: "&cUsage: /m portal setdest <portal_id>"
   usage_link: "&cUsage: /m portal link <portal_id_1> <portal_id_2>"
   usage_delete: "&cUsage: /m portal delete <portal_id>"
+  id_invalid: "&cInvalid portal ID: {portal_id}. Use 1-64 letters, numbers, underscores, or hyphens."
+  create_success: "&aPortal {portal_id} created at {x}, {y}, {z} ({world})."
+  create_exists: "&cPortal {portal_id} already exists."
+  create_fail: "&cFailed to create portal {portal_id}."
+  create_setdest_hint: "&eUse /metro portal setdest {portal_id} to set the destination."
+  not_found: "&cPortal {portal_id} does not exist."
+  setdest_success: "&aPortal {portal_id} destination set to {x}, {y}, {z} (Yaw: {yaw}) ({world})."
+  setdest_fail: "&cFailed to set destination for portal {portal_id}."
+  link_success: "&aPortals {portal_id_1} and {portal_id_2} are now linked both ways."
+  link_fail: "&cFailed to link portals. Make sure both portals exist and are different."
+  delete_success: "&aPortal {portal_id} deleted."
+  list_empty: "&eThere are no portals."
+  list_header: "&6===== Minecart Portals ({count}) ====="
+  list_item: "&f- &b{portal_id} &7[{world} {x},{y},{z}] &e-> &7[{dest_world} {dest}] {linked}"
+  list_linked: "&b<-> {linked_portal_id}"
+  reload_success: "&aPortal configuration reloaded. {count} portal(s) loaded."
 
 # Stop Command Related
 stop:

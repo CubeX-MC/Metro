@@ -4,13 +4,14 @@ import org.incendo.cloud.annotations.Argument;
 import org.incendo.cloud.annotations.CommandDescription;
 import org.incendo.cloud.annotations.Command;
 import org.incendo.cloud.annotations.Permission;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.cubexmc.metro.Metro;
+import org.cubexmc.metro.manager.LanguageManager;
 import org.cubexmc.metro.manager.PortalManager;
 import org.cubexmc.metro.model.Portal;
+import org.cubexmc.metro.service.PortalCommandService;
 import org.cubexmc.metro.update.DataFileUpdater;
 
 import java.util.List;
@@ -23,10 +24,12 @@ public class PortalCommand {
 
     private final Metro plugin;
     private final PortalManager portalManager;
+    private final PortalCommandService portalService;
 
     public PortalCommand(Metro plugin) {
         this.plugin = plugin;
         this.portalManager = plugin.getPortalManager();
+        this.portalService = new PortalCommandService(portalManager);
     }
 
     @Command("m|metro portal")
@@ -58,41 +61,50 @@ public class PortalCommand {
     @CommandDescription("在当前位置创建一个传送门入口")
     @Permission("metro.admin")
     public void createPortal(Player sender, @Argument("id") String id) {
-        if (portalManager.getPortal(id) != null) {
-            sender.sendMessage(ChatColor.RED + "传送门 '" + id + "' 已存在！");
-            return;
+        PortalCommandService.PortalWriteResult result =
+                portalService.createPortal(id, sender.getLocation(), sender.getTargetBlockExact(5));
+        switch (result.status()) {
+            case SUCCESS -> {
+                Location loc = result.location();
+                sender.sendMessage(plugin.getLanguageManager().getMessage("portal.create_success",
+                        LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.put(
+                                LanguageManager.args(), "portal_id", id), "x", String.valueOf(loc.getBlockX())),
+                                "y", String.valueOf(loc.getBlockY())), "z", String.valueOf(loc.getBlockZ())),
+                                "world", loc.getWorld().getName())));
+                sender.sendMessage(plugin.getLanguageManager().getMessage("portal.create_setdest_hint",
+                        LanguageManager.put(LanguageManager.args(), "portal_id", id)));
+            }
+            case INVALID_ID -> sender.sendMessage(plugin.getLanguageManager().getMessage("portal.id_invalid",
+                    LanguageManager.put(LanguageManager.args(), "portal_id", id)));
+            case EXISTS -> sender.sendMessage(plugin.getLanguageManager().getMessage("portal.create_exists",
+                    LanguageManager.put(LanguageManager.args(), "portal_id", id)));
+            default -> sender.sendMessage(plugin.getLanguageManager().getMessage("portal.create_fail",
+                    LanguageManager.put(LanguageManager.args(), "portal_id", id)));
         }
-
-        // 优先获取玩家视线瞄准的方块（如果是铁轨），否则使用玩家脚下坐标
-        org.bukkit.block.Block targetBlock = sender.getTargetBlockExact(5);
-        Location loc;
-        if (targetBlock != null && targetBlock.getType().name().contains("RAIL")) {
-            loc = targetBlock.getLocation();
-        } else {
-            loc = sender.getLocation();
-        }
-
-        portalManager.createPortal(id, loc);
-        sender.sendMessage(ChatColor.GREEN + "传送门 '" + id + "' 已创建于 "
-                + loc.getBlockX() + ", " + loc.getBlockY() + ", " + loc.getBlockZ()
-                + " (" + loc.getWorld().getName() + ")");
-        sender.sendMessage(ChatColor.YELLOW + "请使用 /metro portal setdest " + id + " 设置目标位置。");
     }
 
     @Command("m|metro portal setdest <id>")
     @CommandDescription("将当前位置设置为传送门的目标位置")
     @Permission("metro.admin")
     public void setDestination(Player sender, @Argument("id") String id) {
-        if (!portalManager.setDestination(id, sender.getLocation())) {
-            sender.sendMessage(ChatColor.RED + "传送门 '" + id + "' 不存在！");
+        PortalCommandService.PortalWriteResult result = portalService.setDestination(id, sender.getLocation());
+        if (result.status() == PortalCommandService.WriteStatus.NOT_FOUND) {
+            sender.sendMessage(plugin.getLanguageManager().getMessage("portal.not_found",
+                    LanguageManager.put(LanguageManager.args(), "portal_id", id)));
+            return;
+        }
+        if (result.status() != PortalCommandService.WriteStatus.SUCCESS) {
+            sender.sendMessage(plugin.getLanguageManager().getMessage("portal.setdest_fail",
+                    LanguageManager.put(LanguageManager.args(), "portal_id", id)));
             return;
         }
 
-        Location loc = sender.getLocation();
-        sender.sendMessage(ChatColor.GREEN + "传送门 '" + id + "' 目标已设置为 "
-                + String.format("%.1f, %.1f, %.1f", loc.getX(), loc.getY(), loc.getZ())
-                + " (Yaw: " + String.format("%.1f", loc.getYaw()) + ")"
-                + " (" + loc.getWorld().getName() + ")");
+        Location loc = result.location();
+        sender.sendMessage(plugin.getLanguageManager().getMessage("portal.setdest_success",
+                LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.put(
+                        LanguageManager.args(), "portal_id", id), "x", String.format("%.1f", loc.getX())),
+                        "y", String.format("%.1f", loc.getY())), "z", String.format("%.1f", loc.getZ())),
+                        "yaw", String.format("%.1f", loc.getYaw())), "world", loc.getWorld().getName())));
     }
 
     @Command("m|metro portal link <id1> <id2>")
@@ -101,22 +113,25 @@ public class PortalCommand {
     public void linkPortals(Player sender,
                             @Argument("id1") String id1,
                             @Argument("id2") String id2) {
-        if (!portalManager.linkPortals(id1, id2)) {
-            sender.sendMessage(ChatColor.RED + "配对失败，请确保两个传送门都已存在。");
+        if (portalService.linkPortals(id1, id2) != PortalCommandService.WriteStatus.SUCCESS) {
+            sender.sendMessage(plugin.getLanguageManager().getMessage("portal.link_fail"));
             return;
         }
-        sender.sendMessage(ChatColor.GREEN + "传送门 '" + id1 + "' ↔ '" + id2 + "' 已双向配对。");
+        sender.sendMessage(plugin.getLanguageManager().getMessage("portal.link_success",
+                LanguageManager.put(LanguageManager.put(LanguageManager.args(), "portal_id_1", id1), "portal_id_2", id2)));
     }
 
     @Command("m|metro portal delete <id>")
     @CommandDescription("删除一个传送门")
     @Permission("metro.admin")
     public void deletePortal(Player sender, @Argument("id") String id) {
-        if (!portalManager.deletePortal(id)) {
-            sender.sendMessage(ChatColor.RED + "传送门 '" + id + "' 不存在！");
+        if (portalService.deletePortal(id) != PortalCommandService.WriteStatus.SUCCESS) {
+            sender.sendMessage(plugin.getLanguageManager().getMessage("portal.not_found",
+                    LanguageManager.put(LanguageManager.args(), "portal_id", id)));
             return;
         }
-        sender.sendMessage(ChatColor.GREEN + "传送门 '" + id + "' 已删除。");
+        sender.sendMessage(plugin.getLanguageManager().getMessage("portal.delete_success",
+                LanguageManager.put(LanguageManager.args(), "portal_id", id)));
     }
 
     @Command("m|metro portal list")
@@ -125,20 +140,25 @@ public class PortalCommand {
     public void listPortals(CommandSender sender) {
         List<Portal> allPortals = portalManager.getAllPortals();
         if (allPortals.isEmpty()) {
-            sender.sendMessage(ChatColor.YELLOW + "当前没有任何传送门。");
+            sender.sendMessage(plugin.getLanguageManager().getMessage("portal.list_empty"));
             return;
         }
 
-        sender.sendMessage(ChatColor.GOLD + "=== 矿车传送门列表 (" + allPortals.size() + ") ===");
+        sender.sendMessage(plugin.getLanguageManager().getMessage("portal.list_header",
+                LanguageManager.put(LanguageManager.args(), "count", String.valueOf(allPortals.size()))));
         for (Portal p : allPortals) {
-            String linked = p.getLinkedPortalId() != null ? " §b↔ " + p.getLinkedPortalId() : "";
-            sender.sendMessage(ChatColor.WHITE + " • " + ChatColor.AQUA + p.getId()
-                    + ChatColor.GRAY + " [" + p.getWorldName() + " "
-                    + p.getX() + "," + p.getY() + "," + p.getZ() + "]"
-                    + ChatColor.YELLOW + " → "
-                    + ChatColor.GRAY + "[" + p.getDestWorldName() + " "
-                    + String.format("%.0f,%.0f,%.0f", p.getDestX(), p.getDestY(), p.getDestZ()) + "]"
-                    + linked);
+            String linked = p.getLinkedPortalId() != null
+                    ? plugin.getLanguageManager().getMessage("portal.list_linked",
+                            LanguageManager.put(LanguageManager.args(), "linked_portal_id", p.getLinkedPortalId()))
+                    : "";
+            sender.sendMessage(plugin.getLanguageManager().getMessage("portal.list_item",
+                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.put(
+                            LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
+                                    "portal_id", p.getId()), "world", p.getWorldName()),
+                                    "x", String.valueOf(p.getX())), "y", String.valueOf(p.getY())),
+                            "z", String.valueOf(p.getZ())), "dest_world", p.getDestWorldName()),
+                            "dest", String.format("%.0f,%.0f,%.0f", p.getDestX(), p.getDestY(), p.getDestZ())),
+                            "linked", linked)));
         }
     }
 
@@ -148,6 +168,7 @@ public class PortalCommand {
     public void reloadPortals(CommandSender sender) {
         DataFileUpdater.migratePortals(plugin);
         portalManager.load();
-        sender.sendMessage(ChatColor.GREEN + "传送门配置已重新加载。共 " + portalManager.getAllPortals().size() + " 个传送门。");
+        sender.sendMessage(plugin.getLanguageManager().getMessage("portal.reload_success",
+                LanguageManager.put(LanguageManager.args(), "count", String.valueOf(portalManager.getAllPortals().size()))));
     }
 }

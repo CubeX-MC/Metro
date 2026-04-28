@@ -150,6 +150,22 @@ portal:
   usage_setdest: "&cVerwendung: /m portal setdest <portal_id>"
   usage_link: "&cVerwendung: /m portal link <portal_id_1> <portal_id_2>"
   usage_delete: "&cVerwendung: /m portal delete <portal_id>"
+  id_invalid: "&cUngültige Portal-ID: {portal_id}. Nutze 1-64 Buchstaben, Zahlen, Unterstriche oder Bindestriche."
+  create_success: "&aPortal {portal_id} bei {x}, {y}, {z} ({world}) erstellt."
+  create_exists: "&cPortal {portal_id} existiert bereits."
+  create_fail: "&cPortal {portal_id} konnte nicht erstellt werden."
+  create_setdest_hint: "&eNutze /metro portal setdest {portal_id}, um das Ziel festzulegen."
+  not_found: "&cPortal {portal_id} existiert nicht."
+  setdest_success: "&aZiel von Portal {portal_id} auf {x}, {y}, {z} (Yaw: {yaw}) ({world}) gesetzt."
+  setdest_fail: "&cZiel für Portal {portal_id} konnte nicht gesetzt werden."
+  link_success: "&aPortale {portal_id_1} und {portal_id_2} sind nun beidseitig verknüpft."
+  link_fail: "&cPortale konnten nicht verknüpft werden. Prüfe, ob beide existieren und verschieden sind."
+  delete_success: "&aPortal {portal_id} gelöscht."
+  list_empty: "&eEs gibt keine Portale."
+  list_header: "&6===== Loren-Portale ({count}) ====="
+  list_item: "&f- &b{portal_id} &7[{world} {x},{y},{z}] &e-> &7[{dest_world} {dest}] {linked}"
+  list_linked: "&b<-> {linked_portal_id}"
+  reload_success: "&aPortal-Konfiguration neu geladen. {count} Portal(e) geladen."
 
 # Haltebereich-Befehl bezogen
 stop:

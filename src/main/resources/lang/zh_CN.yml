@@ -151,6 +151,22 @@ portal:
   usage_setdest: "&c用法: /m portal setdest <portal_id>"
   usage_link: "&c用法: /m portal link <portal_id_1> <portal_id_2>"
   usage_delete: "&c用法: /m portal delete <portal_id>"
+  id_invalid: "&c无效的传送门ID: {portal_id}。请使用 1-64 个字母、数字、下划线或连字符。"
+  create_success: "&a传送门 {portal_id} 已创建于 {x}, {y}, {z} ({world})。"
+  create_exists: "&c传送门 {portal_id} 已存在。"
+  create_fail: "&c创建传送门 {portal_id} 失败。"
+  create_setdest_hint: "&e请使用 /metro portal setdest {portal_id} 设置目标位置。"
+  not_found: "&c传送门 {portal_id} 不存在。"
+  setdest_success: "&a传送门 {portal_id} 目标已设置为 {x}, {y}, {z} (Yaw: {yaw}) ({world})。"
+  setdest_fail: "&c设置传送门 {portal_id} 目标失败。"
+  link_success: "&a传送门 {portal_id_1} 与 {portal_id_2} 已双向配对。"
+  link_fail: "&c配对失败，请确保两个传送门都存在且不是同一个。"
+  delete_success: "&a传送门 {portal_id} 已删除。"
+  list_empty: "&e当前没有任何传送门。"
+  list_header: "&6===== 矿车传送门列表 ({count}) ====="
+  list_item: "&f- &b{portal_id} &7[{world} {x},{y},{z}] &e-> &7[{dest_world} {dest}] {linked}"
+  list_linked: "&b<-> {linked_portal_id}"
+  reload_success: "&a传送门配置已重新加载。共 {count} 个传送门。"
 
 # 停靠区命令相关
 stop:

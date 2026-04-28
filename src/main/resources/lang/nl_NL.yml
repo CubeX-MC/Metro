@@ -150,6 +150,22 @@ portal:
   usage_setdest: "&cGebruik: /m portal setdest <portal_id>"
   usage_link: "&cGebruik: /m portal link <portal_id_1> <portal_id_2>"
   usage_delete: "&cGebruik: /m portal delete <portal_id>"
+  id_invalid: "&cOngeldige portal-ID: {portal_id}. Gebruik 1-64 letters, cijfers, underscores of koppeltekens."
+  create_success: "&aPortal {portal_id} aangemaakt op {x}, {y}, {z} ({world})."
+  create_exists: "&cPortal {portal_id} bestaat al."
+  create_fail: "&cPortal {portal_id} kon niet worden aangemaakt."
+  create_setdest_hint: "&eGebruik /metro portal setdest {portal_id} om de bestemming in te stellen."
+  not_found: "&cPortal {portal_id} bestaat niet."
+  setdest_success: "&aBestemming van portal {portal_id} ingesteld op {x}, {y}, {z} (Yaw: {yaw}) ({world})."
+  setdest_fail: "&cBestemming voor portal {portal_id} kon niet worden ingesteld."
+  link_success: "&aPortalen {portal_id_1} en {portal_id_2} zijn nu beide kanten op gekoppeld."
+  link_fail: "&cPortalen konden niet worden gekoppeld. Controleer of beide bestaan en verschillend zijn."
+  delete_success: "&aPortal {portal_id} verwijderd."
+  list_empty: "&eEr zijn geen portalen."
+  list_header: "&6===== Mijnkarportalen ({count}) ====="
+  list_item: "&f- &b{portal_id} &7[{world} {x},{y},{z}] &e-> &7[{dest_world} {dest}] {linked}"
+  list_linked: "&b<-> {linked_portal_id}"
+  reload_success: "&aPortalconfiguratie herladen. {count} portal(en) geladen."
 
 # Stopgebied commando gerelateerd
 stop:
