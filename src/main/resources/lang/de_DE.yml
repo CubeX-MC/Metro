@@ -429,3 +429,6 @@ chat:
 economy:
   insufficient_funds: "&cUnzureichendes Guthaben. Diese Fahrt kostet: {price}"
   paid_boarding: "&aErfolgreich eingestiegen. {price} wurden abgebucht."
+  transaction_failed: "&cTickettransaktion fehlgeschlagen. Bitte versuche es später erneut."
+  vault_unavailable: "&cWirtschaftsdienst ist nicht verfügbar. Bitte kontaktiere einen Administrator."
+  refunded: "&eDeine Ticketzahlung wurde erstattet."

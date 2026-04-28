@@ -848,27 +848,23 @@ public class GuiManager {
         if (price <= 0) {
             return msg("gui.line_boarding.free");
         }
-        if (plugin.getVaultIntegration() != null && plugin.getVaultIntegration().isEnabled()) {
-            return plugin.getVaultIntegration().format(price);
-        }
-        return String.valueOf(price);
+        return plugin.getTicketService().format(price);
     }
 
     private String getBoardingBlockReason(Player player, Line line) {
-        if (!player.hasPermission("metro.use")) {
-            return msg("gui.line_boarding.no_permission");
-        }
-        double price = line.getTicketPrice();
-        if (price <= 0 || !plugin.getConfig().getBoolean("economy.enabled", true)) {
+        org.cubexmc.metro.service.TicketService.TicketCheck check = plugin.getTicketService().checkCanBoard(player,
+                line);
+        if (check.canBoard()) {
             return null;
         }
-        if (plugin.getVaultIntegration() != null
-                && plugin.getVaultIntegration().isEnabled()
-                && !plugin.getVaultIntegration().has(player, price)) {
+        if (check.getStatus() == org.cubexmc.metro.service.TicketService.TicketCheckStatus.INSUFFICIENT_FUNDS) {
             return msg("economy.insufficient_funds",
-                    "price", plugin.getVaultIntegration().format(price));
+                    "price", check.getFormattedPrice());
         }
-        return null;
+        if (check.getStatus() == org.cubexmc.metro.service.TicketService.TicketCheckStatus.VAULT_UNAVAILABLE) {
+            return msg("economy.vault_unavailable");
+        }
+        return msg("gui.line_boarding.no_permission");
     }
     
     /**

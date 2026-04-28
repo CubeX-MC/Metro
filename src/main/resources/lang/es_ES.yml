@@ -423,3 +423,6 @@ chat:
 economy:
   insufficient_funds: "&cFondos insuficientes. Este viaje cuesta: {price}"
   paid_boarding: "&aHas subido con éxito. Se han deducido {price}."
+  transaction_failed: "&cLa transacción del billete falló. Inténtalo de nuevo más tarde."
+  vault_unavailable: "&cEl servicio de economía no está disponible. Contacta con un administrador."
+  refunded: "&eSe ha reembolsado el pago de tu billete."

@@ -310,7 +310,7 @@ GuiType.LINE_BOARDING_CHOICE
 
 实现方法：
 
-1. 新增 `TicketService`：
+1. [x] 新增 `TicketService`：
 
 ```text
 org.cubexmc.metro.service.TicketService
@@ -324,11 +324,11 @@ org.cubexmc.metro.service.TicketService
 - 执行扣费。
 - 失败回滚或延迟扣费。
 
-2. 调整扣费时机：
+2. [x] 调整扣费时机：
    - 推荐在矿车成功生成且 `addPassenger` 成功后扣费。
    - 若扣费失败，则移除矿车并提示玩家。
 
-3. 增加交易上下文：
+3. [x] 增加交易上下文：
 
 ```text
 TicketTransaction {
@@ -339,12 +339,12 @@ TicketTransaction {
 }
 ```
 
-4. 所有经济消息进入语言文件：
+4. [x] 所有经济消息进入语言文件：
    - `economy.transaction_failed`
    - `economy.vault_unavailable`
    - `economy.refunded`
 
-5. 增加测试：
+5. [x] 增加测试：
    - 余额不足不生成矿车。
    - addPassenger 失败不扣费。
    - 扣费成功后向线路 owner 入账。

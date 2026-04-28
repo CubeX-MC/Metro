@@ -425,3 +425,6 @@ chat:
 economy:
   insufficient_funds: "&cOnvoldoende saldo. Deze rit kost: {price}"
   paid_boarding: "&aSuccesvol ingestapt. {price} is afgeschreven."
+  transaction_failed: "&cTickettransactie mislukt. Probeer het later opnieuw."
+  vault_unavailable: "&cEconomieservice is niet beschikbaar. Neem contact op met een beheerder."
+  refunded: "&eJe ticketbetaling is terugbetaald."

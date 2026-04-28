@@ -60,6 +60,7 @@ public final class Metro extends JavaPlugin {
     private RailProtectionManager railProtectionManager;
     private org.cubexmc.metro.integration.VaultIntegration vaultIntegration;
     private org.cubexmc.metro.service.LineSelectionService lineSelectionService;
+    private org.cubexmc.metro.service.TicketService ticketService;
     private Object autoSaveTaskId;
 
     private org.cubexmc.metro.integration.BlueMapIntegration blueMapIntegration;
@@ -111,6 +112,8 @@ public final class Metro extends JavaPlugin {
         } else {
             getLogger().info("Vault economy not found or disabled.");
         }
+        this.ticketService = new org.cubexmc.metro.service.TicketService(this::getVaultIntegration,
+                () -> getConfig().getBoolean("economy.enabled", true));
 
         // 初始化计分板库
         try {
@@ -501,6 +504,10 @@ public final class Metro extends JavaPlugin {
 
     public org.cubexmc.metro.service.LineSelectionService getLineSelectionService() {
         return lineSelectionService;
+    }
+
+    public org.cubexmc.metro.service.TicketService getTicketService() {
+        return ticketService;
     }
 
     public PlayerInteractListener getPlayerInteractListener() {

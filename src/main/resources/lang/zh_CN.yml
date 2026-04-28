@@ -435,3 +435,6 @@ chat:
 economy:
   insufficient_funds: "&c余额不足。此次乘车需要: {price}"
   paid_boarding: "&a乘车扣费成功，已扣除 {price}。"
+  transaction_failed: "&c乘车扣费失败，请稍后再试。"
+  vault_unavailable: "&c经济服务不可用，请联系管理员。"
+  refunded: "&e已退回你的乘车费用。"

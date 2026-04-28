@@ -438,3 +438,6 @@ chat:
 economy:
   insufficient_funds: "&cInsufficient funds. This ride costs: {price}"
   paid_boarding: "&aSuccessfully boarded. {price} has been deducted."
+  transaction_failed: "&cTicket transaction failed. Please try again later."
+  vault_unavailable: "&cEconomy service is unavailable. Please contact an administrator."
+  refunded: "&eYour ticket payment was refunded."
