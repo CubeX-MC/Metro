@@ -14,6 +14,7 @@ command:
   help_header: "&a===== Metro Admin Command Help ====="
   help_line: "&aCommand: &6/m line &f- Manage metro lines (use /m line for subcommands)"
   help_stop: "&aCommand: &6/m stop &f- Manage stops (use /m stop for subcommands)"
+  help_portal: "&aCommand: &6/m portal &f- Manage minecart portals (use /m portal for subcommands)"
   help_gui: "&aCommand: &6/m gui &f- Open GUI management panel"
   help_reload: "&aCommand: &6/m reload &f- Reload configuration"
   help_testendpoint: "&aCommand: &6/m testendpoint &f- Test terminal station prompt display"
@@ -45,6 +46,11 @@ line:
   help_untrust: "&6/m line untrust <line_id> <player> &f- Remove a line administrator"
   help_owner: "&6/m line owner <line_id> <player> &f- Transfer line ownership"
   help_clonereverse: "&6/m line clonereverse <source_id> <new_id> [suffix] &f- Clone line in reverse"
+  help_setprice: "&6/m line setprice <line_id> <price> &f- Set the line ticket price"
+  help_recordroute: "&6/m line recordroute <line_id> &f- Record or save route points for online maps and rail protection"
+  help_clearroute: "&6/m line clearroute <line_id> &f- Clear recorded route points"
+  help_routeinfo: "&6/m line routeinfo <line_id> &f- Show route recording and rail protection status"
+  help_protect: "&6/m line protect <line_id> <on|off|status> &f- Enable, disable, or inspect rail protection"
   
   usage_create: "&cUsage: /m line create <line_id> <\"display_name\">"
   usage_delete: "&cUsage: /m line delete <line_id>"
@@ -59,6 +65,11 @@ line:
   usage_trust: "&cUsage: /m line trust <line_id> <player>"
   usage_untrust: "&cUsage: /m line untrust <line_id> <player>"
   usage_owner: "&cUsage: /m line owner <line_id> <player>"
+  usage_setprice: "&cUsage: /m line setprice <line_id> <price>"
+  usage_recordroute: "&cUsage: /m line recordroute <line_id>"
+  usage_clearroute: "&cUsage: /m line clearroute <line_id>"
+  usage_routeinfo: "&cUsage: /m line routeinfo <line_id>"
+  usage_protect: "&cUsage: /m line protect <line_id> <on|off|status>"
   
   permission_create: "&cYou don't have permission to create lines."
   permission_manage: "&cYou cannot manage line {line_id}. Owner: {owner}. Admins: {admins}"
@@ -121,6 +132,20 @@ line:
   owner_success: "&aTransferred line {line_id} ownership to {owner}."
   owner_fail: "&cFailed to transfer ownership of line {line_id}."
 
+# Portal Command Related
+portal:
+  help_header: "&a===== Metro Portal Management Commands ====="
+  help_create: "&6/m portal create <portal_id> &f- Create a portal entrance at your position or targeted rail"
+  help_setdest: "&6/m portal setdest <portal_id> &f- Set the portal destination to your current position and direction"
+  help_link: "&6/m portal link <portal_id_1> <portal_id_2> &f- Link two portals both ways"
+  help_delete: "&6/m portal delete <portal_id> &f- Delete a portal"
+  help_list: "&6/m portal list &f- List all portals and destination locations"
+  help_reload: "&6/m portal reload &f- Reload portal configuration"
+  usage_create: "&cUsage: /m portal create <portal_id>"
+  usage_setdest: "&cUsage: /m portal setdest <portal_id>"
+  usage_link: "&cUsage: /m portal link <portal_id_1> <portal_id_2>"
+  usage_delete: "&cUsage: /m portal delete <portal_id>"
+
 # Stop Command Related
 stop:
   help_header: "&a===== Metro Stop Management Commands ====="
@@ -128,7 +153,7 @@ stop:
   help_delete: "&6/m stop delete <stop_id> &f- Delete stop"
   help_list: "&6/m stop list &f- List all stops"
   help_setcorners: "&6/m stop setcorners <stop_id> &f- Update stop's corner points"
-  help_setpoint: "&6/m stop setpoint [yaw] &f- Set stopping point position and departure direction"
+  help_setpoint: "&6/m stop setpoint [stop_id] [yaw] &f- Set stopping point position and departure direction"
   help_addtransfer: "&6/m stop addtransfer <stop_id> <transfer_line_id> &f- Add transferable line"
   help_deltransfer: "&6/m stop deltransfer <stop_id> <transfer_line_id> &f- Remove transferable line"
   help_listtransfers: "&6/m stop listtransfers <stop_id> &f- List stop's transferable lines"
@@ -146,7 +171,7 @@ stop:
   usage_create: "&cUsage: /m stop create <stop_id> <\"display_name\">"
   usage_delete: "&cUsage: /m stop delete <stop_id>"
   usage_setcorners: "&cUsage: /m stop setcorners <stop_id>"
-  usage_setpoint: "&cUsage: /m stop setpoint [yaw]"
+  usage_setpoint: "&cUsage: /m stop setpoint [stop_id] [yaw]"
   usage_tp: "&cUsage: /m stop tp <stop_id>"
   usage_info: "&cUsage: /m stop info <stop_id>"
   usage_addtransfer: "&cUsage: /m stop addtransfer <stop_id> <transfer_line_id>"

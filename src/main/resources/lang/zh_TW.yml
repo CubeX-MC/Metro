@@ -14,6 +14,7 @@ command:
   help_header: "&a===== Metro 管理員指令幫助 ====="
   help_line: "&a指令: &6/m line &f- 管理地鐵路線 (使用 /m line 查看子指令)"
   help_stop: "&a指令: &6/m stop &f- 管理停靠區 (使用 /m stop 查看子指令)"
+  help_portal: "&a指令: &6/m portal &f- 管理礦車傳送門 (使用 /m portal 查看子指令)"
   help_gui: "&a指令: &6/m gui &f- 開啟圖形管理介面"
   help_reload: "&a指令: &6/m reload &f- 重新載入設定"
   help_testendpoint: "&a指令: &6/m testendpoint &f- 測試終點站提示顯示"
@@ -45,6 +46,11 @@ line:
   help_untrust: "&6/m line untrust <路線ID> <玩家> &f- 移除路線管理權限"
   help_owner: "&6/m line owner <路線ID> <玩家> &f- 轉移路線所有權"
   help_clonereverse: "&6/m line clonereverse <source_id> <new_id> [suffix] &f- 反向克隆路線"
+  help_setprice: "&6/m line setprice <路線ID> <價格> &f- 設定路線票價"
+  help_recordroute: "&6/m line recordroute <路線ID> &f- 記錄或儲存路線軌跡點，用於線上地圖與鐵軌保護"
+  help_clearroute: "&6/m line clearroute <路線ID> &f- 清除路線已記錄的軌跡點"
+  help_routeinfo: "&6/m line routeinfo <路線ID> &f- 查看路線軌跡記錄與鐵軌保護狀態"
+  help_protect: "&6/m line protect <路線ID> <on|off|status> &f- 開啟、關閉或查看路線鐵軌保護"
   
   usage_create: "&c用法: /m line create <路線ID> <\"顯示名稱\">"
   usage_delete: "&c用法: /m line delete <路線ID>"
@@ -59,6 +65,11 @@ line:
   usage_trust: "&c用法: /m line trust <路線ID> <玩家>"
   usage_untrust: "&c用法: /m line untrust <路線ID> <玩家>"
   usage_owner: "&c用法: /m line owner <路線ID> <玩家>"
+  usage_setprice: "&c用法: /m line setprice <路線ID> <價格>"
+  usage_recordroute: "&c用法: /m line recordroute <路線ID>"
+  usage_clearroute: "&c用法: /m line clearroute <路線ID>"
+  usage_routeinfo: "&c用法: /m line routeinfo <路線ID>"
+  usage_protect: "&c用法: /m line protect <路線ID> <on|off|status>"
   
   permission_create: "&c你沒有權限建立路線。"
   permission_manage: "&c你無法管理路線 {line_id}。所有者: {owner}。管理員: {admins}"
@@ -121,6 +132,20 @@ line:
   owner_success: "&a已將路線 {line_id} 的所有權轉移給 {owner}。"
   owner_fail: "&c轉移路線 {line_id} 所有權失敗。"
 
+# 傳送門指令相關
+portal:
+  help_header: "&a===== Metro 傳送門管理指令 ====="
+  help_create: "&6/m portal create <portal_id> &f- 在目前位置或視線中的鐵軌上建立傳送門入口"
+  help_setdest: "&6/m portal setdest <portal_id> &f- 將目前位置與朝向設定為傳送門目標"
+  help_link: "&6/m portal link <portal_id_1> <portal_id_2> &f- 雙向配對兩個傳送門"
+  help_delete: "&6/m portal delete <portal_id> &f- 刪除傳送門"
+  help_list: "&6/m portal list &f- 列出所有傳送門與目標位置"
+  help_reload: "&6/m portal reload &f- 重新載入傳送門設定"
+  usage_create: "&c用法: /m portal create <portal_id>"
+  usage_setdest: "&c用法: /m portal setdest <portal_id>"
+  usage_link: "&c用法: /m portal link <portal_id_1> <portal_id_2>"
+  usage_delete: "&c用法: /m portal delete <portal_id>"
+
 # 停靠區指令相關
 stop:
   help_header: "&a===== Metro 停靠區管理指令 ====="
@@ -128,7 +153,7 @@ stop:
   help_delete: "&6/m stop delete <停靠區ID> &f- 刪除停靠區"
   help_list: "&6/m stop list &f- 列出所有停靠區"
   help_setcorners: "&6/m stop setcorners <停靠區ID> &f- 更新停靠區的角落點"
-  help_setpoint: "&6/m stop setpoint [yaw] &f- 設定停靠點位置和發車朝向"
+  help_setpoint: "&6/m stop setpoint [停靠區ID] [yaw] &f- 設定停靠點位置和發車朝向"
   help_addtransfer: "&6/m stop addtransfer <停靠區ID> <轉乘路線ID> &f- 新增可轉乘路線"
   help_deltransfer: "&6/m stop deltransfer <停靠區ID> <轉乘路線ID> &f- 移除可轉乘路線"
   help_listtransfers: "&6/m stop listtransfers <停靠區ID> &f- 列出停靠區的可轉乘路線"
@@ -146,7 +171,7 @@ stop:
   usage_create: "&c用法: /m stop create <停靠區ID> <\"顯示名稱\">"
   usage_delete: "&c用法: /m stop delete <停靠區ID>"
   usage_setcorners: "&c用法: /m stop setcorners <停靠區ID>"
-  usage_setpoint: "&c用法: /m stop setpoint [yaw]"
+  usage_setpoint: "&c用法: /m stop setpoint [停靠區ID] [yaw]"
   usage_tp: "&c用法: /m stop tp <停靠區ID>"
   usage_info: "&c用法: /m stop info <停靠區ID>"
   usage_addtransfer: "&c用法: /m stop addtransfer <停靠區ID> <轉乘路線ID>"

@@ -72,10 +72,10 @@ public class LineCommand {
                 lang.getMessage("line.help_owner"),
                 lang.getMessage("line.help_clonereverse"),
                 lang.getMessage("line.help_setprice"),
-                ChatColor.YELLOW + "/metro line recordroute <id>" + ChatColor.GRAY + " - Record route points for online maps",
-                ChatColor.YELLOW + "/metro line clearroute <id>" + ChatColor.GRAY + " - Clear recorded route points",
-                ChatColor.YELLOW + "/metro line routeinfo <id>" + ChatColor.GRAY + " - Show recorded route status",
-                ChatColor.YELLOW + "/metro line protect <id> <on|off|status>" + ChatColor.GRAY + " - Protect recorded route rails"
+                lang.getMessage("line.help_recordroute"),
+                lang.getMessage("line.help_clearroute"),
+                lang.getMessage("line.help_routeinfo"),
+                lang.getMessage("line.help_protect")
         );
 
         int pageSize = 8;

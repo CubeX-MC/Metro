@@ -14,6 +14,7 @@ command:
   help_header: "&a===== Metro Beheerder Commando Hulp ====="
   help_line: "&aCommando: &6/m line &f- Beheer metrolijnen (gebruik /m line voor subcommando's)"
   help_stop: "&aCommando: &6/m stop &f- Beheer stopgebieden (gebruik /m stop voor subcommando's)"
+  help_portal: "&aCommando: &6/m portal &f- Beheer mijnkarportalen (gebruik /m portal voor subcommando's)"
   help_gui: "&aCommando: &6/m gui &f- Open GUI-beheerpaneel"
   help_reload: "&aCommando: &6/m reload &f- Herlaad configuratie"
   help_testendpoint: "&aCommando: &6/m testendpoint &f- Test eindstation prompt weergave"
@@ -45,6 +46,11 @@ line:
   help_untrust: "&6/m line untrust <line_id> <speler> &f- Verwijder een lijnbeheerder"
   help_owner: "&6/m line owner <line_id> <speler> &f- Draag lijnbezit over"
   help_clonereverse: "&6/m line clonereverse <source_id> <new_id> [suffix] &f- Lijn omgekeerd klonen"
+  help_setprice: "&6/m line setprice <line_id> <prijs> &f- Stel de ticketprijs van de lijn in"
+  help_recordroute: "&6/m line recordroute <line_id> &f- Neem routepunten op of sla ze op voor online kaarten en spoorbescherming"
+  help_clearroute: "&6/m line clearroute <line_id> &f- Wis opgenomen routepunten"
+  help_routeinfo: "&6/m line routeinfo <line_id> &f- Toon status van routeopname en spoorbescherming"
+  help_protect: "&6/m line protect <line_id> <on|off|status> &f- Schakel spoorbescherming in, uit of bekijk de status"
   
   usage_create: "&cGebruik: /m line create <line_id> <\"weergavenaam\">"
   usage_delete: "&cGebruik: /m line delete <line_id>"
@@ -58,6 +64,11 @@ line:
   usage_trust: "&cGebruik: /m line trust <line_id> <speler>"
   usage_untrust: "&cGebruik: /m line untrust <line_id> <speler>"
   usage_owner: "&cGebruik: /m line owner <line_id> <speler>"
+  usage_setprice: "&cGebruik: /m line setprice <line_id> <prijs>"
+  usage_recordroute: "&cGebruik: /m line recordroute <line_id>"
+  usage_clearroute: "&cGebruik: /m line clearroute <line_id>"
+  usage_routeinfo: "&cGebruik: /m line routeinfo <line_id>"
+  usage_protect: "&cGebruik: /m line protect <line_id> <on|off|status>"
 
   permission_create: "&cJe hebt geen toestemming om lijnen te maken."
   permission_manage: "&cJe kunt lijn {line_id} niet beheren. Eigenaar: {owner}. Beheerders: {admins}"
@@ -118,6 +129,20 @@ line:
   owner_success: "&aHet eigendom van lijn {line_id} is overgedragen aan {owner}."
   owner_fail: "&cHet eigendom van lijn {line_id} kon niet worden overgedragen."
 
+# Portaal commando gerelateerd
+portal:
+  help_header: "&a===== Metro Portaalbeheer Commando's ====="
+  help_create: "&6/m portal create <portal_id> &f- Maak een portaalingang op je positie of op de aangewezen rail"
+  help_setdest: "&6/m portal setdest <portal_id> &f- Stel de portalbestemming in op je huidige positie en richting"
+  help_link: "&6/m portal link <portal_id_1> <portal_id_2> &f- Koppel twee portalen in beide richtingen"
+  help_delete: "&6/m portal delete <portal_id> &f- Verwijder een portaal"
+  help_list: "&6/m portal list &f- Lijst alle portalen en bestemmingen"
+  help_reload: "&6/m portal reload &f- Herlaad portaalconfiguratie"
+  usage_create: "&cGebruik: /m portal create <portal_id>"
+  usage_setdest: "&cGebruik: /m portal setdest <portal_id>"
+  usage_link: "&cGebruik: /m portal link <portal_id_1> <portal_id_2>"
+  usage_delete: "&cGebruik: /m portal delete <portal_id>"
+
 # Stopgebied commando gerelateerd
 stop:
   help_header: "&a===== Metro Stopgebiedbeheer Commando's ====="
@@ -125,7 +150,7 @@ stop:
   help_delete: "&6/m stop delete <stop_id> &f- Verwijder stopgebied"
   help_list: "&6/m stop list &f- Lijst alle stopgebieden"
   help_setcorners: "&6/m stop setcorners <stop_id> &f- Update de hoekpunten van een stop"
-  help_setpoint: "&6/m stop setpoint [yaw] &f- Stel stoppuntlocatie en vertrekrichting in"
+  help_setpoint: "&6/m stop setpoint [stop_id] [yaw] &f- Stel stoppuntlocatie en vertrekrichting in"
   help_addtransfer: "&6/m stop addtransfer <stop_id> <transfer_line_id> &f- Voeg overstaplijn toe"
   help_deltransfer: "&6/m stop deltransfer <stop_id> <transfer_line_id> &f- Verwijder overstaplijn"
   help_listtransfers: "&6/m stop listtransfers <stop_id> &f- Lijst overstaplijnen van stopgebied"
@@ -143,7 +168,7 @@ stop:
   usage_create: "&cGebruik: /m stop create <stop_id> <\"weergavenaam\">"
   usage_delete: "&cGebruik: /m stop delete <stop_id>"
   usage_setcorners: "&cGebruik: /m stop setcorners <stop_id>"
-  usage_setpoint: "&cGebruik: /m stop setpoint [yaw]"
+  usage_setpoint: "&cGebruik: /m stop setpoint [stop_id] [yaw]"
   usage_tp: "&cGebruik: /m stop tp <stop_id>"
   usage_info: "&cGebruik: /m stop info <stop_id>"
   usage_addtransfer: "&cGebruik: /m stop addtransfer <stop_id> <transfer_line_id>"

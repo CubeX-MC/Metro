@@ -14,6 +14,7 @@ command:
   help_header: "&a===== Metro Administrator Befehl Hilfe ====="
   help_line: "&aBefehl: &6/m line &f- Metro-Linien verwalten (verwende /m line für Unterbefehle)"
   help_stop: "&aBefehl: &6/m stop &f- Haltebereiche verwalten (verwende /m stop für Unterbefehle)"
+  help_portal: "&aBefehl: &6/m portal &f- Loren-Portale verwalten (verwende /m portal für Unterbefehle)"
   help_gui: "&aBefehl: &6/m gui &f- GUI-Verwaltung öffnen"
   help_reload: "&aBefehl: &6/m reload &f- Konfiguration neu laden"
   help_testendpoint: "&aBefehl: &6/m testendpoint &f- Endstation-Anzeige testen"
@@ -45,6 +46,11 @@ line:
   help_untrust: "&6/m line untrust <line_id> <spieler> &f- Linienadministrator entfernen"
   help_owner: "&6/m line owner <line_id> <spieler> &f- Linienbesitz übertragen"
   help_clonereverse: "&6/m line clonereverse <source_id> <new_id> [suffix] &f- Linie rückwärts klonen"
+  help_setprice: "&6/m line setprice <line_id> <preis> &f- Ticketpreis der Linie festlegen"
+  help_recordroute: "&6/m line recordroute <line_id> &f- Routenpunkte für Online-Karten und Gleisschutz aufzeichnen oder speichern"
+  help_clearroute: "&6/m line clearroute <line_id> &f- Aufgezeichnete Routenpunkte löschen"
+  help_routeinfo: "&6/m line routeinfo <line_id> &f- Status von Routenaufzeichnung und Gleisschutz anzeigen"
+  help_protect: "&6/m line protect <line_id> <on|off|status> &f- Gleisschutz aktivieren, deaktivieren oder prüfen"
   
   usage_create: "&cVerwendung: /m line create <line_id> <\"anzeigename\">"
   usage_delete: "&cVerwendung: /m line delete <line_id>"
@@ -58,6 +64,11 @@ line:
   usage_trust: "&cVerwendung: /m line trust <line_id> <spieler>"
   usage_untrust: "&cVerwendung: /m line untrust <line_id> <spieler>"
   usage_owner: "&cVerwendung: /m line owner <line_id> <spieler>"
+  usage_setprice: "&cVerwendung: /m line setprice <line_id> <preis>"
+  usage_recordroute: "&cVerwendung: /m line recordroute <line_id>"
+  usage_clearroute: "&cVerwendung: /m line clearroute <line_id>"
+  usage_routeinfo: "&cVerwendung: /m line routeinfo <line_id>"
+  usage_protect: "&cVerwendung: /m line protect <line_id> <on|off|status>"
 
   permission_create: "&cDu hast keine Berechtigung, Linien zu erstellen."
   permission_manage: "&cDu kannst die Linie {line_id} nicht verwalten. Besitzer: {owner}. Administratoren: {admins}"
@@ -118,6 +129,20 @@ line:
   owner_success: "&aDer Besitz der Linie {line_id} wurde an {owner} übertragen."
   owner_fail: "&cDer Besitz der Linie {line_id} konnte nicht übertragen werden."
 
+# Portal-Befehle
+portal:
+  help_header: "&a===== Metro Portalverwaltungsbefehle ====="
+  help_create: "&6/m portal create <portal_id> &f- Erstellt einen Portaleingang an deiner Position oder am anvisierten Gleis"
+  help_setdest: "&6/m portal setdest <portal_id> &f- Setzt das Portalziel auf deine aktuelle Position und Blickrichtung"
+  help_link: "&6/m portal link <portal_id_1> <portal_id_2> &f- Verknüpft zwei Portale in beide Richtungen"
+  help_delete: "&6/m portal delete <portal_id> &f- Löscht ein Portal"
+  help_list: "&6/m portal list &f- Listet alle Portale und Zielpositionen auf"
+  help_reload: "&6/m portal reload &f- Lädt die Portal-Konfiguration neu"
+  usage_create: "&cVerwendung: /m portal create <portal_id>"
+  usage_setdest: "&cVerwendung: /m portal setdest <portal_id>"
+  usage_link: "&cVerwendung: /m portal link <portal_id_1> <portal_id_2>"
+  usage_delete: "&cVerwendung: /m portal delete <portal_id>"
+
 # Haltebereich-Befehl bezogen
 stop:
   help_header: "&a===== Metro Haltebereichsverwaltung Befehle ====="
@@ -125,7 +150,7 @@ stop:
   help_delete: "&6/m stop delete <stop_id> &f- Haltebereich löschen"
   help_list: "&6/m stop list &f- Alle Haltebereiche auflisten"
   help_setcorners: "&6/m stop setcorners <stop_id> &f- Eckpunkte des Haltebereichs aktualisieren"
-  help_setpoint: "&6/m stop setpoint [yaw] &f- Haltepunkt-Position und Abfahrtsrichtung festlegen"
+  help_setpoint: "&6/m stop setpoint [stop_id] [yaw] &f- Haltepunkt-Position und Abfahrtsrichtung festlegen"
   help_addtransfer: "&6/m stop addtransfer <stop_id> <transfer_line_id> &f- Umsteigelinie hinzufügen"
   help_deltransfer: "&6/m stop deltransfer <stop_id> <transfer_line_id> &f- Umsteigelinie entfernen"
   help_listtransfers: "&6/m stop listtransfers <stop_id> &f- Umsteigelinien des Haltebereichs auflisten"
@@ -143,7 +168,7 @@ stop:
   usage_create: "&cVerwendung: /m stop create <stop_id> <\"anzeigename\">"
   usage_delete: "&cVerwendung: /m stop delete <stop_id>"
   usage_setcorners: "&cVerwendung: /m stop setcorners <stop_id>"
-  usage_setpoint: "&cVerwendung: /m stop setpoint [yaw]"
+  usage_setpoint: "&cVerwendung: /m stop setpoint [stop_id] [yaw]"
   usage_tp: "&cVerwendung: /m stop tp <stop_id>"
   usage_info: "&cVerwendung: /m stop info <stop_id>"
   usage_addtransfer: "&cVerwendung: /m stop addtransfer <stop_id> <transfer_line_id>"

@@ -14,6 +14,7 @@ command:
   help_header: "&a===== Ayuda de Comandos de Administrador Metro ====="
   help_line: "&aComando: &6/m line &f- Gestionar líneas de metro (usa /m line para subcomandos)"
   help_stop: "&aComando: &6/m stop &f- Gestionar áreas de parada (usa /m stop para subcomandos)"
+  help_portal: "&aComando: &6/m portal &f- Gestionar portales de vagoneta (usa /m portal para subcomandos)"
   help_gui: "&aComando: &6/m gui &f- Abrir panel de gestión GUI"
   help_reload: "&aComando: &6/m reload &f- Recargar configuración"
   help_testendpoint: "&aComando: &6/m testendpoint &f- Probar visualización de estación terminal"
@@ -45,6 +46,11 @@ line:
   help_untrust: "&6/m line untrust <line_id> <jugador> &f- Quitar administrador de la línea"
   help_owner: "&6/m line owner <line_id> <jugador> &f- Transferir propiedad de la línea"
   help_clonereverse: "&6/m line clonereverse <source_id> <new_id> [suffix] &f- Clonar línea en reverso"
+  help_setprice: "&6/m line setprice <line_id> <precio> &f- Establecer el precio del billete de la línea"
+  help_recordroute: "&6/m line recordroute <line_id> &f- Grabar o guardar puntos de ruta para mapas en línea y protección de vías"
+  help_clearroute: "&6/m line clearroute <line_id> &f- Borrar los puntos de ruta grabados"
+  help_routeinfo: "&6/m line routeinfo <line_id> &f- Mostrar el estado de grabación de ruta y protección de vías"
+  help_protect: "&6/m line protect <line_id> <on|off|status> &f- Activar, desactivar o revisar la protección de vías"
   
   usage_create: "&cUso: /m line create <line_id> <\"nombre_mostrar\">"
   usage_delete: "&cUso: /m line delete <line_id>"
@@ -58,6 +64,11 @@ line:
   usage_trust: "&cUso: /m line trust <line_id> <jugador>"
   usage_untrust: "&cUso: /m line untrust <line_id> <jugador>"
   usage_owner: "&cUso: /m line owner <line_id> <jugador>"
+  usage_setprice: "&cUso: /m line setprice <line_id> <precio>"
+  usage_recordroute: "&cUso: /m line recordroute <line_id>"
+  usage_clearroute: "&cUso: /m line clearroute <line_id>"
+  usage_routeinfo: "&cUso: /m line routeinfo <line_id>"
+  usage_protect: "&cUso: /m line protect <line_id> <on|off|status>"
 
   permission_create: "&cNo tienes permiso para crear líneas."
   permission_manage: "&cNo puedes gestionar la línea {line_id}. Propietario: {owner}. Administradores: {admins}"
@@ -118,6 +129,20 @@ line:
   owner_success: "&aLa propiedad de la línea {line_id} se ha transferido a {owner}."
   owner_fail: "&cNo se pudo transferir la propiedad de la línea {line_id}."
 
+# Relacionado con comandos de portal
+portal:
+  help_header: "&a===== Comandos de Gestión de Portales Metro ====="
+  help_create: "&6/m portal create <portal_id> &f- Crear una entrada de portal en tu posición o en la vía apuntada"
+  help_setdest: "&6/m portal setdest <portal_id> &f- Establecer el destino del portal a tu posición y dirección actuales"
+  help_link: "&6/m portal link <portal_id_1> <portal_id_2> &f- Enlazar dos portales en ambos sentidos"
+  help_delete: "&6/m portal delete <portal_id> &f- Eliminar un portal"
+  help_list: "&6/m portal list &f- Listar todos los portales y destinos"
+  help_reload: "&6/m portal reload &f- Recargar la configuración de portales"
+  usage_create: "&cUso: /m portal create <portal_id>"
+  usage_setdest: "&cUso: /m portal setdest <portal_id>"
+  usage_link: "&cUso: /m portal link <portal_id_1> <portal_id_2>"
+  usage_delete: "&cUso: /m portal delete <portal_id>"
+
 # Relacionado con comandos de área de parada
 stop:
   help_header: "&a===== Comandos de Gestión de Áreas de Parada Metro ====="
@@ -125,7 +150,7 @@ stop:
   help_delete: "&6/m stop delete <stop_id> &f- Eliminar área de parada"
   help_list: "&6/m stop list &f- Listar todas las áreas de parada"
   help_setcorners: "&6/m stop setcorners <stop_id> &f- Actualizar las esquinas de una parada"
-  help_setpoint: "&6/m stop setpoint [yaw] &f- Establecer ubicación del punto de parada y dirección de salida"
+  help_setpoint: "&6/m stop setpoint [stop_id] [yaw] &f- Establecer ubicación del punto de parada y dirección de salida"
   help_addtransfer: "&6/m stop addtransfer <stop_id> <transfer_line_id> &f- Añadir línea de transbordo"
   help_deltransfer: "&6/m stop deltransfer <stop_id> <transfer_line_id> &f- Eliminar línea de transbordo"
   help_listtransfers: "&6/m stop listtransfers <stop_id> &f- Listar líneas de transbordo del área de parada"
@@ -143,7 +168,7 @@ stop:
   usage_create: "&cUso: /m stop create <stop_id> <\"nombre_mostrar\">"
   usage_delete: "&cUso: /m stop delete <stop_id>"
   usage_setcorners: "&cUso: /m stop setcorners <stop_id>"
-  usage_setpoint: "&cUso: /m stop setpoint [yaw]"
+  usage_setpoint: "&cUso: /m stop setpoint [stop_id] [yaw]"
   usage_tp: "&cUso: /m stop tp <stop_id>"
   usage_info: "&cUso: /m stop info <stop_id>"
   usage_addtransfer: "&cUso: /m stop addtransfer <stop_id> <transfer_line_id>"

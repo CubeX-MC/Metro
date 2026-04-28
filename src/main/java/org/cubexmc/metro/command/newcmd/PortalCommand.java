@@ -29,6 +29,31 @@ public class PortalCommand {
         this.portalManager = plugin.getPortalManager();
     }
 
+    @Command("m|metro portal")
+    @CommandDescription("显示传送门管理帮助")
+    @Permission("metro.admin")
+    public void help(CommandSender sender) {
+        showHelp(sender);
+    }
+
+    @Command("m|metro portal help")
+    @CommandDescription("显示传送门管理帮助")
+    @Permission("metro.admin")
+    public void helpPage(CommandSender sender) {
+        showHelp(sender);
+    }
+
+    private void showHelp(CommandSender sender) {
+        org.cubexmc.metro.manager.LanguageManager lang = plugin.getLanguageManager();
+        sender.sendMessage(lang.getMessage("portal.help_header"));
+        sender.sendMessage(lang.getMessage("portal.help_create"));
+        sender.sendMessage(lang.getMessage("portal.help_setdest"));
+        sender.sendMessage(lang.getMessage("portal.help_link"));
+        sender.sendMessage(lang.getMessage("portal.help_delete"));
+        sender.sendMessage(lang.getMessage("portal.help_list"));
+        sender.sendMessage(lang.getMessage("portal.help_reload"));
+    }
+
     @Command("m|metro portal create <id>")
     @CommandDescription("在当前位置创建一个传送门入口")
     @Permission("metro.admin")

@@ -14,6 +14,7 @@ command:
   help_header: "&a===== Metro 管理员命令帮助 ====="
   help_line: "&a命令: &6/m line &f- 管理地铁线路 (使用/m line 查看子命令)"
   help_stop: "&a命令: &6/m stop &f- 管理停靠区 (使用/m stop 查看子命令)"
+  help_portal: "&a命令: &6/m portal &f- 管理矿车传送门 (使用/m portal 查看子命令)"
   help_gui: "&a命令: &6/m gui &f- 打开图形管理界面"
   help_reload: "&a命令: &6/m reload &f- 重新加载配置"
   help_testendpoint: "&a命令: &6/m testendpoint &f- 测试终点站提示显示"
@@ -43,8 +44,13 @@ line:
   help_info: "&6/m line info <line_id> &f- 查看线路详细信息"
   help_trust: "&6/m line trust <line_id> <玩家> &f- 授予线路管理权限"
   help_untrust: "&6/m line untrust <line_id> <玩家> &f- 移除线路管理权限"
-  help_owner: "&6/m line owner <line_id> <显示名称> &f- 转移线路所有权"
+  help_owner: "&6/m line owner <line_id> <玩家> &f- 转移线路所有权"
   help_clonereverse: "&6/m line clonereverse <source_id> <new_id> [suffix] &f- 反向克隆线路"
+  help_setprice: "&6/m line setprice <line_id> <价格> &f- 设置线路票价"
+  help_recordroute: "&6/m line recordroute <line_id> &f- 记录或保存线路轨迹点，用于在线地图和轨道保护"
+  help_clearroute: "&6/m line clearroute <line_id> &f- 清除线路已记录的轨迹点"
+  help_routeinfo: "&6/m line routeinfo <line_id> &f- 查看线路轨迹记录与轨道保护状态"
+  help_protect: "&6/m line protect <line_id> <on|off|status> &f- 开启、关闭或查看线路轨道保护"
   
   usage_create: "&c用法: /m line create <line_id> <\"显示名称\">"
   usage_delete: "&c用法: /m line delete <line_id>"
@@ -59,6 +65,11 @@ line:
   usage_trust: "&c用法: /m line trust <line_id> <玩家>"
   usage_untrust: "&c用法: /m line untrust <line_id> <玩家>"
   usage_owner: "&c用法: /m line owner <line_id> <玩家>"
+  usage_setprice: "&c用法: /m line setprice <line_id> <价格>"
+  usage_recordroute: "&c用法: /m line recordroute <line_id>"
+  usage_clearroute: "&c用法: /m line clearroute <line_id>"
+  usage_routeinfo: "&c用法: /m line routeinfo <line_id>"
+  usage_protect: "&c用法: /m line protect <line_id> <on|off|status>"
 
   permission_create: "&c你没有权限创建线路。"
   permission_manage: "&c你无法管理线路 {line_id}。所有者: {owner}。管理员: {admins}"
@@ -121,6 +132,20 @@ line:
   owner_success: "&a已将线路 {line_id} 的所有权转移给 {owner}。"
   owner_fail: "&c转移线路 {line_id} 所有权失败。"
 
+# 传送门命令相关
+portal:
+  help_header: "&a===== Metro传送门管理命令 ====="
+  help_create: "&6/m portal create <portal_id> &f- 在当前位置或视线中的铁轨上创建传送门入口"
+  help_setdest: "&6/m portal setdest <portal_id> &f- 将当前位置和朝向设置为传送门目标"
+  help_link: "&6/m portal link <portal_id_1> <portal_id_2> &f- 双向配对两个传送门"
+  help_delete: "&6/m portal delete <portal_id> &f- 删除传送门"
+  help_list: "&6/m portal list &f- 列出所有传送门和目标位置"
+  help_reload: "&6/m portal reload &f- 重新加载传送门配置"
+  usage_create: "&c用法: /m portal create <portal_id>"
+  usage_setdest: "&c用法: /m portal setdest <portal_id>"
+  usage_link: "&c用法: /m portal link <portal_id_1> <portal_id_2>"
+  usage_delete: "&c用法: /m portal delete <portal_id>"
+
 # 停靠区命令相关
 stop:
   help_header: "&a===== Metro停靠区管理命令 ====="
@@ -128,7 +153,7 @@ stop:
   help_delete: "&6/m stop delete <stop_id> &f- 删除停靠区"
   help_list: "&6/m stop list &f- 列出所有停靠区"
   help_setcorners: "&6/m stop setcorners <stop_id> &f- 更新停靠区的角点"
-  help_setpoint: "&6/m stop setpoint [yaw] &f- 设置停靠点位置和发车朝向"
+  help_setpoint: "&6/m stop setpoint [stop_id] [yaw] &f- 设置停靠点位置和发车朝向"
   help_addtransfer: "&6/m stop addtransfer <stop_id> <transfer_line_id> &f- 添加可换乘线路"
   help_deltransfer: "&6/m stop deltransfer <stop_id> <transfer_line_id> &f- 移除可换乘线路"
   help_listtransfers: "&6/m stop listtransfers <stop_id> &f- 列出停靠区的可换乘线路"
@@ -146,7 +171,7 @@ stop:
   usage_create: "&c用法: /m stop create <stop_id> <\"显示名称\">"
   usage_delete: "&c用法: /m stop delete <stop_id>"
   usage_setcorners: "&c用法: /m stop setcorners <stop_id>"
-  usage_setpoint: "&c用法: /m stop setpoint [yaw]"
+  usage_setpoint: "&c用法: /m stop setpoint [stop_id] [yaw]"
   usage_tp: "&c用法: /m stop tp <stop_id>"
   usage_info: "&c用法: /m stop info <stop_id>"
   usage_addtransfer: "&c用法: /m stop addtransfer <stop_id> <transfer_line_id>"

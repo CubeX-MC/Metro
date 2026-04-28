@@ -40,6 +40,7 @@ public class MetroMainCommand {
         sender.sendMessage(lang.getMessage("command.help_reload"));
         sender.sendMessage(lang.getMessage("command.help_line"));
         sender.sendMessage(lang.getMessage("command.help_stop"));
+        sender.sendMessage(lang.getMessage("command.help_portal"));
     }
 
     @Command("m|metro gui")
