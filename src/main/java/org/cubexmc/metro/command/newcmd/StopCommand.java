@@ -7,7 +7,6 @@ import org.incendo.cloud.annotation.specifier.Greedy;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -18,6 +17,7 @@ import org.cubexmc.metro.manager.SelectionManager;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Stop;
+import org.cubexmc.metro.service.StopCommandService;
 import org.cubexmc.metro.util.OwnershipUtil;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.HoverEvent;
@@ -26,11 +26,9 @@ import net.md_5.bungee.api.chat.hover.content.Text;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 public class StopCommand {
@@ -39,14 +37,14 @@ public class StopCommand {
     private final StopManager stopManager;
     private final LineManager lineManager;
     private final CommandGuard guard;
-    private static final Set<String> TITLE_TYPES = Set.of("stop_continuous", "arrive_stop", "terminal_stop", "departure");
-    private static final Set<String> TITLE_KEYS = Set.of("title", "subtitle", "actionbar");
+    private final StopCommandService stopService;
 
     public StopCommand(Metro plugin, StopManager stopManager, LineManager lineManager) {
         this.plugin = plugin;
         this.stopManager = stopManager;
         this.lineManager = lineManager;
         this.guard = new CommandGuard(plugin, lineManager, stopManager);
+        this.stopService = new StopCommandService(stopManager);
     }
 
     @Command("m|metro stop|s")
@@ -143,12 +141,15 @@ public class StopCommand {
         Location corner1 = selectionManager.getCorner1(player);
         Location corner2 = selectionManager.getCorner2(player);
 
-        Stop newStop = stopManager.createStop(id, name, corner1, corner2, player.getUniqueId());
-        if (newStop != null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.create_success",
+        StopCommandService.CreateStopResult result = stopService.createStop(id, name, corner1, corner2, player.getUniqueId());
+        switch (result.status()) {
+            case SUCCESS -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.create_success",
                     LanguageManager.put(LanguageManager.args(), "stop_name", name)));
-        } else {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_exists",
+            case INVALID_ID -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.id_invalid",
+                    LanguageManager.put(LanguageManager.args(), "stop_id", id)));
+            case EXISTS -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_exists",
+                    LanguageManager.put(LanguageManager.args(), "stop_id", id)));
+            default -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.create_fail",
                     LanguageManager.put(LanguageManager.args(), "stop_id", id)));
         }
     }
@@ -161,7 +162,7 @@ public class StopCommand {
             return;
         }
 
-        if (stopManager.deleteStop(id)) {
+        if (stopService.deleteStop(id) == StopCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("stop.delete_success",
                     LanguageManager.put(LanguageManager.args(), "stop_id", id)));
         } else {
@@ -216,7 +217,7 @@ public class StopCommand {
                     LanguageManager.put(LanguageManager.args(), "tool", plugin.getConfigFacade().getSelectionToolName())));
             return;
         }
-        if (stopManager.setStopCorners(id, selectionManager.getCorner1(player), selectionManager.getCorner2(player))) {
+        if (stopService.setCorners(id, selectionManager.getCorner1(player), selectionManager.getCorner2(player)) == StopCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("stop.setcorners_success",
                     LanguageManager.put(LanguageManager.args(), "stop_id", id)));
         }
@@ -248,24 +249,14 @@ public class StopCommand {
             return;
         }
 
-        Location location = player.getLocation();
-        Material type = location.getBlock().getType();
-        if (type != Material.RAIL && type != Material.POWERED_RAIL && type != Material.DETECTOR_RAIL && type != Material.ACTIVATOR_RAIL) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_not_rail"));
-            return;
-        }
-        if (!stop.isInStop(location)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_not_in_area",
+        StopCommandService.SetPointResult result = stopService.setPoint(id, stop, player.getLocation(), yaw);
+        switch (result.status()) {
+            case SUCCESS -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_success",
+                    LanguageManager.put(LanguageManager.put(LanguageManager.args(), "stop_id", id), "yaw", String.format("%.1f", result.yaw()))));
+            case NOT_RAIL -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_not_rail"));
+            case NOT_IN_STOP -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_not_in_area",
                     LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName())));
-            return;
-        }
-
-        float resolvedYaw = yaw == null ? location.getYaw() : yaw;
-        if (stopManager.setStopPoint(id, location, resolvedYaw)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_success",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.args(), "stop_id", id), "yaw", String.format("%.1f", resolvedYaw))));
-        } else {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_fail"));
+            default -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_fail"));
         }
     }
 
@@ -282,7 +273,7 @@ public class StopCommand {
         if (line == null) {
             return;
         }
-        if (stopManager.addTransferLine(id, lineId)) {
+        if (stopService.addTransferLine(id, lineId) == StopCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("stop.addtransfer_success",
                     LanguageManager.put(LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName()), "transfer_line_name", line.getName())));
         } else {
@@ -304,7 +295,7 @@ public class StopCommand {
         if (line == null) {
             return;
         }
-        if (stopManager.removeTransferLine(id, lineId)) {
+        if (stopService.removeTransferLine(id, lineId) == StopCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("stop.deltransfer_success",
                     LanguageManager.put(LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName()), "transfer_line_name", line.getName())));
         } else {
@@ -351,26 +342,24 @@ public class StopCommand {
         if (stop == null) {
             return;
         }
-        if (!TITLE_TYPES.contains(titleType)) {
+        StopCommandService.WriteStatus status = stopService.setCustomTitle(stop, titleType, titleKey, titleValue);
+        if (status == StopCommandService.WriteStatus.INVALID_TITLE_TYPE) {
             player.sendMessage(plugin.getLanguageManager().getMessage("stop.title_type_invalid",
                     LanguageManager.put(LanguageManager.args(), "title_type", titleType)));
             player.sendMessage(plugin.getLanguageManager().getMessage("stop.title_types"));
             return;
         }
-        if (!TITLE_KEYS.contains(titleKey)) {
+        if (status == StopCommandService.WriteStatus.INVALID_TITLE_KEY) {
             player.sendMessage(plugin.getLanguageManager().getMessage("stop.title_key_invalid",
                     LanguageManager.put(LanguageManager.args(), "title_key", titleKey)));
             player.sendMessage(plugin.getLanguageManager().getMessage("stop.title_keys"));
             return;
         }
-        Map<String, String> existing = stop.getCustomTitle(titleType);
-        Map<String, String> updated = existing == null ? new HashMap<>() : new HashMap<>(existing);
-        updated.put(titleKey, titleValue);
-        stop.setCustomTitle(titleType, updated);
-        stopManager.saveConfig();
-        player.sendMessage(plugin.getLanguageManager().getMessage("stop.settitle_success",
-                LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                        "stop_name", stop.getName()), "title_type", titleType), "title_key", titleKey), "title_value", titleValue)));
+        if (status == StopCommandService.WriteStatus.SUCCESS) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("stop.settitle_success",
+                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
+                            "stop_name", stop.getName()), "title_type", titleType), "title_key", titleKey), "title_value", titleValue)));
+        }
     }
 
     @Command("m|metro stop|s deltitle <id> <titleType> [titleKey]")
@@ -383,7 +372,7 @@ public class StopCommand {
         if (stop == null) {
             return;
         }
-        if (!TITLE_TYPES.contains(titleType)) {
+        if (!StopCommandService.TITLE_TYPES.contains(titleType)) {
             player.sendMessage(plugin.getLanguageManager().getMessage("stop.title_type_invalid",
                     LanguageManager.put(LanguageManager.args(), "title_type", titleType)));
             player.sendMessage(plugin.getLanguageManager().getMessage("stop.title_types"));
@@ -391,8 +380,8 @@ public class StopCommand {
         }
 
         if (titleKey == null) {
-            if (stop.removeCustomTitle(titleType)) {
-                stopManager.saveConfig();
+            StopCommandService.WriteStatus status = stopService.removeCustomTitleType(stop, titleType);
+            if (status == StopCommandService.WriteStatus.SUCCESS) {
                 player.sendMessage(plugin.getLanguageManager().getMessage("stop.deltitle_type_success",
                         LanguageManager.put(LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName()), "title_type", titleType)));
             } else {
@@ -402,30 +391,24 @@ public class StopCommand {
             return;
         }
 
-        if (!TITLE_KEYS.contains(titleKey)) {
+        if (!StopCommandService.TITLE_KEYS.contains(titleKey)) {
             player.sendMessage(plugin.getLanguageManager().getMessage("stop.title_key_invalid",
                     LanguageManager.put(LanguageManager.args(), "title_key", titleKey)));
             player.sendMessage(plugin.getLanguageManager().getMessage("stop.title_keys"));
             return;
         }
-        Map<String, String> existing = stop.getCustomTitle(titleType);
-        if (existing == null || !existing.containsKey(titleKey)) {
+        StopCommandService.WriteStatus status = stopService.removeCustomTitleKey(stop, titleType, titleKey);
+        if (status == StopCommandService.WriteStatus.NOT_FOUND) {
             player.sendMessage(plugin.getLanguageManager().getMessage("stop.deltitle_not_found",
                     LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
                             "stop_name", stop.getName()), "title_type", titleType), "title_key", titleKey)));
             return;
         }
-        Map<String, String> updated = new HashMap<>(existing);
-        updated.remove(titleKey);
-        if (updated.isEmpty()) {
-            stop.removeCustomTitle(titleType);
-        } else {
-            stop.setCustomTitle(titleType, updated);
+        if (status == StopCommandService.WriteStatus.SUCCESS) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("stop.deltitle_success",
+                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
+                            "stop_name", stop.getName()), "title_type", titleType), "title_key", titleKey)));
         }
-        stopManager.saveConfig();
-        player.sendMessage(plugin.getLanguageManager().getMessage("stop.deltitle_success",
-                LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                        "stop_name", stop.getName()), "title_type", titleType), "title_key", titleKey)));
     }
 
     @Command("m|metro stop|s listtitles <id>")
@@ -438,7 +421,7 @@ public class StopCommand {
         boolean hasAny = false;
         player.sendMessage(plugin.getLanguageManager().getMessage("stop.listtitles_header",
                 LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName())));
-        for (String type : TITLE_TYPES) {
+        for (String type : StopCommandService.TITLE_TYPES) {
             Map<String, String> values = stop.getCustomTitle(type);
             if (values == null || values.isEmpty()) {
                 continue;
@@ -464,7 +447,7 @@ public class StopCommand {
             return;
         }
         String oldName = stop.getName();
-        if (stopManager.setStopName(id, name)) {
+        if (stopService.renameStop(id, name) == StopCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("stop.rename_success",
                     LanguageManager.put(LanguageManager.put(LanguageManager.args(), "old_name", oldName), "new_name", name)));
         } else {
@@ -551,7 +534,7 @@ public class StopCommand {
                     LanguageManager.put(LanguageManager.args(), "player", playerName)));
             return;
         }
-        if (stopManager.addStopAdmin(id, target.getUniqueId())) {
+        if (stopService.addAdmin(id, target.getUniqueId()) == StopCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("stop.trust_success",
                     LanguageManager.put(LanguageManager.put(LanguageManager.args(), "stop_id", id), "player", playerName)));
         }
@@ -572,7 +555,7 @@ public class StopCommand {
                     LanguageManager.put(LanguageManager.args(), "player", playerName)));
             return;
         }
-        if (stopManager.removeStopAdmin(id, target.getUniqueId())) {
+        if (stopService.removeAdmin(id, target.getUniqueId()) == StopCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("stop.untrust_success",
                     LanguageManager.put(LanguageManager.put(LanguageManager.args(), "stop_id", id), "player", playerName)));
         } else {
@@ -599,7 +582,7 @@ public class StopCommand {
                     LanguageManager.put(LanguageManager.args(), "player", playerName)));
             return;
         }
-        if (stopManager.setStopOwner(id, target.getUniqueId())) {
+        if (stopService.setOwner(id, target.getUniqueId()) == StopCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("stop.owner_success",
                     LanguageManager.put(LanguageManager.put(LanguageManager.args(), "stop_id", id), "owner", playerName)));
         } else {
@@ -618,8 +601,9 @@ public class StopCommand {
         if (stop == null) {
             return;
         }
+        StopCommandService.WriteStatus status = stopService.updateLineLink(action, stopId, lineId);
         if ("allow".equalsIgnoreCase(action)) {
-            if (stopManager.allowLineLink(stopId, lineId)) {
+            if (status == StopCommandService.WriteStatus.SUCCESS) {
                 player.sendMessage(plugin.getLanguageManager().getMessage("stop.link_allow_success",
                         LanguageManager.put(LanguageManager.put(LanguageManager.args(), "stop_id", stopId), "line_id", lineId)));
             } else {
@@ -629,7 +613,7 @@ public class StopCommand {
             return;
         }
         if ("deny".equalsIgnoreCase(action)) {
-            if (stopManager.denyLineLink(stopId, lineId)) {
+            if (status == StopCommandService.WriteStatus.SUCCESS) {
                 player.sendMessage(plugin.getLanguageManager().getMessage("stop.link_deny_success",
                         LanguageManager.put(LanguageManager.put(LanguageManager.args(), "stop_id", stopId), "line_id", lineId)));
             } else {

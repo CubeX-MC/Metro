@@ -199,6 +199,8 @@ stop:
 
   create_success: "&aSuccessfully created stop: {stop_name}"
   create_exists: "&cStop ID {stop_id} already exists!"
+  create_fail: "&cFailed to create stop {stop_id}."
+  id_invalid: "&cInvalid stop ID: {stop_id}. Use 1-64 letters, numbers, underscores, or hyphens."
   delete_success: "&aSuccessfully deleted stop: {stop_id}"
   delete_not_found: "&cStop ID not found: {stop_id}"
   rename_success: "&aSuccessfully renamed stop {old_name} to: {new_name}"

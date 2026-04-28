@@ -198,6 +198,8 @@ stop:
   
   create_success: "&aÁrea de parada creada exitosamente: {stop_name}"
   create_exists: "&c¡La ID de área de parada {stop_id} ya existe!"
+  create_fail: "&cNo se pudo crear el área de parada {stop_id}."
+  id_invalid: "&cID de área de parada inválida: {stop_id}. Usa 1-64 letras, números, guiones bajos o guiones."
   delete_success: "&aÁrea de parada eliminada exitosamente: {stop_id}"
   delete_not_found: "&cID de área de parada no encontrada: {stop_id}"
   rename_success: "&aÁrea de parada {old_name} renombrada exitosamente a: {new_name}"

@@ -198,6 +198,8 @@ stop:
   
   create_success: "&aStopgebied succesvol aangemaakt: {stop_name}"
   create_exists: "&cStopgebied ID {stop_id} bestaat al!"
+  create_fail: "&cStopgebied {stop_id} kon niet worden aangemaakt."
+  id_invalid: "&cOngeldig stopgebied-ID: {stop_id}. Gebruik 1-64 letters, cijfers, underscores of koppeltekens."
   delete_success: "&aStopgebied succesvol verwijderd: {stop_id}"
   delete_not_found: "&cStopgebied ID niet gevonden: {stop_id}"
   rename_success: "&aStopgebied {old_name} succesvol hernoemd naar: {new_name}"

@@ -199,6 +199,8 @@ stop:
   
   create_success: "&a成功建立停靠區: {stop_name}"
   create_exists: "&c停靠區ID {stop_id} 已存在！"
+  create_fail: "&c建立停靠區 {stop_id} 失敗。"
+  id_invalid: "&c無效的停靠區ID: {stop_id}。請使用 1-64 個字母、數字、底線或連字號。"
   delete_success: "&a成功刪除停靠區: {stop_id}"
   delete_not_found: "&c找不到停靠區ID: {stop_id}"
   rename_success: "&a成功將停靠區 {old_name} 重新命名為: {new_name}"
