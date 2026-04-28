@@ -3,6 +3,7 @@ package org.cubexmc.metro.config;
 import java.util.List;
 
 import org.bukkit.Material;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.util.ColorUtil;
 
@@ -11,15 +12,27 @@ import org.cubexmc.metro.util.ColorUtil;
  */
 public class ConfigFacade {
 
+    private static final String STOP_CONTINUOUS_PATH = "titles.stop_continuous";
+    private static final String LEGACY_ENTER_STOP_PATH = "titles.enter_stop";
+
     private final Metro plugin;
 
-    // Enter Stop Titles
-    private boolean enterStopTitleEnabled;
-    private String enterStopTitle;
-    private String enterStopSubtitle;
-    private int enterStopFadeIn;
-    private int enterStopStay;
-    private int enterStopFadeOut;
+    // Stop continuous titles. titles.enter_stop is kept only as a legacy fallback.
+    private boolean stopContinuousTitleEnabled;
+    private int stopContinuousInterval;
+    private boolean stopContinuousAlways;
+    private String stopContinuousTitle;
+    private String stopContinuousSubtitle;
+    private String stopContinuousActionbar;
+    private String stopContinuousStartTitle;
+    private String stopContinuousStartSubtitle;
+    private String stopContinuousStartActionbar;
+    private String stopContinuousEndTitle;
+    private String stopContinuousEndSubtitle;
+    private String stopContinuousEndActionbar;
+    private int stopContinuousFadeIn;
+    private int stopContinuousStay;
+    private int stopContinuousFadeOut;
 
     // Arrive Stop Titles
     private boolean arriveStopTitleEnabled;
@@ -126,13 +139,28 @@ public class ConfigFacade {
     }
 
     public void reload() {
-        // Enter Stop
-        enterStopTitleEnabled = plugin.getConfig().getBoolean("titles.enter_stop.enabled", true);
-        enterStopTitle = colorize(plugin.getConfig().getString("titles.enter_stop.title", "&6{line}"));
-        enterStopSubtitle = colorize(plugin.getConfig().getString("titles.enter_stop.subtitle", "&a{stop_name}"));
-        enterStopFadeIn = plugin.getConfig().getInt("titles.enter_stop.fade_in", 10);
-        enterStopStay = plugin.getConfig().getInt("titles.enter_stop.stay", 40);
-        enterStopFadeOut = plugin.getConfig().getInt("titles.enter_stop.fade_out", 10);
+        // Stop continuous display. New configs use titles.stop_continuous; titles.enter_stop
+        // remains readable so upgraded servers keep their previous station prompts.
+        stopContinuousTitleEnabled = getStopContinuousBoolean("enabled", true);
+        stopContinuousInterval = getStopContinuousInt("interval", 40);
+        stopContinuousAlways = getStopContinuousBoolean("always", true);
+        stopContinuousTitle = colorize(getStopContinuousString("title", "&b{stop_name}"));
+        stopContinuousSubtitle = colorize(getStopContinuousString("subtitle",
+                "&d➔ {terminus_name} &8| &e» {next_stop_name} &8| &a⇄ {stop_transfers}"));
+        stopContinuousActionbar = getStopContinuousString("actionbar",
+                "&fRight-click rail to board &7[&r{line_color_code}{line}&7]");
+        stopContinuousStartTitle = colorize(getStopContinuousString("start_stop.title", stopContinuousTitle));
+        stopContinuousStartSubtitle = colorize(getStopContinuousString("start_stop.subtitle",
+                "&d➔ {terminus_name} &8| &fOrigin &8| &a⇄ {stop_transfers}"));
+        stopContinuousStartActionbar = getStopContinuousString("start_stop.actionbar", stopContinuousActionbar);
+        stopContinuousEndTitle = colorize(getStopContinuousString("end_stop.title", stopContinuousTitle));
+        stopContinuousEndSubtitle = colorize(getStopContinuousString("end_stop.subtitle",
+                "&c🛑 Terminal Station &8| &a⇄ {stop_transfers}"));
+        stopContinuousEndActionbar = getStopContinuousString("end_stop.actionbar",
+                "&cEnd of line. Please allow passengers to exit.");
+        stopContinuousFadeIn = getStopContinuousInt("fade_in", 10);
+        stopContinuousStay = getStopContinuousInt("stay", 40);
+        stopContinuousFadeOut = getStopContinuousInt("fade_out", 10);
 
         // Arrive Stop
         arriveStopTitleEnabled = plugin.getConfig().getBoolean("titles.arrive_stop.enabled", true);
@@ -272,27 +300,81 @@ public class ConfigFacade {
     }
 
     public boolean isEnterStopTitleEnabled() {
-        return enterStopTitleEnabled;
+        return isStopContinuousTitleEnabled();
     }
 
     public String getEnterStopTitle() {
-        return enterStopTitle;
+        return getStopContinuousTitle(false, false);
     }
 
     public String getEnterStopSubtitle() {
-        return enterStopSubtitle;
+        return getStopContinuousSubtitle(false, false);
     }
 
     public int getEnterStopFadeIn() {
-        return enterStopFadeIn;
+        return getStopContinuousFadeIn();
     }
 
     public int getEnterStopStay() {
-        return enterStopStay;
+        return getStopContinuousStay();
     }
 
     public int getEnterStopFadeOut() {
-        return enterStopFadeOut;
+        return getStopContinuousFadeOut();
+    }
+
+    public boolean isStopContinuousTitleEnabled() {
+        return stopContinuousTitleEnabled;
+    }
+
+    public int getStopContinuousInterval() {
+        return stopContinuousInterval;
+    }
+
+    public boolean isStopContinuousAlways() {
+        return stopContinuousAlways;
+    }
+
+    public String getStopContinuousTitle(boolean startStop, boolean endStop) {
+        if (startStop) {
+            return stopContinuousStartTitle;
+        }
+        if (endStop) {
+            return stopContinuousEndTitle;
+        }
+        return stopContinuousTitle;
+    }
+
+    public String getStopContinuousSubtitle(boolean startStop, boolean endStop) {
+        if (startStop) {
+            return stopContinuousStartSubtitle;
+        }
+        if (endStop) {
+            return stopContinuousEndSubtitle;
+        }
+        return stopContinuousSubtitle;
+    }
+
+    public String getStopContinuousActionbar(boolean startStop, boolean endStop) {
+        if (startStop) {
+            return stopContinuousStartActionbar;
+        }
+        if (endStop) {
+            return stopContinuousEndActionbar;
+        }
+        return stopContinuousActionbar;
+    }
+
+    public int getStopContinuousFadeIn() {
+        return stopContinuousFadeIn;
+    }
+
+    public int getStopContinuousStay() {
+        return stopContinuousStay;
+    }
+
+    public int getStopContinuousFadeOut() {
+        return stopContinuousFadeOut;
     }
 
     public boolean isArriveStopTitleEnabled() {
@@ -534,6 +616,33 @@ public class ConfigFacade {
 
     private String colorize(String text) {
         return ColorUtil.colorize(text);
+    }
+
+    private boolean getStopContinuousBoolean(String key, boolean defaultValue) {
+        FileConfiguration config = plugin.getConfig();
+        String newPath = STOP_CONTINUOUS_PATH + "." + key;
+        if (config.contains(newPath)) {
+            return config.getBoolean(newPath, defaultValue);
+        }
+        return config.getBoolean(LEGACY_ENTER_STOP_PATH + "." + key, defaultValue);
+    }
+
+    private int getStopContinuousInt(String key, int defaultValue) {
+        FileConfiguration config = plugin.getConfig();
+        String newPath = STOP_CONTINUOUS_PATH + "." + key;
+        if (config.contains(newPath)) {
+            return config.getInt(newPath, defaultValue);
+        }
+        return config.getInt(LEGACY_ENTER_STOP_PATH + "." + key, defaultValue);
+    }
+
+    private String getStopContinuousString(String key, String defaultValue) {
+        FileConfiguration config = plugin.getConfig();
+        String newPath = STOP_CONTINUOUS_PATH + "." + key;
+        if (config.contains(newPath)) {
+            return config.getString(newPath, defaultValue);
+        }
+        return config.getString(LEGACY_ENTER_STOP_PATH + "." + key, defaultValue);
     }
 
     // Map Integration Getters

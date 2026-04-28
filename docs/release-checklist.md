@@ -2,11 +2,13 @@
 
 ## Pre-release
 
-- [ ] `mvn -pl metro-modern -am test` passes.
-- [ ] `mvn -pl metro-modern -am package` passes.
+- [ ] `mvn test` passes.
+- [ ] `mvn package` passes.
 - [ ] Manual baseline checklist completed (`docs/regression-baseline.md`).
 - [ ] Language keys verified for `en_US`, `zh_CN`, `zh_TW`, `de_DE`, `es_ES`, `nl_NL`.
 - [ ] `plugin.yml` version and command/permission descriptions are accurate.
+- [ ] `plugin.yml` permissions match the README permission table.
+- [ ] Default `config.yml` keys match the paths read by `ConfigFacade`.
 
 ## Runtime Validation
 
@@ -17,7 +19,7 @@
 
 ## Packaging
 
-- [ ] Final artifact generated under `metro-modern/target`.
+- [ ] Final artifact generated under `target/metro-<version>.jar`.
 - [ ] Changelog includes behavior changes and migration notes.
 - [ ] Rollback instructions documented for operators.
 

@@ -15,6 +15,7 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.metadata.MetadataValue;
 import org.cubexmc.metro.Metro;
+import org.cubexmc.metro.config.ConfigFacade;
 import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
@@ -88,7 +89,7 @@ public class PlayerMoveListener implements Listener {
                 cancelContinuousInfoTask(playerId);
 
                 // 启动新的持续显示任务
-                if (plugin.getConfig().getBoolean("titles.stop_continuous.enabled", true)) {
+                if (plugin.getConfigFacade().isStopContinuousTitleEnabled()) {
                     startContinuousInfoTask(player, stop);
                 }
             }
@@ -141,12 +142,12 @@ public class PlayerMoveListener implements Listener {
             return;
         }
 
-        // 获取配置
-        int interval = plugin.getConfig().getInt("titles.stop_continuous.interval", 60);
-        boolean alwaysShow = plugin.getConfig().getBoolean("titles.stop_continuous.always", true);
-        int configuredFadeIn = plugin.getConfig().getInt("titles.stop_continuous.fade_in", 10);
-        int configuredStay = plugin.getConfig().getInt("titles.stop_continuous.stay", 40);
-        int configuredFadeOut = plugin.getConfig().getInt("titles.stop_continuous.fade_out", 10);
+        ConfigFacade config = plugin.getConfigFacade();
+        int interval = config.getStopContinuousInterval();
+        boolean alwaysShow = config.isStopContinuousAlways();
+        int configuredFadeIn = config.getStopContinuousFadeIn();
+        int configuredStay = config.getStopContinuousStay();
+        int configuredFadeOut = config.getStopContinuousFadeOut();
 
         int continuousFadeIn = configuredFadeIn;
         int continuousStay = configuredStay;
@@ -185,27 +186,12 @@ public class PlayerMoveListener implements Listener {
         }
 
         // 确定站点类型并获取对应配置
-        String configPath = "titles.stop_continuous";
         boolean isStartStop = (lastStop == null); // 没有上一站，是始发站
         boolean isEndStop = (nextStop == null); // 没有下一站，是终点站
 
-        if (isStartStop) {
-            configPath += ".start_stop";
-        } else if (isEndStop) {
-            configPath += ".end_stop";
-        }
-
-        // 获取配置
-        String title = plugin.getConfig().getString(configPath + ".title",
-                plugin.getConfig().getString("titles.stop_continuous.title", "{line_color_code}{line}"));
-
-        String subtitle = plugin.getConfig().getString(configPath + ".subtitle",
-                plugin.getConfig().getString("titles.stop_continuous.subtitle",
-                        "开往 &d{terminus_name} &f方向 | 下一站: &e{next_stop_name}"));
-
-        String actionbar = plugin.getConfig().getString(configPath + ".actionbar",
-                plugin.getConfig().getString("titles.stop_continuous.actionbar",
-                        "§f上一站: §7{last_stop_name} §f| 下一站: §a{next_stop_name} §f| §e可换乘: {transfer_lines}"));
+        String title = config.getStopContinuousTitle(isStartStop, isEndStop);
+        String subtitle = config.getStopContinuousSubtitle(isStartStop, isEndStop);
+        String actionbar = config.getStopContinuousActionbar(isStartStop, isEndStop);
 
         Map<String, String> customTitle = stop.getCustomTitle("stop_continuous");
         if (customTitle != null) {

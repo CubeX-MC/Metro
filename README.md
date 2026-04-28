@@ -6,7 +6,7 @@
 
 ## 插件概述
 
-Metro是一个受牛腩小镇启发的地铁交通系统插件，允许管理员创建自动化的地铁线路网络，为玩家提供便捷的乘车体验。现代构建面向 Paper 1.20+（含 Folia），同时提供针对 1.19 及更早版本的兼容包。
+Metro是一个受牛腩小镇启发的地铁交通系统插件，允许管理员创建自动化的地铁线路网络，为玩家提供便捷的乘车体验。当前仓库是单模块 Maven 项目，面向 Java 17 与 1.18+ 服务器，并包含 Paper/Folia 兼容逻辑。
 
 ![Imgurl](https://i.imgur.com/K335iWj.gif)
 
@@ -65,16 +65,19 @@ Metro是一个受牛腩小镇启发的地铁交通系统插件，允许管理员
 
 | 命令               | 描述                         |
 | :----------------- | :--------------------------- |
+| `/m gui`           | 打开图形管理界面             |
 | `/m reload`        | 重新加载配置和数据文件       |
 
 ## 权限
 
-| 权限                 | 描述                               |
-| :------------------ | :--------------------------------- |
-| `metro.admin`        | 允许使用所有管理员命令             |
-| `metro.use`          | 允许玩家使用地铁系统（右键乘车等） |
-| `metro.line.create`  | 允许玩家创建新的线路               |
-| `metro.stop.create`  | 允许玩家创建新的停靠区             |
+| 权限                 | 默认值 | 描述                                      |
+| :------------------ | :----- | :---------------------------------------- |
+| `metro.admin`        | OP     | 允许使用所有管理员命令，并继承 GUI 与传送权限 |
+| `metro.use`          | 所有人 | 允许玩家使用地铁系统（右键乘车等）        |
+| `metro.gui`          | OP     | 允许打开 `/m gui` 图形管理界面            |
+| `metro.tp`           | 否     | 允许在 GUI 中传送到停靠区                 |
+| `metro.line.create`  | 否     | 允许玩家创建新的线路                      |
+| `metro.stop.create`  | 否     | 允许玩家创建新的停靠区                    |
 
 ## 所有权与权限管理
 
@@ -112,13 +115,11 @@ Metro是一个受牛腩小镇启发的地铁交通系统插件，允许管理员
 
 ## 构建
 
-- **同时构建两种版本**: `mvn clean package`
-  - 生成 `metro-modern/target/metro-1.1.0-1.20+.jar`
-  - 生成 `metro-legacy/target/metro-1.1.0-1.19-.jar`
-- **仅构建现代版本 (Paper/Folia 1.20+)**: `mvn -pl metro-modern -am clean package`
-- **仅构建兼容版本 (Spigot/Paper ≤1.19)**: `mvn -pl metro-legacy -am clean package`
+- **构建插件**: `mvn clean package`
+  - 生成 `target/metro-<version>.jar`
+  - 当前版本号来自 `pom.xml`，例如 `target/metro-1.1.5.jar`
 
-请选择与服务器版本匹配的构建。Folia 仅在 1.20+ 构建中受支持。
+当前仓库是单模块 Maven 项目，面向 Java 17 与 1.18+ 服务器，包含 Paper/Folia 兼容逻辑。
 
 [![Forkers repo roster for @CubeX-MC/Metro](https://reporoster.com/forks/CubeX-MC/Metro)](https://github.com/CubeX-MC/Metro/network/members)
 [![Stargazers repo roster for @CubeX-MC/Metro](https://reporoster.com/stars/CubeX-MC/Metro)](https://github.com/CubeX-MC/Metro/stargazers) 

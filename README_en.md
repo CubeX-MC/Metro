@@ -4,7 +4,7 @@
 [Discord](https://discord.com/invite/7tJeSZPZgv) | [QQ频道](https://pd.qq.com/s/1n3hpe4e7?b=9)
 ## Plugin Overview
 
-Metro is a subway transit system plugin that lets administrators create automated subway lines and provides players with a convenient riding experience, inspired by Newnan.city. The project ships a modern build for Paper 1.20+ (including Folia) and a legacy build for servers on 1.19 or earlier.
+Metro is a subway transit system plugin that lets administrators create automated subway lines and provides players with a convenient riding experience, inspired by Newnan.city. The repository is a single-module Maven project targeting Java 17 and 1.18+ servers, with Paper/Folia compatibility logic included.
 
 ![Demo](https://i.imgur.com/K335iWj.gif)
 
@@ -63,6 +63,7 @@ Metro is a subway transit system plugin that lets administrators create automate
 
 | Command          | Description                         |
 | :---------------  | :---------------------------------- |
+| `/m gui`          | Open the Metro GUI                  |
 | `/m reload`       | Reload all plugin configs and data  |
 
 ## Quick Start
@@ -87,12 +88,14 @@ Players right-click the powered rail inside a Stop to summon and board a minecar
 
 ## Permissions
 
-| Permission         | Description                               |
-| :----------------- | :---------------------------------------- |
-| `metro.admin`      | Allows use of all admin commands          |
-| `metro.use`        | Allows players to use the subway system   |
-| `metro.line.create`| Allows players to create new lines        |
-| `metro.stop.create`| Allows players to create new stops        |
+| Permission         | Default | Description                                      |
+| :----------------- | :------ | :----------------------------------------------- |
+| `metro.admin`      | OP      | Allows use of all admin commands, including GUI and teleport access |
+| `metro.use`        | Everyone | Allows players to use the subway system         |
+| `metro.gui`        | OP      | Allows players to open `/m gui`                  |
+| `metro.tp`         | false   | Allows players to teleport to stops through the GUI |
+| `metro.line.create`| false   | Allows players to create new lines               |
+| `metro.stop.create`| false   | Allows players to create new stops               |
 
 ## Ownership & Permission Flow
 
@@ -110,11 +113,9 @@ Players right-click the powered rail inside a Stop to summon and board a minecar
 
 ## Build Targets
 
-- **Build both variants**: `mvn clean package`
-  - Produces `metro-modern/target/metro-1.1.0-1.20+.jar`
-  - Produces `metro-legacy/target/metro-1.1.0-1.19-.jar`
-- **Only modern (Paper/Folia 1.20+)**: `mvn -pl metro-modern -am clean package`
-- **Only legacy (Spigot/Paper ≤1.19)**: `mvn -pl metro-legacy -am clean package`
+- **Build the plugin**: `mvn clean package`
+  - Produces `target/metro-<version>.jar`
+  - The current version comes from `pom.xml`, for example `target/metro-1.1.5.jar`
 
-Choose the jar that matches your server version. Folia support is available only in the 1.20+ build.
+The repository is now a single-module Maven project targeting Java 17 and 1.18+ servers, with Paper/Folia compatibility logic included.
 
