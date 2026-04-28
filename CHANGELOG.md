@@ -10,6 +10,7 @@
 - New `LineSelectionService` for stable boardable-line filtering, default resolution, and recent player choices.
 - New `ConfigFacade` for centralized configuration reads.
 - New `SaveCoordinator` for versioned YAML snapshots and atomic persistent data writes.
+- New shared command guard for line/stop lookup and ownership checks.
 - New shared constants class for minecart and scoreboard identifiers.
 - Contribution guide and architecture document.
 
@@ -23,6 +24,7 @@
 - Raised the JaCoCo line coverage gate from 6% to 15%.
 - Right-click boarding now resolves lines through `LineSelectionService` instead of relying on collection iteration order.
 - Line and stop saves now flush through a shared coordinator before reload/disable.
+- Line and stop commands now share common not-found and permission handling.
 
 ### Fixed
 

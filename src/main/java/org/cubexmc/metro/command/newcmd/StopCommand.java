@@ -38,6 +38,7 @@ public class StopCommand {
     private final Metro plugin;
     private final StopManager stopManager;
     private final LineManager lineManager;
+    private final CommandGuard guard;
     private static final Set<String> TITLE_TYPES = Set.of("stop_continuous", "arrive_stop", "terminal_stop", "departure");
     private static final Set<String> TITLE_KEYS = Set.of("title", "subtitle", "actionbar");
 
@@ -45,6 +46,7 @@ public class StopCommand {
         this.plugin = plugin;
         this.stopManager = stopManager;
         this.lineManager = lineManager;
+        this.guard = new CommandGuard(plugin, lineManager, stopManager);
     }
 
     @Command("m|metro stop|s")
@@ -154,16 +156,8 @@ public class StopCommand {
     @Command("m|metro stop|s delete <id>")
     @CommandDescription("Delete a metro stop")
     public void delete(Player player, @Argument(value = "id", suggestions = "stopIds") String id) {
-        Stop stop = stopManager.getStop(id);
+        Stop stop = guard.requireManageableStop(player, id);
         if (stop == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_not_found",
-                    LanguageManager.put(LanguageManager.args(), "stop_id", id)));
-            return;
-        }
-        if (!OwnershipUtil.canManageStop(player, stop)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "stop_id", stop.getId()), "owner", formatOwner(stop.getOwner())), "admins", formatAdmins(stop.getAdmins()))));
             return;
         }
 
@@ -178,10 +172,8 @@ public class StopCommand {
     @Command("m|metro stop|s tp <id>")
     @CommandDescription("Teleport to a metro stop")
     public void tp(Player player, @Argument(value = "id", suggestions = "stopIds") String id) {
-        Stop stop = stopManager.getStop(id);
+        Stop stop = guard.requireStop(player, id);
         if (stop == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_not_found",
-                    LanguageManager.put(LanguageManager.args(), "stop_id", id)));
             return;
         }
         Location location = stop.getStopPointLocation();
@@ -214,16 +206,8 @@ public class StopCommand {
     @Command("m|metro stop|s setcorners <id>")
     @CommandDescription("Set stop corners from current selection")
     public void setCorners(Player player, @Argument(value = "id", suggestions = "stopIds") String id) {
-        Stop stop = stopManager.getStop(id);
+        Stop stop = guard.requireManageableStop(player, id);
         if (stop == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_not_found",
-                    LanguageManager.put(LanguageManager.args(), "stop_id", id)));
-            return;
-        }
-        if (!OwnershipUtil.canManageStop(player, stop)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "stop_id", stop.getId()), "owner", formatOwner(stop.getOwner())), "admins", formatAdmins(stop.getAdmins()))));
             return;
         }
         SelectionManager selectionManager = plugin.getSelectionManager();
@@ -253,18 +237,14 @@ public class StopCommand {
             }
             id = stop.getId();
         } else {
-            stop = stopManager.getStop(id);
+            stop = guard.requireStop(player, id);
         }
         
         if (stop == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_not_found",
-                    LanguageManager.put(LanguageManager.args(), "stop_id", id)));
             return;
         }
-        if (!OwnershipUtil.canManageStop(player, stop)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "stop_id", stop.getId()), "owner", formatOwner(stop.getOwner())), "admins", formatAdmins(stop.getAdmins()))));
+        stop = guard.requireManageableStop(player, id);
+        if (stop == null) {
             return;
         }
 
@@ -294,22 +274,12 @@ public class StopCommand {
     public void addTransfer(Player player,
                             @Argument(value = "id", suggestions = "stopIds") String id,
                             @Argument(value = "lineId", suggestions = "lineIds") String lineId) {
-        Stop stop = stopManager.getStop(id);
-        Line line = lineManager.getLine(lineId);
+        Stop stop = guard.requireManageableStop(player, id);
+        Line line = guard.requireLine(player, lineId);
         if (stop == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_not_found",
-                    LanguageManager.put(LanguageManager.args(), "stop_id", id)));
             return;
         }
         if (line == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
-            return;
-        }
-        if (!OwnershipUtil.canManageStop(player, stop)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "stop_id", stop.getId()), "owner", formatOwner(stop.getOwner())), "admins", formatAdmins(stop.getAdmins()))));
             return;
         }
         if (stopManager.addTransferLine(id, lineId)) {
@@ -326,22 +296,12 @@ public class StopCommand {
     public void delTransfer(Player player,
                             @Argument(value = "id", suggestions = "stopIds") String id,
                             @Argument(value = "lineId", suggestions = "lineIds") String lineId) {
-        Stop stop = stopManager.getStop(id);
-        Line line = lineManager.getLine(lineId);
+        Stop stop = guard.requireManageableStop(player, id);
+        Line line = guard.requireLine(player, lineId);
         if (stop == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_not_found",
-                    LanguageManager.put(LanguageManager.args(), "stop_id", id)));
             return;
         }
         if (line == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
-            return;
-        }
-        if (!OwnershipUtil.canManageStop(player, stop)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "stop_id", stop.getId()), "owner", formatOwner(stop.getOwner())), "admins", formatAdmins(stop.getAdmins()))));
             return;
         }
         if (stopManager.removeTransferLine(id, lineId)) {
@@ -356,10 +316,8 @@ public class StopCommand {
     @Command("m|metro stop|s listtransfers <id>")
     @CommandDescription("List transferable lines for stop")
     public void listTransfers(Player player, @Argument(value = "id", suggestions = "stopIds") String id) {
-        Stop stop = stopManager.getStop(id);
+        Stop stop = guard.requireStop(player, id);
         if (stop == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_not_found",
-                    LanguageManager.put(LanguageManager.args(), "stop_id", id)));
             return;
         }
         List<String> transferIds = stopManager.getTransferableLines(id);
@@ -389,16 +347,8 @@ public class StopCommand {
                          @Argument("titleType") String titleType,
                          @Argument("titleKey") String titleKey,
                          @Greedy @Argument("titleValue") String titleValue) {
-        Stop stop = stopManager.getStop(id);
+        Stop stop = guard.requireManageableStop(player, id);
         if (stop == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_not_found",
-                    LanguageManager.put(LanguageManager.args(), "stop_id", id)));
-            return;
-        }
-        if (!OwnershipUtil.canManageStop(player, stop)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "stop_id", stop.getId()), "owner", formatOwner(stop.getOwner())), "admins", formatAdmins(stop.getAdmins()))));
             return;
         }
         if (!TITLE_TYPES.contains(titleType)) {
@@ -429,16 +379,8 @@ public class StopCommand {
                          @Argument(value = "id", suggestions = "stopIds") String id,
                          @Argument("titleType") String titleType,
                          @Argument("titleKey") String titleKey) {
-        Stop stop = stopManager.getStop(id);
+        Stop stop = guard.requireManageableStop(player, id);
         if (stop == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_not_found",
-                    LanguageManager.put(LanguageManager.args(), "stop_id", id)));
-            return;
-        }
-        if (!OwnershipUtil.canManageStop(player, stop)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "stop_id", stop.getId()), "owner", formatOwner(stop.getOwner())), "admins", formatAdmins(stop.getAdmins()))));
             return;
         }
         if (!TITLE_TYPES.contains(titleType)) {
@@ -489,10 +431,8 @@ public class StopCommand {
     @Command("m|metro stop|s listtitles <id>")
     @CommandDescription("List custom title config")
     public void listTitles(Player player, @Argument(value = "id", suggestions = "stopIds") String id) {
-        Stop stop = stopManager.getStop(id);
+        Stop stop = guard.requireStop(player, id);
         if (stop == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_not_found",
-                    LanguageManager.put(LanguageManager.args(), "stop_id", id)));
             return;
         }
         boolean hasAny = false;
@@ -519,16 +459,8 @@ public class StopCommand {
     @Command("m|metro stop|s rename <id> <name>")
     @CommandDescription("Rename stop display name")
     public void rename(Player player, @Argument(value = "id", suggestions = "stopIds") String id, @Greedy @Argument("name") String name) {
-        Stop stop = stopManager.getStop(id);
+        Stop stop = guard.requireManageableStop(player, id);
         if (stop == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_not_found",
-                    LanguageManager.put(LanguageManager.args(), "stop_id", id)));
-            return;
-        }
-        if (!OwnershipUtil.canManageStop(player, stop)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "stop_id", stop.getId()), "owner", formatOwner(stop.getOwner())), "admins", formatAdmins(stop.getAdmins()))));
             return;
         }
         String oldName = stop.getName();
@@ -543,10 +475,8 @@ public class StopCommand {
     @Command("m|metro stop|s info <id>")
     @CommandDescription("Show stop details")
     public void info(Player player, @Argument(value = "id", suggestions = "stopIds") String id) {
-        Stop stop = stopManager.getStop(id);
+        Stop stop = guard.requireStop(player, id);
         if (stop == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_not_found",
-                    LanguageManager.put(LanguageManager.args(), "stop_id", id)));
             return;
         }
         player.sendMessage(plugin.getLanguageManager().getMessage("stop.info_header",
@@ -562,9 +492,9 @@ public class StopCommand {
         player.sendMessage(plugin.getLanguageManager().getMessage("stop.info_stoppoint",
                 LanguageManager.put(LanguageManager.args(), "stoppoint", locationText(stop.getStopPointLocation()))));
         player.sendMessage(plugin.getLanguageManager().getMessage("stop.info_owner",
-                LanguageManager.put(LanguageManager.args(), "owner", formatOwner(stop.getOwner()))));
+                LanguageManager.put(LanguageManager.args(), "owner", guard.formatOwner(stop.getOwner()))));
         player.sendMessage(plugin.getLanguageManager().getMessage("stop.info_admins",
-                LanguageManager.put(LanguageManager.args(), "admins", formatAdmins(stop.getAdmins()))));
+                LanguageManager.put(LanguageManager.args(), "admins", guard.formatAdmins(stop.getAdmins()))));
 
         String linkedLines = stop.getLinkedLineIds().isEmpty()
                 ? plugin.getLanguageManager().getMessage("ownership.none")
@@ -606,16 +536,8 @@ public class StopCommand {
     public void trust(Player player,
                       @Argument(value = "id", suggestions = "stopIds") String id,
                       @Argument("playerName") String playerName) {
-        Stop stop = stopManager.getStop(id);
+        Stop stop = guard.requireManageableStop(player, id);
         if (stop == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_not_found",
-                    LanguageManager.put(LanguageManager.args(), "stop_id", id)));
-            return;
-        }
-        if (!OwnershipUtil.canManageStop(player, stop)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "stop_id", stop.getId()), "owner", formatOwner(stop.getOwner())), "admins", formatAdmins(stop.getAdmins()))));
             return;
         }
         OfflinePlayer target = Bukkit.getOfflinePlayer(playerName);
@@ -640,16 +562,8 @@ public class StopCommand {
     public void untrust(Player player,
                         @Argument(value = "id", suggestions = "stopIds") String id,
                         @Argument("playerName") String playerName) {
-        Stop stop = stopManager.getStop(id);
+        Stop stop = guard.requireManageableStop(player, id);
         if (stop == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_not_found",
-                    LanguageManager.put(LanguageManager.args(), "stop_id", id)));
-            return;
-        }
-        if (!OwnershipUtil.canManageStop(player, stop)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "stop_id", stop.getId()), "owner", formatOwner(stop.getOwner())), "admins", formatAdmins(stop.getAdmins()))));
             return;
         }
         OfflinePlayer target = Bukkit.getOfflinePlayer(playerName);
@@ -672,14 +586,11 @@ public class StopCommand {
     public void owner(Player player,
                       @Argument(value = "id", suggestions = "stopIds") String id,
                       @Argument("playerName") String playerName) {
-        Stop stop = stopManager.getStop(id);
+        Stop stop = guard.requireStop(player, id);
         if (stop == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_not_found",
-                    LanguageManager.put(LanguageManager.args(), "stop_id", id)));
             return;
         }
-        if (stop.getOwner() != null && !stop.getOwner().equals(player.getUniqueId()) && !OwnershipUtil.hasAdminBypass(player)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.permission_owner"));
+        if (!guard.requireStopOwner(player, stop)) {
             return;
         }
         OfflinePlayer target = Bukkit.getOfflinePlayer(playerName);
@@ -703,16 +614,8 @@ public class StopCommand {
                      @Argument("action") String action,
                      @Argument(value = "stopId", suggestions = "stopIds") String stopId,
                      @Argument(value = "lineId", suggestions = "lineIds") String lineId) {
-        Stop stop = stopManager.getStop(stopId);
+        Stop stop = guard.requireManageableStop(player, stopId);
         if (stop == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_not_found",
-                    LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
-            return;
-        }
-        if (!OwnershipUtil.canManageStop(player, stop)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "stop_id", stop.getId()), "owner", formatOwner(stop.getOwner())), "admins", formatAdmins(stop.getAdmins()))));
             return;
         }
         if ("allow".equalsIgnoreCase(action)) {
@@ -736,22 +639,6 @@ public class StopCommand {
             return;
         }
         player.sendMessage(plugin.getLanguageManager().getMessage("stop.usage_link"));
-    }
-
-    private String formatOwner(java.util.UUID ownerId) {
-        if (ownerId == null) {
-            return plugin.getLanguageManager().getMessage("ownership.server");
-        }
-        OfflinePlayer owner = Bukkit.getOfflinePlayer(ownerId);
-        return owner.getName() == null ? ownerId.toString() : owner.getName();
-    }
-
-    private String formatAdmins(Set<java.util.UUID> adminIds) {
-        if (adminIds == null || adminIds.isEmpty()) {
-            return plugin.getLanguageManager().getMessage("ownership.none");
-        }
-        String text = adminIds.stream().map(this::formatOwner).collect(Collectors.joining(", "));
-        return text.isBlank() ? plugin.getLanguageManager().getMessage("ownership.none") : text;
     }
 
     private String locationText(Location location) {

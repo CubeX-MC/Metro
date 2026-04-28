@@ -25,20 +25,20 @@ import net.md_5.bungee.api.chat.hover.content.Text;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 public class LineCommand {
 
     private final Metro plugin;
     private final LineManager lineManager;
     private final StopManager stopManager;
+    private final CommandGuard guard;
 
     public LineCommand(Metro plugin, LineManager lineManager, StopManager stopManager) {
         this.plugin = plugin;
         this.lineManager = lineManager;
         this.stopManager = stopManager;
+        this.guard = new CommandGuard(plugin, lineManager, stopManager);
     }
 
     @Command("m|metro line|l")
@@ -127,17 +127,8 @@ public class LineCommand {
     @Command("m|metro line|l delete <id>")
     @CommandDescription("Delete a metro line")
     public void delete(Player player, @Argument(value = "id", suggestions = "lineIds") String id) {
-        Line line = lineManager.getLine(id);
+        Line line = guard.requireManageableLine(player, id);
         if (line == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
-            return;
-        }
-        if (!OwnershipUtil.canManageLine(player, line)) {
-            String ownerName = line.getOwner() == null ? "Server" : line.getOwner().toString();
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "line_id", line.getId()), "owner", ownerName), "admins", "none")));
             return;
         }
 
@@ -152,16 +143,8 @@ public class LineCommand {
     @Command("m|metro line|l rename <id> <name>")
     @CommandDescription("Rename a metro line")
     public void rename(Player player, @Argument(value = "id", suggestions = "lineIds") String id, @Greedy @Argument("name") String name) {
-        Line line = lineManager.getLine(id);
+        Line line = guard.requireManageableLine(player, id);
         if (line == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
-            return;
-        }
-        if (!OwnershipUtil.canManageLine(player, line)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "line_id", line.getId()), "owner", formatOwner(line.getOwner())), "admins", formatAdmins(line.getAdmins()))));
             return;
         }
 
@@ -177,16 +160,8 @@ public class LineCommand {
     @Command("m|metro line|l setcolor <id> <color>")
     @CommandDescription("Set the color of a metro line")
     public void setColor(Player player, @Argument(value = "id", suggestions = "lineIds") String id, @Argument("color") String color) {
-        Line line = lineManager.getLine(id);
+        Line line = guard.requireManageableLine(player, id);
         if (line == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
-            return;
-        }
-        if (!OwnershipUtil.canManageLine(player, line)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "line_id", line.getId()), "owner", formatOwner(line.getOwner())), "admins", formatAdmins(line.getAdmins()))));
             return;
         }
 
@@ -202,16 +177,8 @@ public class LineCommand {
     @Command("m|metro line|l setterminus <id> <terminus>")
     @CommandDescription("Set terminus name for a line")
     public void setTerminus(Player player, @Argument(value = "id", suggestions = "lineIds") String id, @Greedy @Argument("terminus") String terminus) {
-        Line line = lineManager.getLine(id);
+        Line line = guard.requireManageableLine(player, id);
         if (line == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
-            return;
-        }
-        if (!OwnershipUtil.canManageLine(player, line)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "line_id", line.getId()), "owner", formatOwner(line.getOwner())), "admins", formatAdmins(line.getAdmins()))));
             return;
         }
 
@@ -224,16 +191,8 @@ public class LineCommand {
     @Command("m|metro line|l setmaxspeed <id> <speed>")
     @CommandDescription("Set max speed for a line")
     public void setMaxSpeed(Player player, @Argument(value = "id", suggestions = "lineIds") String id, @Argument("speed") double speed) {
-        Line line = lineManager.getLine(id);
+        Line line = guard.requireManageableLine(player, id);
         if (line == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
-            return;
-        }
-        if (!OwnershipUtil.canManageLine(player, line)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "line_id", line.getId()), "owner", formatOwner(line.getOwner())), "admins", formatAdmins(line.getAdmins()))));
             return;
         }
         if (speed <= 0) {
@@ -252,30 +211,17 @@ public class LineCommand {
                         @Argument(value = "lineId", suggestions = "lineIds") String lineId,
                         @Argument(value = "stopId", suggestions = "stopIds") String stopId,
                         @Argument("index") Integer index) {
-        Line line = lineManager.getLine(lineId);
+        Line line = guard.requireManageableLine(player, lineId);
         if (line == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
-            return;
-        }
-        if (!OwnershipUtil.canManageLine(player, line)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "line_id", line.getId()), "owner", formatOwner(line.getOwner())), "admins", formatAdmins(line.getAdmins()))));
             return;
         }
 
-        Stop stop = stopManager.getStop(stopId);
+        Stop stop = guard.requireStop(player, stopId);
         if (stop == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_not_found",
-                    LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
             return;
         }
 
-        if (!OwnershipUtil.canModifyLineStops(player, line, stop)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.permission_link",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "stop_id", stopId), "owner", formatOwner(stop.getOwner())), "line_id", lineId)));
+        if (!guard.canModifyLineStops(player, line, stop)) {
             return;
         }
 
@@ -314,16 +260,8 @@ public class LineCommand {
     @Command("m|metro line|l delstop <lineId> <stopId>")
     @CommandDescription("Remove a stop from a line")
     public void delStop(Player player, @Argument(value = "lineId", suggestions = "lineIds") String lineId, @Argument(value = "stopId", suggestions = "stopIds") String stopId) {
-        Line line = lineManager.getLine(lineId);
+        Line line = guard.requireManageableLine(player, lineId);
         if (line == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
-            return;
-        }
-        if (!OwnershipUtil.canManageLine(player, line)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "line_id", line.getId()), "owner", formatOwner(line.getOwner())), "admins", formatAdmins(line.getAdmins()))));
             return;
         }
 
@@ -342,10 +280,8 @@ public class LineCommand {
     @Command("m|metro line|l stops <id>")
     @CommandDescription("List all stops in line")
     public void stops(Player player, @Argument(value = "id", suggestions = "lineIds") String id) {
-        Line line = lineManager.getLine(id);
+        Line line = guard.requireLine(player, id);
         if (line == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
             return;
         }
 
@@ -387,10 +323,8 @@ public class LineCommand {
     @Command("m|metro line|l info <id>")
     @CommandDescription("Show line details")
     public void info(Player player, @Argument(value = "id", suggestions = "lineIds") String id) {
-        Line line = lineManager.getLine(id);
+        Line line = guard.requireLine(player, id);
         if (line == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
             return;
         }
 
@@ -408,9 +342,9 @@ public class LineCommand {
         player.sendMessage(plugin.getLanguageManager().getMessage("line.info_max_speed",
                 LanguageManager.put(LanguageManager.args(), "max_speed", String.valueOf(line.getMaxSpeed()))));
         player.sendMessage(plugin.getLanguageManager().getMessage("line.info_owner",
-                LanguageManager.put(LanguageManager.args(), "owner", formatOwner(line.getOwner()))));
+                LanguageManager.put(LanguageManager.args(), "owner", guard.formatOwner(line.getOwner()))));
         player.sendMessage(plugin.getLanguageManager().getMessage("line.info_admins",
-                LanguageManager.put(LanguageManager.args(), "admins", formatAdmins(line.getAdmins()))));
+                LanguageManager.put(LanguageManager.args(), "admins", guard.formatAdmins(line.getAdmins()))));
 
         List<String> stopIds = line.getOrderedStopIds();
         if (stopIds.isEmpty()) {
@@ -438,16 +372,8 @@ public class LineCommand {
     public void protectRoute(Player player,
                              @Argument(value = "id", suggestions = "lineIds") String id,
                              @Argument("mode") String mode) {
-        Line line = lineManager.getLine(id);
+        Line line = guard.requireManageableLine(player, id);
         if (line == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
-            return;
-        }
-        if (!OwnershipUtil.canManageLine(player, line)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "line_id", line.getId()), "owner", formatOwner(line.getOwner())), "admins", formatAdmins(line.getAdmins()))));
             return;
         }
 
@@ -478,16 +404,8 @@ public class LineCommand {
     @Command("m|metro line|l recordroute <id>")
     @CommandDescription("Start or finish recording route points for a line")
     public void recordRoute(Player player, @Argument(value = "id", suggestions = "lineIds") String id) {
-        Line line = lineManager.getLine(id);
+        Line line = guard.requireManageableLine(player, id);
         if (line == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
-            return;
-        }
-        if (!OwnershipUtil.canManageLine(player, line)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "line_id", line.getId()), "owner", formatOwner(line.getOwner())), "admins", formatAdmins(line.getAdmins()))));
             return;
         }
 
@@ -516,16 +434,8 @@ public class LineCommand {
     @Command("m|metro line|l clearroute <id>")
     @CommandDescription("Clear recorded route points for a line")
     public void clearRoute(Player player, @Argument(value = "id", suggestions = "lineIds") String id) {
-        Line line = lineManager.getLine(id);
+        Line line = guard.requireManageableLine(player, id);
         if (line == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
-            return;
-        }
-        if (!OwnershipUtil.canManageLine(player, line)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "line_id", line.getId()), "owner", formatOwner(line.getOwner())), "admins", formatAdmins(line.getAdmins()))));
             return;
         }
 
@@ -541,10 +451,8 @@ public class LineCommand {
     @Command("m|metro line|l routeinfo <id>")
     @CommandDescription("Show recorded route point status for a line")
     public void routeInfo(Player player, @Argument(value = "id", suggestions = "lineIds") String id) {
-        Line line = lineManager.getLine(id);
+        Line line = guard.requireLine(player, id);
         if (line == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
             return;
         }
 
@@ -587,16 +495,8 @@ public class LineCommand {
     public void trust(Player player,
                       @Argument(value = "id", suggestions = "lineIds") String id,
                       @Argument("playerName") String playerName) {
-        Line line = lineManager.getLine(id);
+        Line line = guard.requireManageableLine(player, id);
         if (line == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
-            return;
-        }
-        if (!OwnershipUtil.canManageLine(player, line)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "line_id", line.getId()), "owner", formatOwner(line.getOwner())), "admins", formatAdmins(line.getAdmins()))));
             return;
         }
         OfflinePlayer target = Bukkit.getOfflinePlayer(playerName);
@@ -621,16 +521,8 @@ public class LineCommand {
     public void untrust(Player player,
                         @Argument(value = "id", suggestions = "lineIds") String id,
                         @Argument("playerName") String playerName) {
-        Line line = lineManager.getLine(id);
+        Line line = guard.requireManageableLine(player, id);
         if (line == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
-            return;
-        }
-        if (!OwnershipUtil.canManageLine(player, line)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "line_id", line.getId()), "owner", formatOwner(line.getOwner())), "admins", formatAdmins(line.getAdmins()))));
             return;
         }
         OfflinePlayer target = Bukkit.getOfflinePlayer(playerName);
@@ -653,14 +545,11 @@ public class LineCommand {
     public void owner(Player player,
                       @Argument(value = "id", suggestions = "lineIds") String id,
                       @Argument("playerName") String playerName) {
-        Line line = lineManager.getLine(id);
+        Line line = guard.requireLine(player, id);
         if (line == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
             return;
         }
-        if (line.getOwner() != null && !line.getOwner().equals(player.getUniqueId()) && !OwnershipUtil.hasAdminBypass(player)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_owner"));
+        if (!guard.requireLineOwner(player, line)) {
             return;
         }
         OfflinePlayer target = Bukkit.getOfflinePlayer(playerName);
@@ -687,17 +576,8 @@ public class LineCommand {
     @Command("m|metro line|l clonereverse <sourceId> <newId> <stopIdSuffix>")
     @CommandDescription("Clone a line and its stops in reverse order with custom suffix")
     public void cloneReverseWithSuffix(Player player, @Argument(value = "sourceId", suggestions = "lineIds") String sourceId, @Argument("newId") String newId, @Argument("stopIdSuffix") String stopIdSuffix) {
-        Line sourceLine = lineManager.getLine(sourceId);
+        Line sourceLine = guard.requireManageableLine(player, sourceId);
         if (sourceLine == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", sourceId)));
-            return;
-        }
-        if (!OwnershipUtil.canManageLine(player, sourceLine)) {
-            String ownerName = sourceLine.getOwner() == null ? "Server" : sourceLine.getOwner().toString();
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "line_id", sourceLine.getId()), "owner", ownerName), "admins", "none")));
             return;
         }
         if (!OwnershipUtil.canCreateLine(player)) {
@@ -716,16 +596,8 @@ public class LineCommand {
     @Command("m|metro line|l setprice <id> <price>")
     @CommandDescription("Set the ticket price for a metro line")
     public void setPrice(Player player, @Argument(value = "id", suggestions = "lineIds") String id, @Argument("price") double price) {
-        Line line = lineManager.getLine(id);
+        Line line = guard.requireManageableLine(player, id);
         if (line == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
-            return;
-        }
-        if (!OwnershipUtil.canManageLine(player, line)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "line_id", line.getId()), "owner", formatOwner(line.getOwner())), "admins", formatAdmins(line.getAdmins()))));
             return;
         }
 
@@ -741,22 +613,6 @@ public class LineCommand {
         } else {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.setprice_fail"));
         }
-    }
-
-    private String formatOwner(UUID ownerId) {
-        if (ownerId == null) {
-            return plugin.getLanguageManager().getMessage("ownership.server");
-        }
-        OfflinePlayer owner = Bukkit.getOfflinePlayer(ownerId);
-        return owner.getName() == null ? ownerId.toString() : owner.getName();
-    }
-
-    private String formatAdmins(Set<UUID> adminIds) {
-        if (adminIds == null || adminIds.isEmpty()) {
-            return plugin.getLanguageManager().getMessage("ownership.none");
-        }
-        String text = adminIds.stream().map(this::formatOwner).collect(Collectors.joining(", "));
-        return text.isBlank() ? plugin.getLanguageManager().getMessage("ownership.none") : text;
     }
 
     private TextComponent createTeleportComponent(Stop stop) {

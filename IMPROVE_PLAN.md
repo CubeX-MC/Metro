@@ -446,6 +446,9 @@ StopCommandService
 PortalCommandService
 ```
 
+   - [x] 先抽出共享 `CommandGuard`，统一线路/站点查找、权限失败提示和 owner/admin 占位符格式化。
+   - [ ] 继续将线路、站点、传送门的业务写操作迁移到 service。
+
 命令类只负责：
 
 - 参数接收。
