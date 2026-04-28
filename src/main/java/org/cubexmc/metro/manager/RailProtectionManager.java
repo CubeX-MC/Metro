@@ -187,7 +187,7 @@ public class RailProtectionManager implements Listener {
 
         if (isMetroPassengerBreakingRail(player, block)) {
             event.setCancelled(true);
-            player.sendMessage(org.bukkit.ChatColor.RED + "You cannot break rails while riding a Metro minecart.");
+            player.sendMessage(plugin.getLanguageManager().getMessage("protection.passenger_break_denied"));
             return;
         }
 
@@ -200,7 +200,7 @@ public class RailProtectionManager implements Listener {
         }
 
         event.setCancelled(true);
-        player.sendMessage(org.bukkit.ChatColor.RED + "This rail is protected by Metro line protection.");
+        player.sendMessage(plugin.getLanguageManager().getMessage("protection.rail_break_denied"));
     }
 
     private boolean isMetroPassengerBreakingRail(Player player, Block block) {

@@ -261,7 +261,14 @@ public class PortalManager {
 
         // 冻结乘客（如果有延迟且有乘客）
         if (finalPassenger != null && teleportDelay > 0) {
-            finalPassenger.sendTitle("§d✦ §b传送中... §d✦", "§7Teleporting...", 5, teleportDelay, 5);
+            Map<String, Object> args = org.cubexmc.metro.manager.LanguageManager.args();
+            org.cubexmc.metro.manager.LanguageManager.put(args, "portal_id", portal.getId());
+            finalPassenger.sendTitle(
+                    plugin.getLanguageManager().getMessage("portal.teleport_title", args),
+                    plugin.getLanguageManager().getMessage("portal.teleport_subtitle", args),
+                    5,
+                    teleportDelay,
+                    5);
         }
     }
 

@@ -61,6 +61,7 @@ line:
   usage_delstop: "&cGebruik: /m line delstop <line_id> <stop_id>"
   usage_rename: "&cGebruik: /m line rename <line_id> <nieuwe_naam>"
   usage_stops: "&cGebruik: /m line stops <line_id>"
+  usage_info: "&cGebruik: /m line info <line_id>"
   usage_trust: "&cGebruik: /m line trust <line_id> <speler>"
   usage_untrust: "&cGebruik: /m line untrust <line_id> <speler>"
   usage_owner: "&cGebruik: /m line owner <line_id> <speler>"
@@ -136,6 +137,30 @@ line:
   untrust_fail: "&c{player} kon niet uit de beheerders worden verwijderd."
   owner_success: "&aHet eigendom van lijn {line_id} is overgedragen aan {owner}."
   owner_fail: "&cHet eigendom van lijn {line_id} kon niet worden overgedragen."
+  protect_update_fail: "&cSpoorbescherming voor lijn {line_id} kon niet worden bijgewerkt."
+  protect_updated: "&aSpoorbescherming voor lijn {line_id} is nu {state}&a."
+  protect_status: "&7Spoorbescherming: {state}"
+  protect_state_enabled: "&aingeschakeld"
+  protect_state_disabled: "&fuitgeschakeld"
+  protect_blocks: "&7Beschermde spoorblokken: &f{count}"
+  protect_no_blocks: "&eEr zijn geen beschermde sporen geindexeerd. Neem de route op nadat de sporen zijn gebouwd en probeer het opnieuw."
+  record_saved: "&a{point_count} routepunten opgeslagen voor lijn {line_id}."
+  record_too_few: "&cRoute-opname gestopt, maar er zijn slechts {point_count} punt(en) verzameld. Reis verder en probeer het opnieuw."
+  record_failed: "&cRoutepunten voor lijn {line_id} konden niet worden opgeslagen."
+  record_not_recording: "&eLijn {line_id} wordt momenteel niet opgenomen."
+  record_started: "&aRoute-opname gestart voor lijn {line_id}."
+  record_hint: "&7Rijd deze lijn in een Metro-minecart. Voer de opdracht opnieuw uit om op te slaan, of laat een niet-circulaire lijn het eindpunt bereiken."
+  record_already: "&eLijn {line_id} wordt al opgenomen."
+  clearroute_success: "&a{point_count} routepunt(en) verwijderd voor lijn {line_id}."
+  clearroute_fail: "&cRoutepunten voor lijn {line_id} konden niet worden verwijderd."
+  routeinfo_header: "&6Route-info voor {line_name} ({line_id})"
+  routeinfo_saved_points: "&7Opgeslagen punten: &f{point_count}"
+  routeinfo_recording: "&7Opname: {state}"
+  routeinfo_recording_active: "&aactief"
+  routeinfo_recording_inactive: "&finactief"
+  routeinfo_buffered_points: "&7Gebufferde punten: &f{point_count}"
+  routeinfo_bound_cart: "&7Gekoppelde minecart: &f{cart_id}"
+  routeinfo_waiting_cart: "wacht op eerste trein"
 
 # Portaal commando gerelateerd
 portal:
@@ -166,6 +191,8 @@ portal:
   list_item: "&f- &b{portal_id} &7[{world} {x},{y},{z}] &e-> &7[{dest_world} {dest}] {linked}"
   list_linked: "&b<-> {linked_portal_id}"
   reload_success: "&aPortalconfiguratie herladen. {count} portal(en) geladen."
+  teleport_title: "&d✦ &bTeleporteren... &d✦"
+  teleport_subtitle: "&7Je gaat door portal {portal_id}"
 
 # Stopgebied commando gerelateerd
 stop:
@@ -324,6 +351,10 @@ test:
 # Passagier gerelateerde berichten
 passenger:
   train_derailed: "&cSpoorweg is beschadigd, reis beëindigd!"
+
+protection:
+  passenger_break_denied: "&cJe kunt geen sporen breken terwijl je in een Metro-minecart rijdt."
+  rail_break_denied: "&cDit spoor wordt beschermd door Metro-lijnbescherming."
   
 # Eigendom gerelateerd
 ownership:
@@ -348,6 +379,8 @@ gui:
     can_manage: "&a✔ Beheerbaar"
     view_only: "&c✖ Alleen Bekijken"
     click_view: "&eLinkermuisklik &7voor haltes"
+    click_settings: "&eRechtermuisklik &7voor instellingen"
+    click_view_variants: "&eKlik om varianten te bekijken"
   stop_list:
     title_all: "Halteslijst &a[Alle]"
     title_mine: "Halteslijst &6[Mijn]"
@@ -355,6 +388,7 @@ gui:
     no_lines: "&7Lijnen: &8Geen"
     click_tp: "&eLinkermuisklik &7om te teleporteren"
     no_stoppoint: "&8Haltepunt niet ingesteld"
+    click_view_variants: "&eKlik om varianten te bekijken"
   line_detail:
     title: "&8Lijn: "
     index: "&7Index: &f{index}"
@@ -395,7 +429,13 @@ gui:
     filter_lore_mine: "&7Klik voor alle"
   common:
     id: "&7ID: &f{id}"
+    variants: "&7Varianten: {count}"
+    variants_title: "Varianten"
+    back: "&cTerug"
     close: "&cSluiten"
+    prev_page: "&e◀ Vorige"
+    next_page: "&eVolgende ▶"
+    page_info: "&fPagina {page} / {total}"
 
   line_settings:
     title: "&8Lijninstellingen: "
@@ -447,6 +487,7 @@ chat:
   enter_new_speed: "&aVoer een nieuwe snelheid in. Typ 'cancel' om te annuleren."
   enter_new_price: "&aVoer een nieuwe ticketprijs in. Typ 'cancel' om te annuleren."
   enter_clone_info: "&aVoer nieuwe lijn ID en stop achtervoegsel (optioneel) in, gescheiden door spatie. Vb: line1_rev _rev"
+  input_cancelled: "&cInvoer geannuleerd."
 
 economy:
   insufficient_funds: "&cOnvoldoende saldo. Deze rit kost: {price}"

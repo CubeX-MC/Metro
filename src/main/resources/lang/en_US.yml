@@ -137,6 +137,30 @@ line:
   untrust_fail: "&cCannot remove {player} from administrators."
   owner_success: "&aTransferred line {line_id} ownership to {owner}."
   owner_fail: "&cFailed to transfer ownership of line {line_id}."
+  protect_update_fail: "&cFailed to update rail protection for line {line_id}."
+  protect_updated: "&aRail protection for line {line_id} is now {state}&a."
+  protect_status: "&7Rail protection: {state}"
+  protect_state_enabled: "&aenabled"
+  protect_state_disabled: "&fdisabled"
+  protect_blocks: "&7Protected rail blocks: &f{count}"
+  protect_no_blocks: "&eNo protected rails were indexed. Record the route after rails are built, then try again."
+  record_saved: "&aSaved {point_count} route points for line {line_id}."
+  record_too_few: "&cRoute recording stopped, but only {point_count} point(s) were collected. Ride the line farther and try again."
+  record_failed: "&cFailed to save route points for line {line_id}."
+  record_not_recording: "&eLine {line_id} is not currently recording."
+  record_started: "&aStarted route recording for line {line_id}."
+  record_hint: "&7Ride this line in a Metro minecart. Run the command again to save, or let a non-circular line reach its terminal."
+  record_already: "&eLine {line_id} is already recording."
+  clearroute_success: "&aCleared {point_count} route point(s) for line {line_id}."
+  clearroute_fail: "&cFailed to clear route points for line {line_id}."
+  routeinfo_header: "&6Route info for {line_name} ({line_id})"
+  routeinfo_saved_points: "&7Saved points: &f{point_count}"
+  routeinfo_recording: "&7Recording: {state}"
+  routeinfo_recording_active: "&aactive"
+  routeinfo_recording_inactive: "&finactive"
+  routeinfo_buffered_points: "&7Buffered points: &f{point_count}"
+  routeinfo_bound_cart: "&7Bound cart: &f{cart_id}"
+  routeinfo_waiting_cart: "waiting for first train"
 
 # Portal Command Related
 portal:
@@ -167,6 +191,8 @@ portal:
   list_item: "&f- &b{portal_id} &7[{world} {x},{y},{z}] &e-> &7[{dest_world} {dest}] {linked}"
   list_linked: "&b<-> {linked_portal_id}"
   reload_success: "&aPortal configuration reloaded. {count} portal(s) loaded."
+  teleport_title: "&d✦ &bTeleporting... &d✦"
+  teleport_subtitle: "&7Passing through portal {portal_id}"
 
 # Stop Command Related
 stop:
@@ -425,6 +451,10 @@ gui:
 # Passenger Related Messages
 passenger:
   train_derailed: "&cRailway is damaged, journey terminated!"
+
+protection:
+  passenger_break_denied: "&cYou cannot break rails while riding a Metro minecart."
+  rail_break_denied: "&cThis rail is protected by Metro line protection."
   
 # Movement Monitoring Related
 movement:

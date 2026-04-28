@@ -137,6 +137,30 @@ line:
   untrust_fail: "&c無法移除 {player} 的路線管理權限。"
   owner_success: "&a已將路線 {line_id} 的所有權轉移給 {owner}。"
   owner_fail: "&c轉移路線 {line_id} 所有權失敗。"
+  protect_update_fail: "&c更新路線 {line_id} 的軌道保護失敗。"
+  protect_updated: "&a路線 {line_id} 的軌道保護現在為{state}&a。"
+  protect_status: "&7軌道保護: {state}"
+  protect_state_enabled: "&a已開啟"
+  protect_state_disabled: "&f已關閉"
+  protect_blocks: "&7已保護鐵軌方塊: &f{count}"
+  protect_no_blocks: "&e未索引到受保護鐵軌。請在路線鐵軌建好後重新錄製軌跡，再試一次。"
+  record_saved: "&a已為路線 {line_id} 儲存 {point_count} 個軌跡點。"
+  record_too_few: "&c軌跡錄製已停止，但只收集到 {point_count} 個點。請乘坐更遠距離後重試。"
+  record_failed: "&c儲存路線 {line_id} 的軌跡點失敗。"
+  record_not_recording: "&e路線 {line_id} 目前沒有在錄製。"
+  record_started: "&a已開始錄製路線 {line_id} 的軌跡。"
+  record_hint: "&7請乘坐該路線的 Metro 礦車。再次執行此指令可儲存，非環線抵達終點時也會自動結束。"
+  record_already: "&e路線 {line_id} 已經在錄製。"
+  clearroute_success: "&a已清除路線 {line_id} 的 {point_count} 個軌跡點。"
+  clearroute_fail: "&c清除路線 {line_id} 的軌跡點失敗。"
+  routeinfo_header: "&6路線軌跡資訊: {line_name} ({line_id})"
+  routeinfo_saved_points: "&7已儲存點數: &f{point_count}"
+  routeinfo_recording: "&7錄製狀態: {state}"
+  routeinfo_recording_active: "&a進行中"
+  routeinfo_recording_inactive: "&f未錄製"
+  routeinfo_buffered_points: "&7快取點數: &f{point_count}"
+  routeinfo_bound_cart: "&7綁定礦車: &f{cart_id}"
+  routeinfo_waiting_cart: "等待首班列車"
 
 # 傳送門指令相關
 portal:
@@ -167,6 +191,8 @@ portal:
   list_item: "&f- &b{portal_id} &7[{world} {x},{y},{z}] &e-> &7[{dest_world} {dest}] {linked}"
   list_linked: "&b<-> {linked_portal_id}"
   reload_success: "&a傳送門設定已重新載入。共 {count} 個傳送門。"
+  teleport_title: "&d✦ &b傳送中... &d✦"
+  teleport_subtitle: "&7正在通過傳送門 {portal_id}"
 
 # 停靠區指令相關
 stop:
@@ -325,6 +351,10 @@ test:
 # 乘客相關訊息
 passenger:
   train_derailed: "&c鐵軌已損壞，行程已終止！"
+
+protection:
+  passenger_break_denied: "&c乘坐 Metro 礦車時不能破壞鐵軌。"
+  rail_break_denied: "&c此鐵軌受 Metro 路線保護。"
   
 # 移動監聽相關
 movement:
@@ -454,6 +484,7 @@ chat:
   enter_new_speed: "&a請輸入新的速度數值。輸入 'cancel' 或 '取消' 取消操作。"
   enter_new_price: "&a請輸入新的票價數值。輸入 'cancel' 或 '取消' 取消操作。"
   enter_clone_info: "&a請輸入新路線ID和站點後綴(可選)，用空格分隔。例如: line1_rev _rev"
+  input_cancelled: "&c已取消輸入。"
 
 economy:
   insufficient_funds: "&c餘額不足。此次乘車需要: {price}"

@@ -61,6 +61,7 @@ line:
   usage_delstop: "&cUso: /m line delstop <line_id> <stop_id>"
   usage_rename: "&cUso: /m line rename <line_id> <nuevo_nombre>"
   usage_stops: "&cUso: /m line stops <line_id>"
+  usage_info: "&cUso: /m line info <line_id>"
   usage_trust: "&cUso: /m line trust <line_id> <jugador>"
   usage_untrust: "&cUso: /m line untrust <line_id> <jugador>"
   usage_owner: "&cUso: /m line owner <line_id> <jugador>"
@@ -136,6 +137,30 @@ line:
   untrust_fail: "&cNo se pudo eliminar a {player} de los administradores."
   owner_success: "&aLa propiedad de la línea {line_id} se ha transferido a {owner}."
   owner_fail: "&cNo se pudo transferir la propiedad de la línea {line_id}."
+  protect_update_fail: "&cNo se pudo actualizar la protección de vías para la línea {line_id}."
+  protect_updated: "&aLa protección de vías de la línea {line_id} ahora está {state}&a."
+  protect_status: "&7Protección de vías: {state}"
+  protect_state_enabled: "&aactivada"
+  protect_state_disabled: "&fdesactivada"
+  protect_blocks: "&7Bloques de vía protegidos: &f{count}"
+  protect_no_blocks: "&eNo se indexaron vías protegidas. Graba la ruta después de construir las vías e inténtalo de nuevo."
+  record_saved: "&aSe guardaron {point_count} puntos de ruta para la línea {line_id}."
+  record_too_few: "&cLa grabación de ruta se detuvo, pero solo se recopilaron {point_count} punto(s). Viaja más lejos e inténtalo de nuevo."
+  record_failed: "&cNo se pudieron guardar los puntos de ruta de la línea {line_id}."
+  record_not_recording: "&eLa línea {line_id} no se está grabando actualmente."
+  record_started: "&aGrabación de ruta iniciada para la línea {line_id}."
+  record_hint: "&7Viaja por esta línea en una vagoneta de Metro. Ejecuta el comando de nuevo para guardar, o deja que una línea no circular llegue a su terminal."
+  record_already: "&eLa línea {line_id} ya se está grabando."
+  clearroute_success: "&aSe eliminaron {point_count} punto(s) de ruta de la línea {line_id}."
+  clearroute_fail: "&cNo se pudieron eliminar los puntos de ruta de la línea {line_id}."
+  routeinfo_header: "&6Información de ruta para {line_name} ({line_id})"
+  routeinfo_saved_points: "&7Puntos guardados: &f{point_count}"
+  routeinfo_recording: "&7Grabación: {state}"
+  routeinfo_recording_active: "&aactiva"
+  routeinfo_recording_inactive: "&finactiva"
+  routeinfo_buffered_points: "&7Puntos en memoria: &f{point_count}"
+  routeinfo_bound_cart: "&7Vagoneta vinculada: &f{cart_id}"
+  routeinfo_waiting_cart: "esperando el primer tren"
 
 # Relacionado con comandos de portal
 portal:
@@ -166,6 +191,8 @@ portal:
   list_item: "&f- &b{portal_id} &7[{world} {x},{y},{z}] &e-> &7[{dest_world} {dest}] {linked}"
   list_linked: "&b<-> {linked_portal_id}"
   reload_success: "&aConfiguración de portales recargada. {count} portal(es) cargados."
+  teleport_title: "&d✦ &bTeletransportando... &d✦"
+  teleport_subtitle: "&7Pasando por el portal {portal_id}"
 
 # Relacionado con comandos de área de parada
 stop:
@@ -324,6 +351,10 @@ test:
 # Mensajes relacionados con pasajeros
 passenger:
   train_derailed: "&c¡Las vías están dañadas, viaje terminado!"
+
+protection:
+  passenger_break_denied: "&cNo puedes romper vías mientras viajas en una vagoneta de Metro."
+  rail_break_denied: "&cEsta vía está protegida por la protección de líneas de Metro."
   
 # Propiedad
 ownership:
@@ -348,6 +379,8 @@ gui:
     can_manage: "&a✔ Gestionable"
     view_only: "&c✖ Solo Ver"
     click_view: "&eClic izq. &7para ver paradas"
+    click_settings: "&eClic der. &7para ajustes"
+    click_view_variants: "&eClic para ver variantes"
   stop_list:
     title_all: "Lista de Paradas &a[Todas]"
     title_mine: "Lista de Paradas &6[Mías]"
@@ -355,6 +388,7 @@ gui:
     no_lines: "&7Líneas: &8Ninguna"
     click_tp: "&eClic izq. &7para teletransportar"
     no_stoppoint: "&8Punto de parada no configurado"
+    click_view_variants: "&eClic para ver variantes"
   line_detail:
     title: "&8Línea: "
     index: "&7Índice: &f{index}"
@@ -395,7 +429,13 @@ gui:
     filter_lore_mine: "&7Clic para mostrar todas"
   common:
     id: "&7ID: &f{id}"
+    variants: "&7Variantes: {count}"
+    variants_title: "Variantes"
+    back: "&cVolver"
     close: "&cCerrar"
+    prev_page: "&e◀ Anterior"
+    next_page: "&eSiguiente ▶"
+    page_info: "&fPágina {page} / {total}"
 
   line_settings:
     title: "&8Ajustes de Línea: "
@@ -403,6 +443,8 @@ gui:
     rename_lore: "&7Haz clic para ingresar nuevo nombre en el chat"
     set_speed: "&bModificar Vel. Máx"
     set_speed_lore: "&7Haz clic para ingresar nueva vel. en el chat"
+    set_price: "&6Establecer Precio"
+    set_price_lore: "&7Haz clic para ingresar nuevo precio en el chat"
     clone_reverse: "&eGenerar Línea Inversa"
     clone_reverse_lore: "&7Clonar automáticamente esta línea y paradas en sentido inverso"
     delete: "&cEliminar Línea"
@@ -445,6 +487,7 @@ chat:
   enter_new_speed: "&aPor favor ingresa el nuevo valor de velocidad. Escribe 'cancel' para abortar."
   enter_new_price: "&aPor favor ingresa el nuevo precio del billete. Escribe 'cancel' para abortar."
   enter_clone_info: "&aPor favor ingresa la nueva ID de línea y el sufijo de parada (opcional), separados por espacio. Ej: line1_rev _rev"
+  input_cancelled: "&cEntrada cancelada."
 
 economy:
   insufficient_funds: "&cFondos insuficientes. Este viaje cuesta: {price}"

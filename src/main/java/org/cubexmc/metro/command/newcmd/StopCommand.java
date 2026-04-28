@@ -17,6 +17,7 @@ import org.cubexmc.metro.manager.SelectionManager;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Stop;
+import org.cubexmc.metro.service.CommandDisplayService;
 import org.cubexmc.metro.service.StopCommandService;
 import org.cubexmc.metro.util.OwnershipUtil;
 import net.md_5.bungee.api.chat.ClickEvent;
@@ -33,10 +34,32 @@ import java.util.stream.Collectors;
 
 public class StopCommand {
 
+    private static final List<String> HELP_KEYS = List.of(
+            "stop.help_create",
+            "stop.help_delete",
+            "stop.help_list",
+            "stop.help_setcorners",
+            "stop.help_setpoint",
+            "stop.help_addtransfer",
+            "stop.help_deltransfer",
+            "stop.help_listtransfers",
+            "stop.help_settitle",
+            "stop.help_deltitle",
+            "stop.help_listtitles",
+            "stop.help_rename",
+            "stop.help_info",
+            "stop.help_tp",
+            "stop.help_trust",
+            "stop.help_untrust",
+            "stop.help_owner",
+            "stop.help_link"
+    );
+
     private final Metro plugin;
     private final StopManager stopManager;
     private final LineManager lineManager;
     private final CommandGuard guard;
+    private final CommandDisplayService displayService;
     private final StopCommandService stopService;
 
     public StopCommand(Metro plugin, StopManager stopManager, LineManager lineManager) {
@@ -44,6 +67,7 @@ public class StopCommand {
         this.stopManager = stopManager;
         this.lineManager = lineManager;
         this.guard = new CommandGuard(plugin, lineManager, stopManager);
+        this.displayService = new CommandDisplayService();
         this.stopService = new StopCommandService(stopManager);
     }
 
@@ -61,37 +85,11 @@ public class StopCommand {
 
     private void showHelp(CommandSender sender, int page) {
         org.cubexmc.metro.manager.LanguageManager lang = plugin.getLanguageManager();
-        java.util.List<String> helpList = java.util.Arrays.asList(
-                lang.getMessage("stop.help_create"),
-                lang.getMessage("stop.help_delete"),
-                lang.getMessage("stop.help_list"),
-                lang.getMessage("stop.help_setcorners"),
-                lang.getMessage("stop.help_setpoint"),
-                lang.getMessage("stop.help_addtransfer"),
-                lang.getMessage("stop.help_deltransfer"),
-                lang.getMessage("stop.help_listtransfers"),
-                lang.getMessage("stop.help_settitle"),
-                lang.getMessage("stop.help_deltitle"),
-                lang.getMessage("stop.help_listtitles"),
-                lang.getMessage("stop.help_rename"),
-                lang.getMessage("stop.help_info"),
-                lang.getMessage("stop.help_tp"),
-                lang.getMessage("stop.help_trust"),
-                lang.getMessage("stop.help_untrust"),
-                lang.getMessage("stop.help_owner"),
-                lang.getMessage("stop.help_link")
-        );
-
-        int pageSize = 8;
-        int totalPages = (int) Math.ceil((double) helpList.size() / pageSize);
-        if (page < 1) page = 1;
-        if (page > totalPages) page = totalPages;
-
-        sender.sendMessage(lang.getMessage("stop.help_header") + " §e(" + page + "/" + totalPages + ")");
-        int start = (page - 1) * pageSize;
-        int end = Math.min(start + pageSize, helpList.size());
-        for (int i = start; i < end; i++) {
-            sender.sendMessage(helpList.get(i));
+        CommandDisplayService.HelpPage helpPage = displayService.helpPage(key -> lang.getMessage(key),
+                "stop.help_header", HELP_KEYS, page);
+        sender.sendMessage(helpPage.header());
+        for (String helpLine : helpPage.lines()) {
+            sender.sendMessage(helpLine);
         }
     }
 

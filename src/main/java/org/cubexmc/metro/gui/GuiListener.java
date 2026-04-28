@@ -661,7 +661,7 @@ public class GuiListener implements Listener {
                                 player.sendMessage(plugin.getLanguageManager().getMessage("line.setprice_fail"));
                             }
                         } catch (NumberFormatException e) {
-                            player.sendMessage(org.bukkit.ChatColor.RED + "Invalid price.");
+                            player.sendMessage(plugin.getLanguageManager().getMessage("line.setprice_invalid"));
                         }
                         plugin.getGuiManager().openLineSettings(player, lineId);
                     }

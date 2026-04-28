@@ -61,6 +61,7 @@ line:
   usage_delstop: "&cVerwendung: /m line delstop <line_id> <stop_id>"
   usage_rename: "&cVerwendung: /m line rename <line_id> <neuer_name>"
   usage_stops: "&cVerwendung: /m line stops <line_id>"
+  usage_info: "&cVerwendung: /m line info <line_id>"
   usage_trust: "&cVerwendung: /m line trust <line_id> <spieler>"
   usage_untrust: "&cVerwendung: /m line untrust <line_id> <spieler>"
   usage_owner: "&cVerwendung: /m line owner <line_id> <spieler>"
@@ -136,6 +137,30 @@ line:
   untrust_fail: "&c{player} konnte nicht aus den Administratoren entfernt werden."
   owner_success: "&aDer Besitz der Linie {line_id} wurde an {owner} übertragen."
   owner_fail: "&cDer Besitz der Linie {line_id} konnte nicht übertragen werden."
+  protect_update_fail: "&cDer Gleisschutz für Linie {line_id} konnte nicht aktualisiert werden."
+  protect_updated: "&aDer Gleisschutz für Linie {line_id} ist jetzt {state}&a."
+  protect_status: "&7Gleisschutz: {state}"
+  protect_state_enabled: "&aaktiviert"
+  protect_state_disabled: "&fdeaktiviert"
+  protect_blocks: "&7Geschützte Gleisblöcke: &f{count}"
+  protect_no_blocks: "&eEs wurden keine geschützten Gleise indiziert. Zeichne die Route nach dem Bau der Gleise auf und versuche es erneut."
+  record_saved: "&a{point_count} Routenpunkte für Linie {line_id} gespeichert."
+  record_too_few: "&cDie Routenaufzeichnung wurde beendet, aber es wurden nur {point_count} Punkt(e) gesammelt. Fahre weiter und versuche es erneut."
+  record_failed: "&cRoutenpunkte für Linie {line_id} konnten nicht gespeichert werden."
+  record_not_recording: "&eLinie {line_id} wird derzeit nicht aufgezeichnet."
+  record_started: "&aRoutenaufzeichnung für Linie {line_id} gestartet."
+  record_hint: "&7Fahre diese Linie in einer Metro-Lore. Führe den Befehl erneut aus, um zu speichern, oder erreiche bei einer nicht ringförmigen Linie die Endstation."
+  record_already: "&eLinie {line_id} wird bereits aufgezeichnet."
+  clearroute_success: "&a{point_count} Routenpunkt(e) für Linie {line_id} gelöscht."
+  clearroute_fail: "&cRoutenpunkte für Linie {line_id} konnten nicht gelöscht werden."
+  routeinfo_header: "&6Routeninfo für {line_name} ({line_id})"
+  routeinfo_saved_points: "&7Gespeicherte Punkte: &f{point_count}"
+  routeinfo_recording: "&7Aufzeichnung: {state}"
+  routeinfo_recording_active: "&aaktiv"
+  routeinfo_recording_inactive: "&finaktiv"
+  routeinfo_buffered_points: "&7Gepufferte Punkte: &f{point_count}"
+  routeinfo_bound_cart: "&7Gebundene Lore: &f{cart_id}"
+  routeinfo_waiting_cart: "wartet auf den ersten Zug"
 
 # Portal-Befehle
 portal:
@@ -166,6 +191,8 @@ portal:
   list_item: "&f- &b{portal_id} &7[{world} {x},{y},{z}] &e-> &7[{dest_world} {dest}] {linked}"
   list_linked: "&b<-> {linked_portal_id}"
   reload_success: "&aPortal-Konfiguration neu geladen. {count} Portal(e) geladen."
+  teleport_title: "&d✦ &bTeleportiere... &d✦"
+  teleport_subtitle: "&7Du passierst Portal {portal_id}"
 
 # Haltebereich-Befehl bezogen
 stop:
@@ -324,6 +351,10 @@ test:
 # Passagier-bezogene Nachrichten
 passenger:
   train_derailed: "&cSchienen sind beschädigt, Fahrt beendet!"
+
+protection:
+  passenger_break_denied: "&cDu kannst keine Gleise abbauen, während du in einer Metro-Lore sitzt."
+  rail_break_denied: "&cDieses Gleis ist durch den Metro-Linienschutz geschützt."
   
 # Besitzbezogene Nachrichten
 ownership:
@@ -348,6 +379,8 @@ gui:
     can_manage: "&a✔ Verwaltbar"
     view_only: "&c✖ Nur Ansicht"
     click_view: "&eLinksklick &7für Haltestellenliste"
+    click_settings: "&eRechtsklick &7für Einstellungen"
+    click_view_variants: "&eKlicken, um Varianten anzuzeigen"
   stop_list:
     title_all: "Haltestellenliste &a[Alle]"
     title_mine: "Haltestellenliste &6[Meine]"
@@ -355,6 +388,7 @@ gui:
     no_lines: "&7Linien: &8Keine"
     click_tp: "&eLinksklick &7zum Teleportieren"
     no_stoppoint: "&8Haltepunkt nicht gesetzt"
+    click_view_variants: "&eKlicken, um Varianten anzuzeigen"
   line_detail:
     title: "&8Linie: "
     index: "&7Index: &f{index}"
@@ -395,12 +429,13 @@ gui:
     filter_lore_mine: "&7Klicke für alle"
   common:
     id: "&7ID: &f{id}"
+    variants: "&7Varianten: {count}"
+    variants_title: "Varianten"
+    back: "&cZurück"
     close: "&cSchließen"
-chat:
-  enter_new_name: "&aBitte neuen Namen eingeben. 'cancel' zum Abbrechen."
-  enter_new_speed: "&aBitte neuen Geschwindigkeitswert eingeben. 'cancel' zum Abbrechen."
-  enter_clone_info: "&aBitte neue Linien-ID und Stationssuffix (optional) durch Leerzeichen getrennt eingeben. Bsp: line1_rev _rev"
-
+    prev_page: "&e◀ Zurück"
+    next_page: "&eWeiter ▶"
+    page_info: "&fSeite {page} / {total}"
   line_settings:
     title: "&8Linieneinstellungen: "
     rename: "&aLinie umbenennen"
@@ -451,6 +486,7 @@ chat:
   enter_new_speed: "&aBitte neuen Geschwindigkeitswert eingeben. Tippe 'cancel' zum Abbrechen."
   enter_new_price: "&aBitte neuen Ticketpreis eingeben. Tippe 'cancel' zum Abbrechen."
   enter_clone_info: "&aBitte neue Linien-ID und Haltestellen-Suffix (optional) getrennt durch ein Leerzeichen eingeben. Bsp: line1_rev _rev"
+  input_cancelled: "&cEingabe abgebrochen."
 
 economy:
   insufficient_funds: "&cUnzureichendes Guthaben. Diese Fahrt kostet: {price}"

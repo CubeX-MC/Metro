@@ -450,6 +450,7 @@ PortalCommandService
    - [x] 新增 `LineCommandService`，迁移线路写操作和基础参数校验。
    - [x] 新增 `StopCommandService`，迁移站点写操作和基础参数校验。
    - [x] 新增 `PortalCommandService`，迁移传送门写操作和基础参数校验。
+   - [x] 新增 `CommandDisplayService`，统一命令帮助页展示、分页和页码夹取。
    - [ ] 继续收敛命令展示逻辑和页码校验。
 
 命令类只负责：
@@ -466,7 +467,8 @@ PortalCommandService
    - [x] 线路创建/反向克隆 ID、线路颜色、最大速度、票价已在 `LineCommandService` 中校验。
    - [x] 站点创建 ID、停靠点、标题类型/键、link action 已在 `StopCommandService` 中校验。
    - [x] 传送门创建 ID、入口位置、目标位置和配对目标已在 `PortalCommandService` 中校验。
-   - [ ] 页码校验继续迁移。
+   - [x] 帮助页页码校验已迁移到 `CommandDisplayService`。
+   - [ ] 列表类命令如需分页时继续复用统一页码校验。
 
 6. 增加命令测试：
    - create/delete/rename 权限。
@@ -749,14 +751,18 @@ MapIntegration {
    - `ChatColor.RED + "..."`
    - 英文错误消息。
    - Debug 外的中文固定文本。
+   - [x] 已先迁移 route recording、route info、rail protection 和 GUI 票价错误相关玩家提示。
 
 2. 全部迁移到语言文件：
    - `en_US.yml` 作为基准。
    - 其他语言缺失时 fallback。
+   - [x] 已补齐 route/protection 新消息到 `zh_CN`、`zh_TW`、`en_US`、`de_DE`、`es_ES`、`nl_NL`。
 
 3. 增加语言 key 校验测试：
    - 所有语言文件包含 `en_US` 的 key。
    - 允许少数显式忽略 key。
+   - [x] 已新增 route/protection 消息的内置语言 key 回归测试。
+   - [x] 已升级为全量跨语言 key 对齐测试，并补齐 `de_DE`、`es_ES`、`nl_NL` 中缺失的旧 GUI/chat/usage key。
 
 4. 定义 key 命名规范：
    - `line.*`

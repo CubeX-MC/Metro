@@ -137,6 +137,30 @@ line:
   untrust_fail: "&c无法移除 {player} 的线路管理员权限。"
   owner_success: "&a已将线路 {line_id} 的所有权转移给 {owner}。"
   owner_fail: "&c转移线路 {line_id} 所有权失败。"
+  protect_update_fail: "&c更新线路 {line_id} 的轨道保护失败。"
+  protect_updated: "&a线路 {line_id} 的轨道保护现在为{state}&a。"
+  protect_status: "&7轨道保护: {state}"
+  protect_state_enabled: "&a已开启"
+  protect_state_disabled: "&f已关闭"
+  protect_blocks: "&7已保护铁轨方块: &f{count}"
+  protect_no_blocks: "&e未索引到受保护铁轨。请在线路铁轨建好后重新录制轨迹，再试一次。"
+  record_saved: "&a已为线路 {line_id} 保存 {point_count} 个轨迹点。"
+  record_too_few: "&c轨迹录制已停止，但只收集到 {point_count} 个点。请乘坐更远距离后重试。"
+  record_failed: "&c保存线路 {line_id} 的轨迹点失败。"
+  record_not_recording: "&e线路 {line_id} 当前没有在录制。"
+  record_started: "&a已开始录制线路 {line_id} 的轨迹。"
+  record_hint: "&7请乘坐该线路的 Metro 矿车。再次执行此命令可保存，非环线到达终点时也会自动结束。"
+  record_already: "&e线路 {line_id} 已经在录制。"
+  clearroute_success: "&a已清除线路 {line_id} 的 {point_count} 个轨迹点。"
+  clearroute_fail: "&c清除线路 {line_id} 的轨迹点失败。"
+  routeinfo_header: "&6线路轨迹信息: {line_name} ({line_id})"
+  routeinfo_saved_points: "&7已保存点数: &f{point_count}"
+  routeinfo_recording: "&7录制状态: {state}"
+  routeinfo_recording_active: "&a进行中"
+  routeinfo_recording_inactive: "&f未录制"
+  routeinfo_buffered_points: "&7缓存点数: &f{point_count}"
+  routeinfo_bound_cart: "&7绑定矿车: &f{cart_id}"
+  routeinfo_waiting_cart: "等待首班列车"
 
 # 传送门命令相关
 portal:
@@ -167,6 +191,8 @@ portal:
   list_item: "&f- &b{portal_id} &7[{world} {x},{y},{z}] &e-> &7[{dest_world} {dest}] {linked}"
   list_linked: "&b<-> {linked_portal_id}"
   reload_success: "&a传送门配置已重新加载。共 {count} 个传送门。"
+  teleport_title: "&d✦ &b传送中... &d✦"
+  teleport_subtitle: "&7正在通过传送门 {portal_id}"
 
 # 停靠区命令相关
 stop:
@@ -325,6 +351,10 @@ test:
 # 乘客相关消息
 passenger:
   train_derailed: "&c铁路已损坏，行程已终止！"
+
+protection:
+  passenger_break_denied: "&c乘坐 Metro 矿车时不能破坏铁轨。"
+  rail_break_denied: "&c此铁轨受 Metro 线路保护。"
   
 # 移动监听相关
 movement:
