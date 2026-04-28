@@ -159,11 +159,11 @@
 ```yaml
 metro.gui:
   description: Allow players to open the Metro GUI
-  default: op
+  default: true
 ```
 
 2. [x] 评估是否将 `metro.gui` 加入 `metro.admin` children。
-   推荐：加入。管理员默认应能打开 GUI。
+   结论：不加入。GUI 默认向所有玩家开放，界面内部按权限显示可用操作。
 
 3. [x] 更新 `README.md` 和 `README_en.md`：
    - 构建命令改为当前单模块项目：`mvn clean package`。

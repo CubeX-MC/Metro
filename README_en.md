@@ -90,9 +90,9 @@ Players right-click the powered rail inside a Stop to summon and board a minecar
 
 | Permission         | Default | Description                                      |
 | :----------------- | :------ | :----------------------------------------------- |
-| `metro.admin`      | OP      | Allows use of all admin commands, including GUI and teleport access |
+| `metro.admin`      | OP      | Allows use of all admin commands, including teleport access |
 | `metro.use`        | Everyone | Allows players to use the subway system         |
-| `metro.gui`        | OP      | Allows players to open `/m gui`                  |
+| `metro.gui`        | Everyone | Allows players to open `/m gui`; visible actions are filtered by permission |
 | `metro.tp`         | false   | Allows players to teleport to stops through the GUI |
 | `metro.line.create`| false   | Allows players to create new lines               |
 | `metro.stop.create`| false   | Allows players to create new stops               |
