@@ -503,6 +503,10 @@ public final class Metro extends JavaPlugin {
         return lineSelectionService;
     }
 
+    public PlayerInteractListener getPlayerInteractListener() {
+        return playerInteractListener;
+    }
+
     private void registerSuggestionProviders() {
         commandManager.parserRegistry().registerSuggestionProvider("lineIds",
                 (context, input) -> toSuggestionsFuture(lineIdSuggestions(context, input)));

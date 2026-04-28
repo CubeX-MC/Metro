@@ -310,6 +310,10 @@ movement:
 # 交互相关
 interact:
   actionbar_line_info: "&6{line_name} &f- 下一站: &e{next_stop_name}"
+  multi_line_title: "&e{stop_name}"
+  multi_line_subtitle: "&7请选择要乘坐的线路"
+  multi_line_actionbar: "&f可乘: {routes}"
+  multi_line_route: "&6{line_name} &f-> &e{next_stop_name}"
   train_coming: "&e列车即将进站，请稍候..."
   train_spawned: "&a已上车，{departure_seconds}秒后发车..."
   train_error: "&c生成列车时出现错误，请稍后再试。"
@@ -372,6 +376,17 @@ gui:
   add_stop_list:
     title: "&8选择要添加的站点"
     click_add: "&a左键 &7添加到此线路"
+  line_boarding:
+    title: "&8选择乘车线路: &f{stop_name}"
+    next_stop: "&7下一站: &e{stop_name}"
+    terminus: "&7方向: &f{terminus_name}"
+    price: "&7票价: &f{price}"
+    free: "免费"
+    unknown_stop: "未知"
+    click_board: "&e左键 &7乘坐此线路"
+    click_route: "&e右键 &7查看线路站点"
+    cannot_board: "&c无法乘坐: {reason}"
+    no_permission: "没有权限"
   control:
     prev_page: "&e◀ 上一页"
     next_page: "&e下一页 ▶"
@@ -388,6 +403,7 @@ gui:
     variants: "&7变体数量: {count}"
     variants_title: "变体列表"
     back: "&c返回"
+    close: "&c关闭"
     prev_page: "&e◀ 上一页"
     next_page: "&e下一页 ▶"
     page_info: "&f第 {page} / {total} 页"

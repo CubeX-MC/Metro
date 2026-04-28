@@ -70,6 +70,7 @@ public class GuiListener implements Listener {
             case LINE_DETAIL -> handleLineDetailClick(player, holder, slot, event.isRightClick(), event.isShiftClick());
             case ADD_STOP_LIST -> handleAddStopListClick(player, holder, slot);
             case ADD_STOP_VARIANTS -> handleAddStopVariantsClick(player, holder, slot);
+            case LINE_BOARDING_CHOICE -> handleLineBoardingChoiceClick(player, holder, slot, event.isRightClick());
             case LINE_SETTINGS -> handleLineSettingsClick(player, holder, slot);
             case STOP_SETTINGS -> handleStopSettingsClick(player, holder, slot);
             case STOP_DETAIL -> {
@@ -304,6 +305,58 @@ public class GuiListener implements Listener {
                 }
             }
         }
+    }
+
+    private void handleLineBoardingChoiceClick(Player player, GuiHolder holder, int slot, boolean isRightClick) {
+        String stopId = holder.getData("stopId");
+        int page = holder.getData("page", 0);
+        int totalPages = holder.getData("totalPages", 1);
+
+        switch (slot) {
+            case SLOT_PREV_PAGE -> {
+                Stop stop = plugin.getStopManager().getStop(stopId);
+                if (stop != null && page > 0) {
+                    plugin.getGuiManager().openLineBoardingChoice(player, stop, page - 1);
+                }
+                return;
+            }
+            case SLOT_NEXT_PAGE -> {
+                Stop stop = plugin.getStopManager().getStop(stopId);
+                if (stop != null && page < totalPages - 1) {
+                    plugin.getGuiManager().openLineBoardingChoice(player, stop, page + 1);
+                }
+                return;
+            }
+            case SLOT_BACK -> {
+                player.closeInventory();
+                return;
+            }
+            default -> {
+            }
+        }
+
+        if (slot >= 36) {
+            return;
+        }
+
+        List<String> lineIds = holder.getData("lineIds");
+        if (lineIds == null) {
+            return;
+        }
+
+        int index = page * 36 + slot;
+        if (index < 0 || index >= lineIds.size()) {
+            return;
+        }
+
+        String lineId = lineIds.get(index);
+        if (isRightClick) {
+            plugin.getGuiManager().openLineDetail(player, lineId, 0);
+            return;
+        }
+
+        player.closeInventory();
+        plugin.getPlayerInteractListener().boardSelectedLine(player, stopId, lineId);
     }
 
     private void handleStopClick(Player player, Stop stop) {

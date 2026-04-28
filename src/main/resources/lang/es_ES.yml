@@ -345,6 +345,17 @@ gui:
   add_stop_list:
     title: "&8Selecciona parada para añadir"
     click_add: "&aClic izquierdo &7para añadir a esta línea"
+  line_boarding:
+    title: "&8Elige línea: &f{stop_name}"
+    next_stop: "&7Próxima parada: &e{stop_name}"
+    terminus: "&7Dirección: &f{terminus_name}"
+    price: "&7Billete: &f{price}"
+    free: "Gratis"
+    unknown_stop: "Desconocida"
+    click_board: "&eClic izquierdo &7para subir"
+    click_route: "&eClic derecho &7para ver paradas"
+    cannot_board: "&cNo se puede subir: {reason}"
+    no_permission: "Sin permiso"
   control:
     prev_page: "&e◀ Anterior"
     next_page: "&eSiguiente ▶"
@@ -358,6 +369,7 @@ gui:
     filter_lore_mine: "&7Clic para mostrar todas"
   common:
     id: "&7ID: &f{id}"
+    close: "&cCerrar"
 
   line_settings:
     title: "&8Ajustes de Línea: "
@@ -384,6 +396,10 @@ movement:
 # Relacionado con interacción
 interact:
   actionbar_line_info: "&6{line_name} &f- Próxima parada: &e{next_stop_name}"
+  multi_line_title: "&e{stop_name}"
+  multi_line_subtitle: "&7Elige una línea para subir"
+  multi_line_actionbar: "&fDisponibles: {routes}"
+  multi_line_route: "&6{line_name} &f-> &e{next_stop_name}"
   train_coming: "&eTren acercándose a la estación, por favor espera..."
   train_spawned: "&aSubido al tren, salida en {departure_seconds} segundos..."
   train_error: "&cError al generar tren, inténtalo de nuevo más tarde."

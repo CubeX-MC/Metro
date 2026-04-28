@@ -345,6 +345,17 @@ gui:
   add_stop_list:
     title: "&8Haltestelle zum Hinzufügen auswählen"
     click_add: "&aLinksklick &7zum Hinzufügen zu dieser Linie"
+  line_boarding:
+    title: "&8Linie wählen: &f{stop_name}"
+    next_stop: "&7Nächster Halt: &e{stop_name}"
+    terminus: "&7Richtung: &f{terminus_name}"
+    price: "&7Ticket: &f{price}"
+    free: "Kostenlos"
+    unknown_stop: "Unbekannt"
+    click_board: "&eLinksklick &7zum Einsteigen"
+    click_route: "&eRechtsklick &7zum Anzeigen der Halte"
+    cannot_board: "&cKann nicht einsteigen: {reason}"
+    no_permission: "Keine Berechtigung"
   control:
     prev_page: "&e◀ Zurück"
     next_page: "&eWeiter ▶"
@@ -358,6 +369,7 @@ gui:
     filter_lore_mine: "&7Klicke für alle"
   common:
     id: "&7ID: &f{id}"
+    close: "&cSchließen"
 chat:
   enter_new_name: "&aBitte neuen Namen eingeben. 'cancel' zum Abbrechen."
   enter_new_speed: "&aBitte neuen Geschwindigkeitswert eingeben. 'cancel' zum Abbrechen."
@@ -390,6 +402,10 @@ movement:
 # Interaktion bezogen
 interact:
   actionbar_line_info: "&6{line_name} &f- Nächster Halt: &e{next_stop_name}"
+  multi_line_title: "&e{stop_name}"
+  multi_line_subtitle: "&7Wähle eine Linie zum Einsteigen"
+  multi_line_actionbar: "&fVerfügbar: {routes}"
+  multi_line_route: "&6{line_name} &f-> &e{next_stop_name}"
   train_coming: "&eZug nähert sich Station, bitte warten..."
   train_spawned: "&aEingestiegen, Abfahrt in {departure_seconds} Sekunden..."
   train_error: "&cFehler beim Generieren des Zugs, versuche es später erneut."

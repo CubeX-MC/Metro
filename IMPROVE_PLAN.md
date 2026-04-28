@@ -70,8 +70,8 @@
 
 1. [x] 新增线路选择服务。
 2. [x] 右键站台时按规则解析候选线路。
-3. 候选线路超过 1 条时打开线路选择 GUI。
-4. 站台持续提示支持多线路摘要。
+3. [x] 候选线路超过 1 条时打开线路选择 GUI。
+4. [x] 站台持续提示支持多线路摘要。
 5. [x] 记录玩家最近选择的线路，提高重复乘车效率。
 
 验收标准：
@@ -263,7 +263,7 @@ org.cubexmc.metro.service.LineSelectionService
    - 与玩家 yaw 最接近的 stop launchYaw 优先。
    - 线路 ID 字典序作为最终稳定排序。
 
-4. 新增乘车选择 GUI：
+4. [x] 新增乘车选择 GUI：
 
 ```text
 GuiType.LINE_BOARDING_CHOICE
@@ -276,13 +276,13 @@ GuiType.LINE_BOARDING_CHOICE
 - 右键可查看线路途经站点。
 - 无权限或余额不足时用 barrier/lore 显示原因。
 
-5. 调整 `PlayerInteractListener`：
+5. [x] 调整 `PlayerInteractListener`：
    - 右键站点后调用 `LineSelectionService`。
    - 单候选线路：直接乘车。
    - 多候选线路：打开选择 GUI，不立即扣费、不立即创建 pending minecart。
    - 玩家选择线路后再扣费和生成矿车。
 
-6. 调整站台提示：
+6. [x] 调整站台提示：
    - 单线路：保持现有 title/subtitle。
    - 多线路：ActionBar 显示可乘线路摘要，例如 `可乘: 1号线 -> A站 | 2号线 -> B站`。
    - Title 保持站名，避免闪烁或信息过载。

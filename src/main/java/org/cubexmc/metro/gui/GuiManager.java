@@ -120,6 +120,80 @@ public class GuiManager {
         
         player.openInventory(inv);
     }
+
+    /**
+     * 打开乘车线路选择界面。
+     */
+    public void openLineBoardingChoice(Player player, Stop stop, int page) {
+        if (stop == null) {
+            return;
+        }
+
+        List<Line> lines = plugin.getLineSelectionService().getBoardableLines(stop);
+        if (lines.isEmpty()) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("interact.stop_no_line"));
+            return;
+        }
+
+        GuiHolder holder = new GuiHolder(GuiType.LINE_BOARDING_CHOICE);
+        holder.setData("stopId", stop.getId());
+        holder.setData("page", page);
+        holder.setData("lineIds", lines.stream().map(Line::getId).collect(Collectors.toList()));
+
+        String title = ChatColor.translateAlternateColorCodes('&',
+                msg("gui.line_boarding.title", "stop_name", stop.getName()));
+
+        renderPaginatedList(player, holder, title, lines, page, (inv, line, slot) -> {
+            Stop nextStop = getNextStop(line, stop);
+            String nextStopName = nextStop != null ? nextStop.getName() : msg("gui.line_boarding.unknown_stop");
+            String terminusName = line.getTerminusName() == null || line.getTerminusName().isBlank()
+                    ? msg("line.info_default")
+                    : line.getTerminusName();
+            String blockedReason = getBoardingBlockReason(player, line);
+
+            List<String> lore = new ArrayList<>();
+            lore.add(msg("gui.common.id", "id", line.getId()));
+            lore.add(msg("gui.line_boarding.next_stop", "stop_name", nextStopName));
+            lore.add(msg("gui.line_boarding.terminus", "terminus_name", terminusName));
+            lore.add(msg("gui.line_boarding.price", "price", formatTicketPrice(line)));
+            lore.add("");
+            if (blockedReason == null) {
+                lore.add(msg("gui.line_boarding.click_board"));
+            } else {
+                lore.add(msg("gui.line_boarding.cannot_board", "reason", blockedReason));
+            }
+            lore.add(msg("gui.line_boarding.click_route"));
+
+            Material material = blockedReason == null ? getWoolByColor(line.getColor()) : Material.BARRIER;
+            inv.setItem(slot, new ItemBuilder(material)
+                    .name((line.getColor() != null ? line.getColor() : "&f") + line.getName())
+                    .lore(lore)
+                    .build());
+        }, (inv, p, tp) -> {
+            ItemStack filler = new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE)
+                    .name(" ")
+                    .build();
+            for (int i = 36; i < 54; i++) {
+                inv.setItem(i, filler);
+            }
+            if (p > 0) {
+                inv.setItem(SLOT_PREV_PAGE, new ItemBuilder(Material.ARROW)
+                        .name(msg("gui.control.prev_page"))
+                        .build());
+            }
+            inv.setItem(SLOT_PAGE_INFO, new ItemBuilder(Material.PAPER)
+                    .name(msg("gui.control.page_info", "current", String.valueOf(p + 1), "total", String.valueOf(tp)))
+                    .build());
+            if (p < tp - 1) {
+                inv.setItem(SLOT_NEXT_PAGE, new ItemBuilder(Material.ARROW)
+                        .name(msg("gui.control.next_page"))
+                        .build());
+            }
+            inv.setItem(SLOT_BACK, new ItemBuilder(Material.BARRIER)
+                    .name(msg("gui.common.close"))
+                    .build());
+        });
+    }
     
     /**
      * 打开线路列表
@@ -762,6 +836,39 @@ public class GuiManager {
                 .build());
                 
         player.openInventory(inv);
+    }
+
+    private Stop getNextStop(Line line, Stop stop) {
+        String nextStopId = line.getNextStopId(stop.getId());
+        return nextStopId != null ? plugin.getStopManager().getStop(nextStopId) : null;
+    }
+
+    private String formatTicketPrice(Line line) {
+        double price = line.getTicketPrice();
+        if (price <= 0) {
+            return msg("gui.line_boarding.free");
+        }
+        if (plugin.getVaultIntegration() != null && plugin.getVaultIntegration().isEnabled()) {
+            return plugin.getVaultIntegration().format(price);
+        }
+        return String.valueOf(price);
+    }
+
+    private String getBoardingBlockReason(Player player, Line line) {
+        if (!player.hasPermission("metro.use")) {
+            return msg("gui.line_boarding.no_permission");
+        }
+        double price = line.getTicketPrice();
+        if (price <= 0 || !plugin.getConfig().getBoolean("economy.enabled", true)) {
+            return null;
+        }
+        if (plugin.getVaultIntegration() != null
+                && plugin.getVaultIntegration().isEnabled()
+                && !plugin.getVaultIntegration().has(player, price)) {
+            return msg("economy.insufficient_funds",
+                    "price", plugin.getVaultIntegration().format(price));
+        }
+        return null;
     }
     
     /**

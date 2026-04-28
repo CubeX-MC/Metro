@@ -189,19 +189,57 @@ public class PlayerInteractListener implements Listener {
      * 处理停靠点交互
      */
     private void handleStopPoint(Player player, Stop stop) {
-        Line line = plugin.getLineSelectionService().resolveDefaultLine(player, stop, stop.getStopPointLocation());
-        if (line == null) {
-            List<Line> servingLines = plugin.getLineManager().getLinesForStop(stop.getId());
-            boolean onlyTerminalLines = !servingLines.isEmpty()
-                    && servingLines.stream().allMatch(servingLine -> servingLine.getNextStopId(stop.getId()) == null);
-            if (onlyTerminalLines) {
-                player.sendMessage(plugin.getLanguageManager().getMessage("interact.terminal_stop"));
-            } else {
-                player.sendMessage(plugin.getLanguageManager().getMessage("interact.stop_no_line"));
-            }
-            plugin.debug("interaction_flow", "No line found for stop=" + stop.getId());
+        List<Line> boardableLines = plugin.getLineSelectionService().getBoardableLines(stop);
+        if (boardableLines.isEmpty()) {
+            sendNoBoardableLineMessage(player, stop);
             return;
         }
+
+        if (boardableLines.size() > 1 && plugin.getLineSelectionService().requiresChoice(player, stop)) {
+            plugin.getGuiManager().openLineBoardingChoice(player, stop, 0);
+            return;
+        }
+
+        Line line = plugin.getLineSelectionService().resolveDefaultLine(player, stop, stop.getStopPointLocation());
+        if (line == null) {
+            sendNoBoardableLineMessage(player, stop);
+            return;
+        }
+
+        beginBoarding(player, stop, line);
+    }
+
+    /**
+     * 从 GUI 选择线路后继续乘车流程。
+     */
+    public void boardSelectedLine(Player player, String stopId, String lineId) {
+        if (!player.hasPermission("metro.use")) {
+            return;
+        }
+
+        Stop stop = plugin.getStopManager().getStop(stopId);
+        Line line = plugin.getLineManager().getLine(lineId);
+        if (stop == null || line == null) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("interact.stop_no_line"));
+            return;
+        }
+        if (stop.getStopPointLocation() == null) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("interact.stop_no_point"));
+            return;
+        }
+        if (plugin.getLineSelectionService().getBoardableLines(stop).stream()
+                .noneMatch(boardableLine -> boardableLine.getId().equals(line.getId()))) {
+            sendNoBoardableLineMessage(player, stop);
+            return;
+        }
+        if (hasActivePendingMinecart(player, stop)) {
+            return;
+        }
+
+        beginBoarding(player, stop, line);
+    }
+
+    private void beginBoarding(Player player, Stop stop, Line line) {
         plugin.getLineSelectionService().rememberChoice(player, stop.getId(), line.getId());
 
         // --- 经济扣费逻辑 ---
@@ -247,6 +285,33 @@ public class PlayerInteractListener implements Listener {
 
         // 生成矿车
         spawnMinecart(player, stop, line);
+    }
+
+    private void sendNoBoardableLineMessage(Player player, Stop stop) {
+        List<Line> servingLines = plugin.getLineManager().getLinesForStop(stop.getId());
+        boolean onlyTerminalLines = !servingLines.isEmpty()
+                && servingLines.stream().allMatch(servingLine -> servingLine.getNextStopId(stop.getId()) == null);
+        if (onlyTerminalLines) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("interact.terminal_stop"));
+        } else {
+            player.sendMessage(plugin.getLanguageManager().getMessage("interact.stop_no_line"));
+        }
+        plugin.debug("interaction_flow", "No line found for stop=" + stop.getId());
+    }
+
+    private boolean hasActivePendingMinecart(Player player, Stop stop) {
+        long currentTime = System.currentTimeMillis();
+        Long pendingTime = pendingMinecarts.get(stop.getId());
+        if (pendingTime == null) {
+            return false;
+        }
+        long timeout = plugin.getConfigFacade().getMinecartPendingTimeout();
+        if (currentTime - pendingTime < timeout) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("interact.train_pending"));
+            return true;
+        }
+        pendingMinecarts.remove(stop.getId());
+        return false;
     }
 
     /**

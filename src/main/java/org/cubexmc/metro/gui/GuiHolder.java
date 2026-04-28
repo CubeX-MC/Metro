@@ -21,6 +21,7 @@ public class GuiHolder implements InventoryHolder {
         STOP_DETAIL,    // 站点详情
         ADD_STOP_LIST,  // 添加站点列表
         ADD_STOP_VARIANTS, // 添加站点变体列表
+        LINE_BOARDING_CHOICE, // 乘车线路选择
         LINE_SETTINGS,  // 线路设置
         STOP_SETTINGS   // 站点设置
     }

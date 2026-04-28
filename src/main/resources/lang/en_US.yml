@@ -347,6 +347,17 @@ gui:
   add_stop_list:
     title: "&8Select stop to add"
     click_add: "&aLeft-click &7to add to this line"
+  line_boarding:
+    title: "&8Choose Line: &f{stop_name}"
+    next_stop: "&7Next stop: &e{stop_name}"
+    terminus: "&7Direction: &f{terminus_name}"
+    price: "&7Ticket: &f{price}"
+    free: "Free"
+    unknown_stop: "Unknown"
+    click_board: "&eLeft-click &7to board"
+    click_route: "&eRight-click &7to view stops"
+    cannot_board: "&cCannot board: {reason}"
+    no_permission: "No permission"
   control:
     prev_page: "&e◀ Previous"
     next_page: "&eNext ▶"
@@ -363,6 +374,7 @@ gui:
     variants: "&7Variants: {count}"
     variants_title: "Variants"
     back: "&cBack"
+    close: "&cClose"
     prev_page: "&e◀ Previous"
     next_page: "&eNext ▶"
     page_info: "&fPage {page} / {total}"
@@ -398,6 +410,10 @@ movement:
 # Interaction Related
 interact:
   actionbar_line_info: "&6{line_name} &f- Next stop: &e{next_stop_name}"
+  multi_line_title: "&e{stop_name}"
+  multi_line_subtitle: "&7Choose a line to board"
+  multi_line_actionbar: "&fBoardable: {routes}"
+  multi_line_route: "&6{line_name} &f-> &e{next_stop_name}"
   train_coming: "&eTrain is arriving, please wait..."
   train_spawned: "&aBoarded train, departing in {departure_seconds} seconds..."
   train_error: "&cError occurred while spawning train, please try again later."

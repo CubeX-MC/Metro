@@ -345,6 +345,17 @@ gui:
   add_stop_list:
     title: "&8Selecteer halte om toe te voegen"
     click_add: "&aLinkerklik &7om aan deze lijn toe te voegen"
+  line_boarding:
+    title: "&8Kies lijn: &f{stop_name}"
+    next_stop: "&7Volgende halte: &e{stop_name}"
+    terminus: "&7Richting: &f{terminus_name}"
+    price: "&7Ticket: &f{price}"
+    free: "Gratis"
+    unknown_stop: "Onbekend"
+    click_board: "&eLinkerklik &7om in te stappen"
+    click_route: "&eRechterklik &7om haltes te bekijken"
+    cannot_board: "&cKan niet instappen: {reason}"
+    no_permission: "Geen toestemming"
   control:
     prev_page: "&e◀ Vorige"
     next_page: "&eVolgende ▶"
@@ -358,6 +369,7 @@ gui:
     filter_lore_mine: "&7Klik voor alle"
   common:
     id: "&7ID: &f{id}"
+    close: "&cSluiten"
 
   line_settings:
     title: "&8Lijninstellingen: "
@@ -386,6 +398,10 @@ movement:
 # Interactie gerelateerd
 interact:
   actionbar_line_info: "&6{line_name} &f- Volgende halte: &e{next_stop_name}"
+  multi_line_title: "&e{stop_name}"
+  multi_line_subtitle: "&7Kies een lijn om in te stappen"
+  multi_line_actionbar: "&fBeschikbaar: {routes}"
+  multi_line_route: "&6{line_name} &f-> &e{next_stop_name}"
   train_coming: "&eTrein nadert station, even geduld..."
   train_spawned: "&aIngestapt, vertrek over {departure_seconds} seconden..."
   train_error: "&cFout bij het genereren van trein, probeer later opnieuw."

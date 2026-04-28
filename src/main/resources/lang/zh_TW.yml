@@ -310,6 +310,10 @@ movement:
 # 互動相關
 interact:
   actionbar_line_info: "&6{line_name} &f- 下一站: &e{next_stop_name}"
+  multi_line_title: "&e{stop_name}"
+  multi_line_subtitle: "&7請選擇要乘坐的路線"
+  multi_line_actionbar: "&f可乘: {routes}"
+  multi_line_route: "&6{line_name} &f-> &e{next_stop_name}"
   train_coming: "&e列車即將進站，請稍候..."
   train_spawned: "&a已上車，{departure_seconds} 秒後發車..."
   train_error: "&c生成列車時發生錯誤，請稍後再試。"
@@ -372,6 +376,17 @@ gui:
   add_stop_list:
     title: "&8選擇要新增的站點"
     click_add: "&a左鍵 &7新增至此路線"
+  line_boarding:
+    title: "&8選擇乘車路線: &f{stop_name}"
+    next_stop: "&7下一站: &e{stop_name}"
+    terminus: "&7方向: &f{terminus_name}"
+    price: "&7票價: &f{price}"
+    free: "免費"
+    unknown_stop: "未知"
+    click_board: "&e左鍵 &7乘坐此路線"
+    click_route: "&e右鍵 &7查看路線站點"
+    cannot_board: "&c無法乘坐: {reason}"
+    no_permission: "沒有權限"
   control:
     prev_page: "&e◀ 上一頁"
     next_page: "&e下一頁 ▶"
@@ -388,6 +403,7 @@ gui:
     variants: "&7變體數量: {count}"
     variants_title: "變體列表"
     back: "&c返回"
+    close: "&c關閉"
     prev_page: "&e◀ 上一頁"
     next_page: "&e下一頁 ▶"
     page_info: "&f第 {page} / {total} 頁"
