@@ -111,6 +111,12 @@
 1. [x] 清理旧 `MetroAdminCommand` 和 `MetroAdminTabCompleter`。
 2. 将命令参数校验、权限判断、业务操作从命令类中抽离。
 3. 将 GUI 渲染和 GUI 点击处理拆成更小的 view/controller。
+   - [x] 已将乘车线路选择界面的渲染拆到 `gui.view.LineBoardingChoiceView`，点击处理拆到 `gui.controller.LineBoardingChoiceController`。
+   - [x] 已将危险操作确认界面的渲染拆到 `gui.view.ConfirmActionView`，点击处理拆到 `gui.controller.ConfirmActionController`。
+   - [x] 已将线路列表/线路变体渲染拆到 `gui.view.LineListView`。
+   - [x] 已将站点列表/站点变体渲染拆到 `gui.view.StopListView`。
+   - [x] 已将线路详情页渲染拆到 `gui.view.LineDetailView`。
+   - [x] 已将添加站点列表/添加站点变体渲染拆到 `gui.view.AddStopView`。
 4. 将 `Metro` 启动类拆成生命周期注册步骤。
    - [x] 已将 Cloud 命令管理器创建、suggestion providers 和 annotation command 注册拆到 `CommandRegistration`。
    - [x] 已将 Bukkit listener 创建和事件注册拆到 `ListenerRegistration`。

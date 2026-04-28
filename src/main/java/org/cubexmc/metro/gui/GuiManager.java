@@ -1,10 +1,6 @@
 package org.cubexmc.metro.gui;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -15,10 +11,15 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.gui.GuiHolder.GuiType;
+import org.cubexmc.metro.gui.view.AddStopView;
+import org.cubexmc.metro.gui.view.ConfirmActionView;
+import org.cubexmc.metro.gui.view.LineDetailView;
+import org.cubexmc.metro.gui.view.LineListView;
+import org.cubexmc.metro.gui.view.LineBoardingChoiceView;
+import org.cubexmc.metro.gui.view.StopListView;
 import org.cubexmc.metro.manager.LanguageManager;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Stop;
-import org.cubexmc.metro.util.OwnershipUtil;
 
 /**
  * GUI 管理器，负责创建和打开各种 GUI
@@ -26,52 +27,21 @@ import org.cubexmc.metro.util.OwnershipUtil;
 public class GuiManager {
     
     private final Metro plugin;
-    
-    // 每页显示的物品数量（4行 x 9列 = 36，底部2行留给控制栏）
-    private static final int ITEMS_PER_PAGE = 36;
-    
-    // 槽位常量
-    private static final int SLOT_PREV_PAGE = 45;
-    private static final int SLOT_FILTER = 49;
-    private static final int SLOT_NEXT_PAGE = 53;
-    private static final int SLOT_BACK = 46;
-    private static final int SLOT_PAGE_INFO = 47;
-    
-    @FunctionalInterface
-    private interface ItemPopulator<T> {
-        void populate(Inventory inv, T item, int slot);
-    }
-
-    @FunctionalInterface
-    private interface ControlBarPopulator {
-        void populate(Inventory inv, int page, int totalPages);
-    }
-
-    private <T> void renderPaginatedList(Player player, GuiHolder holder, String title, List<T> items, int requestedPage, ItemPopulator<T> populator, ControlBarPopulator controlBar) {
-        int totalPages = Math.max(1, (int) Math.ceil((double) items.size() / ITEMS_PER_PAGE));
-        int page = Math.min(requestedPage, totalPages - 1);
-        page = Math.max(0, page);
-        holder.setData("page", page);
-        holder.setData("totalPages", totalPages);
-        
-        Inventory inv = Bukkit.createInventory(holder, 54, title);
-        holder.setInventory(inv);
-        
-        int start = page * ITEMS_PER_PAGE;
-        int end = Math.min(start + ITEMS_PER_PAGE, items.size());
-        
-        for (int i = start; i < end; i++) {
-            T item = items.get(i);
-            int slot = i - start;
-            populator.populate(inv, item, slot);
-        }
-        
-        controlBar.populate(inv, page, totalPages);
-        player.openInventory(inv);
-    }
+    private final AddStopView addStopView;
+    private final LineListView lineListView;
+    private final StopListView stopListView;
+    private final LineDetailView lineDetailView;
+    private final LineBoardingChoiceView lineBoardingChoiceView;
+    private final ConfirmActionView confirmActionView;
     
     public GuiManager(Metro plugin) {
         this.plugin = plugin;
+        this.addStopView = new AddStopView(plugin);
+        this.lineListView = new LineListView(plugin);
+        this.stopListView = new StopListView(plugin);
+        this.lineDetailView = new LineDetailView(plugin);
+        this.lineBoardingChoiceView = new LineBoardingChoiceView(plugin);
+        this.confirmActionView = new ConfirmActionView(plugin);
     }
 
     private GuiHolder createHolder(GuiType type, GuiHolder.GuiView previousView) {
@@ -176,74 +146,7 @@ public class GuiManager {
     }
 
     public void openLineBoardingChoice(Player player, Stop stop, int page, GuiHolder.GuiView previousView) {
-        if (stop == null) {
-            return;
-        }
-
-        List<Line> lines = plugin.getLineSelectionService().getBoardableLines(stop);
-        if (lines.isEmpty()) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("interact.stop_no_line"));
-            return;
-        }
-
-        GuiHolder holder = createHolder(GuiType.LINE_BOARDING_CHOICE, previousView);
-        holder.setData("stopId", stop.getId());
-        holder.setData("page", page);
-        holder.setData("lineIds", lines.stream().map(Line::getId).collect(Collectors.toList()));
-
-        String title = ChatColor.translateAlternateColorCodes('&',
-                msg("gui.line_boarding.title", "stop_name", stop.getName()));
-
-        renderPaginatedList(player, holder, title, lines, page, (inv, line, slot) -> {
-            Stop nextStop = getNextStop(line, stop);
-            String nextStopName = nextStop != null ? nextStop.getName() : msg("gui.line_boarding.unknown_stop");
-            String terminusName = line.getTerminusName() == null || line.getTerminusName().isBlank()
-                    ? msg("line.info_default")
-                    : line.getTerminusName();
-            String blockedReason = getBoardingBlockReason(player, line);
-
-            List<String> lore = new ArrayList<>();
-            lore.add(msg("gui.common.id", "id", line.getId()));
-            lore.add(msg("gui.line_boarding.next_stop", "stop_name", nextStopName));
-            lore.add(msg("gui.line_boarding.terminus", "terminus_name", terminusName));
-            lore.add(msg("gui.line_boarding.price", "price", formatTicketPrice(line)));
-            lore.add("");
-            if (blockedReason == null) {
-                lore.add(msg("gui.line_boarding.click_board"));
-            } else {
-                lore.add(msg("gui.line_boarding.cannot_board", "reason", blockedReason));
-            }
-            lore.add(msg("gui.line_boarding.click_route"));
-
-            Material material = blockedReason == null ? getWoolByColor(line.getColor()) : Material.BARRIER;
-            inv.setItem(slot, new ItemBuilder(material)
-                    .name((line.getColor() != null ? line.getColor() : "&f") + line.getName())
-                    .lore(lore)
-                    .build());
-        }, (inv, p, tp) -> {
-            ItemStack filler = new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE)
-                    .name(" ")
-                    .build();
-            for (int i = 36; i < 54; i++) {
-                inv.setItem(i, filler);
-            }
-            if (p > 0) {
-                inv.setItem(SLOT_PREV_PAGE, new ItemBuilder(Material.ARROW)
-                        .name(msg("gui.control.prev_page"))
-                        .build());
-            }
-            inv.setItem(SLOT_PAGE_INFO, new ItemBuilder(Material.PAPER)
-                    .name(msg("gui.control.page_info", "current", String.valueOf(p + 1), "total", String.valueOf(tp)))
-                    .build());
-            if (p < tp - 1) {
-                inv.setItem(SLOT_NEXT_PAGE, new ItemBuilder(Material.ARROW)
-                        .name(msg("gui.control.next_page"))
-                        .build());
-            }
-            inv.setItem(SLOT_BACK, new ItemBuilder(Material.BARRIER)
-                    .name(msg("gui.common.close"))
-                    .build());
-        });
+        lineBoardingChoiceView.open(player, stop, page, previousView);
     }
     
     /**
@@ -257,74 +160,7 @@ public class GuiManager {
     }
 
     public void openLineList(Player player, int page, boolean showOnlyMine, GuiHolder.GuiView previousView) {
-        GuiHolder holder = createHolder(GuiType.LINE_LIST, previousView);
-        holder.setData("page", page);
-        holder.setData("showOnlyMine", showOnlyMine);
-        
-        // 获取线路列表
-        List<Line> allLines = new ArrayList<>(plugin.getLineManager().getAllLines());
-        
-        // 筛选
-        List<Line> filteredLines;
-        if (showOnlyMine && !OwnershipUtil.hasAdminBypass(player)) {
-            filteredLines = allLines.stream()
-                    .filter(line -> OwnershipUtil.canManageLine(player, line))
-                    .collect(Collectors.toList());
-        } else {
-            filteredLines = allLines;
-        }
-        
-        // 按名称分组
-        Map<String, List<Line>> groupedLines = filteredLines.stream()
-                .collect(Collectors.groupingBy(Line::getName));
-        
-        // 排序名称
-        List<String> sortedNames = new ArrayList<>(groupedLines.keySet());
-        sortedNames.sort(String::compareTo);
-        
-        holder.setData("lineNames", sortedNames);
-        holder.setData("groupedLines", groupedLines);
-        
-        String titleKey = showOnlyMine ? "gui.line_list.title_mine" : "gui.line_list.title_all";
-        String title = ChatColor.translateAlternateColorCodes('&', msg(titleKey));
-        
-        renderPaginatedList(player, holder, title, sortedNames, page, (inv, name, slot) -> {
-            List<Line> variants = groupedLines.get(name);
-            Line representative = variants.get(0);
-            
-            List<String> lore = new ArrayList<>();
-            
-            if (variants.size() > 1) {
-                lore.add(msg("gui.common.variants", "count", String.valueOf(variants.size())));
-                lore.add("");
-                lore.add(msg("gui.line_list.click_view_variants"));
-            } else {
-                lore.add(msg("gui.common.id", "id", representative.getId()));
-                lore.add(msg("gui.line_list.stop_count", "count", String.valueOf(representative.getOrderedStopIds().size())));
-                addLineSummaryLore(lore, representative);
-                if (representative.getColor() != null) {
-                    lore.add(msg("gui.line_list.color") + representative.getColor() + "■■■■■");
-                }
-                lore.add("");
-                if (OwnershipUtil.canManageLine(player, representative)) {
-                    lore.add(msg("gui.line_list.can_manage"));
-                } else {
-                    lore.add(msg("gui.line_list.view_only"));
-                }
-                lore.add("");
-                lore.add(msg("gui.line_list.click_view"));
-                if (OwnershipUtil.canManageLine(player, representative)) {
-                    lore.add(msg("gui.line_list.click_settings"));
-                }
-            }
-            
-            Material material = getWoolByColor(representative.getColor());
-            
-            inv.setItem(slot, new ItemBuilder(material)
-                    .name((representative.getColor() != null ? representative.getColor() : "&f") + name)
-                    .lore(lore)
-                    .build());
-        }, (inv, p, tp) -> addControlBar(inv, p, tp, showOnlyMine));
+        lineListView.openLineList(player, page, showOnlyMine, previousView);
     }
     
     /**
@@ -335,44 +171,7 @@ public class GuiManager {
     }
 
     public void openLineVariants(Player player, String lineName, int page, GuiHolder.GuiView previousView) {
-        GuiHolder holder = createHolder(GuiType.LINE_VARIANTS, previousView);
-        holder.setData("page", page);
-        holder.setData("lineName", lineName);
-        
-        // 获取该名称的所有线路
-        List<Line> variants = plugin.getLineManager().getAllLines().stream()
-                .filter(line -> line.getName().equals(lineName))
-                .sorted(Comparator.comparing(Line::getId))
-                .collect(Collectors.toList());
-                
-        holder.setData("lines", variants);
-        
-        String title = ChatColor.translateAlternateColorCodes('&', lineName + " - " + msg("gui.common.variants_title"));
-        
-        renderPaginatedList(player, holder, title, variants, page, (inv, line, slot) -> {
-            List<String> lore = new ArrayList<>();
-            lore.add(msg("gui.common.id", "id", line.getId()));
-            lore.add(msg("gui.line_list.stop_count", "count", String.valueOf(line.getOrderedStopIds().size())));
-            addLineSummaryLore(lore, line);
-            if (line.getColor() != null) {
-                lore.add(msg("gui.line_list.color") + line.getColor() + "■■■■■");
-            }
-            lore.add("");
-            if (OwnershipUtil.canManageLine(player, line)) {
-                lore.add(msg("gui.line_list.can_manage"));
-            } else {
-                lore.add(msg("gui.line_list.view_only"));
-            }
-            lore.add("");
-            lore.add(msg("gui.line_list.click_view"));
-            
-            Material material = getWoolByColor(line.getColor());
-            
-            inv.setItem(slot, new ItemBuilder(material)
-                    .name((line.getColor() != null ? line.getColor() : "&f") + line.getId()) // Use ID as name here to distinguish
-                    .lore(lore)
-                    .build());
-        }, (inv, p, tp) -> addVariantNavigationControls(inv, p, tp));
+        lineListView.openLineVariants(player, lineName, page, previousView);
     }
 
     /**
@@ -386,91 +185,7 @@ public class GuiManager {
     }
 
     public void openStopList(Player player, int page, boolean showOnlyMine, GuiHolder.GuiView previousView) {
-        GuiHolder holder = createHolder(GuiType.STOP_LIST, previousView);
-        holder.setData("page", page);
-        holder.setData("showOnlyMine", showOnlyMine);
-        
-        // 获取站点列表
-        List<Stop> allStops = plugin.getStopManager().getAllStopIds().stream()
-                .map(id -> plugin.getStopManager().getStop(id))
-                .filter(stop -> stop != null)
-                .collect(Collectors.toList());
-        
-        // 筛选
-        List<Stop> filteredStops;
-        if (showOnlyMine && !OwnershipUtil.hasAdminBypass(player)) {
-            filteredStops = allStops.stream()
-                    .filter(stop -> OwnershipUtil.canManageStop(player, stop))
-                    .collect(Collectors.toList());
-        } else {
-            filteredStops = allStops;
-        }
-        
-        // 按名称分组
-        Map<String, List<Stop>> groupedStops = filteredStops.stream()
-                .collect(Collectors.groupingBy(Stop::getName));
-        
-        // 排序名称
-        List<String> sortedNames = new ArrayList<>(groupedStops.keySet());
-        sortedNames.sort(String::compareTo);
-        
-        holder.setData("stopNames", sortedNames);
-        holder.setData("groupedStops", groupedStops);
-        
-        String titleKey = showOnlyMine ? "gui.stop_list.title_mine" : "gui.stop_list.title_all";
-        String title = ChatColor.translateAlternateColorCodes('&', msg(titleKey));
-        
-        renderPaginatedList(player, holder, title, sortedNames, page, (inv, name, slot) -> {
-            List<Stop> variants = groupedStops.get(name);
-            Stop representative = variants.get(0);
-            
-            List<String> lore = new ArrayList<>();
-            
-            if (variants.size() > 1) {
-                lore.add(msg("gui.common.variants", "count", String.valueOf(variants.size())));
-                lore.add("");
-                lore.add(msg("gui.stop_list.click_view_variants"));
-            } else {
-                lore.add(msg("gui.common.id", "id", representative.getId()));
-                
-                // 显示所属线路
-                List<String> lineNames = new ArrayList<>();
-                for (Line line : plugin.getLineManager().getAllLines()) {
-                    if (line.containsStop(representative.getId())) {
-                        String coloredName = (line.getColor() != null ? line.getColor() : "&f") + line.getName();
-                        lineNames.add(coloredName);
-                    }
-                }
-                if (!lineNames.isEmpty()) {
-                    lore.add(msg("gui.stop_list.lines") + String.join("&7, ", lineNames));
-                } else {
-                    lore.add(msg("gui.stop_list.no_lines"));
-                }
-                
-                lore.add("");
-                if (OwnershipUtil.canManageStop(player, representative)) {
-                    lore.add(msg("gui.line_list.can_manage"));
-                } else {
-                    lore.add(msg("gui.line_list.view_only"));
-                }
-                lore.add("");
-                if (player.hasPermission("metro.tp")) {
-                    if (representative.getStopPointLocation() != null) {
-                        lore.add(msg("gui.stop_list.click_tp"));
-                    } else {
-                        lore.add(msg("gui.stop_list.no_stoppoint"));
-                    }
-                }
-                if (OwnershipUtil.canManageStop(player, representative)) {
-                    lore.add(msg("gui.line_list.click_settings"));
-                }
-            }
-            
-            inv.setItem(slot, new ItemBuilder(Material.OAK_SIGN)
-                    .name("&a" + name)
-                    .lore(lore)
-                    .build());
-        }, (inv, p, tp) -> addControlBar(inv, p, tp, showOnlyMine));
+        stopListView.openStopList(player, page, showOnlyMine, previousView);
     }
 
     /**
@@ -481,62 +196,7 @@ public class GuiManager {
     }
 
     public void openStopVariants(Player player, String stopName, int page, GuiHolder.GuiView previousView) {
-        GuiHolder holder = createHolder(GuiType.STOP_VARIANTS, previousView);
-        holder.setData("page", page);
-        holder.setData("stopName", stopName);
-        
-        // 获取该名称的所有站点
-        List<Stop> variants = plugin.getStopManager().getAllStopIds().stream()
-                .map(id -> plugin.getStopManager().getStop(id))
-                .filter(stop -> stop != null && stop.getName().equals(stopName))
-                .sorted(Comparator.comparing(Stop::getId))
-                .collect(Collectors.toList());
-                
-        holder.setData("stops", variants);
-        
-        String title = ChatColor.translateAlternateColorCodes('&', stopName + " - " + msg("gui.common.variants_title"));
-        
-        renderPaginatedList(player, holder, title, variants, page, (inv, stop, slot) -> {
-            List<String> lore = new ArrayList<>();
-            lore.add(msg("gui.common.id", "id", stop.getId()));
-            
-            // 显示所属线路
-            List<String> lineNames = new ArrayList<>();
-            for (Line line : plugin.getLineManager().getAllLines()) {
-                if (line.containsStop(stop.getId())) {
-                    String coloredName = (line.getColor() != null ? line.getColor() : "&f") + line.getName();
-                    lineNames.add(coloredName);
-                }
-            }
-            if (!lineNames.isEmpty()) {
-                lore.add(msg("gui.stop_list.lines") + String.join("&7, ", lineNames));
-            } else {
-                lore.add(msg("gui.stop_list.no_lines"));
-            }
-            
-            lore.add("");
-            if (OwnershipUtil.canManageStop(player, stop)) {
-                lore.add(msg("gui.line_list.can_manage"));
-            } else {
-                lore.add(msg("gui.line_list.view_only"));
-            }
-            lore.add("");
-            if (player.hasPermission("metro.tp")) {
-                if (stop.getStopPointLocation() != null) {
-                    lore.add(msg("gui.stop_list.click_tp"));
-                } else {
-                    lore.add(msg("gui.stop_list.no_stoppoint"));
-                }
-            }
-            if (OwnershipUtil.canManageStop(player, stop)) {
-                lore.add(msg("gui.line_list.click_settings"));
-            }
-            
-            inv.setItem(slot, new ItemBuilder(Material.OAK_SIGN)
-                    .name("&a" + stop.getId()) // Use ID as name
-                    .lore(lore)
-                    .build());
-        }, (inv, p, tp) -> addVariantNavigationControls(inv, p, tp));
+        stopListView.openStopVariants(player, stopName, page, previousView);
     }
     
     /**
@@ -548,75 +208,7 @@ public class GuiManager {
 
     public void openAddStopList(Player player, String lineId, int page, boolean showOnlyMine,
                                 GuiHolder.GuiView previousView) {
-        GuiHolder holder = createHolder(GuiType.ADD_STOP_LIST, previousView);
-        holder.setData("lineId", lineId);
-        holder.setData("page", page);
-        holder.setData("showOnlyMine", showOnlyMine);
-        
-        // 获取站点列表
-        List<Stop> allStops = plugin.getStopManager().getAllStopIds().stream()
-                .map(id -> plugin.getStopManager().getStop(id))
-                .filter(stop -> stop != null)
-                .collect(Collectors.toList());
-        
-        // 筛选
-        List<Stop> filteredStops;
-        if (showOnlyMine && !OwnershipUtil.hasAdminBypass(player)) {
-            filteredStops = allStops.stream()
-                    .filter(stop -> OwnershipUtil.canManageStop(player, stop))
-                    .collect(Collectors.toList());
-        } else {
-            filteredStops = allStops;
-        }
-        
-        // 过滤掉已经在该线路中的站点
-        Line line = plugin.getLineManager().getLine(lineId);
-        if (line != null) {
-            filteredStops = filteredStops.stream()
-                    .filter(stop -> !line.containsStop(stop.getId()))
-                    .collect(Collectors.toList());
-        }
-        
-        // 按名称分组
-        Map<String, List<Stop>> groupedStops = filteredStops.stream()
-                .collect(Collectors.groupingBy(Stop::getName));
-        
-        // 排序名称
-        List<String> sortedNames = new ArrayList<>(groupedStops.keySet());
-        sortedNames.sort(String::compareTo);
-        
-        holder.setData("stopNames", sortedNames);
-        holder.setData("groupedStops", groupedStops);
-        
-        String title = ChatColor.translateAlternateColorCodes('&', msg("gui.add_stop_list.title"));
-        
-        renderPaginatedList(player, holder, title, sortedNames, page, (inv, name, slot) -> {
-            List<Stop> variants = groupedStops.get(name);
-            Stop representative = variants.get(0);
-            
-            List<String> lore = new ArrayList<>();
-            
-            if (variants.size() > 1) {
-                lore.add(msg("gui.common.variants", "count", String.valueOf(variants.size())));
-                lore.add("");
-                lore.add(msg("gui.stop_list.click_view_variants"));
-            } else {
-                lore.add(msg("gui.common.id", "id", representative.getId()));
-                lore.add("");
-                lore.add(msg("gui.add_stop_list.click_add"));
-            }
-            
-            inv.setItem(slot, new ItemBuilder(Material.OAK_SIGN)
-                    .name("&a" + name)
-                    .lore(lore)
-                    .build());
-        }, (inv, p, tp) -> {
-            addControlBar(inv, p, tp, showOnlyMine);
-            // 覆盖返回按钮，返回到线路详情
-            inv.setItem(SLOT_BACK, new ItemBuilder(Material.DARK_OAK_DOOR)
-                    .name(msg("gui.control.back_line_list"))
-                    .build());
-        });
+        addStopView.openAddStopList(player, lineId, page, showOnlyMine, previousView);
     }
     
     /**
@@ -628,37 +220,7 @@ public class GuiManager {
 
     public void openAddStopVariants(Player player, String lineId, String stopName, int page,
                                     GuiHolder.GuiView previousView) {
-        GuiHolder holder = createHolder(GuiType.ADD_STOP_VARIANTS, previousView);
-        holder.setData("lineId", lineId);
-        holder.setData("page", page);
-        holder.setData("stopName", stopName);
-        
-        Line line = plugin.getLineManager().getLine(lineId);
-        if (line == null) return;
-        
-        // 获取该名称的所有站点，过滤掉已经在该线路中的
-        List<Stop> variants = plugin.getStopManager().getAllStopIds().stream()
-                .map(id -> plugin.getStopManager().getStop(id))
-                .filter(stop -> stop != null && stop.getName().equals(stopName))
-                .filter(stop -> !line.containsStop(stop.getId()))
-                .sorted(Comparator.comparing(Stop::getId))
-                .collect(Collectors.toList());
-                
-        holder.setData("stops", variants);
-        
-        String title = ChatColor.translateAlternateColorCodes('&', stopName + " - " + msg("gui.add_stop_list.title"));
-        
-        renderPaginatedList(player, holder, title, variants, page, (inv, stop, slot) -> {
-            List<String> lore = new ArrayList<>();
-            lore.add(msg("gui.common.id", "id", stop.getId()));
-            lore.add("");
-            lore.add(msg("gui.add_stop_list.click_add"));
-            
-            inv.setItem(slot, new ItemBuilder(Material.OAK_SIGN)
-                    .name("&a" + stop.getId())
-                    .lore(lore)
-                    .build());
-        }, (inv, p, tp) -> addVariantNavigationControls(inv, p, tp));
+        addStopView.openAddStopVariants(player, lineId, stopName, page, previousView);
     }
     
     /**
@@ -669,152 +231,7 @@ public class GuiManager {
     }
 
     public void openLineDetail(Player player, String lineId, int page, GuiHolder.GuiView previousView) {
-        Line line = plugin.getLineManager().getLine(lineId);
-        if (line == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
-            return;
-        }
-        
-        GuiHolder holder = createHolder(GuiType.LINE_DETAIL, previousView);
-        holder.setData("lineId", lineId);
-        holder.setData("page", page);
-        
-        List<String> stopIds = line.getOrderedStopIds();
-        
-        String coloredName = (line.getColor() != null ? line.getColor() : "") + line.getName();
-        String title = ChatColor.translateAlternateColorCodes('&', 
-                msg("gui.line_detail.title") + coloredName);
-        
-        boolean canManage = OwnershipUtil.canManageLine(player, line);
-        
-        renderPaginatedList(player, holder, title, stopIds, page, (inv, stopId, slot) -> {
-            Stop stop = plugin.getStopManager().getStop(stopId);
-            
-            List<String> lore = new ArrayList<>();
-            lore.add(msg("gui.line_detail.index", "index", String.valueOf(slot + page * ITEMS_PER_PAGE + 1)));
-            
-            if (stop != null) {
-                lore.add(msg("gui.common.id", "id", stop.getId()));
-                if (slot + page * ITEMS_PER_PAGE == 0) {
-                    lore.add(msg("gui.line_detail.start_stop"));
-                } else if (slot + page * ITEMS_PER_PAGE == stopIds.size() - 1) {
-                    lore.add(msg("gui.line_detail.end_stop"));
-                }
-                lore.add("");
-                if (player.hasPermission("metro.tp") && stop.getStopPointLocation() != null) {
-                    lore.add(msg("gui.line_detail.click_tp"));
-                }
-                if (canManage) {
-                    lore.add(msg("gui.line_detail.click_settings"));
-                    lore.add(msg("gui.line_detail.click_remove"));
-                }
-                
-                inv.setItem(slot, new ItemBuilder(Material.OAK_SIGN)
-                        .name("&a" + stop.getName())
-                        .lore(lore)
-                        .build());
-            } else {
-                lore.add(msg("gui.line_detail.stop_not_exist"));
-                inv.setItem(slot, new ItemBuilder(Material.BARRIER)
-                        .name("&c" + stopId)
-                        .lore(lore)
-                        .build());
-            }
-        }, (inv, p, tp) -> {
-            // 底部控制栏（简化版）
-            ItemStack filler = new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE)
-                    .name(" ")
-                    .build();
-            for (int i = 36; i < 54; i++) {
-                inv.setItem(i, filler);
-            }
-            
-            // 上一页
-            if (p > 0) {
-                inv.setItem(SLOT_PREV_PAGE, new ItemBuilder(Material.ARROW)
-                        .name(msg("gui.control.prev_page"))
-                        .build());
-            }
-            
-            // 页码信息
-            inv.setItem(SLOT_PAGE_INFO, new ItemBuilder(Material.PAPER)
-                    .name(msg("gui.control.page_info", "current", String.valueOf(p + 1), "total", String.valueOf(tp)))
-                    .lore(msg("gui.control.stop_count", "count", String.valueOf(stopIds.size())))
-                    .build());
-            
-            // 下一页
-            if (p < tp - 1) {
-                inv.setItem(SLOT_NEXT_PAGE, new ItemBuilder(Material.ARROW)
-                        .name(msg("gui.control.next_page"))
-                        .build());
-            }
-            
-            // 返回按钮
-            inv.setItem(SLOT_BACK, new ItemBuilder(Material.DARK_OAK_DOOR)
-                    .name(msg("gui.control.back_line_list"))
-                    .build());
-                    
-            // 添加站点按钮
-            if (canManage) {
-                inv.setItem(SLOT_FILTER, new ItemBuilder(Material.EMERALD_BLOCK)
-                        .name(msg("gui.line_detail.add_stop"))
-                        .lore(msg("gui.line_detail.add_stop_lore"))
-                        .build());
-                        
-                // 线路设置按钮
-                inv.setItem(50, new ItemBuilder(Material.ANVIL)
-                        .name(msg("gui.line_detail.settings"))
-                        .lore(msg("gui.line_detail.settings_lore"))
-                        .build());
-            }
-        });
-    }
-    
-    /**
-     * 添加控制栏
-     */
-    private void addControlBar(Inventory inv, int page, int totalPages, 
-                               boolean showOnlyMine) {
-        // 填充底部
-        ItemStack filler = new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE)
-                .name(" ")
-                .build();
-        for (int i = 36; i < 54; i++) {
-            inv.setItem(i, filler);
-        }
-        
-        // 上一页
-        if (page > 0) {
-            inv.setItem(SLOT_PREV_PAGE, new ItemBuilder(Material.ARROW)
-                    .name(msg("gui.control.prev_page"))
-                    .build());
-        }
-        
-        // 返回主菜单
-        inv.setItem(SLOT_BACK, new ItemBuilder(Material.DARK_OAK_DOOR)
-                .name(msg("gui.control.back_main"))
-                .build());
-        
-        // 页码信息
-        inv.setItem(SLOT_PAGE_INFO, new ItemBuilder(Material.PAPER)
-                .name(msg("gui.control.page_info", "current", String.valueOf(page + 1), "total", String.valueOf(totalPages)))
-                .build());
-        
-        // 筛选按钮
-        String filterName = showOnlyMine ? msg("gui.control.filter_mine") : msg("gui.control.filter_all");
-        String filterLore = showOnlyMine ? msg("gui.control.filter_lore_mine") : msg("gui.control.filter_lore_all");
-        inv.setItem(SLOT_FILTER, new ItemBuilder(Material.HOPPER)
-                .name(filterName)
-                .lore(filterLore)
-                .build());
-        
-        // 下一页
-        if (page < totalPages - 1) {
-            inv.setItem(SLOT_NEXT_PAGE, new ItemBuilder(Material.ARROW)
-                    .name(msg("gui.control.next_page"))
-                    .build());
-        }
+        lineDetailView.open(player, lineId, page, previousView);
     }
     
     /**
@@ -987,83 +404,7 @@ public class GuiManager {
 
     public void openConfirmAction(Player player, String action, String targetId, String targetName,
                                   String lineId, int returnPage, GuiHolder.GuiView previousView) {
-        GuiHolder holder = createHolder(GuiType.CONFIRM_ACTION, previousView);
-        holder.setData("action", action);
-        holder.setData("targetId", targetId);
-        holder.setData("targetName", targetName);
-        holder.setData("lineId", lineId);
-        holder.setData("returnPage", returnPage);
-
-        Inventory inv = Bukkit.createInventory(holder, 27,
-                ChatColor.translateAlternateColorCodes('&', msg("gui.confirm.title")));
-        holder.setInventory(inv);
-
-        ItemStack filler = new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE).name(" ").build();
-        for (int i = 0; i < 27; i++) {
-            inv.setItem(i, filler);
-        }
-
-        String target = targetName == null || targetName.isBlank() ? targetId : targetName + " (" + targetId + ")";
-        String messageKey = switch (action) {
-            case "DELETE_LINE" -> "gui.confirm.delete_line";
-            case "DELETE_STOP" -> "gui.confirm.delete_stop";
-            case "REMOVE_STOP_FROM_LINE" -> "gui.confirm.remove_stop_from_line";
-            case "CLEAR_ROUTE" -> "gui.confirm.clear_route";
-            default -> "gui.confirm.generic";
-        };
-
-        inv.setItem(11, new ItemBuilder(Material.LIME_CONCRETE)
-                .name(msg("gui.confirm.confirm"))
-                .lore(msg(messageKey, "target", target),
-                        msg("gui.confirm.warning"),
-                        "",
-                        msg("gui.confirm.confirm_lore"))
-                .build());
-        inv.setItem(15, new ItemBuilder(Material.RED_CONCRETE)
-                .name(msg("gui.confirm.cancel"))
-                .lore(msg("gui.confirm.cancel_lore"))
-                .build());
-        inv.setItem(22, new ItemBuilder(Material.DARK_OAK_DOOR)
-                .name(msg("gui.common.back"))
-                .build());
-
-        player.openInventory(inv);
-    }
-
-    private Stop getNextStop(Line line, Stop stop) {
-        String nextStopId = line.getNextStopId(stop.getId());
-        return nextStopId != null ? plugin.getStopManager().getStop(nextStopId) : null;
-    }
-
-    private String formatTicketPrice(Line line) {
-        double price = line.getTicketPrice();
-        if (price <= 0) {
-            return msg("gui.line_boarding.free");
-        }
-        return plugin.getTicketService().format(price);
-    }
-
-    private void addLineSummaryLore(List<String> lore, Line line) {
-        lore.add(msg("gui.line_boarding.next_stop", "stop_name", getInitialNextStopName(line)));
-        lore.add(msg("gui.line_boarding.terminus", "terminus_name", getTerminusDisplayName(line)));
-        lore.add(msg("gui.line_boarding.price", "price", formatTicketPrice(line)));
-    }
-
-    private String getInitialNextStopName(Line line) {
-        List<String> stopIds = line.getOrderedStopIds();
-        if (stopIds.size() < 2) {
-            return msg("gui.line_boarding.unknown_stop");
-        }
-        String nextStopId = line.getNextStopId(stopIds.get(0));
-        Stop nextStop = nextStopId == null ? null : plugin.getStopManager().getStop(nextStopId);
-        return nextStop == null ? msg("gui.line_boarding.unknown_stop") : nextStop.getName();
-    }
-
-    private String getTerminusDisplayName(Line line) {
-        if (line.getTerminusName() == null || line.getTerminusName().isBlank()) {
-            return msg("line.info_default");
-        }
-        return line.getTerminusName();
+        confirmActionView.open(player, action, targetId, targetName, lineId, returnPage, previousView);
     }
 
     private String formatLocation(Location location) {
@@ -1076,71 +417,11 @@ public class GuiManager {
                 + location.getBlockZ();
     }
 
-    private String getBoardingBlockReason(Player player, Line line) {
-        org.cubexmc.metro.service.TicketService.TicketCheck check = plugin.getTicketService().checkCanBoard(player,
-                line);
-        if (check.canBoard()) {
-            return null;
-        }
-        if (check.getStatus() == org.cubexmc.metro.service.TicketService.TicketCheckStatus.INSUFFICIENT_FUNDS) {
-            return msg("economy.insufficient_funds",
-                    "price", check.getFormattedPrice());
-        }
-        if (check.getStatus() == org.cubexmc.metro.service.TicketService.TicketCheckStatus.VAULT_UNAVAILABLE) {
-            return msg("economy.vault_unavailable");
-        }
-        return msg("gui.line_boarding.no_permission");
-    }
-    
     /**
      * 根据颜色代码获取羊毛材质
      */
     private Material getWoolByColor(String colorCode) {
-        if (colorCode == null) return Material.WHITE_WOOL;
-        
-        // 移除 & 前缀
-        String code = colorCode.replace("&", "").toLowerCase();
-        
-        return switch (code) {
-            case "0" -> Material.BLACK_WOOL;        // 黑色
-            case "1" -> Material.BLUE_WOOL;         // 深蓝
-            case "2" -> Material.GREEN_WOOL;        // 深绿
-            case "3" -> Material.CYAN_WOOL;         // 深青
-            case "4" -> Material.RED_WOOL;          // 深红
-            case "5" -> Material.PURPLE_WOOL;       // 紫色
-            case "6" -> Material.ORANGE_WOOL;       // 金色/橙色
-            case "7" -> Material.LIGHT_GRAY_WOOL;   // 灰色
-            case "8" -> Material.GRAY_WOOL;         // 深灰
-            case "9" -> Material.LIGHT_BLUE_WOOL;   // 蓝色
-            case "a" -> Material.LIME_WOOL;         // 绿色
-            case "b" -> Material.LIGHT_BLUE_WOOL;   // 青色
-            case "c" -> Material.RED_WOOL;          // 红色
-            case "d" -> Material.PINK_WOOL;         // 粉色
-            case "e" -> Material.YELLOW_WOOL;       // 黄色
-            case "f" -> Material.WHITE_WOOL;        // 白色
-            default -> Material.WHITE_WOOL;
-        };
+        return GuiColors.getWoolByColor(colorCode);
     }
 
-    private void addVariantNavigationControls(Inventory inv, int page, int totalPages) {
-        inv.setItem(SLOT_BACK, new ItemBuilder(Material.ARROW)
-                .name(msg("gui.common.back"))
-                .build());
-        if (totalPages <= 1) {
-            return;
-        }
-        if (page > 0) {
-            inv.setItem(SLOT_PREV_PAGE, new ItemBuilder(Material.ARROW)
-                    .name(msg("gui.common.prev_page"))
-                    .build());
-        }
-        inv.setItem(SLOT_PAGE_INFO, new ItemBuilder(Material.PAPER)
-                .name(msg("gui.common.page_info", "page", String.valueOf(page + 1), "total", String.valueOf(totalPages)))
-                .build());
-        if (page < totalPages - 1) {
-            inv.setItem(SLOT_NEXT_PAGE, new ItemBuilder(Material.ARROW)
-                    .name(msg("gui.common.next_page"))
-                    .build());
-        }
-    }
 }

@@ -7,6 +7,8 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
 import org.cubexmc.metro.Metro;
+import org.cubexmc.metro.gui.controller.ConfirmActionController;
+import org.cubexmc.metro.gui.controller.LineBoardingChoiceController;
 import org.cubexmc.metro.manager.LanguageManager;
 import org.cubexmc.metro.manager.RouteRecorder;
 import org.cubexmc.metro.model.Line;
@@ -32,8 +34,6 @@ public class GuiListener implements Listener {
     private static final int SLOT_FILTER = 49;
     private static final int SLOT_NEXT_PAGE = 53;
     private static final int SLOT_BACK = 46;
-    private static final int SLOT_CONFIRM = 11;
-    private static final int SLOT_CANCEL = 15;
     
     // 主菜单槽位
     private static final int SLOT_LINE_MANAGE = 11;
@@ -46,11 +46,15 @@ public class GuiListener implements Listener {
 
     private final LineCommandService lineService;
     private final StopCommandService stopService;
+    private final LineBoardingChoiceController lineBoardingChoiceController;
+    private final ConfirmActionController confirmActionController;
     
     public GuiListener(Metro plugin) {
         this.plugin = plugin;
         this.lineService = new LineCommandService(plugin.getLineManager());
         this.stopService = new StopCommandService(plugin.getStopManager());
+        this.lineBoardingChoiceController = new LineBoardingChoiceController(plugin);
+        this.confirmActionController = new ConfirmActionController(plugin);
     }
     
     @EventHandler
@@ -87,10 +91,11 @@ public class GuiListener implements Listener {
             case LINE_DETAIL -> handleLineDetailClick(player, holder, slot, event.isRightClick(), event.isShiftClick());
             case ADD_STOP_LIST -> handleAddStopListClick(player, holder, slot);
             case ADD_STOP_VARIANTS -> handleAddStopVariantsClick(player, holder, slot);
-            case LINE_BOARDING_CHOICE -> handleLineBoardingChoiceClick(player, holder, slot, event.isRightClick());
+            case LINE_BOARDING_CHOICE -> lineBoardingChoiceController.handleClick(player, holder, slot,
+                    event.isRightClick());
             case LINE_SETTINGS -> handleLineSettingsClick(player, holder, slot);
             case STOP_SETTINGS -> handleStopSettingsClick(player, holder, slot);
-            case CONFIRM_ACTION -> handleConfirmActionClick(player, holder, slot);
+            case CONFIRM_ACTION -> confirmActionController.handleClick(player, holder, slot);
             case STOP_DETAIL -> {
                 // STOP_DETAIL is reserved for future expansion.
             }
@@ -323,58 +328,6 @@ public class GuiListener implements Listener {
                 }
             }
         }
-    }
-
-    private void handleLineBoardingChoiceClick(Player player, GuiHolder holder, int slot, boolean isRightClick) {
-        String stopId = holder.getData("stopId");
-        int page = holder.getData("page", 0);
-        int totalPages = holder.getData("totalPages", 1);
-
-        switch (slot) {
-            case SLOT_PREV_PAGE -> {
-                Stop stop = plugin.getStopManager().getStop(stopId);
-                if (stop != null && page > 0) {
-                    plugin.getGuiManager().openLineBoardingChoice(player, stop, page - 1, holder.getPreviousView());
-                }
-                return;
-            }
-            case SLOT_NEXT_PAGE -> {
-                Stop stop = plugin.getStopManager().getStop(stopId);
-                if (stop != null && page < totalPages - 1) {
-                    plugin.getGuiManager().openLineBoardingChoice(player, stop, page + 1, holder.getPreviousView());
-                }
-                return;
-            }
-            case SLOT_BACK -> {
-                player.closeInventory();
-                return;
-            }
-            default -> {
-            }
-        }
-
-        if (slot >= 36) {
-            return;
-        }
-
-        List<String> lineIds = holder.getData("lineIds");
-        if (lineIds == null) {
-            return;
-        }
-
-        int index = page * 36 + slot;
-        if (index < 0 || index >= lineIds.size()) {
-            return;
-        }
-
-        String lineId = lineIds.get(index);
-        if (isRightClick) {
-            plugin.getGuiManager().openLineDetail(player, lineId, 0, holder.snapshot());
-            return;
-        }
-
-        player.closeInventory();
-        plugin.getPlayerInteractListener().boardSelectedLine(player, stopId, lineId);
     }
 
     private void handleStopClick(Player player, Stop stop) {
@@ -939,99 +892,6 @@ public class GuiListener implements Listener {
             default -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_fail"));
         }
         plugin.getGuiManager().openStopSettings(player, stop.getId(), fromLineId, previousView);
-    }
-
-    private void handleConfirmActionClick(Player player, GuiHolder holder, int slot) {
-        if (slot == SLOT_CANCEL || slot == 22) {
-            plugin.getGuiManager().openPreviousView(player, holder, () -> reopenConfirmSource(player, holder));
-            return;
-        }
-        if (slot != SLOT_CONFIRM) {
-            return;
-        }
-
-        String action = holder.getData("action");
-        switch (action) {
-            case "DELETE_LINE" -> confirmDeleteLine(player, holder);
-            case "DELETE_STOP" -> confirmDeleteStop(player, holder);
-            case "REMOVE_STOP_FROM_LINE" -> confirmRemoveStopFromLine(player, holder);
-            case "CLEAR_ROUTE" -> confirmClearRoute(player, holder);
-            default -> plugin.getGuiManager().openPreviousView(player, holder, () -> reopenConfirmSource(player, holder));
-        }
-    }
-
-    private void confirmDeleteLine(Player player, GuiHolder holder) {
-        String lineId = holder.getData("targetId");
-        if (plugin.getLineManager().deleteLine(lineId)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.delete_success",
-                    LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
-        } else {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.delete_fail",
-                    LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
-        }
-        plugin.getGuiManager().openLineList(player, 0, false);
-    }
-
-    private void confirmDeleteStop(Player player, GuiHolder holder) {
-        String stopId = holder.getData("targetId");
-        String fromLineId = holder.getData("lineId");
-        if (plugin.getStopManager().deleteStop(stopId)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.delete_success",
-                    LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
-        } else {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.delete_not_found",
-                    LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
-        }
-        if (fromLineId != null) {
-            plugin.getGuiManager().openLineDetail(player, fromLineId, 0);
-        } else {
-            plugin.getGuiManager().openStopList(player, 0, false);
-        }
-    }
-
-    private void confirmRemoveStopFromLine(Player player, GuiHolder holder) {
-        String stopId = holder.getData("targetId");
-        String lineId = holder.getData("lineId");
-        int returnPage = holder.getData("returnPage", 0);
-        if (plugin.getLineManager().delStopFromLine(lineId, stopId)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.delstop_success",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "stop_id", stopId), "line_id", lineId)));
-        } else {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.delstop_fail"));
-        }
-        plugin.getGuiManager().openLineDetail(player, lineId, returnPage);
-    }
-
-    private void confirmClearRoute(Player player, GuiHolder holder) {
-        String lineId = holder.getData("targetId");
-        Line line = plugin.getLineManager().getLine(lineId);
-        int previousPointCount = line == null ? 0 : line.getRoutePoints().size();
-        plugin.getRouteRecorder().clearActive(lineId);
-        if (plugin.getLineManager().clearLineRoutePoints(lineId)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.clearroute_success",
-                    args("line_id", lineId, "point_count", String.valueOf(previousPointCount))));
-        } else {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.clearroute_fail",
-                    LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
-        }
-        if (!plugin.getGuiManager().openView(player, holder.getPreviousView())) {
-            plugin.getGuiManager().openLineSettings(player, lineId);
-        }
-    }
-
-    private void reopenConfirmSource(Player player, GuiHolder holder) {
-        String action = holder.getData("action");
-        String targetId = holder.getData("targetId");
-        String lineId = holder.getData("lineId");
-        int returnPage = holder.getData("returnPage", 0);
-        switch (action) {
-            case "DELETE_LINE" -> plugin.getGuiManager().openLineSettings(player, targetId);
-            case "DELETE_STOP" -> plugin.getGuiManager().openStopSettings(player, targetId, lineId);
-            case "REMOVE_STOP_FROM_LINE" -> plugin.getGuiManager().openLineDetail(player, lineId, returnPage);
-            case "CLEAR_ROUTE" -> plugin.getGuiManager().openLineSettings(player, targetId);
-            default -> player.closeInventory();
-        }
     }
 
     private Map<String, Object> args(Object... replacements) {
