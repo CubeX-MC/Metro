@@ -50,8 +50,8 @@
 1. [x] 补齐 `metro.gui` 权限声明。
 2. [x] 更新 README 和 README_en 的构建说明、权限说明和 GUI 命令说明。
 3. [x] 梳理 `titles.enter_stop` 与 `titles.stop_continuous` 的历史兼容关系。
-4. 明确旧命令类是否废弃，并在代码结构中做标记或移除。
-5. 提高最基础测试覆盖阈值，先从 6% 提升到 15%-20%。
+4. [x] 明确旧命令类是否废弃，并在代码结构中做标记或移除。
+5. [x] 提高最基础测试覆盖阈值，先从 6% 提升到 15%-20%。
 
 验收标准：
 
@@ -68,11 +68,11 @@
 
 任务：
 
-1. 新增线路选择服务。
-2. 右键站台时按规则解析候选线路。
+1. [x] 新增线路选择服务。
+2. [x] 右键站台时按规则解析候选线路。
 3. 候选线路超过 1 条时打开线路选择 GUI。
 4. 站台持续提示支持多线路摘要。
-5. 记录玩家最近选择的线路，提高重复乘车效率。
+5. [x] 记录玩家最近选择的线路，提高重复乘车效率。
 
 验收标准：
 
@@ -108,7 +108,7 @@
 
 任务：
 
-1. 清理旧 `MetroAdminCommand` 和 `MetroAdminTabCompleter`。
+1. [x] 清理旧 `MetroAdminCommand` 和 `MetroAdminTabCompleter`。
 2. 将命令参数校验、权限判断、业务操作从命令类中抽离。
 3. 将 GUI 渲染和 GUI 点击处理拆成更小的 view/controller。
 4. 将 `Metro` 启动类拆成生命周期注册步骤。
@@ -238,7 +238,7 @@ metro.gui:
 
 实现方法：
 
-1. 新增服务类：
+1. [x] 新增服务类：
 
 ```text
 org.cubexmc.metro.service.LineSelectionService
@@ -251,14 +251,14 @@ org.cubexmc.metro.service.LineSelectionService
 - `boolean requiresChoice(Player player, Stop stop)`
 - `void rememberChoice(Player player, String stopId, String lineId)`
 
-2. 候选线路过滤规则：
+2. [x] 候选线路过滤规则：
    - 必须包含当前 stop。
    - 当前 stop 不能是该线路终点。
    - 下一站必须存在且站点配置完整。
    - 如果线路世界已设置，则必须与站点世界一致。
    - 若站点有 linked line 限制，则遵守授权关系。
 
-3. 推荐排序规则：
+3. [x] 推荐排序规则：
    - 玩家最近在此站选择过的线路优先。
    - 与玩家 yaw 最接近的 stop launchYaw 优先。
    - 线路 ID 字典序作为最终稳定排序。
@@ -427,8 +427,8 @@ SaveRequest {
 
 实现方法：
 
-1. 确认旧命令未在 `plugin.yml` 或启动代码中注册。
-2. 若确实未使用：
+1. [x] 确认旧命令未在 `plugin.yml` 或启动代码中注册。
+2. [x] 若确实未使用：
    - 删除旧命令类。
    - 删除旧 tab completer。
    - 更新 changelog，说明内部清理不影响用户命令。

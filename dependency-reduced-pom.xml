@@ -248,6 +248,6 @@
     <final.name>${base.name}-${project.version}</final.name>
     <java.release>17</java.release>
     <base.name>metro</base.name>
-    <jacoco.minimum.line.coverage>0.06</jacoco.minimum.line.coverage>
+    <jacoco.minimum.line.coverage>0.15</jacoco.minimum.line.coverage>
   </properties>
 </project>

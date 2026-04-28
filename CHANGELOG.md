@@ -6,6 +6,8 @@
 
 - JaCoCo coverage gate and SpotBugs quality gate in Maven build.
 - New baseline unit tests for `LineManager`, `StopManager`, and `TrainMovementTask`.
+- New model, spatial index, configuration migration, and ownership permission tests.
+- New `LineSelectionService` for stable boardable-line filtering, default resolution, and recent player choices.
 - New `ConfigFacade` for centralized configuration reads.
 - New shared constants class for minecart and scoreboard identifiers.
 - Contribution guide and architecture document.
@@ -16,6 +18,9 @@
 - `Metro` delegates configuration access through `ConfigFacade`.
 - Shared line command handler no longer uses mutable sender state.
 - Runtime safety hardening in movement/listener paths.
+- Removed unused legacy `MetroAdminCommand` and `MetroAdminTabCompleter`; Cloud annotation commands remain the active command entry.
+- Raised the JaCoCo line coverage gate from 6% to 15%.
+- Right-click boarding now resolves lines through `LineSelectionService` instead of relying on collection iteration order.
 
 ### Fixed
 

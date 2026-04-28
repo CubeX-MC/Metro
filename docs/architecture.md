@@ -1,4 +1,4 @@
-# Metro-modern Architecture
+# Metro Architecture
 
 ## High-level Components
 
@@ -12,8 +12,8 @@
   - `TrainMovementTask`: train state machine and ride lifecycle.
   - `ScoreboardManager`: ride-time visual status.
 - Interaction:
-  - Command entry: `MetroAdminCommand`.
-  - Shared command handlers: `LineCommandHandler`, `StopCommandHandler`.
+  - Command entry: Cloud annotation commands in `command.newcmd`.
+  - Main command groups: `MetroMainCommand`, `LineCommand`, `StopCommand`, `PortalCommand`.
   - Listeners: `PlayerInteractListener`, `PlayerMoveListener`, `VehicleListener`, `GuiListener`.
 
 ## Configuration Access

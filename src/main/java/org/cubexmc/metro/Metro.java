@@ -59,6 +59,7 @@ public final class Metro extends JavaPlugin {
     private org.cubexmc.metro.manager.RouteRecorder routeRecorder;
     private RailProtectionManager railProtectionManager;
     private org.cubexmc.metro.integration.VaultIntegration vaultIntegration;
+    private org.cubexmc.metro.service.LineSelectionService lineSelectionService;
     private Object autoSaveTaskId;
 
     private org.cubexmc.metro.integration.BlueMapIntegration blueMapIntegration;
@@ -93,6 +94,7 @@ public final class Metro extends JavaPlugin {
         this.railProtectionManager = new RailProtectionManager(this);
         this.railProtectionManager.rebuildAll();
         this.stopManager = new StopManager(this);
+        this.lineSelectionService = new org.cubexmc.metro.service.LineSelectionService(lineManager, stopManager);
         this.selectionManager = new SelectionManager();
         this.guiManager = new GuiManager(this);
         this.chatInputManager = new ChatInputManager(this);
@@ -495,6 +497,10 @@ public final class Metro extends JavaPlugin {
 
     public org.cubexmc.metro.integration.VaultIntegration getVaultIntegration() {
         return vaultIntegration;
+    }
+
+    public org.cubexmc.metro.service.LineSelectionService getLineSelectionService() {
+        return lineSelectionService;
     }
 
     private void registerSuggestionProviders() {

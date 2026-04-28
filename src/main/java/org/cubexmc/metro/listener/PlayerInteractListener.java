@@ -20,7 +20,6 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.manager.LanguageManager;
-import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.SelectionManager;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
@@ -190,28 +189,20 @@ public class PlayerInteractListener implements Listener {
      * 处理停靠点交互
      */
     private void handleStopPoint(Player player, Stop stop) {
-        // 检查停靠区是否在任何线路上
-        LineManager lineManager = plugin.getLineManager();
-
-        Line line = null;
-        List<Line> candidateLines = lineManager.getLinesForStop(stop.getId());
-        if (!candidateLines.isEmpty()) {
-            line = candidateLines.get(0);
-        }
-
+        Line line = plugin.getLineSelectionService().resolveDefaultLine(player, stop, stop.getStopPointLocation());
         if (line == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("interact.stop_no_line"));
+            List<Line> servingLines = plugin.getLineManager().getLinesForStop(stop.getId());
+            boolean onlyTerminalLines = !servingLines.isEmpty()
+                    && servingLines.stream().allMatch(servingLine -> servingLine.getNextStopId(stop.getId()) == null);
+            if (onlyTerminalLines) {
+                player.sendMessage(plugin.getLanguageManager().getMessage("interact.terminal_stop"));
+            } else {
+                player.sendMessage(plugin.getLanguageManager().getMessage("interact.stop_no_line"));
+            }
             plugin.debug("interaction_flow", "No line found for stop=" + stop.getId());
             return;
         }
-
-        // 检查该站点是否为终点站
-        String nextStopId = line.getNextStopId(stop.getId());
-        if (nextStopId == null) {
-            // 是终点站，不生成列车
-            player.sendMessage(plugin.getLanguageManager().getMessage("interact.terminal_stop"));
-            return;
-        }
+        plugin.getLineSelectionService().rememberChoice(player, stop.getId(), line.getId());
 
         // --- 经济扣费逻辑 ---
         if (plugin.getConfig().getBoolean("economy.enabled", true)) {

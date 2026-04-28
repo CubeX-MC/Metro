@@ -17,7 +17,7 @@
         <base.name>metro</base.name>
         <!-- 统一版本，不再需要版本后缀 -->
         <final.name>${base.name}-${project.version}</final.name>
-        <jacoco.minimum.line.coverage>0.06</jacoco.minimum.line.coverage>
+        <jacoco.minimum.line.coverage>0.15</jacoco.minimum.line.coverage>
     </properties>
     <repositories>
         <repository>
