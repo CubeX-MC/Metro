@@ -61,6 +61,7 @@ public class MetroMainCommand {
             }
         }
 
+        plugin.flushPersistentData();
         plugin.ensureDefaultConfigs();
         plugin.reloadConfig();
         ConfigUpdater.applyDefaults(plugin, "config.yml");

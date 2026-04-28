@@ -16,6 +16,7 @@ import java.util.logging.Logger;
 
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.model.Line;
+import org.cubexmc.metro.persistence.SaveCoordinator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -62,10 +63,29 @@ class LineManagerTest {
         assertTrue(manager.getLinesForStop("S1").isEmpty());
     }
 
+    @Test
+    void shouldRemoveDeletedLineFromSavedYaml() throws IOException {
+        Files.writeString(tempDir.resolve("lines.yml"), "");
+        LineManager manager = new LineManager(createPluginMock(tempDir));
+
+        assertTrue(manager.createLine("blue", "BlueLine", UUID.randomUUID()));
+        manager.forceSaveSync();
+        assertTrue(Files.readString(tempDir.resolve("lines.yml")).contains("blue:"));
+
+        assertTrue(manager.deleteLine("blue"));
+        manager.forceSaveSync();
+
+        String savedYaml = Files.readString(tempDir.resolve("lines.yml"));
+        assertFalse(savedYaml.contains("blue:"));
+        assertFalse(savedYaml.contains("BlueLine"));
+    }
+
     private Metro createPluginMock(Path dataDir) {
         Metro plugin = mock(Metro.class);
+        Logger logger = Logger.getLogger("LineManagerTest");
         when(plugin.getDataFolder()).thenReturn(dataDir.toFile());
-        when(plugin.getLogger()).thenReturn(Logger.getLogger("LineManagerTest"));
+        when(plugin.getLogger()).thenReturn(logger);
+        when(plugin.getSaveCoordinator()).thenReturn(new SaveCoordinator(logger, Runnable::run));
         return plugin;
     }
 }

@@ -1,8 +1,8 @@
 package org.cubexmc.metro.manager;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -161,50 +161,13 @@ public class LineManager {
         if (!isDirty) {
             return;
         }
-        isDirty = false;
 
         try {
-            String yamlDataFinal;
-            // 获取读锁，并在内存中生成配置快照，这样避免在耗时序列化操作中一直持有锁或者发生CME
-            lock.readLock().lock();
-            try {
-                // 将所有线路数据写入配置
-                for (Line line : lines.values()) {
-                    String lineId = line.getId();
-                    config.set(lineId + ".name", line.getName());
-                    config.set(lineId + ".ordered_stop_ids", line.getOrderedStopIds());
-                    config.set(lineId + ".route_points", routePointsToConfig(line));
-                    config.set(lineId + ".color", line.getColor());
-                    config.set(lineId + ".terminus_name", line.getTerminusName());
-                    config.set(lineId + ".max_speed", line.getMaxSpeed() != null ? line.getMaxSpeed() : null);
-                    config.set(lineId + ".ticket_price", line.getTicketPrice() > 0 ? line.getTicketPrice() : null);
-                    config.set(lineId + ".rail_protected", line.isRailProtected() ? true : null);
-                    config.set(lineId + ".owner", line.getOwner() != null ? line.getOwner().toString() : null);
-
-                    List<String> adminStrings = new ArrayList<>();
-                    for (UUID adminId : line.getAdmins()) {
-                        if (line.getOwner() != null && line.getOwner().equals(adminId)) {
-                            continue;
-                        }
-                        adminStrings.add(adminId.toString());
-                    }
-                    config.set(lineId + ".admins", adminStrings.isEmpty() ? null : adminStrings);
-                    config.set(lineId + ".world", line.getWorldName());
-                }
-
-                yamlDataFinal = config.saveToString();
-            } finally {
-                lock.readLock().unlock();
-            }
-
-            org.cubexmc.metro.util.SchedulerUtil.asyncRun(plugin, () -> {
-                try {
-                    java.nio.file.Files.writeString(configFile.toPath(), yamlDataFinal);
-                } catch (IOException e) {
-                    plugin.getLogger().log(Level.SEVERE, "无法异步保存线路配置", e);
-                }
-            }, 0L);
+            String yamlDataFinal = buildSnapshot();
+            isDirty = false;
+            plugin.getSaveCoordinator().submitSnapshot(configFile.toPath(), yamlDataFinal);
         } catch (Exception e) {
+            isDirty = true;
             plugin.getLogger().log(Level.SEVERE, "处理线路配置时出错", e);
         }
     }
@@ -213,39 +176,13 @@ public class LineManager {
         if (!isDirty) {
             return;
         }
-        isDirty = false;
 
         try {
-            lock.readLock().lock();
-            try {
-                for (Line line : lines.values()) {
-                    String lineId = line.getId();
-                    config.set(lineId + ".name", line.getName());
-                    config.set(lineId + ".ordered_stop_ids", line.getOrderedStopIds());
-                    config.set(lineId + ".route_points", routePointsToConfig(line));
-                    config.set(lineId + ".color", line.getColor());
-                    config.set(lineId + ".terminus_name", line.getTerminusName());
-                    config.set(lineId + ".max_speed", line.getMaxSpeed() != null ? line.getMaxSpeed() : null);
-                    config.set(lineId + ".ticket_price", line.getTicketPrice() > 0 ? line.getTicketPrice() : null);
-                    config.set(lineId + ".rail_protected", line.isRailProtected() ? true : null);
-                    config.set(lineId + ".owner", line.getOwner() != null ? line.getOwner().toString() : null);
-
-                    List<String> adminStrings = new ArrayList<>();
-                    for (UUID adminId : line.getAdmins()) {
-                        if (line.getOwner() != null && line.getOwner().equals(adminId)) {
-                            continue;
-                        }
-                        adminStrings.add(adminId.toString());
-                    }
-                    config.set(lineId + ".admins", adminStrings.isEmpty() ? null : adminStrings);
-                    config.set(lineId + ".world", line.getWorldName());
-                }
-            } finally {
-                lock.readLock().unlock();
-            }
-
-            config.save(configFile);
-        } catch (IOException e) {
+            String yamlDataFinal = buildSnapshot();
+            isDirty = false;
+            plugin.getSaveCoordinator().saveNow(configFile.toPath(), yamlDataFinal);
+        } catch (Exception e) {
+            isDirty = true;
             plugin.getLogger().log(Level.SEVERE, "无法同步保存线路配置", e);
         }
     }
@@ -680,6 +617,48 @@ public class LineManager {
             values.add(routePoint.toConfigString());
         }
         return values;
+    }
+
+    private String buildSnapshot() {
+        YamlConfiguration snapshot = new YamlConfiguration();
+        lock.readLock().lock();
+        try {
+            if (!lines.isEmpty() || config.getInt(DataFileUpdater.SCHEMA_VERSION_KEY, 0) > 0) {
+                snapshot.set(DataFileUpdater.SCHEMA_VERSION_KEY, DataFileUpdater.CURRENT_SCHEMA_VERSION);
+            }
+
+            List<String> lineIds = new ArrayList<>(lines.keySet());
+            Collections.sort(lineIds);
+            for (String lineId : lineIds) {
+                Line line = lines.get(lineId);
+                if (line == null) {
+                    continue;
+                }
+                snapshot.set(lineId + ".name", line.getName());
+                snapshot.set(lineId + ".ordered_stop_ids", line.getOrderedStopIds());
+                snapshot.set(lineId + ".route_points", routePointsToConfig(line));
+                snapshot.set(lineId + ".color", line.getColor());
+                snapshot.set(lineId + ".terminus_name", line.getTerminusName());
+                snapshot.set(lineId + ".max_speed", line.getMaxSpeed() != null ? line.getMaxSpeed() : null);
+                snapshot.set(lineId + ".ticket_price", line.getTicketPrice() > 0 ? line.getTicketPrice() : null);
+                snapshot.set(lineId + ".rail_protected", line.isRailProtected() ? true : null);
+                snapshot.set(lineId + ".owner", line.getOwner() != null ? line.getOwner().toString() : null);
+
+                List<String> adminStrings = new ArrayList<>();
+                for (UUID adminId : line.getAdmins()) {
+                    if (line.getOwner() != null && line.getOwner().equals(adminId)) {
+                        continue;
+                    }
+                    adminStrings.add(adminId.toString());
+                }
+                Collections.sort(adminStrings);
+                snapshot.set(lineId + ".admins", adminStrings.isEmpty() ? null : adminStrings);
+                snapshot.set(lineId + ".world", line.getWorldName());
+            }
+            return snapshot.saveToString();
+        } finally {
+            lock.readLock().unlock();
+        }
     }
 
     /**

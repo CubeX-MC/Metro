@@ -1,8 +1,8 @@
 package org.cubexmc.metro.manager;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -101,34 +101,13 @@ public class StopManager {
         if (!isDirty) {
             return;
         }
-        isDirty = false;
 
         try {
-            String yamlDataFinal;
-            lock.readLock().lock();
-            try {
-                for (Map.Entry<String, Stop> entry : stops.entrySet()) {
-                    String stopId = entry.getKey();
-                    Stop stop = entry.getValue();
-
-                    config.set(stopId, null);
-                    ConfigurationSection section = config.createSection(stopId);
-                    stop.saveToConfig(section);
-                }
-
-                yamlDataFinal = config.saveToString();
-            } finally {
-                lock.readLock().unlock();
-            }
-
-            org.cubexmc.metro.util.SchedulerUtil.asyncRun(plugin, () -> {
-                try {
-                    java.nio.file.Files.writeString(configFile.toPath(), yamlDataFinal);
-                } catch (IOException e) {
-                    plugin.getLogger().severe("Could not async save stops config: " + e.getMessage());
-                }
-            }, 0L);
+            String yamlDataFinal = buildSnapshot();
+            isDirty = false;
+            plugin.getSaveCoordinator().submitSnapshot(configFile.toPath(), yamlDataFinal);
         } catch (Exception e) {
+            isDirty = true;
             plugin.getLogger().log(java.util.logging.Level.SEVERE, "处理停靠区配置时出错", e);
         }
     }
@@ -137,26 +116,14 @@ public class StopManager {
         if (!isDirty) {
             return;
         }
-        isDirty = false;
-
-        lock.readLock().lock();
-        try {
-            for (Map.Entry<String, Stop> entry : stops.entrySet()) {
-                String stopId = entry.getKey();
-                Stop stop = entry.getValue();
-
-                config.set(stopId, null);
-                ConfigurationSection section = config.createSection(stopId);
-                stop.saveToConfig(section);
-            }
-        } finally {
-            lock.readLock().unlock();
-        }
 
         try {
-            config.save(configFile);
-        } catch (IOException e) {
-            plugin.getLogger().severe("Could not save stops config: " + e.getMessage());
+            String yamlDataFinal = buildSnapshot();
+            isDirty = false;
+            plugin.getSaveCoordinator().saveNow(configFile.toPath(), yamlDataFinal);
+        } catch (Exception e) {
+            isDirty = true;
+            plugin.getLogger().log(java.util.logging.Level.SEVERE, "Could not save stops config", e);
         }
     }
 
@@ -594,6 +561,30 @@ public class StopManager {
         Octree<Stop> octree = worldStopIndex.get(worldName);
         if (octree != null) {
             octree.remove(range);
+        }
+    }
+
+    private String buildSnapshot() {
+        YamlConfiguration snapshot = new YamlConfiguration();
+        lock.readLock().lock();
+        try {
+            if (!stops.isEmpty() || config.getInt(DataFileUpdater.SCHEMA_VERSION_KEY, 0) > 0) {
+                snapshot.set(DataFileUpdater.SCHEMA_VERSION_KEY, DataFileUpdater.CURRENT_SCHEMA_VERSION);
+            }
+
+            List<String> stopIds = new ArrayList<>(stops.keySet());
+            Collections.sort(stopIds);
+            for (String stopId : stopIds) {
+                Stop stop = stops.get(stopId);
+                if (stop == null) {
+                    continue;
+                }
+                ConfigurationSection section = snapshot.createSection(stopId);
+                stop.saveToConfig(section);
+            }
+            return snapshot.saveToString();
+        } finally {
+            lock.readLock().unlock();
         }
     }
 }

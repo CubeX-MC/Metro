@@ -17,6 +17,7 @@ import java.util.logging.Logger;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.cubexmc.metro.Metro;
+import org.cubexmc.metro.persistence.SaveCoordinator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -60,10 +61,30 @@ class StopManagerTest {
         assertEquals(0, manager.getAllStopIds().size());
     }
 
+    @Test
+    void shouldFlushDirtyStopDataSynchronously() throws IOException {
+        Files.writeString(tempDir.resolve("stops.yml"), "");
+        StopManager manager = new StopManager(createPluginMock(tempDir));
+
+        World world = mock(World.class);
+        when(world.getName()).thenReturn("world");
+        Location c1 = new Location(world, 0, 0, 0);
+        Location c2 = new Location(world, 3, 3, 3);
+        manager.createStop("s3", "Museum", c1, c2, UUID.randomUUID());
+
+        manager.forceSaveSync();
+
+        String savedYaml = Files.readString(tempDir.resolve("stops.yml"));
+        assertTrue(savedYaml.contains("s3:"));
+        assertTrue(savedYaml.contains("display_name: Museum"));
+    }
+
     private Metro createPluginMock(Path dataDir) {
         Metro plugin = mock(Metro.class);
+        Logger logger = Logger.getLogger("StopManagerTest");
         when(plugin.getDataFolder()).thenReturn(dataDir.toFile());
-        when(plugin.getLogger()).thenReturn(Logger.getLogger("StopManagerTest"));
+        when(plugin.getLogger()).thenReturn(logger);
+        when(plugin.getSaveCoordinator()).thenReturn(new SaveCoordinator(logger, Runnable::run));
         return plugin;
     }
 }

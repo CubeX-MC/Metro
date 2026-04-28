@@ -31,6 +31,7 @@ import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.RailProtectionManager;
 import org.cubexmc.metro.manager.SelectionManager;
 import org.cubexmc.metro.manager.StopManager;
+import org.cubexmc.metro.persistence.SaveCoordinator;
 import org.cubexmc.metro.train.ScoreboardManager;
 import org.cubexmc.metro.train.TrainDisplayController;
 import org.cubexmc.metro.update.ConfigUpdater;
@@ -61,6 +62,7 @@ public final class Metro extends JavaPlugin {
     private org.cubexmc.metro.integration.VaultIntegration vaultIntegration;
     private org.cubexmc.metro.service.LineSelectionService lineSelectionService;
     private org.cubexmc.metro.service.TicketService ticketService;
+    private SaveCoordinator saveCoordinator;
     private Object autoSaveTaskId;
 
     private org.cubexmc.metro.integration.BlueMapIntegration blueMapIntegration;
@@ -89,6 +91,8 @@ public final class Metro extends JavaPlugin {
 
         // 初始化语言管理器（内部会自动更新语言文件）
         this.languageManager = new LanguageManager(this);
+        this.saveCoordinator = new SaveCoordinator(getLogger(),
+                command -> org.cubexmc.metro.util.SchedulerUtil.asyncRun(this, command, 0L));
 
         // 初始化管理器
         this.lineManager = new LineManager(this);
@@ -325,12 +329,7 @@ public final class Metro extends JavaPlugin {
         if (routeRecorder != null) {
             routeRecorder.cancelAll();
         }
-        if (lineManager != null) {
-            lineManager.forceSaveSync();
-        }
-        if (stopManager != null) {
-            stopManager.forceSaveSync();
-        }
+        flushPersistentData();
 
         if (languageManager != null) {
             Bukkit.getConsoleSender().sendMessage(languageManager.getMessage("plugin.disabled"));
@@ -508,6 +507,22 @@ public final class Metro extends JavaPlugin {
 
     public org.cubexmc.metro.service.TicketService getTicketService() {
         return ticketService;
+    }
+
+    public SaveCoordinator getSaveCoordinator() {
+        return saveCoordinator;
+    }
+
+    public void flushPersistentData() {
+        if (lineManager != null) {
+            lineManager.forceSaveSync();
+        }
+        if (stopManager != null) {
+            stopManager.forceSaveSync();
+        }
+        if (saveCoordinator != null) {
+            saveCoordinator.flushAll();
+        }
     }
 
     public PlayerInteractListener getPlayerInteractListener() {

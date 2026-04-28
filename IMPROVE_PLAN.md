@@ -88,11 +88,11 @@
 
 任务：
 
-1. 引入统一保存协调器。
-2. 采用版本化快照，避免旧异步写入覆盖新数据。
-3. 使用临时文件加原子替换写入 YAML。
-4. `reload` 和 `onDisable` 前强制 flush。
-5. 为保存失败、重试和最终失败增加日志。
+1. [x] 引入统一保存协调器。
+2. [x] 采用版本化快照，避免旧异步写入覆盖新数据。
+3. [x] 使用临时文件加原子替换写入 YAML。
+4. [x] `reload` 和 `onDisable` 前强制 flush。
+5. [x] 为保存失败、重试和最终失败增加日志。
 
 验收标准：
 
@@ -366,7 +366,7 @@ TicketTransaction {
 
 实现方法：
 
-1. 新增统一保存协调器：
+1. [x] 新增统一保存协调器：
 
 ```text
 org.cubexmc.metro.persistence.SaveCoordinator
@@ -379,7 +379,7 @@ org.cubexmc.metro.persistence.SaveCoordinator
 - 支持延迟合并保存。
 - 支持 shutdown flush。
 
-2. 保存请求模型：
+2. [x] 保存请求模型：
 
 ```text
 SaveRequest {
@@ -389,23 +389,23 @@ SaveRequest {
 }
 ```
 
-3. 写入策略：
+3. [x] 写入策略：
    - 主线程或安全区域内生成快照。
    - 异步线程写入 `file.tmp`。
    - 写入成功后使用 atomic move 替换目标文件。
    - 如果平台不支持 atomic move，则退化为 replace existing 并记录 debug 日志。
 
-4. 防乱序策略：
+4. [x] 防乱序策略：
    - 每个文件保存版本递增。
    - 异步写入完成前检查版本是否仍然是最新。
    - 旧版本完成时直接丢弃，不覆盖目标文件。
 
-5. 修改 `LineManager` / `StopManager`：
+5. [x] 修改 `LineManager` / `StopManager`：
    - `saveConfig()` 改为标记 dirty 并提交给 `SaveCoordinator`。
    - `processAsyncSave()` 可删除或变为协调器入口。
    - `forceSaveSync()` 使用协调器 flush。
 
-6. 增加测试：
+6. [x] 增加测试：
    - 连续提交 v1、v2，v1 晚完成时不能覆盖 v2。
    - 删除线路后 YAML 不保留旧 section。
    - 插件 disable 时 dirty 数据落盘。
