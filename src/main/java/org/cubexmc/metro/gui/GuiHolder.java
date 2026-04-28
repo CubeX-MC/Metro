@@ -3,6 +3,7 @@ package org.cubexmc.metro.gui;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,6 +30,7 @@ public class GuiHolder implements InventoryHolder {
     
     private final GuiType type;
     private final Map<String, Object> data;
+    private GuiView previousView;
     private Inventory inventory;
     
     public GuiHolder(GuiType type) {
@@ -56,6 +58,18 @@ public class GuiHolder implements InventoryHolder {
         }
         return (T) value;
     }
+
+    public GuiView getPreviousView() {
+        return previousView;
+    }
+
+    public void setPreviousView(GuiView previousView) {
+        this.previousView = previousView;
+    }
+
+    public GuiView snapshot() {
+        return new GuiView(type, data, previousView);
+    }
     
     public void setInventory(Inventory inventory) {
         this.inventory = inventory;
@@ -64,6 +78,40 @@ public class GuiHolder implements InventoryHolder {
     @Override
     public Inventory getInventory() {
         return inventory;
+    }
+
+    public static final class GuiView {
+        private final GuiType type;
+        private final Map<String, Object> data;
+        private final GuiView previousView;
+
+        private GuiView(GuiType type, Map<String, Object> data, GuiView previousView) {
+            this.type = type;
+            this.data = Collections.unmodifiableMap(new HashMap<>(data));
+            this.previousView = previousView;
+        }
+
+        public GuiType getType() {
+            return type;
+        }
+
+        @SuppressWarnings("unchecked")
+        public <T> T getData(String key) {
+            return (T) data.get(key);
+        }
+
+        @SuppressWarnings("unchecked")
+        public <T> T getData(String key, T defaultValue) {
+            Object value = data.get(key);
+            if (value == null) {
+                return defaultValue;
+            }
+            return (T) value;
+        }
+
+        public GuiView getPreviousView() {
+            return previousView;
+        }
     }
 }
 

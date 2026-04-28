@@ -72,6 +72,52 @@ public class GuiManager {
     public GuiManager(Metro plugin) {
         this.plugin = plugin;
     }
+
+    private GuiHolder createHolder(GuiType type, GuiHolder.GuiView previousView) {
+        GuiHolder holder = new GuiHolder(type);
+        holder.setPreviousView(previousView);
+        return holder;
+    }
+
+    public void openPreviousView(Player player, GuiHolder holder, Runnable fallback) {
+        if (holder != null && openView(player, holder.getPreviousView())) {
+            return;
+        }
+        fallback.run();
+    }
+
+    public boolean openView(Player player, GuiHolder.GuiView view) {
+        if (view == null) {
+            return false;
+        }
+        GuiHolder.GuiView previous = view.getPreviousView();
+        switch (view.getType()) {
+            case MAIN_MENU -> openMainMenu(player);
+            case LINE_LIST -> openLineList(player, view.getData("page", 0), view.getData("showOnlyMine", false), previous);
+            case STOP_LIST -> openStopList(player, view.getData("page", 0), view.getData("showOnlyMine", false), previous);
+            case LINE_VARIANTS -> openLineVariants(player, view.getData("lineName"), view.getData("page", 0), previous);
+            case STOP_VARIANTS -> openStopVariants(player, view.getData("stopName"), view.getData("page", 0), previous);
+            case LINE_DETAIL -> openLineDetail(player, view.getData("lineId"), view.getData("page", 0), previous);
+            case ADD_STOP_LIST -> openAddStopList(player, view.getData("lineId"), view.getData("page", 0),
+                    view.getData("showOnlyMine", false), previous);
+            case ADD_STOP_VARIANTS -> openAddStopVariants(player, view.getData("lineId"), view.getData("stopName"),
+                    view.getData("page", 0), previous);
+            case LINE_SETTINGS -> openLineSettings(player, view.getData("lineId"), previous);
+            case STOP_SETTINGS -> openStopSettings(player, view.getData("stopId"), view.getData("fromLineId"), previous);
+            case LINE_BOARDING_CHOICE -> {
+                String stopId = view.getData("stopId");
+                Stop stop = stopId == null ? null : plugin.getStopManager().getStop(stopId);
+                if (stop == null) {
+                    return false;
+                }
+                openLineBoardingChoice(player, stop, view.getData("page", 0), previous);
+            }
+            case CONFIRM_ACTION -> {
+                return false;
+            }
+        }
+        return true;
+    }
     
     private String msg(String key) {
         return plugin.getLanguageManager().getMessage(key);
@@ -125,6 +171,10 @@ public class GuiManager {
      * 打开乘车线路选择界面。
      */
     public void openLineBoardingChoice(Player player, Stop stop, int page) {
+        openLineBoardingChoice(player, stop, page, null);
+    }
+
+    public void openLineBoardingChoice(Player player, Stop stop, int page, GuiHolder.GuiView previousView) {
         if (stop == null) {
             return;
         }
@@ -135,7 +185,7 @@ public class GuiManager {
             return;
         }
 
-        GuiHolder holder = new GuiHolder(GuiType.LINE_BOARDING_CHOICE);
+        GuiHolder holder = createHolder(GuiType.LINE_BOARDING_CHOICE, previousView);
         holder.setData("stopId", stop.getId());
         holder.setData("page", page);
         holder.setData("lineIds", lines.stream().map(Line::getId).collect(Collectors.toList()));
@@ -202,7 +252,11 @@ public class GuiManager {
      * @param showOnlyMine 是否只显示自己管理的
      */
     public void openLineList(Player player, int page, boolean showOnlyMine) {
-        GuiHolder holder = new GuiHolder(GuiType.LINE_LIST);
+        openLineList(player, page, showOnlyMine, null);
+    }
+
+    public void openLineList(Player player, int page, boolean showOnlyMine, GuiHolder.GuiView previousView) {
+        GuiHolder holder = createHolder(GuiType.LINE_LIST, previousView);
         holder.setData("page", page);
         holder.setData("showOnlyMine", showOnlyMine);
         
@@ -275,7 +329,11 @@ public class GuiManager {
      * 打开线路变体列表
      */
     public void openLineVariants(Player player, String lineName, int page) {
-        GuiHolder holder = new GuiHolder(GuiType.LINE_VARIANTS);
+        openLineVariants(player, lineName, page, null);
+    }
+
+    public void openLineVariants(Player player, String lineName, int page, GuiHolder.GuiView previousView) {
+        GuiHolder holder = createHolder(GuiType.LINE_VARIANTS, previousView);
         holder.setData("page", page);
         holder.setData("lineName", lineName);
         
@@ -321,7 +379,11 @@ public class GuiManager {
      * @param showOnlyMine 是否只显示自己管理的
      */
     public void openStopList(Player player, int page, boolean showOnlyMine) {
-        GuiHolder holder = new GuiHolder(GuiType.STOP_LIST);
+        openStopList(player, page, showOnlyMine, null);
+    }
+
+    public void openStopList(Player player, int page, boolean showOnlyMine, GuiHolder.GuiView previousView) {
+        GuiHolder holder = createHolder(GuiType.STOP_LIST, previousView);
         holder.setData("page", page);
         holder.setData("showOnlyMine", showOnlyMine);
         
@@ -412,7 +474,11 @@ public class GuiManager {
      * 打开站点变体列表
      */
     public void openStopVariants(Player player, String stopName, int page) {
-        GuiHolder holder = new GuiHolder(GuiType.STOP_VARIANTS);
+        openStopVariants(player, stopName, page, null);
+    }
+
+    public void openStopVariants(Player player, String stopName, int page, GuiHolder.GuiView previousView) {
+        GuiHolder holder = createHolder(GuiType.STOP_VARIANTS, previousView);
         holder.setData("page", page);
         holder.setData("stopName", stopName);
         
@@ -474,7 +540,12 @@ public class GuiManager {
      * 打开添加站点列表
      */
     public void openAddStopList(Player player, String lineId, int page, boolean showOnlyMine) {
-        GuiHolder holder = new GuiHolder(GuiType.ADD_STOP_LIST);
+        openAddStopList(player, lineId, page, showOnlyMine, null);
+    }
+
+    public void openAddStopList(Player player, String lineId, int page, boolean showOnlyMine,
+                                GuiHolder.GuiView previousView) {
+        GuiHolder holder = createHolder(GuiType.ADD_STOP_LIST, previousView);
         holder.setData("lineId", lineId);
         holder.setData("page", page);
         holder.setData("showOnlyMine", showOnlyMine);
@@ -549,7 +620,12 @@ public class GuiManager {
      * 打开添加站点变体列表
      */
     public void openAddStopVariants(Player player, String lineId, String stopName, int page) {
-        GuiHolder holder = new GuiHolder(GuiType.ADD_STOP_VARIANTS);
+        openAddStopVariants(player, lineId, stopName, page, null);
+    }
+
+    public void openAddStopVariants(Player player, String lineId, String stopName, int page,
+                                    GuiHolder.GuiView previousView) {
+        GuiHolder holder = createHolder(GuiType.ADD_STOP_VARIANTS, previousView);
         holder.setData("lineId", lineId);
         holder.setData("page", page);
         holder.setData("stopName", stopName);
@@ -586,6 +662,10 @@ public class GuiManager {
      * 打开线路详情（站点列表）
      */
     public void openLineDetail(Player player, String lineId, int page) {
+        openLineDetail(player, lineId, page, null);
+    }
+
+    public void openLineDetail(Player player, String lineId, int page, GuiHolder.GuiView previousView) {
         Line line = plugin.getLineManager().getLine(lineId);
         if (line == null) {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
@@ -593,7 +673,7 @@ public class GuiManager {
             return;
         }
         
-        GuiHolder holder = new GuiHolder(GuiType.LINE_DETAIL);
+        GuiHolder holder = createHolder(GuiType.LINE_DETAIL, previousView);
         holder.setData("lineId", lineId);
         holder.setData("page", page);
         
@@ -738,10 +818,14 @@ public class GuiManager {
      * 打开线路设置
      */
     public void openLineSettings(Player player, String lineId) {
+        openLineSettings(player, lineId, null);
+    }
+
+    public void openLineSettings(Player player, String lineId, GuiHolder.GuiView previousView) {
         Line line = plugin.getLineManager().getLine(lineId);
         if (line == null) return;
         
-        GuiHolder holder = new GuiHolder(GuiType.LINE_SETTINGS);
+        GuiHolder holder = createHolder(GuiType.LINE_SETTINGS, previousView);
         holder.setData("lineId", lineId);
         
         Inventory inv = Bukkit.createInventory(holder, 27, 
@@ -818,17 +902,21 @@ public class GuiManager {
      * 打开站点设置
      */
     public void openStopSettings(Player player, String stopId) {
-        openStopSettings(player, stopId, null);
+        openStopSettings(player, stopId, null, null);
     }
 
     /**
      * 打开站点设置
      */
     public void openStopSettings(Player player, String stopId, String fromLineId) {
+        openStopSettings(player, stopId, fromLineId, null);
+    }
+
+    public void openStopSettings(Player player, String stopId, String fromLineId, GuiHolder.GuiView previousView) {
         Stop stop = plugin.getStopManager().getStop(stopId);
         if (stop == null) return;
         
-        GuiHolder holder = new GuiHolder(GuiType.STOP_SETTINGS);
+        GuiHolder holder = createHolder(GuiType.STOP_SETTINGS, previousView);
         holder.setData("stopId", stopId);
         if (fromLineId != null) {
             holder.setData("fromLineId", fromLineId);
@@ -867,7 +955,12 @@ public class GuiManager {
      */
     public void openConfirmAction(Player player, String action, String targetId, String targetName,
                                   String lineId, int returnPage) {
-        GuiHolder holder = new GuiHolder(GuiType.CONFIRM_ACTION);
+        openConfirmAction(player, action, targetId, targetName, lineId, returnPage, null);
+    }
+
+    public void openConfirmAction(Player player, String action, String targetId, String targetName,
+                                  String lineId, int returnPage, GuiHolder.GuiView previousView) {
+        GuiHolder holder = createHolder(GuiType.CONFIRM_ACTION, previousView);
         holder.setData("action", action);
         holder.setData("targetId", targetId);
         holder.setData("targetName", targetName);

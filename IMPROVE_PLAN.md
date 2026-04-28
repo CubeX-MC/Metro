@@ -514,7 +514,7 @@ GuiType.CONFIRM_ACTION
 - 清空 route points。
 - 关闭线路保护。
 
-2. 增加返回栈：
+2. [x] 增加返回栈：
    - 在 `GuiHolder` 中保存 `previousView`。
    - 返回按钮回到实际来源，而不是固定回主菜单或列表。
 

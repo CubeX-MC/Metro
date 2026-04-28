@@ -67,7 +67,7 @@ public class GuiListener implements Listener {
         
         // 根据 GUI 类型处理
         switch (holder.getType()) {
-            case MAIN_MENU -> handleMainMenuClick(player, slot);
+            case MAIN_MENU -> handleMainMenuClick(player, holder, slot);
             case LINE_LIST -> handleLineListClick(player, holder, slot, event.isRightClick());
             case STOP_LIST -> handleStopListClick(player, holder, slot, event.isRightClick());
             case LINE_VARIANTS -> handleLineVariantsClick(player, holder, slot, event.isRightClick());
@@ -96,10 +96,10 @@ public class GuiListener implements Listener {
     /**
      * 处理主菜单点击
      */
-    private void handleMainMenuClick(Player player, int slot) {
+    private void handleMainMenuClick(Player player, GuiHolder holder, int slot) {
         switch (slot) {
-            case SLOT_LINE_MANAGE -> plugin.getGuiManager().openLineList(player, 0, false);
-            case SLOT_STOP_MANAGE -> plugin.getGuiManager().openStopList(player, 0, false);
+            case SLOT_LINE_MANAGE -> plugin.getGuiManager().openLineList(player, 0, false, holder.snapshot());
+            case SLOT_STOP_MANAGE -> plugin.getGuiManager().openStopList(player, 0, false, holder.snapshot());
         }
     }
     
@@ -115,22 +115,22 @@ public class GuiListener implements Listener {
         switch (slot) {
             case SLOT_PREV_PAGE -> {
                 if (page > 0) {
-                    plugin.getGuiManager().openLineList(player, page - 1, showOnlyMine);
+                    plugin.getGuiManager().openLineList(player, page - 1, showOnlyMine, holder.getPreviousView());
                 }
                 return;
             }
             case SLOT_NEXT_PAGE -> {
                 if (page < totalPages - 1) {
-                    plugin.getGuiManager().openLineList(player, page + 1, showOnlyMine);
+                    plugin.getGuiManager().openLineList(player, page + 1, showOnlyMine, holder.getPreviousView());
                 }
                 return;
             }
             case SLOT_FILTER -> {
-                plugin.getGuiManager().openLineList(player, 0, !showOnlyMine);
+                plugin.getGuiManager().openLineList(player, 0, !showOnlyMine, holder.getPreviousView());
                 return;
             }
             case SLOT_BACK -> {
-                plugin.getGuiManager().openMainMenu(player);
+                plugin.getGuiManager().openPreviousView(player, holder, () -> plugin.getGuiManager().openMainMenu(player));
                 return;
             }
         }
@@ -150,13 +150,13 @@ public class GuiListener implements Listener {
                 }
                 
                 if (variants.size() > 1) {
-                    plugin.getGuiManager().openLineVariants(player, name, 0);
+                    plugin.getGuiManager().openLineVariants(player, name, 0, holder.snapshot());
                 } else {
                     Line line = variants.get(0);
                     if (isRightClick && OwnershipUtil.canManageLine(player, line)) {
-                        plugin.getGuiManager().openLineSettings(player, line.getId());
+                        plugin.getGuiManager().openLineSettings(player, line.getId(), holder.snapshot());
                     } else {
-                        plugin.getGuiManager().openLineDetail(player, line.getId(), 0);
+                        plugin.getGuiManager().openLineDetail(player, line.getId(), 0, holder.snapshot());
                     }
                 }
             }
@@ -175,18 +175,18 @@ public class GuiListener implements Listener {
         switch (slot) {
             case SLOT_PREV_PAGE -> {
                 if (page > 0) {
-                    plugin.getGuiManager().openLineVariants(player, lineName, page - 1);
+                    plugin.getGuiManager().openLineVariants(player, lineName, page - 1, holder.getPreviousView());
                 }
                 return;
             }
             case SLOT_NEXT_PAGE -> {
                 if (page < totalPages - 1) {
-                    plugin.getGuiManager().openLineVariants(player, lineName, page + 1);
+                    plugin.getGuiManager().openLineVariants(player, lineName, page + 1, holder.getPreviousView());
                 }
                 return;
             }
             case SLOT_BACK -> {
-                plugin.getGuiManager().openLineList(player, 0, false);
+                plugin.getGuiManager().openPreviousView(player, holder, () -> plugin.getGuiManager().openLineList(player, 0, false));
                 return;
             }
         }
@@ -200,9 +200,9 @@ public class GuiListener implements Listener {
             if (index >= 0 && index < lines.size()) {
                 Line line = lines.get(index);
                 if (isRightClick && OwnershipUtil.canManageLine(player, line)) {
-                    plugin.getGuiManager().openLineSettings(player, line.getId());
+                    plugin.getGuiManager().openLineSettings(player, line.getId(), holder.snapshot());
                 } else {
-                    plugin.getGuiManager().openLineDetail(player, line.getId(), 0);
+                    plugin.getGuiManager().openLineDetail(player, line.getId(), 0, holder.snapshot());
                 }
             }
         }
@@ -220,22 +220,22 @@ public class GuiListener implements Listener {
         switch (slot) {
             case SLOT_PREV_PAGE -> {
                 if (page > 0) {
-                    plugin.getGuiManager().openStopList(player, page - 1, showOnlyMine);
+                    plugin.getGuiManager().openStopList(player, page - 1, showOnlyMine, holder.getPreviousView());
                 }
                 return;
             }
             case SLOT_NEXT_PAGE -> {
                 if (page < totalPages - 1) {
-                    plugin.getGuiManager().openStopList(player, page + 1, showOnlyMine);
+                    plugin.getGuiManager().openStopList(player, page + 1, showOnlyMine, holder.getPreviousView());
                 }
                 return;
             }
             case SLOT_FILTER -> {
-                plugin.getGuiManager().openStopList(player, 0, !showOnlyMine);
+                plugin.getGuiManager().openStopList(player, 0, !showOnlyMine, holder.getPreviousView());
                 return;
             }
             case SLOT_BACK -> {
-                plugin.getGuiManager().openMainMenu(player);
+                plugin.getGuiManager().openPreviousView(player, holder, () -> plugin.getGuiManager().openMainMenu(player));
                 return;
             }
         }
@@ -255,11 +255,11 @@ public class GuiListener implements Listener {
                 }
                 
                 if (variants.size() > 1) {
-                    plugin.getGuiManager().openStopVariants(player, name, 0);
+                    plugin.getGuiManager().openStopVariants(player, name, 0, holder.snapshot());
                 } else {
                     Stop stop = variants.get(0);
                     if (isRightClick && OwnershipUtil.canManageStop(player, stop)) {
-                        plugin.getGuiManager().openStopSettings(player, stop.getId());
+                        plugin.getGuiManager().openStopSettings(player, stop.getId(), null, holder.snapshot());
                     } else {
                         handleStopClick(player, stop);
                     }
@@ -280,18 +280,18 @@ public class GuiListener implements Listener {
         switch (slot) {
             case SLOT_PREV_PAGE -> {
                 if (page > 0) {
-                    plugin.getGuiManager().openStopVariants(player, stopName, page - 1);
+                    plugin.getGuiManager().openStopVariants(player, stopName, page - 1, holder.getPreviousView());
                 }
                 return;
             }
             case SLOT_NEXT_PAGE -> {
                 if (page < totalPages - 1) {
-                    plugin.getGuiManager().openStopVariants(player, stopName, page + 1);
+                    plugin.getGuiManager().openStopVariants(player, stopName, page + 1, holder.getPreviousView());
                 }
                 return;
             }
             case SLOT_BACK -> {
-                plugin.getGuiManager().openStopList(player, 0, false);
+                plugin.getGuiManager().openPreviousView(player, holder, () -> plugin.getGuiManager().openStopList(player, 0, false));
                 return;
             }
         }
@@ -305,7 +305,7 @@ public class GuiListener implements Listener {
             if (index >= 0 && index < stops.size()) {
                 Stop stop = stops.get(index);
                 if (isRightClick && OwnershipUtil.canManageStop(player, stop)) {
-                    plugin.getGuiManager().openStopSettings(player, stop.getId());
+                    plugin.getGuiManager().openStopSettings(player, stop.getId(), null, holder.snapshot());
                 } else {
                     handleStopClick(player, stop);
                 }
@@ -322,14 +322,14 @@ public class GuiListener implements Listener {
             case SLOT_PREV_PAGE -> {
                 Stop stop = plugin.getStopManager().getStop(stopId);
                 if (stop != null && page > 0) {
-                    plugin.getGuiManager().openLineBoardingChoice(player, stop, page - 1);
+                    plugin.getGuiManager().openLineBoardingChoice(player, stop, page - 1, holder.getPreviousView());
                 }
                 return;
             }
             case SLOT_NEXT_PAGE -> {
                 Stop stop = plugin.getStopManager().getStop(stopId);
                 if (stop != null && page < totalPages - 1) {
-                    plugin.getGuiManager().openLineBoardingChoice(player, stop, page + 1);
+                    plugin.getGuiManager().openLineBoardingChoice(player, stop, page + 1, holder.getPreviousView());
                 }
                 return;
             }
@@ -357,7 +357,7 @@ public class GuiListener implements Listener {
 
         String lineId = lineIds.get(index);
         if (isRightClick) {
-            plugin.getGuiManager().openLineDetail(player, lineId, 0);
+            plugin.getGuiManager().openLineDetail(player, lineId, 0, holder.snapshot());
             return;
         }
 
@@ -404,29 +404,29 @@ public class GuiListener implements Listener {
         switch (slot) {
             case SLOT_PREV_PAGE -> {
                 if (page > 0) {
-                    plugin.getGuiManager().openLineDetail(player, lineId, page - 1);
+                    plugin.getGuiManager().openLineDetail(player, lineId, page - 1, holder.getPreviousView());
                 }
                 return;
             }
             case SLOT_NEXT_PAGE -> {
                 if (page < totalPages - 1) {
-                    plugin.getGuiManager().openLineDetail(player, lineId, page + 1);
+                    plugin.getGuiManager().openLineDetail(player, lineId, page + 1, holder.getPreviousView());
                 }
                 return;
             }
             case SLOT_FILTER -> {
                 if (OwnershipUtil.canManageLine(player, line)) {
-                    plugin.getGuiManager().openAddStopList(player, lineId, 0, false);
+                    plugin.getGuiManager().openAddStopList(player, lineId, 0, false, holder.snapshot());
                 }
                 return;
             }
             case SLOT_BACK -> {
-                plugin.getGuiManager().openLineList(player, 0, false);
+                plugin.getGuiManager().openPreviousView(player, holder, () -> plugin.getGuiManager().openLineList(player, 0, false));
                 return;
             }
             case 50 -> {
                 if (OwnershipUtil.canManageLine(player, line)) {
-                    plugin.getGuiManager().openLineSettings(player, lineId);
+                    plugin.getGuiManager().openLineSettings(player, lineId, holder.snapshot());
                 }
                 return;
             }
@@ -446,12 +446,12 @@ public class GuiListener implements Listener {
                     // Shift+点击从线路移除站点
                     if (OwnershipUtil.canManageLine(player, line)) {
                         plugin.getGuiManager().openConfirmAction(player, "REMOVE_STOP_FROM_LINE",
-                                stopId, stop.getName(), lineId, page);
+                                stopId, stop.getName(), lineId, page, holder.snapshot());
                     }
                 } else if (isRightClick) {
                     // 右键打开该站点的设置页面
                     if (OwnershipUtil.canManageLine(player, line)) {
-                        plugin.getGuiManager().openStopSettings(player, stopId, lineId);
+                        plugin.getGuiManager().openStopSettings(player, stopId, lineId, holder.snapshot());
                     }
                 } else if (player.hasPermission("metro.tp") && stop.getStopPointLocation() != null) {
                     // 左键传送到站点（需要 metro.tp 权限）
@@ -486,22 +486,22 @@ public class GuiListener implements Listener {
         switch (slot) {
             case SLOT_PREV_PAGE -> {
                 if (page > 0) {
-                    plugin.getGuiManager().openAddStopList(player, lineId, page - 1, showOnlyMine);
+                    plugin.getGuiManager().openAddStopList(player, lineId, page - 1, showOnlyMine, holder.getPreviousView());
                 }
                 return;
             }
             case SLOT_NEXT_PAGE -> {
                 if (page < totalPages - 1) {
-                    plugin.getGuiManager().openAddStopList(player, lineId, page + 1, showOnlyMine);
+                    plugin.getGuiManager().openAddStopList(player, lineId, page + 1, showOnlyMine, holder.getPreviousView());
                 }
                 return;
             }
             case SLOT_FILTER -> {
-                plugin.getGuiManager().openAddStopList(player, lineId, 0, !showOnlyMine);
+                plugin.getGuiManager().openAddStopList(player, lineId, 0, !showOnlyMine, holder.getPreviousView());
                 return;
             }
             case SLOT_BACK -> {
-                plugin.getGuiManager().openLineDetail(player, lineId, 0);
+                plugin.getGuiManager().openPreviousView(player, holder, () -> plugin.getGuiManager().openLineDetail(player, lineId, 0));
                 return;
             }
         }
@@ -521,10 +521,10 @@ public class GuiListener implements Listener {
                 }
                 
                 if (variants.size() > 1) {
-                    plugin.getGuiManager().openAddStopVariants(player, lineId, name, 0);
+                    plugin.getGuiManager().openAddStopVariants(player, lineId, name, 0, holder.snapshot());
                 } else {
                     Stop stop = variants.get(0);
-                    handleAddStopClick(player, line, stop);
+                    handleAddStopClick(player, line, stop, holder.getPreviousView());
                 }
             }
         }
@@ -549,18 +549,18 @@ public class GuiListener implements Listener {
         switch (slot) {
             case SLOT_PREV_PAGE -> {
                 if (page > 0) {
-                    plugin.getGuiManager().openAddStopVariants(player, lineId, stopName, page - 1);
+                    plugin.getGuiManager().openAddStopVariants(player, lineId, stopName, page - 1, holder.getPreviousView());
                 }
                 return;
             }
             case SLOT_NEXT_PAGE -> {
                 if (page < totalPages - 1) {
-                    plugin.getGuiManager().openAddStopVariants(player, lineId, stopName, page + 1);
+                    plugin.getGuiManager().openAddStopVariants(player, lineId, stopName, page + 1, holder.getPreviousView());
                 }
                 return;
             }
             case SLOT_BACK -> {
-                plugin.getGuiManager().openAddStopList(player, lineId, 0, false);
+                plugin.getGuiManager().openPreviousView(player, holder, () -> plugin.getGuiManager().openAddStopList(player, lineId, 0, false));
                 return;
             }
         }
@@ -573,12 +573,12 @@ public class GuiListener implements Listener {
             int index = page * 36 + slot;
             if (index >= 0 && index < stops.size()) {
                 Stop stop = stops.get(index);
-                handleAddStopClick(player, line, stop);
+                handleAddStopClick(player, line, stop, holder.getPreviousView());
             }
         }
     }
 
-    private void handleAddStopClick(Player player, Line line, Stop stop) {
+    private void handleAddStopClick(Player player, Line line, Stop stop, GuiHolder.GuiView returnView) {
         if (!OwnershipUtil.canManageLine(player, line)) {
             return;
         }
@@ -588,10 +588,20 @@ public class GuiListener implements Listener {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_success",
                     LanguageManager.put(LanguageManager.put(LanguageManager.args(),
                             "stop_id", stop.getId()), "line_id", line.getId())));
-            // 刷新界面回到线路详情
-            plugin.getGuiManager().openLineDetail(player, line.getId(), 0);
+            reopenAfterAddStop(player, line, returnView);
         } else {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_fail"));
+            reopenAfterAddStop(player, line, returnView);
+        }
+    }
+
+    private void reopenAfterAddStop(Player player, Line line, GuiHolder.GuiView returnView) {
+        GuiHolder.GuiView view = returnView;
+        while (view != null && (view.getType() == GuiHolder.GuiType.ADD_STOP_LIST
+                || view.getType() == GuiHolder.GuiType.ADD_STOP_VARIANTS)) {
+            view = view.getPreviousView();
+        }
+        if (!plugin.getGuiManager().openView(player, view)) {
             plugin.getGuiManager().openLineDetail(player, line.getId(), 0);
         }
     }
@@ -603,19 +613,20 @@ public class GuiListener implements Listener {
             player.closeInventory();
             return;
         }
+        GuiHolder.GuiView previousView = holder.getPreviousView();
 
         switch (slot) {
             case 1 -> { // Route recording
                 handleRouteRecordingToggle(player, line);
-                plugin.getGuiManager().openLineSettings(player, lineId);
+                plugin.getGuiManager().openLineSettings(player, lineId, previousView);
             }
             case 3 -> { // Route info
                 sendRouteInfo(player, line);
-                plugin.getGuiManager().openLineSettings(player, lineId);
+                plugin.getGuiManager().openLineSettings(player, lineId, previousView);
             }
             case 5 -> { // Clear route
                 plugin.getGuiManager().openConfirmAction(player, "CLEAR_ROUTE",
-                        lineId, line.getName(), null, 0);
+                        lineId, line.getName(), null, 0, holder.snapshot());
             }
             case 7 -> { // Rail protection toggle
                 boolean enabled = !line.isRailProtected();
@@ -629,7 +640,7 @@ public class GuiListener implements Listener {
                     player.sendMessage(plugin.getLanguageManager().getMessage("line.protect_update_fail",
                             LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
                 }
-                plugin.getGuiManager().openLineSettings(player, lineId);
+                plugin.getGuiManager().openLineSettings(player, lineId, previousView);
             }
             case 9 -> { // Rename
                 plugin.getChatInputManager().requestInput(player, plugin.getLanguageManager().getMessage("chat.enter_new_name"), new ChatInputManager.ChatInputCallback() {
@@ -642,11 +653,11 @@ public class GuiListener implements Listener {
                         } else {
                             player.sendMessage(plugin.getLanguageManager().getMessage("line.rename_fail"));
                         }
-                        plugin.getGuiManager().openLineSettings(player, lineId);
+                        plugin.getGuiManager().openLineSettings(player, lineId, previousView);
                     }
                     @Override
                     public void onCancel() {
-                        plugin.getGuiManager().openLineSettings(player, lineId);
+                        plugin.getGuiManager().openLineSettings(player, lineId, previousView);
                     }
                 });
             }
@@ -665,11 +676,11 @@ public class GuiListener implements Listener {
                         } catch (NumberFormatException e) {
                             player.sendMessage(plugin.getLanguageManager().getMessage("line.setmaxspeed_invalid"));
                         }
-                        plugin.getGuiManager().openLineSettings(player, lineId);
+                        plugin.getGuiManager().openLineSettings(player, lineId, previousView);
                     }
                     @Override
                     public void onCancel() {
-                        plugin.getGuiManager().openLineSettings(player, lineId);
+                        plugin.getGuiManager().openLineSettings(player, lineId, previousView);
                     }
                 });
             }
@@ -690,11 +701,11 @@ public class GuiListener implements Listener {
                         } catch (NumberFormatException e) {
                             player.sendMessage(plugin.getLanguageManager().getMessage("line.setprice_invalid"));
                         }
-                        plugin.getGuiManager().openLineSettings(player, lineId);
+                        plugin.getGuiManager().openLineSettings(player, lineId, previousView);
                     }
                     @Override
                     public void onCancel() {
-                        plugin.getGuiManager().openLineSettings(player, lineId);
+                        plugin.getGuiManager().openLineSettings(player, lineId, previousView);
                     }
                 });
             }
@@ -713,20 +724,20 @@ public class GuiListener implements Listener {
                                 player.sendMessage(plugin.getLanguageManager().getMessage("line.clone_fail"));
                             }
                         }
-                        plugin.getGuiManager().openLineSettings(player, lineId);
+                        plugin.getGuiManager().openLineSettings(player, lineId, previousView);
                     }
                     @Override
                     public void onCancel() {
-                        plugin.getGuiManager().openLineSettings(player, lineId);
+                        plugin.getGuiManager().openLineSettings(player, lineId, previousView);
                     }
                 });
             }
             case 17 -> { // Delete
                 plugin.getGuiManager().openConfirmAction(player, "DELETE_LINE",
-                        lineId, line.getName(), null, 0);
+                        lineId, line.getName(), null, 0, holder.snapshot());
             }
             case 22 -> { // Back
-                plugin.getGuiManager().openLineList(player, 0, false);
+                plugin.getGuiManager().openPreviousView(player, holder, () -> plugin.getGuiManager().openLineList(player, 0, false));
             }
         }
     }
@@ -805,6 +816,7 @@ public class GuiListener implements Listener {
             player.closeInventory();
             return;
         }
+        GuiHolder.GuiView previousView = holder.getPreviousView();
 
         switch (slot) {
             case 11 -> { // Rename
@@ -818,31 +830,33 @@ public class GuiListener implements Listener {
                         } else {
                             player.sendMessage(plugin.getLanguageManager().getMessage("stop.rename_fail"));
                         }
-                        plugin.getGuiManager().openStopSettings(player, stopId, fromLineId);
+                        plugin.getGuiManager().openStopSettings(player, stopId, fromLineId, previousView);
                     }
                     @Override
                     public void onCancel() {
-                        plugin.getGuiManager().openStopSettings(player, stopId, fromLineId);
+                        plugin.getGuiManager().openStopSettings(player, stopId, fromLineId, previousView);
                     }
                 });
             }
             case 15 -> { // Delete
                 plugin.getGuiManager().openConfirmAction(player, "DELETE_STOP",
-                        stopId, stop.getName(), fromLineId, 0);
+                        stopId, stop.getName(), fromLineId, 0, holder.snapshot());
             }
             case 22 -> { // Back
-                if (fromLineId != null) {
-                    plugin.getGuiManager().openLineDetail(player, fromLineId, 0);
-                } else {
-                    plugin.getGuiManager().openStopList(player, 0, false);
-                }
+                plugin.getGuiManager().openPreviousView(player, holder, () -> {
+                    if (fromLineId != null) {
+                        plugin.getGuiManager().openLineDetail(player, fromLineId, 0);
+                    } else {
+                        plugin.getGuiManager().openStopList(player, 0, false);
+                    }
+                });
             }
         }
     }
 
     private void handleConfirmActionClick(Player player, GuiHolder holder, int slot) {
         if (slot == SLOT_CANCEL || slot == 22) {
-            reopenConfirmSource(player, holder);
+            plugin.getGuiManager().openPreviousView(player, holder, () -> reopenConfirmSource(player, holder));
             return;
         }
         if (slot != SLOT_CONFIRM) {
@@ -855,7 +869,7 @@ public class GuiListener implements Listener {
             case "DELETE_STOP" -> confirmDeleteStop(player, holder);
             case "REMOVE_STOP_FROM_LINE" -> confirmRemoveStopFromLine(player, holder);
             case "CLEAR_ROUTE" -> confirmClearRoute(player, holder);
-            default -> reopenConfirmSource(player, holder);
+            default -> plugin.getGuiManager().openPreviousView(player, holder, () -> reopenConfirmSource(player, holder));
         }
     }
 
@@ -914,7 +928,9 @@ public class GuiListener implements Listener {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.clearroute_fail",
                     LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
         }
-        plugin.getGuiManager().openLineSettings(player, lineId);
+        if (!plugin.getGuiManager().openView(player, holder.getPreviousView())) {
+            plugin.getGuiManager().openLineSettings(player, lineId);
+        }
     }
 
     private void reopenConfirmSource(Player player, GuiHolder holder) {
