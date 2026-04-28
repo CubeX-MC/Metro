@@ -17,6 +17,7 @@ import org.cubexmc.metro.manager.RouteRecorder;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Stop;
+import org.cubexmc.metro.service.LineCommandService;
 import org.cubexmc.metro.util.OwnershipUtil;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.HoverEvent;
@@ -33,12 +34,14 @@ public class LineCommand {
     private final LineManager lineManager;
     private final StopManager stopManager;
     private final CommandGuard guard;
+    private final LineCommandService lineService;
 
     public LineCommand(Metro plugin, LineManager lineManager, StopManager stopManager) {
         this.plugin = plugin;
         this.lineManager = lineManager;
         this.stopManager = stopManager;
         this.guard = new CommandGuard(plugin, lineManager, stopManager);
+        this.lineService = new LineCommandService(lineManager);
     }
 
     @Command("m|metro line|l")
@@ -115,11 +118,15 @@ public class LineCommand {
             return;
         }
 
-        if (lineManager.createLine(id, name, player.getUniqueId())) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.create_success",
+        LineCommandService.WriteStatus status = lineService.createLine(id, name, player.getUniqueId());
+        switch (status) {
+            case SUCCESS -> player.sendMessage(plugin.getLanguageManager().getMessage("line.create_success",
                     LanguageManager.put(LanguageManager.args(), "line_id", id)));
-        } else {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.create_exists",
+            case INVALID_ID -> player.sendMessage(plugin.getLanguageManager().getMessage("line.id_invalid",
+                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
+            case EXISTS -> player.sendMessage(plugin.getLanguageManager().getMessage("line.create_exists",
+                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
+            default -> player.sendMessage(plugin.getLanguageManager().getMessage("line.create_fail",
                     LanguageManager.put(LanguageManager.args(), "line_id", id)));
         }
     }
@@ -132,7 +139,7 @@ public class LineCommand {
             return;
         }
 
-        if (lineManager.deleteLine(id)) {
+        if (lineService.deleteLine(id) == LineCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.delete_success",
                     LanguageManager.put(LanguageManager.args(), "line_id", id)));
         } else {
@@ -148,7 +155,7 @@ public class LineCommand {
             return;
         }
 
-        if (lineManager.setLineName(id, name)) {
+        if (lineService.renameLine(id, name) == LineCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.rename_success",
                     LanguageManager.put(LanguageManager.put(LanguageManager.args(),
                             "line_id", id), "new_name", name)));
@@ -165,7 +172,13 @@ public class LineCommand {
             return;
         }
 
-        if (lineManager.setLineColor(id, color)) {
+        LineCommandService.WriteStatus status = lineService.setColor(id, color);
+        if (status == LineCommandService.WriteStatus.INVALID_COLOR) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.setcolor_invalid",
+                    LanguageManager.put(LanguageManager.args(), "color", color)));
+            return;
+        }
+        if (status == LineCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.setcolor_success",
                     LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
                             "line_id", line.getId()), "line_name", line.getName()), "color", color)));
@@ -182,7 +195,7 @@ public class LineCommand {
             return;
         }
 
-        if (lineManager.setLineTerminusName(id, terminus)) {
+        if (lineService.setTerminusName(id, terminus) == LineCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.setterminus_success",
                     LanguageManager.put(LanguageManager.put(LanguageManager.args(), "line_id", id), "terminus_name", terminus)));
         }
@@ -195,11 +208,12 @@ public class LineCommand {
         if (line == null) {
             return;
         }
-        if (speed <= 0) {
+        LineCommandService.WriteStatus status = lineService.setMaxSpeed(id, speed);
+        if (status == LineCommandService.WriteStatus.INVALID_VALUE) {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.setmaxspeed_invalid"));
             return;
         }
-        if (lineManager.setLineMaxSpeed(id, speed)) {
+        if (status == LineCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.setmaxspeed_success",
                     LanguageManager.put(LanguageManager.put(LanguageManager.args(), "line_id", id), "max_speed", String.valueOf(speed))));
         }
@@ -225,35 +239,18 @@ public class LineCommand {
             return;
         }
 
-        String stopWorld = stop.getWorldName();
-        String lineWorld = line.getWorldName();
-        if (stopWorld == null || stopWorld.isBlank()) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_stop_no_world",
-                    LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
-            return;
-        }
-        if (lineWorld != null && !lineWorld.equals(stopWorld)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_world_mismatch",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "line_id", lineId), "line_world", lineWorld), "stop_world", stopWorld)));
-            return;
-        }
-
-        int targetIndex = index == null ? -1 : index;
-        if (line.isCircular() && (targetIndex < 0 || targetIndex >= line.getOrderedStopIds().size())) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_circular_invalid_index"));
-            return;
-        }
-
-        if (lineManager.addStopToLine(lineId, stopId, targetIndex)) {
-            if (lineWorld == null) {
-                lineManager.setLineWorldName(lineId, stopWorld);
-            }
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_success",
+        LineCommandService.AddStopResult result = lineService.addStopToLine(line, stop, index);
+        switch (result.status()) {
+            case SUCCESS -> player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_success",
                     LanguageManager.put(LanguageManager.put(LanguageManager.args(),
                             "stop_id", stopId), "line_id", line.getId())));
-        } else {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_fail"));
+            case STOP_NO_WORLD -> player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_stop_no_world",
+                    LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
+            case WORLD_MISMATCH -> player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_world_mismatch",
+                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
+                            "line_id", lineId), "line_world", result.lineWorld()), "stop_world", result.stopWorld())));
+            case CIRCULAR_INVALID_INDEX -> player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_circular_invalid_index"));
+            default -> player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_fail"));
         }
     }
 
@@ -265,10 +262,7 @@ public class LineCommand {
             return;
         }
 
-        if (lineManager.delStopFromLine(lineId, stopId)) {
-            if (line.getOrderedStopIds().isEmpty()) {
-                lineManager.setLineWorldName(lineId, null);
-            }
+        if (lineService.removeStopFromLine(line, stopId) == LineCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.delstop_success",
                     LanguageManager.put(LanguageManager.put(LanguageManager.args(),
                             "stop_id", stopId), "line_id", line.getId())));
@@ -388,7 +382,7 @@ public class LineCommand {
             player.sendMessage(ChatColor.RED + "Usage: /metro line protect <id> <on|off|status>");
             return;
         }
-        if (!lineManager.setLineRailProtected(id, enabled)) {
+        if (lineService.setRailProtected(id, enabled) != LineCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(ChatColor.RED + "Failed to update rail protection for line " + id + ".");
             return;
         }
@@ -440,9 +434,9 @@ public class LineCommand {
         }
 
         plugin.getRouteRecorder().clearActive(id);
-        int previousCount = line.getRoutePoints().size();
-        if (lineManager.clearLineRoutePoints(id)) {
-            player.sendMessage(ChatColor.GREEN + "Cleared " + previousCount + " route point(s) for line " + id + ".");
+        LineCommandService.ClearRouteResult result = lineService.clearRoutePoints(line);
+        if (result.status() == LineCommandService.WriteStatus.SUCCESS) {
+            player.sendMessage(ChatColor.GREEN + "Cleared " + result.previousPointCount() + " route point(s) for line " + id + ".");
         } else {
             player.sendMessage(ChatColor.RED + "Failed to clear route points for line " + id + ".");
         }
@@ -585,7 +579,13 @@ public class LineCommand {
             return;
         }
 
-        if (lineManager.cloneReverseLine(sourceId, newId, stopIdSuffix, player.getUniqueId())) {
+        LineCommandService.WriteStatus status = lineService.cloneReverseLine(sourceId, newId, stopIdSuffix, player.getUniqueId());
+        if (status == LineCommandService.WriteStatus.INVALID_ID) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.id_invalid",
+                    LanguageManager.put(LanguageManager.args(), "line_id", newId)));
+            return;
+        }
+        if (status == LineCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.clone_success",
                     LanguageManager.put(LanguageManager.args(), "new_line_id", newId)));
         } else {
@@ -601,12 +601,13 @@ public class LineCommand {
             return;
         }
 
-        if (price < 0) {
-            player.sendMessage(ChatColor.RED + "Price cannot be negative.");
+        LineCommandService.WriteStatus status = lineService.setTicketPrice(id, price);
+        if (status == LineCommandService.WriteStatus.INVALID_VALUE) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.setprice_invalid"));
             return;
         }
 
-        if (lineManager.setLineTicketPrice(id, price)) {
+        if (status == LineCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.setprice_success",
                     LanguageManager.put(LanguageManager.put(LanguageManager.args(),
                             "line_name", line.getName()), "price", String.valueOf(price))));
