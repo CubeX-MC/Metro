@@ -9,6 +9,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Map;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.bukkit.Location;
@@ -45,6 +47,17 @@ class StopCommandServiceTest {
 
         assertEquals(WriteStatus.SUCCESS, service.createStop("central", "Central", null, null, ownerId).status());
         assertEquals(WriteStatus.EXISTS, service.createStop("central", "Again", null, null, ownerId).status());
+    }
+
+    @Test
+    void shouldListStopsInStableIdOrderAndSkipMissingStops() {
+        Stop beta = new Stop("beta", "Beta");
+        Stop alpha = new Stop("alpha", "Alpha");
+        when(stopManager.getAllStopIds()).thenReturn(Set.of("beta", "missing", "alpha"));
+        when(stopManager.getStop("beta")).thenReturn(beta);
+        when(stopManager.getStop("alpha")).thenReturn(alpha);
+
+        assertEquals(List.of(alpha, beta), service.listStops());
     }
 
     @Test
@@ -106,6 +119,36 @@ class StopCommandServiceTest {
         assertEquals(WriteStatus.SUCCESS, service.updateLineLink("allow", "central", "red"));
         assertEquals(WriteStatus.NOT_FOUND, service.updateLineLink("deny", "central", "red"));
         assertEquals(WriteStatus.INVALID_ACTION, service.updateLineLink("toggle", "central", "red"));
+    }
+
+    @Test
+    void shouldGrantStopAdminOnlyWhenTargetIsNotAlreadyAdmin() {
+        UUID existingAdmin = UUID.randomUUID();
+        UUID newAdmin = UUID.randomUUID();
+        Stop stop = new Stop("central", "Central");
+        stop.addAdmin(existingAdmin);
+        when(stopManager.addStopAdmin("central", newAdmin)).thenReturn(true);
+
+        assertEquals(WriteStatus.EXISTS, service.addAdmin(stop, existingAdmin));
+        assertEquals(WriteStatus.SUCCESS, service.addAdmin(stop, newAdmin));
+
+        verify(stopManager, never()).addStopAdmin("central", existingAdmin);
+        verify(stopManager).addStopAdmin("central", newAdmin);
+    }
+
+    @Test
+    void shouldRevokeStopAdminAndTransferOwnerThroughManager() {
+        UUID adminId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        Stop stop = new Stop("central", "Central");
+        when(stopManager.removeStopAdmin("central", adminId)).thenReturn(true);
+        when(stopManager.setStopOwner("central", ownerId)).thenReturn(true);
+
+        assertEquals(WriteStatus.SUCCESS, service.removeAdmin(stop, adminId));
+        assertEquals(WriteStatus.SUCCESS, service.setOwner(stop, ownerId));
+
+        verify(stopManager).removeStopAdmin("central", adminId);
+        verify(stopManager).setStopOwner("central", ownerId);
     }
 
     private Location location(Material material, float yaw) {

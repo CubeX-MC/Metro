@@ -52,6 +52,15 @@ class LineCommandServiceTest {
     }
 
     @Test
+    void shouldListLinesInStableIdOrder() {
+        Line beta = line("beta", "world", List.of());
+        Line alpha = line("alpha", "world", List.of());
+        when(lineManager.getAllLines()).thenReturn(List.of(beta, alpha));
+
+        assertEquals(List.of(alpha, beta), service.listLines());
+    }
+
+    @Test
     void shouldRejectAddingStopsWithoutUsableWorld() {
         Line line = line("red", null, List.of());
         Stop stop = stop("central", null);
@@ -100,6 +109,36 @@ class LineCommandServiceTest {
         assertEquals(WriteStatus.CIRCULAR_INVALID_INDEX, result.status());
         verify(lineManager, never()).addStopToLine(org.mockito.Mockito.anyString(), org.mockito.Mockito.anyString(),
                 org.mockito.Mockito.anyInt());
+    }
+
+    @Test
+    void shouldGrantLineAdminOnlyWhenTargetIsNotAlreadyAdmin() {
+        UUID existingAdmin = UUID.randomUUID();
+        UUID newAdmin = UUID.randomUUID();
+        Line line = line("red", "world", List.of());
+        line.addAdmin(existingAdmin);
+        when(lineManager.addLineAdmin("red", newAdmin)).thenReturn(true);
+
+        assertEquals(WriteStatus.EXISTS, service.grantAdmin(line, existingAdmin));
+        assertEquals(WriteStatus.SUCCESS, service.grantAdmin(line, newAdmin));
+
+        verify(lineManager, never()).addLineAdmin("red", existingAdmin);
+        verify(lineManager).addLineAdmin("red", newAdmin);
+    }
+
+    @Test
+    void shouldRevokeLineAdminAndTransferOwnerThroughManager() {
+        UUID adminId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        Line line = line("red", "world", List.of());
+        when(lineManager.removeLineAdmin("red", adminId)).thenReturn(true);
+        when(lineManager.setLineOwner("red", ownerId)).thenReturn(true);
+
+        assertEquals(WriteStatus.SUCCESS, service.revokeAdmin(line, adminId));
+        assertEquals(WriteStatus.SUCCESS, service.transferOwner(line, ownerId));
+
+        verify(lineManager).removeLineAdmin("red", adminId);
+        verify(lineManager).setLineOwner("red", ownerId);
     }
 
     private Line line(String id, String worldName, List<String> stopIds) {

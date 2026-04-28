@@ -2,10 +2,14 @@ package org.cubexmc.metro.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -83,6 +87,28 @@ class PortalCommandServiceTest {
 
         when(portalManager.linkPortals("p1", "p2")).thenReturn(true);
         assertEquals(WriteStatus.SUCCESS, service.linkPortals("p1", "p2"));
+    }
+
+    @Test
+    void shouldListPortalsInStableIdOrder() {
+        Portal beta = new Portal("beta");
+        Portal alpha = new Portal("alpha");
+        when(portalManager.getAllPortals()).thenReturn(List.of(beta, alpha));
+
+        assertEquals(List.of(alpha, beta), service.listPortals());
+    }
+
+    @Test
+    void shouldRunMigrationBeforeReloadingPortals() {
+        AtomicBoolean migrated = new AtomicBoolean(false);
+        when(portalManager.getAllPortals()).thenReturn(List.of(new Portal("p1"), new Portal("p2")));
+
+        PortalCommandService.ReloadResult result = service.reloadPortals(() -> migrated.set(true));
+
+        assertTrue(migrated.get());
+        assertEquals(WriteStatus.SUCCESS, result.status());
+        assertEquals(2, result.portalCount());
+        verify(portalManager).load();
     }
 
     private Location location(String worldName) {

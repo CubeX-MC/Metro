@@ -1,5 +1,7 @@
 package org.cubexmc.metro.service;
 
+import java.util.Comparator;
+import java.util.List;
 import java.util.regex.Pattern;
 
 import org.bukkit.Location;
@@ -32,6 +34,9 @@ public class PortalCommandService {
     }
 
     public record PortalWriteResult(WriteStatus status, Portal portal, Location location) {
+    }
+
+    public record ReloadResult(WriteStatus status, int portalCount) {
     }
 
     public PortalWriteResult createPortal(String id, Location fallbackLocation, Block targetBlock) {
@@ -68,6 +73,20 @@ public class PortalCommandService {
 
     public WriteStatus deletePortal(String id) {
         return portalManager.deletePortal(id) ? WriteStatus.SUCCESS : WriteStatus.NOT_FOUND;
+    }
+
+    public List<Portal> listPortals() {
+        return portalManager.getAllPortals().stream()
+                .sorted(Comparator.comparing(Portal::getId))
+                .toList();
+    }
+
+    public ReloadResult reloadPortals(Runnable migration) {
+        if (migration != null) {
+            migration.run();
+        }
+        portalManager.load();
+        return new ReloadResult(WriteStatus.SUCCESS, portalManager.getAllPortals().size());
     }
 
     public boolean isValidId(String id) {

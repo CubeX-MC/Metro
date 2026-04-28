@@ -9,18 +9,15 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import org.incendo.cloud.annotations.AnnotationParser;
-import org.incendo.cloud.context.CommandInput;
-import org.incendo.cloud.context.CommandContext;
-import org.incendo.cloud.execution.ExecutionCoordinator;
-import org.incendo.cloud.paper.LegacyPaperCommandManager;
 
-import org.cubexmc.metro.command.newcmd.LineCommand;
-import org.cubexmc.metro.command.newcmd.MetroMainCommand;
-import org.cubexmc.metro.command.newcmd.StopCommand;
 import org.cubexmc.metro.config.ConfigFacade;
 import org.cubexmc.metro.gui.ChatInputManager;
 import org.cubexmc.metro.gui.GuiListener;
 import org.cubexmc.metro.gui.GuiManager;
+import org.cubexmc.metro.lifecycle.CommandRegistration;
+import org.cubexmc.metro.lifecycle.ListenerRegistration;
+import org.cubexmc.metro.lifecycle.MapIntegrationLifecycle;
+import org.cubexmc.metro.lifecycle.ScheduledTaskLifecycle;
 import net.megavex.scoreboardlibrary.api.ScoreboardLibrary;
 import net.megavex.scoreboardlibrary.api.exception.NoPacketAdapterAvailableException;
 import org.cubexmc.metro.manager.LanguageManager;
@@ -63,12 +60,8 @@ public final class Metro extends JavaPlugin {
     private org.cubexmc.metro.service.LineSelectionService lineSelectionService;
     private org.cubexmc.metro.service.TicketService ticketService;
     private SaveCoordinator saveCoordinator;
-    private Object autoSaveTaskId;
-
-    private org.cubexmc.metro.integration.BlueMapIntegration blueMapIntegration;
-    private org.cubexmc.metro.integration.DynmapIntegration dynmapIntegration;
-    private org.cubexmc.metro.integration.SquaremapIntegration squaremapIntegration;
-    private boolean mapRefreshQueued = false;
+    private MapIntegrationLifecycle mapIntegrationLifecycle;
+    private ScheduledTaskLifecycle scheduledTaskLifecycle;
 
     @Override
     public void onEnable() {
@@ -130,165 +123,39 @@ public final class Metro extends JavaPlugin {
         scoreboardManager = new ScoreboardManager(this);
         MetroConstants.initialize(this);
 
-        // 注册命令 (Cloud Command Framework)
-        try {
-            try {
-                // 尝试寻找 Paper 1.20.5+ 新引入的生命周期事件类
-                Class.forName("io.papermc.paper.plugin.lifecycle.event.LifecycleEventManager");
-                final Class<?> cssClass = Class.forName("io.papermc.paper.command.brigadier.CommandSourceStack");
-                
-                @SuppressWarnings({"unchecked", "rawtypes"})
-                org.incendo.cloud.SenderMapper<?, CommandSender> mapper = org.incendo.cloud.SenderMapper.create(
-                    source -> {
-                        try {
-                            return (CommandSender) source.getClass().getMethod("getSender").invoke(source);
-                        } catch (Exception e) {
-                            throw new RuntimeException("Failed to map CommandSourceStack to CommandSender", e);
-                        }
-                    },
-                    sender -> java.lang.reflect.Proxy.newProxyInstance(
-                        cssClass.getClassLoader(),
-                        new Class<?>[]{cssClass},
-                        (proxy, method, args) -> {
-                            String name = method.getName();
-                            if ("getSender".equals(name)) return sender;
-                            if ("getLocation".equals(name)) return sender instanceof org.bukkit.entity.Entity ? ((org.bukkit.entity.Entity) sender).getLocation() : null;
-                            if ("getExecutor".equals(name)) return sender instanceof org.bukkit.entity.Entity ? sender : null;
-                            if ("toString".equals(name)) return "CommandSourceStackProxy[" + sender.getName() + "]";
-                            if ("equals".equals(name)) return args != null && args.length == 1 && proxy == args[0];
-                            if ("hashCode".equals(name)) return System.identityHashCode(proxy);
-                            return null;
-                        }
-                    )
-                );
-                
-                commandManager = (org.incendo.cloud.CommandManager<CommandSender>) org.incendo.cloud.paper.PaperCommandManager.builder((org.incendo.cloud.SenderMapper) mapper)
-                        .executionCoordinator(ExecutionCoordinator.simpleCoordinator())
-                        .buildOnEnable(this);
-                        
-                getLogger().info("已加载新版 PaperCommandManager (1.20.5+)");
-            } catch (ClassNotFoundException e) {
-                // 如果抛出异常，说明找不到那个类，当前是老版本服务器 (1.18 - 1.20.4)
-                // 回退使用 Legacy 版
-                org.incendo.cloud.paper.LegacyPaperCommandManager<CommandSender> legacyManager = org.incendo.cloud.paper.LegacyPaperCommandManager.createNative(
-                        this,
-                        ExecutionCoordinator.simpleCoordinator());
-
-                // 老版本通常需要手动注册 Brigadier 和 Asynchronous Completion
-                if (legacyManager.hasCapability(org.incendo.cloud.bukkit.CloudBukkitCapabilities.NATIVE_BRIGADIER)) {
-                    legacyManager.registerBrigadier();
-                }
-                if (legacyManager.hasCapability(org.incendo.cloud.bukkit.CloudBukkitCapabilities.ASYNCHRONOUS_COMPLETION)) {
-                    legacyManager.registerAsynchronousCompletions();
-                }
-                
-                commandManager = legacyManager;
-                getLogger().info("已加载兼容版 LegacyPaperCommandManager (1.20.4 及以下)");
-            }
-
-            annotationParser = new AnnotationParser<>(commandManager, CommandSender.class);
-
-            registerSuggestionProviders();
-
-            // 解析并注册带有 @Command 注解的类
-            annotationParser.parse(
-                new MetroMainCommand(this, lineManager, stopManager),
-                new LineCommand(this, lineManager, stopManager),
-                new StopCommand(this, stopManager, lineManager),
-                new org.cubexmc.metro.command.newcmd.PortalCommand(this)
-            );
-
-            getLogger().info("Cloud Command Framework initialized successfully.");
-
-        } catch (Exception e) {
-            getLogger().severe("Failed to initialize Cloud Command Framework:");
-            e.printStackTrace();
-            Bukkit.getPluginManager().disablePlugin(this);
+        CommandRegistration.Result commandRegistration =
+                new CommandRegistration(this, lineManager, stopManager).register();
+        if (commandRegistration == null) {
             return;
         }
+        this.commandManager = commandRegistration.commandManager();
+        this.annotationParser = commandRegistration.annotationParser();
 
-        // 注册事件监听器
-        this.playerInteractListener = new PlayerInteractListener(this);
-        this.vehicleListener = new VehicleListener(this);
-        this.playerMoveListener = new PlayerMoveListener(this);
-        this.guiListener = new GuiListener(this);
-        this.trainDisplayController = new TrainDisplayController(this);
-        Bukkit.getPluginManager().registerEvents(playerInteractListener, this);
-        Bukkit.getPluginManager().registerEvents(vehicleListener, this);
-        Bukkit.getPluginManager().registerEvents(playerMoveListener, this);
-        Bukkit.getPluginManager().registerEvents(guiListener, this);
-        Bukkit.getPluginManager().registerEvents(trainDisplayController, this);
-        Bukkit.getPluginManager().registerEvents(railProtectionManager, this);
+        ListenerRegistration.Result listenerRegistration =
+                new ListenerRegistration(this, railProtectionManager).register();
+        this.playerInteractListener = listenerRegistration.playerInteractListener();
+        this.vehicleListener = listenerRegistration.vehicleListener();
+        this.playerMoveListener = listenerRegistration.playerMoveListener();
+        this.guiListener = listenerRegistration.guiListener();
+        this.trainDisplayController = listenerRegistration.trainDisplayController();
 
         // 注册bstats
         int pluginId = 25825; // <-- Replace with the id of your plugin!
         new Metrics(this, pluginId);
 
-        // 自动保存任务（每60秒检查一次）
-        this.autoSaveTaskId = org.cubexmc.metro.util.SchedulerUtil.globalRun(this, () -> {
-            if (lineManager != null) {
-                lineManager.processAsyncSave();
-            }
-            if (stopManager != null) {
-                stopManager.processAsyncSave();
-            }
-        }, 1200L, 1200L);
+        this.scheduledTaskLifecycle = new ScheduledTaskLifecycle(this, lineManager, stopManager);
+        this.scheduledTaskLifecycle.start();
 
-        // ==== BACKWARD COMPATIBILITY ====
-        // Sweep worlds for name-based minecarts missing the PDC tag and apply it.
-        // Doing this delayed allows worlds to fully load.
-        org.cubexmc.metro.util.SchedulerUtil.globalRun(this, () -> {
-            for (org.bukkit.World world : Bukkit.getWorlds()) {
-                for (org.bukkit.entity.Entity entity : world.getEntitiesByClass(org.bukkit.entity.Minecart.class)) {
-                    if (org.cubexmc.metro.util.MetroConstants.METRO_MINECART_NAME.equals(entity.getCustomName()) &&
-                            !entity.getPersistentDataContainer().has(
-                                    org.cubexmc.metro.util.MetroConstants.getMinecartKey(),
-                                    org.bukkit.persistence.PersistentDataType.BYTE)) {
-                        entity.getPersistentDataContainer().set(org.cubexmc.metro.util.MetroConstants.getMinecartKey(),
-                                org.bukkit.persistence.PersistentDataType.BYTE, (byte) 1);
-                        getLogger().info("Migrated legacy Metro Minecart to PDC data: " + entity.getUniqueId());
-                    }
-                }
-            }
-        }, 100L, -1L); // 5 seconds after startup
-
-        // 网页地图集成（BlueMap / Dynmap / Squaremap）
-        // 集成类内部会自动检查 config 和 classpath，只有满足条件时才加载
-        try {
-            this.blueMapIntegration = new org.cubexmc.metro.integration.BlueMapIntegration(this);
-            this.blueMapIntegration.enable();
-        } catch (Throwable e) {
-            getLogger().info("BlueMap API not found, skipping BlueMap integration.");
-        }
-
-        try {
-            this.dynmapIntegration = new org.cubexmc.metro.integration.DynmapIntegration(this);
-            this.dynmapIntegration.enable();
-        } catch (Throwable e) {
-            getLogger().info("Dynmap API not found, skipping Dynmap integration.");
-        }
-
-        try {
-            this.squaremapIntegration = new org.cubexmc.metro.integration.SquaremapIntegration(this);
-            this.squaremapIntegration.enable();
-        } catch (Throwable e) {
-            getLogger().info("Squaremap API not found, skipping Squaremap integration.");
-        }
+        this.mapIntegrationLifecycle = new MapIntegrationLifecycle(this);
+        this.mapIntegrationLifecycle.enable();
 
         getLogger().info("Metro(Modern) has been enabled!");
     }
 
     @Override
     public void onDisable() {
-        // 关闭地图集成并清理标记
-        if (this.blueMapIntegration != null) {
-            this.blueMapIntegration.disable();
-        }
-        if (this.dynmapIntegration != null) {
-            this.dynmapIntegration.disable();
-        }
-        if (this.squaremapIntegration != null) {
-            this.squaremapIntegration.disable();
+        if (this.mapIntegrationLifecycle != null) {
+            this.mapIntegrationLifecycle.disable();
         }
 
         // 主动清理任务与显示，避免 reload 残留状态
@@ -323,8 +190,8 @@ public final class Metro extends JavaPlugin {
             }
         }
 
-        if (autoSaveTaskId != null) {
-            org.cubexmc.metro.util.SchedulerUtil.cancelTask(autoSaveTaskId);
+        if (scheduledTaskLifecycle != null) {
+            scheduledTaskLifecycle.shutdown();
         }
         if (routeRecorder != null) {
             routeRecorder.cancelAll();
@@ -463,26 +330,15 @@ public final class Metro extends JavaPlugin {
     }
 
     public void refreshMapIntegrations() {
-        if (this.blueMapIntegration != null) {
-            this.blueMapIntegration.refresh();
-        }
-        if (this.dynmapIntegration != null) {
-            this.dynmapIntegration.refresh();
-        }
-        if (this.squaremapIntegration != null) {
-            this.squaremapIntegration.refresh();
+        if (this.mapIntegrationLifecycle != null) {
+            this.mapIntegrationLifecycle.refresh();
         }
     }
 
     public void requestMapIntegrationRefresh() {
-        if (this.configFacade == null || !this.configFacade.isMapIntegrationEnabled() || mapRefreshQueued) {
-            return;
+        if (this.mapIntegrationLifecycle != null) {
+            this.mapIntegrationLifecycle.requestRefresh();
         }
-        mapRefreshQueued = true;
-        org.cubexmc.metro.util.SchedulerUtil.globalRun(this, () -> {
-            mapRefreshQueued = false;
-            refreshMapIntegrations();
-        }, 1L, -1L);
     }
 
     public org.cubexmc.metro.manager.PortalManager getPortalManager() {
@@ -529,27 +385,4 @@ public final class Metro extends JavaPlugin {
         return playerInteractListener;
     }
 
-    private void registerSuggestionProviders() {
-        commandManager.parserRegistry().registerSuggestionProvider("lineIds",
-                (context, input) -> toSuggestionsFuture(lineIdSuggestions(context, input)));
-        commandManager.parserRegistry().registerSuggestionProvider("stopIds",
-                (context, input) -> toSuggestionsFuture(stopIdSuggestions(context, input)));
-    }
-
-    private Iterable<String> lineIdSuggestions(final CommandContext<CommandSender> context, final CommandInput input) {
-        return lineManager.getAllLines().stream().map(org.cubexmc.metro.model.Line::getId).toList();
-    }
-
-    private Iterable<String> stopIdSuggestions(final CommandContext<CommandSender> context, final CommandInput input) {
-        return new java.util.ArrayList<>(stopManager.getAllStopIds());
-    }
-
-    private java.util.concurrent.CompletableFuture<? extends Iterable<? extends org.incendo.cloud.suggestion.Suggestion>> toSuggestionsFuture(
-            final Iterable<String> values) {
-        final java.util.List<org.incendo.cloud.suggestion.Suggestion> suggestions = new java.util.ArrayList<>();
-        for (final String value : values) {
-            suggestions.add(org.incendo.cloud.suggestion.Suggestion.suggestion(value));
-        }
-        return java.util.concurrent.CompletableFuture.completedFuture(suggestions);
-    }
 }

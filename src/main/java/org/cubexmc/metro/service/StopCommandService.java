@@ -1,7 +1,10 @@
 package org.cubexmc.metro.service;
 
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
@@ -59,6 +62,14 @@ public class StopCommandService {
 
     public WriteStatus deleteStop(String id) {
         return stopManager.deleteStop(id) ? WriteStatus.SUCCESS : WriteStatus.FAILED;
+    }
+
+    public List<Stop> listStops() {
+        return stopManager.getAllStopIds().stream()
+                .map(stopManager::getStop)
+                .filter(Objects::nonNull)
+                .sorted(Comparator.comparing(Stop::getId))
+                .toList();
     }
 
     public WriteStatus setCorners(String id, Location corner1, Location corner2) {
@@ -137,16 +148,28 @@ public class StopCommandService {
         return stopManager.setStopName(id, name) ? WriteStatus.SUCCESS : WriteStatus.FAILED;
     }
 
-    public WriteStatus addAdmin(String stopId, UUID adminId) {
-        return stopManager.addStopAdmin(stopId, adminId) ? WriteStatus.SUCCESS : WriteStatus.EXISTS;
+    public WriteStatus addAdmin(Stop stop, UUID adminId) {
+        if (adminId == null) {
+            return WriteStatus.FAILED;
+        }
+        if (stop.getAdmins().contains(adminId)) {
+            return WriteStatus.EXISTS;
+        }
+        return stopManager.addStopAdmin(stop.getId(), adminId) ? WriteStatus.SUCCESS : WriteStatus.FAILED;
     }
 
-    public WriteStatus removeAdmin(String stopId, UUID adminId) {
-        return stopManager.removeStopAdmin(stopId, adminId) ? WriteStatus.SUCCESS : WriteStatus.FAILED;
+    public WriteStatus removeAdmin(Stop stop, UUID adminId) {
+        if (adminId == null) {
+            return WriteStatus.FAILED;
+        }
+        return stopManager.removeStopAdmin(stop.getId(), adminId) ? WriteStatus.SUCCESS : WriteStatus.FAILED;
     }
 
-    public WriteStatus setOwner(String stopId, UUID ownerId) {
-        return stopManager.setStopOwner(stopId, ownerId) ? WriteStatus.SUCCESS : WriteStatus.FAILED;
+    public WriteStatus setOwner(Stop stop, UUID ownerId) {
+        if (ownerId == null) {
+            return WriteStatus.FAILED;
+        }
+        return stopManager.setStopOwner(stop.getId(), ownerId) ? WriteStatus.SUCCESS : WriteStatus.FAILED;
     }
 
     public WriteStatus updateLineLink(String action, String stopId, String lineId) {

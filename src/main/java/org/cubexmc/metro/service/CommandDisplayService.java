@@ -16,6 +16,9 @@ public class CommandDisplayService {
     public record HelpPage(String header, List<String> lines, int page, int totalPages) {
     }
 
+    public record HelpSection(String header, List<String> lines) {
+    }
+
     public <T> Page<T> paginate(List<T> items, Integer requestedPage) {
         return paginate(items, requestedPage, DEFAULT_PAGE_SIZE);
     }
@@ -51,5 +54,14 @@ public class CommandDisplayService {
                 .toList();
         String header = messageResolver.apply(headerKey) + " §e(" + keyPage.page() + "/" + keyPage.totalPages() + ")";
         return new HelpPage(header, lines, keyPage.page(), keyPage.totalPages());
+    }
+
+    public HelpSection helpSection(Function<String, String> messageResolver,
+                                   String headerKey,
+                                   List<String> lineKeys) {
+        List<String> lines = (lineKeys == null ? List.<String>of() : lineKeys).stream()
+                .map(messageResolver)
+                .toList();
+        return new HelpSection(messageResolver.apply(headerKey), lines);
     }
 }

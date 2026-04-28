@@ -24,7 +24,6 @@ import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.chat.hover.content.Text;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -78,10 +77,10 @@ public class LineCommand {
     @Command("m|metro line|l help [page]")
     @CommandDescription("Show Line Help Menu Page")
     public void helpPage(CommandSender sender, @Argument("page") Integer page) {
-        showHelp(sender, page == null ? 1 : page);
+        showHelp(sender, page);
     }
 
-    private void showHelp(CommandSender sender, int page) {
+    private void showHelp(CommandSender sender, Integer page) {
         org.cubexmc.metro.manager.LanguageManager lang = plugin.getLanguageManager();
         CommandDisplayService.HelpPage helpPage = displayService.helpPage(key -> lang.getMessage(key),
                 "line.help_header", HELP_KEYS, page);
@@ -94,7 +93,7 @@ public class LineCommand {
     @Command("m|metro line|l list")
     @CommandDescription("List all metro lines")
     public void list(CommandSender sender) {
-        Collection<Line> lines = lineManager.getAllLines();
+        List<Line> lines = lineService.listLines();
         if (lines.isEmpty()) {
             sender.sendMessage(plugin.getLanguageManager().getMessage("line.list_empty"));
         } else {
@@ -519,12 +518,11 @@ public class LineCommand {
                     LanguageManager.put(LanguageManager.args(), "player", playerName)));
             return;
         }
-        if (line.getAdmins().contains(target.getUniqueId())) {
+        LineCommandService.WriteStatus status = lineService.grantAdmin(line, target.getUniqueId());
+        if (status == LineCommandService.WriteStatus.EXISTS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.trust_exists",
                     LanguageManager.put(LanguageManager.args(), "player", playerName)));
-            return;
-        }
-        if (lineManager.addLineAdmin(id, target.getUniqueId())) {
+        } else if (status == LineCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.trust_success",
                     LanguageManager.put(LanguageManager.put(LanguageManager.args(), "line_id", id), "player", playerName)));
         }
@@ -545,7 +543,7 @@ public class LineCommand {
                     LanguageManager.put(LanguageManager.args(), "player", playerName)));
             return;
         }
-        if (lineManager.removeLineAdmin(id, target.getUniqueId())) {
+        if (lineService.revokeAdmin(line, target.getUniqueId()) == LineCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.untrust_success",
                     LanguageManager.put(LanguageManager.put(LanguageManager.args(), "line_id", id), "player", playerName)));
         } else {
@@ -572,7 +570,7 @@ public class LineCommand {
                     LanguageManager.put(LanguageManager.args(), "player", playerName)));
             return;
         }
-        if (lineManager.setLineOwner(id, target.getUniqueId())) {
+        if (lineService.transferOwner(line, target.getUniqueId()) == LineCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.owner_success",
                     LanguageManager.put(LanguageManager.put(LanguageManager.args(), "line_id", id), "owner", playerName)));
         } else {

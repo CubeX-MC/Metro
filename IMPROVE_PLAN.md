@@ -112,6 +112,10 @@
 2. 将命令参数校验、权限判断、业务操作从命令类中抽离。
 3. 将 GUI 渲染和 GUI 点击处理拆成更小的 view/controller。
 4. 将 `Metro` 启动类拆成生命周期注册步骤。
+   - [x] 已将 Cloud 命令管理器创建、suggestion providers 和 annotation command 注册拆到 `CommandRegistration`。
+   - [x] 已将 Bukkit listener 创建和事件注册拆到 `ListenerRegistration`。
+   - [x] 已将 BlueMap/Dynmap/Squaremap 启停与刷新队列拆到 `MapIntegrationLifecycle`。
+   - [x] 已将自动保存定时任务和旧矿车 PDC 兼容迁移任务拆到 `ScheduledTaskLifecycle`。
 5. 将列车运行状态机拆分为状态、调度和显示事件三层。
 
 验收标准：
@@ -448,9 +452,13 @@ PortalCommandService
 
    - [x] 先抽出共享 `CommandGuard`，统一线路/站点查找、权限失败提示和 owner/admin 占位符格式化。
    - [x] 新增 `LineCommandService`，迁移线路写操作和基础参数校验。
+   - [x] 将线路 trust/untrust/owner 写操作迁移到 `LineCommandService`。
    - [x] 新增 `StopCommandService`，迁移站点写操作和基础参数校验。
+   - [x] 将站点 trust/untrust/owner 写操作收敛到 `StopCommandService`。
    - [x] 新增 `PortalCommandService`，迁移传送门写操作和基础参数校验。
-   - [x] 新增 `CommandDisplayService`，统一命令帮助页展示、分页和页码夹取。
+   - [x] 将传送门列表展示数据和 reload 流程收敛到 `PortalCommandService`。
+   - [x] 新增 `CommandDisplayService`，统一 Line/Stop/Portal 命令帮助展示、分页和页码夹取。
+   - [x] 将线路/站点列表数据准备和稳定排序迁移到对应 command service。
    - [ ] 继续收敛命令展示逻辑和页码校验。
 
 命令类只负责：

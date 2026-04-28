@@ -64,4 +64,13 @@ class CommandDisplayServiceTest {
         assertEquals(2, page.totalPages());
         assertEquals(List.of("msg:nine"), page.lines());
     }
+
+    @Test
+    void shouldBuildNonPagedHelpSectionFromKeys() {
+        CommandDisplayService.HelpSection section = service.helpSection(key -> "msg:" + key,
+                "header", List.of("one", "two"));
+
+        assertEquals("msg:header", section.header());
+        assertEquals(List.of("msg:one", "msg:two"), section.lines());
+    }
 }

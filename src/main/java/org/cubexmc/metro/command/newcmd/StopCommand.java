@@ -25,12 +25,8 @@ import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.chat.hover.content.Text;
 
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 public class StopCommand {
 
@@ -80,10 +76,10 @@ public class StopCommand {
     @Command("m|metro stop|s help [page]")
     @CommandDescription("Show Stop Help Menu Page")
     public void helpPage(CommandSender sender, @Argument("page") Integer page) {
-        showHelp(sender, page == null ? 1 : page);
+        showHelp(sender, page);
     }
 
-    private void showHelp(CommandSender sender, int page) {
+    private void showHelp(CommandSender sender, Integer page) {
         org.cubexmc.metro.manager.LanguageManager lang = plugin.getLanguageManager();
         CommandDisplayService.HelpPage helpPage = displayService.helpPage(key -> lang.getMessage(key),
                 "stop.help_header", HELP_KEYS, page);
@@ -96,15 +92,11 @@ public class StopCommand {
     @Command("m|metro stop|s list")
     @CommandDescription("List all metro stops")
     public void list(Player player) {
-        List<Stop> stops = new ArrayList<>(stopManager.getAllStopIds().stream()
-                .map(stopManager::getStop)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList()));
+        List<Stop> stops = stopService.listStops();
         if (stops.isEmpty()) {
             player.sendMessage(plugin.getLanguageManager().getMessage("stop.list_empty"));
         } else {
             player.sendMessage(plugin.getLanguageManager().getMessage("stop.list_header"));
-            stops.sort(Comparator.comparing(Stop::getId));
 
             for (int i = 0; i < stops.size(); i++) {
                 Stop stop = stops.get(i);
@@ -527,12 +519,11 @@ public class StopCommand {
                     LanguageManager.put(LanguageManager.args(), "player", playerName)));
             return;
         }
-        if (stop.getAdmins().contains(target.getUniqueId())) {
+        StopCommandService.WriteStatus status = stopService.addAdmin(stop, target.getUniqueId());
+        if (status == StopCommandService.WriteStatus.EXISTS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("stop.trust_exists",
                     LanguageManager.put(LanguageManager.args(), "player", playerName)));
-            return;
-        }
-        if (stopService.addAdmin(id, target.getUniqueId()) == StopCommandService.WriteStatus.SUCCESS) {
+        } else if (status == StopCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("stop.trust_success",
                     LanguageManager.put(LanguageManager.put(LanguageManager.args(), "stop_id", id), "player", playerName)));
         }
@@ -553,7 +544,7 @@ public class StopCommand {
                     LanguageManager.put(LanguageManager.args(), "player", playerName)));
             return;
         }
-        if (stopService.removeAdmin(id, target.getUniqueId()) == StopCommandService.WriteStatus.SUCCESS) {
+        if (stopService.removeAdmin(stop, target.getUniqueId()) == StopCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("stop.untrust_success",
                     LanguageManager.put(LanguageManager.put(LanguageManager.args(), "stop_id", id), "player", playerName)));
         } else {
@@ -580,7 +571,7 @@ public class StopCommand {
                     LanguageManager.put(LanguageManager.args(), "player", playerName)));
             return;
         }
-        if (stopService.setOwner(id, target.getUniqueId()) == StopCommandService.WriteStatus.SUCCESS) {
+        if (stopService.setOwner(stop, target.getUniqueId()) == StopCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("stop.owner_success",
                     LanguageManager.put(LanguageManager.put(LanguageManager.args(), "stop_id", id), "owner", playerName)));
         } else {

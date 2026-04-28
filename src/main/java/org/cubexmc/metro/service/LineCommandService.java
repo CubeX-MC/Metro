@@ -2,6 +2,7 @@ package org.cubexmc.metro.service;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.Comparator;
 import java.util.regex.Pattern;
 
 import org.cubexmc.metro.manager.LineManager;
@@ -58,6 +59,12 @@ public class LineCommandService {
 
     public WriteStatus deleteLine(String id) {
         return lineManager.deleteLine(id) ? WriteStatus.SUCCESS : WriteStatus.FAILED;
+    }
+
+    public List<Line> listLines() {
+        return lineManager.getAllLines().stream()
+                .sorted(Comparator.comparing(Line::getId))
+                .toList();
     }
 
     public WriteStatus renameLine(String id, String name) {
@@ -119,6 +126,30 @@ public class LineCommandService {
 
     public WriteStatus setRailProtected(String id, boolean enabled) {
         return lineManager.setLineRailProtected(id, enabled) ? WriteStatus.SUCCESS : WriteStatus.FAILED;
+    }
+
+    public WriteStatus grantAdmin(Line line, UUID adminId) {
+        if (adminId == null) {
+            return WriteStatus.INVALID_VALUE;
+        }
+        if (line.getAdmins().contains(adminId)) {
+            return WriteStatus.EXISTS;
+        }
+        return lineManager.addLineAdmin(line.getId(), adminId) ? WriteStatus.SUCCESS : WriteStatus.FAILED;
+    }
+
+    public WriteStatus revokeAdmin(Line line, UUID adminId) {
+        if (adminId == null) {
+            return WriteStatus.INVALID_VALUE;
+        }
+        return lineManager.removeLineAdmin(line.getId(), adminId) ? WriteStatus.SUCCESS : WriteStatus.FAILED;
+    }
+
+    public WriteStatus transferOwner(Line line, UUID ownerId) {
+        if (ownerId == null) {
+            return WriteStatus.INVALID_VALUE;
+        }
+        return lineManager.setLineOwner(line.getId(), ownerId) ? WriteStatus.SUCCESS : WriteStatus.FAILED;
     }
 
     public ClearRouteResult clearRoutePoints(Line line) {

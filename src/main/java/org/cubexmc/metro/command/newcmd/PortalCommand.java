@@ -11,6 +11,7 @@ import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.manager.LanguageManager;
 import org.cubexmc.metro.manager.PortalManager;
 import org.cubexmc.metro.model.Portal;
+import org.cubexmc.metro.service.CommandDisplayService;
 import org.cubexmc.metro.service.PortalCommandService;
 import org.cubexmc.metro.update.DataFileUpdater;
 
@@ -22,13 +23,24 @@ import java.util.List;
  */
 public class PortalCommand {
 
+    private static final List<String> HELP_KEYS = List.of(
+            "portal.help_create",
+            "portal.help_setdest",
+            "portal.help_link",
+            "portal.help_delete",
+            "portal.help_list",
+            "portal.help_reload"
+    );
+
     private final Metro plugin;
     private final PortalManager portalManager;
+    private final CommandDisplayService displayService;
     private final PortalCommandService portalService;
 
     public PortalCommand(Metro plugin) {
         this.plugin = plugin;
         this.portalManager = plugin.getPortalManager();
+        this.displayService = new CommandDisplayService();
         this.portalService = new PortalCommandService(portalManager);
     }
 
@@ -48,13 +60,12 @@ public class PortalCommand {
 
     private void showHelp(CommandSender sender) {
         org.cubexmc.metro.manager.LanguageManager lang = plugin.getLanguageManager();
-        sender.sendMessage(lang.getMessage("portal.help_header"));
-        sender.sendMessage(lang.getMessage("portal.help_create"));
-        sender.sendMessage(lang.getMessage("portal.help_setdest"));
-        sender.sendMessage(lang.getMessage("portal.help_link"));
-        sender.sendMessage(lang.getMessage("portal.help_delete"));
-        sender.sendMessage(lang.getMessage("portal.help_list"));
-        sender.sendMessage(lang.getMessage("portal.help_reload"));
+        CommandDisplayService.HelpSection help = displayService.helpSection(key -> lang.getMessage(key),
+                "portal.help_header", HELP_KEYS);
+        sender.sendMessage(help.header());
+        for (String helpLine : help.lines()) {
+            sender.sendMessage(helpLine);
+        }
     }
 
     @Command("m|metro portal create <id>")
@@ -138,7 +149,7 @@ public class PortalCommand {
     @CommandDescription("列出所有传送门")
     @Permission("metro.admin")
     public void listPortals(CommandSender sender) {
-        List<Portal> allPortals = portalManager.getAllPortals();
+        List<Portal> allPortals = portalService.listPortals();
         if (allPortals.isEmpty()) {
             sender.sendMessage(plugin.getLanguageManager().getMessage("portal.list_empty"));
             return;
@@ -166,9 +177,9 @@ public class PortalCommand {
     @CommandDescription("重新加载传送门配置")
     @Permission("metro.admin")
     public void reloadPortals(CommandSender sender) {
-        DataFileUpdater.migratePortals(plugin);
-        portalManager.load();
+        PortalCommandService.ReloadResult result =
+                portalService.reloadPortals(() -> DataFileUpdater.migratePortals(plugin));
         sender.sendMessage(plugin.getLanguageManager().getMessage("portal.reload_success",
-                LanguageManager.put(LanguageManager.args(), "count", String.valueOf(portalManager.getAllPortals().size()))));
+                LanguageManager.put(LanguageManager.args(), "count", String.valueOf(result.portalCount()))));
     }
 }
