@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -300,6 +301,7 @@ public class GuiManager {
             } else {
                 lore.add(msg("gui.common.id", "id", representative.getId()));
                 lore.add(msg("gui.line_list.stop_count", "count", String.valueOf(representative.getOrderedStopIds().size())));
+                addLineSummaryLore(lore, representative);
                 if (representative.getColor() != null) {
                     lore.add(msg("gui.line_list.color") + representative.getColor() + "■■■■■");
                 }
@@ -351,6 +353,7 @@ public class GuiManager {
             List<String> lore = new ArrayList<>();
             lore.add(msg("gui.common.id", "id", line.getId()));
             lore.add(msg("gui.line_list.stop_count", "count", String.valueOf(line.getOrderedStopIds().size())));
+            addLineSummaryLore(lore, line);
             if (line.getColor() != null) {
                 lore.add(msg("gui.line_list.color") + line.getColor() + "■■■■■");
             }
@@ -828,13 +831,13 @@ public class GuiManager {
         GuiHolder holder = createHolder(GuiType.LINE_SETTINGS, previousView);
         holder.setData("lineId", lineId);
         
-        Inventory inv = Bukkit.createInventory(holder, 27, 
+        Inventory inv = Bukkit.createInventory(holder, 36,
                 ChatColor.translateAlternateColorCodes('&', msg("gui.line_settings.title") + line.getName()));
         holder.setInventory(inv);
         
         // 填充背景
         ItemStack filler = new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE).name(" ").build();
-        for (int i = 0; i < 27; i++) inv.setItem(i, filler);
+        for (int i = 0; i < 36; i++) inv.setItem(i, filler);
         
         // 重命名按钮
         inv.setItem(9, new ItemBuilder(Material.NAME_TAG)
@@ -889,9 +892,24 @@ public class GuiManager {
                 .name(msg("gui.line_settings.delete"))
                 .lore(msg("gui.line_settings.delete_lore"))
                 .build());
+
+        inv.setItem(19, new ItemBuilder(getWoolByColor(line.getColor()))
+                .name(msg("gui.line_settings.set_color"))
+                .lore(msg("gui.line_settings.current_color", "color", line.getColor()),
+                        msg("gui.line_settings.set_color_lore"))
+                .build());
+
+        String terminusName = line.getTerminusName() == null || line.getTerminusName().isBlank()
+                ? msg("line.info_default")
+                : line.getTerminusName();
+        inv.setItem(21, new ItemBuilder(Material.OAK_SIGN)
+                .name(msg("gui.line_settings.set_terminus"))
+                .lore(msg("gui.line_settings.current_terminus", "terminus_name", terminusName),
+                        msg("gui.line_settings.set_terminus_lore"))
+                .build());
                 
         // 返回按钮
-        inv.setItem(22, new ItemBuilder(Material.DARK_OAK_DOOR)
+        inv.setItem(31, new ItemBuilder(Material.DARK_OAK_DOOR)
                 .name(msg("gui.control.back_line_list"))
                 .build());
                 
@@ -934,6 +952,15 @@ public class GuiManager {
         inv.setItem(11, new ItemBuilder(Material.NAME_TAG)
                 .name(msg("gui.stop_settings.rename"))
                 .lore(msg("gui.stop_settings.rename_lore"))
+                .build());
+
+        String stopPointText = stop.getStopPointLocation() == null
+                ? msg("gui.stop_settings.stoppoint_not_set")
+                : formatLocation(stop.getStopPointLocation());
+        inv.setItem(13, new ItemBuilder(Material.RAIL)
+                .name(msg("gui.stop_settings.set_point"))
+                .lore(msg("gui.stop_settings.current_stoppoint", "stoppoint", stopPointText),
+                        msg("gui.stop_settings.set_point_lore"))
                 .build());
                 
         // 删除站点按钮
@@ -1014,6 +1041,39 @@ public class GuiManager {
             return msg("gui.line_boarding.free");
         }
         return plugin.getTicketService().format(price);
+    }
+
+    private void addLineSummaryLore(List<String> lore, Line line) {
+        lore.add(msg("gui.line_boarding.next_stop", "stop_name", getInitialNextStopName(line)));
+        lore.add(msg("gui.line_boarding.terminus", "terminus_name", getTerminusDisplayName(line)));
+        lore.add(msg("gui.line_boarding.price", "price", formatTicketPrice(line)));
+    }
+
+    private String getInitialNextStopName(Line line) {
+        List<String> stopIds = line.getOrderedStopIds();
+        if (stopIds.size() < 2) {
+            return msg("gui.line_boarding.unknown_stop");
+        }
+        String nextStopId = line.getNextStopId(stopIds.get(0));
+        Stop nextStop = nextStopId == null ? null : plugin.getStopManager().getStop(nextStopId);
+        return nextStop == null ? msg("gui.line_boarding.unknown_stop") : nextStop.getName();
+    }
+
+    private String getTerminusDisplayName(Line line) {
+        if (line.getTerminusName() == null || line.getTerminusName().isBlank()) {
+            return msg("line.info_default");
+        }
+        return line.getTerminusName();
+    }
+
+    private String formatLocation(Location location) {
+        if (location == null || location.getWorld() == null) {
+            return msg("gui.stop_settings.stoppoint_not_set");
+        }
+        return location.getWorld().getName() + " "
+                + location.getBlockX() + ", "
+                + location.getBlockY() + ", "
+                + location.getBlockZ();
     }
 
     private String getBoardingBlockReason(Player player, Line line) {

@@ -529,16 +529,16 @@ gui.controller.StopGuiController
 ```
 
 4. 补齐 GUI 功能：
-   - 线路颜色设置。
-   - 终点方向设置。
-   - 票价设置。
-   - route 录制/清空/状态查看。
-   - rail protection 开关和状态。
-   - stop point 设置提示。
+   - [x] 线路颜色设置。
+   - [x] 终点方向设置。
+   - [x] 票价设置。
+   - [x] route 录制/清空/状态查看。
+   - [x] rail protection 开关和状态。
+   - [x] stop point 设置提示。
 
 5. 优化显示：
    - 多线路同名时明确显示 ID。
-   - 线路 lore 显示下一站、终点方向、票价、管理状态。
+   - [x] 线路 lore 显示下一站、终点方向、票价、管理状态。
    - 无权限按钮使用灰色或 barrier，lore 说明原因。
 
 6. 增加测试或手工回归：
