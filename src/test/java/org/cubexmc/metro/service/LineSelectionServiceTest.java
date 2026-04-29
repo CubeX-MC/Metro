@@ -76,6 +76,34 @@ class LineSelectionServiceTest {
     }
 
     @Test
+    void shouldRequireChoiceAgainWhenRememberedLineIsNoLongerBoardable() {
+        World world = world("world");
+        Stop current = stop("central", world);
+        Stop next = stop("next", world);
+        Line a = line("a", "world", "central", "next");
+        Line b = line("b", "world", "central");
+
+        LineManager lineManager = mock(LineManager.class);
+        StopManager stopManager = mock(StopManager.class);
+        when(lineManager.getLinesForStop("central")).thenReturn(List.of(a, b));
+        when(stopManager.getStop("next")).thenReturn(next);
+
+        LineSelectionService service = new LineSelectionService(lineManager, stopManager);
+        Player player = player(90.0f);
+        service.rememberChoice(player, "central", "b");
+
+        assertEquals(List.of(a), service.getBoardableLines(current));
+        assertFalse(service.requiresChoice(player, current));
+        assertEquals(a, service.resolveDefaultLine(player, current, current.getStopPointLocation()));
+
+        Line c = line("c", "world", "central", "next");
+        when(lineManager.getLinesForStop("central")).thenReturn(List.of(c, a, b));
+
+        assertTrue(service.requiresChoice(player, current));
+        assertEquals(List.of(a, c), service.getBoardableLines(current));
+    }
+
+    @Test
     void shouldReturnNullWhenNoLineCanBoard() {
         Stop current = new Stop("central", "Central");
         LineManager lineManager = mock(LineManager.class);
