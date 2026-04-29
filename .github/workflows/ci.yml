@@ -20,9 +20,12 @@ jobs:
           java-version: "17"
           cache: maven
 
-      - name: Verify with coverage gate
-        run: mvn -B verify
+      - name: Verify quality gates and build artifact
+        run: mvn -B clean verify package
 
-      - name: Package metro
-        run: mvn -B package
+      - name: Upload metro jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: metro-jar
+          path: target/metro-*.jar
 

@@ -153,7 +153,7 @@
    - [x] 已用 Mockito 覆盖 `VehicleListener` 的 safe mode 矿车伤害、销毁、碰撞和实体攻击事件。
    - [x] 已用 Mockito 覆盖 `PlayerInteractListener` 的选区工具和无权限右键铁轨边界行为。
 3. [x] 建立手工回归清单和测试地图场景，已在 `docs/regression-baseline.md` 覆盖单线路、双向重叠站、三线换乘、终点站、跨世界传送门和受保护铁轨场景。
-4. 在 CI 中运行 `mvn verify`。
+4. [x] 在 CI 中运行 `mvn verify`，并在 PR/分支构建中生成可下载插件产物。
 5. 发布前生成变更摘要和兼容性说明。
 
 验收标准：
@@ -875,6 +875,7 @@ MapIntegration {
    - 发布 tag 跑 `mvn clean verify package`。
    - 上传构建产物。
    - [x] 已将 GitHub Actions 从旧 `metro-modern` 模块路径改为当前单模块 Maven 命令，并修正发布产物路径为 `target/*.jar`。
+   - [x] CI workflow 已收敛为 `mvn -B clean verify package`，并上传 `target/metro-*.jar` 作为构建产物。
 
 验收：
 
