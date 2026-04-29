@@ -588,6 +588,12 @@ train.TrainScheduler
 train.TrainPhysicsController
 ```
 
+   - [x] 已新增 `TrainSession`，集中保存单次乘车的矿车、乘客、线路、当前站、目标站、传送状态和最近行驶方向。
+   - [x] 已新增 `TrainStateMachine`，统一状态切换和状态转换 debug 日志。
+   - [x] 已新增 `TrainScheduler`，让 `TrainMovementTask` 自有的延迟发车、防卡辅助和终点清理任务可统一取消。
+   - [x] 已新增 `TrainPhysicsController`，收敛进站减速、发车初速度和防卡辅助速度计算。
+   - [x] 已将 `TrainMovementTask` 从 600+ 行降至 400 行以内，并保留现有事件驱动行为。
+
 2. 明确状态：
 
 ```text
@@ -610,6 +616,7 @@ CANCELLED
 4. 所有定时任务记录到 session：
    - cancel session 时统一 cancel。
    - 防止 countdown actionbar 任务残留。
+   - [x] `TrainMovementTask` 内部调度任务已收敛到 `TrainScheduler`；显示层 countdown 任务仍待后续接入 session 级取消。
 
 5. 增加防御检查：
    - `line == null`
@@ -617,6 +624,7 @@ CANCELLED
    - `targetStop == null`
    - `stopPointLocation == null`
    - `world == null`
+   - [x] 发车、到站、终点和进站减速路径已补充基础空值/配置缺失防御，缺失关键站点时会取消 session。
 
 6. 增加事件测试：
    - 上车后等待发车。

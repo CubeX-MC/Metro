@@ -5,8 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.lang.reflect.Field;
-
 import org.bukkit.entity.Minecart;
 import org.bukkit.entity.Player;
 import org.cubexmc.metro.Metro;
@@ -34,9 +32,9 @@ class TrainMovementTaskTest {
                 TrainMovementTask.TrainState.MOVING_BETWEEN_STATIONS
         );
 
-        assertNull(readField(task, "targetStopId", String.class));
+        assertNull(task.getSession().getTargetStopId());
         assertEquals(TrainMovementTask.TrainState.STOPPED_AT_STATION,
-                readField(task, "currentState", TrainMovementTask.TrainState.class));
+                task.getSession().getState());
     }
 
     @Test
@@ -61,15 +59,8 @@ class TrainMovementTaskTest {
                 TrainMovementTask.TrainState.MOVING_BETWEEN_STATIONS
         );
 
-        assertEquals("B", readField(task, "targetStopId", String.class));
+        assertEquals("B", task.getSession().getTargetStopId());
         assertEquals(TrainMovementTask.TrainState.MOVING_BETWEEN_STATIONS,
-                readField(task, "currentState", TrainMovementTask.TrainState.class));
-    }
-
-    @SuppressWarnings("unchecked")
-    private <T> T readField(Object instance, String fieldName, Class<T> type) throws Exception {
-        Field field = instance.getClass().getDeclaredField(fieldName);
-        field.setAccessible(true);
-        return (T) field.get(instance);
+                task.getSession().getState());
     }
 }
