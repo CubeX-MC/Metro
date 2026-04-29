@@ -34,7 +34,7 @@ public class RouteRecorder {
     public FinishResult stopAndSave(String lineId) {
         RecordingSession session = sessions.remove(lineId);
         if (session == null) {
-            return FinishResult.notRecording();
+            return FinishResult.notRecording(lineId);
         }
         return saveSession(session);
     }
@@ -77,7 +77,7 @@ public class RouteRecorder {
     public FinishResult finishIfRecording(String lineId, Minecart minecart) {
         RecordingSession session = sessions.get(lineId);
         if (session == null || minecart == null || !session.matchesCart(minecart.getUniqueId())) {
-            return FinishResult.notRecording();
+            return FinishResult.notRecording(lineId);
         }
         sessions.remove(lineId);
         return saveSession(session);
@@ -90,14 +90,14 @@ public class RouteRecorder {
     private FinishResult saveSession(RecordingSession session) {
         List<RoutePoint> points = session.snapshot();
         if (points.size() < MIN_SAVE_POINTS) {
-            return FinishResult.tooFewPoints(points.size());
+            return FinishResult.tooFewPoints(session.lineId, points.size(), session.recorderId, session.cartId);
         }
         if (!plugin.getLineManager().setLineRoutePoints(session.lineId, points, System.currentTimeMillis(),
                 session.recorderId, session.cartId)) {
-            return FinishResult.failed(points.size());
+            return FinishResult.failed(session.lineId, points.size(), session.recorderId, session.cartId);
         }
         plugin.getLogger().info("[RouteRecorder] Saved " + points.size() + " route points for line " + session.lineId + ".");
-        return FinishResult.saved(points.size());
+        return FinishResult.saved(session.lineId, points.size(), session.recorderId, session.cartId);
     }
 
     private static class RecordingSession {
@@ -139,7 +139,7 @@ public class RouteRecorder {
         }
     }
 
-    public record FinishResult(Status status, int pointCount) {
+    public record FinishResult(Status status, String lineId, int pointCount, UUID recorderId, UUID cartId) {
         public enum Status {
             SAVED,
             NOT_RECORDING,
@@ -147,20 +147,20 @@ public class RouteRecorder {
             FAILED
         }
 
-        private static FinishResult saved(int pointCount) {
-            return new FinishResult(Status.SAVED, pointCount);
+        private static FinishResult saved(String lineId, int pointCount, UUID recorderId, UUID cartId) {
+            return new FinishResult(Status.SAVED, lineId, pointCount, recorderId, cartId);
         }
 
-        private static FinishResult notRecording() {
-            return new FinishResult(Status.NOT_RECORDING, 0);
+        private static FinishResult notRecording(String lineId) {
+            return new FinishResult(Status.NOT_RECORDING, lineId, 0, null, null);
         }
 
-        private static FinishResult tooFewPoints(int pointCount) {
-            return new FinishResult(Status.TOO_FEW_POINTS, pointCount);
+        private static FinishResult tooFewPoints(String lineId, int pointCount, UUID recorderId, UUID cartId) {
+            return new FinishResult(Status.TOO_FEW_POINTS, lineId, pointCount, recorderId, cartId);
         }
 
-        private static FinishResult failed(int pointCount) {
-            return new FinishResult(Status.FAILED, pointCount);
+        private static FinishResult failed(String lineId, int pointCount, UUID recorderId, UUID cartId) {
+            return new FinishResult(Status.FAILED, lineId, pointCount, recorderId, cartId);
         }
     }
 }

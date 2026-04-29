@@ -1,5 +1,8 @@
 package org.cubexmc.metro.train;
 
+import java.util.Map;
+
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Minecart;
 import org.bukkit.entity.Player;
@@ -11,6 +14,7 @@ import org.bukkit.event.vehicle.VehicleMoveEvent;
 import org.bukkit.util.Vector;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.event.TrainEnterStopEvent;
+import org.cubexmc.metro.manager.LanguageManager;
 import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
@@ -316,6 +320,7 @@ public class TrainMovementTask implements Listener {
 
         org.cubexmc.metro.manager.RouteRecorder.FinishResult routeResult =
                 session.getPlugin().getRouteRecorder().finishIfRecording(line.getId(), session.getMinecart());
+        notifyRouteRecorder(routeResult);
         if (routeResult.status() == org.cubexmc.metro.manager.RouteRecorder.FinishResult.Status.TOO_FEW_POINTS) {
             session.getPlugin().getLogger().warning("[RouteRecorder] Route recording for line " + line.getId()
                     + " reached the terminal but only collected " + routeResult.pointCount() + " point(s).");
@@ -338,6 +343,31 @@ public class TrainMovementTask implements Listener {
             }
         }, 60L, -1);
         return true;
+    }
+
+    private void notifyRouteRecorder(org.cubexmc.metro.manager.RouteRecorder.FinishResult result) {
+        if (result.recorderId() == null
+                || result.status() == org.cubexmc.metro.manager.RouteRecorder.FinishResult.Status.NOT_RECORDING) {
+            return;
+        }
+        Player recorder = Bukkit.getPlayer(result.recorderId());
+        if (recorder == null || !recorder.isOnline()) {
+            return;
+        }
+
+        Map<String, Object> args = LanguageManager.args();
+        LanguageManager.put(args, "line_id", result.lineId());
+        LanguageManager.put(args, "point_count", String.valueOf(result.pointCount()));
+
+        String key = switch (result.status()) {
+            case SAVED -> "line.record_saved";
+            case TOO_FEW_POINTS -> "line.record_too_few";
+            case FAILED -> "line.record_failed";
+            case NOT_RECORDING -> null;
+        };
+        if (key != null) {
+            recorder.sendMessage(session.getPlugin().getLanguageManager().getMessage(key, args));
+        }
     }
 
     private void handlePassengerExit() {

@@ -50,9 +50,35 @@ class RouteRecorderTest {
         FinishResult result = recorder.stopAndSave("red");
 
         assertEquals(FinishResult.Status.SAVED, result.status());
+        assertEquals("red", result.lineId());
         assertEquals(2, result.pointCount());
+        assertEquals(recorderId, result.recorderId());
+        assertEquals(cartId, result.cartId());
         verify(lineManager).setLineRoutePoints(eq("red"), argThat(points -> points.size() == 2),
                 anyLong(), eq(recorderId), eq(cartId));
+    }
+
+    @Test
+    void shouldReturnRecordingMetadataWhenTerminalAutoFinishHasTooFewPoints() {
+        Metro plugin = mock(Metro.class);
+        UUID recorderId = UUID.randomUUID();
+        World world = mock(World.class);
+        when(world.getName()).thenReturn("world");
+        Minecart cart = mock(Minecart.class);
+        UUID cartId = UUID.randomUUID();
+        when(cart.getUniqueId()).thenReturn(cartId);
+
+        RouteRecorder recorder = new RouteRecorder(plugin);
+        assertTrue(recorder.start("green", recorderId));
+        recorder.sample("green", cart, new Location(world, 0.0, 64.0, 0.0));
+
+        FinishResult result = recorder.finishIfRecording("green", cart);
+
+        assertEquals(FinishResult.Status.TOO_FEW_POINTS, result.status());
+        assertEquals("green", result.lineId());
+        assertEquals(1, result.pointCount());
+        assertEquals(recorderId, result.recorderId());
+        assertEquals(cartId, result.cartId());
     }
 
     @Test
