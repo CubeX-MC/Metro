@@ -24,7 +24,7 @@ import java.util.function.Consumer;
  * 当服务器安装了 BlueMap 插件时，自动在网页地图上绘制地铁网络。
  * 该类通过 BlueMapAPI 的 onEnable 回调注册，确保 BlueMap 准备就绪后再执行。
  */
-public class BlueMapIntegration {
+public class BlueMapIntegration implements MapIntegration {
 
     private static final String MARKER_SET_ID = "metro_network";
 
@@ -42,6 +42,7 @@ public class BlueMapIntegration {
      * 尝试启用 BlueMap 集成。
      * 如果 BlueMap 不在 classpath 中，将安静地跳过。
      */
+    @Override
     public void enable() {
         // 检查配置是否启用了地图集成
         if (!plugin.getConfigFacade().isMapIntegrationEnabled()) {
@@ -74,6 +75,7 @@ public class BlueMapIntegration {
      * 强制刷新网页地图上的地铁线路标记。
      * 可在管理员编辑线路后手动调用。
      */
+    @Override
     public void refresh() {
         if (!plugin.getConfigFacade().isMapIntegrationEnabled() || !"BLUEMAP".equalsIgnoreCase(plugin.getConfigFacade().getMapProvider())) {
             disable();
@@ -87,6 +89,7 @@ public class BlueMapIntegration {
         }
     }
 
+    @Override
     public void disable() {
         BlueMapAPI.getInstance().ifPresent(api -> {
             for (BlueMapMap map : api.getMaps()) {
@@ -102,6 +105,7 @@ public class BlueMapIntegration {
         plugin.getLogger().info("[BlueMap] Metro markers removed.");
     }
 
+    @Override
     public boolean isEnabled() {
         return enabled;
     }

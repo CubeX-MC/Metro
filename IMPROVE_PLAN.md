@@ -117,11 +117,15 @@
    - [x] 已将站点列表/站点变体渲染拆到 `gui.view.StopListView`。
    - [x] 已将线路详情页渲染拆到 `gui.view.LineDetailView`。
    - [x] 已将添加站点列表/添加站点变体渲染拆到 `gui.view.AddStopView`。
+   - [x] 已将线路详情页点击处理拆到 `gui.controller.LineDetailController`。
+   - [x] 已将添加站点列表/添加站点变体点击处理拆到 `gui.controller.AddStopController`。
+   - [x] 已将线路列表/线路变体点击处理拆到 `gui.controller.LineListController`。
    - [x] 已将线路设置页渲染拆到 `gui.view.LineSettingsView`。
    - [x] 已将站点设置页渲染拆到 `gui.view.StopSettingsView`。
+   - [x] 已将站点列表/站点变体点击处理拆到 `gui.controller.StopListController`。
    - [x] 已将线路设置页点击处理拆到 `gui.controller.LineSettingsController`。
    - [x] 已将站点设置页点击处理拆到 `gui.controller.StopSettingsController`。
-   - [x] 已将主菜单渲染拆到 `gui.view.MainMenuView`，`GuiManager` 仅保留 view 路由与返回栈打开逻辑。
+   - [x] 已将主菜单渲染拆到 `gui.view.MainMenuView`，点击处理拆到 `gui.controller.MainMenuController`，`GuiManager` 仅保留 view 路由与返回栈打开逻辑。
 4. 将 `Metro` 启动类拆成生命周期注册步骤。
    - [x] 已将 Cloud 命令管理器创建、suggestion providers 和 annotation command 注册拆到 `CommandRegistration`。
    - [x] 已将 Bukkit listener 创建和事件注册拆到 `ListenerRegistration`。
@@ -697,10 +701,14 @@ MapIntegration {
 }
 ```
 
+   - [x] 已新增 `integration.MapIntegration`，并让 BlueMap/Dynmap/Squaremap 集成实现统一启停和刷新接口。
+
 2. 新增 `MapIntegrationManager`：
    - 根据配置 provider 只启用指定 provider。
    - 如果配置 provider 不可用，记录明确日志。
    - 可选支持 AUTO 模式。
+   - [x] 已将 `MapIntegrationLifecycle` 改为只实例化并启用 `map_integration.provider` 指定的 provider。
+   - [x] 未知 provider 会记录明确警告并跳过地图集成。
 
 3. 刷新策略：
    - 数据保存后延迟合并刷新。

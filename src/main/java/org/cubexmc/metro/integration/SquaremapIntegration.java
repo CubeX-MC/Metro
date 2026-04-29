@@ -27,7 +27,7 @@ import java.util.logging.Level;
  * 当服务器安装了 Squaremap 插件且配置中 provider 设为 SQUAREMAP 时，
  * 自动在网页地图上绘制地铁网络的线路和站点。
  */
-public class SquaremapIntegration {
+public class SquaremapIntegration implements MapIntegration {
 
     private static final String LAYER_ID = "metro_network";
 
@@ -39,6 +39,7 @@ public class SquaremapIntegration {
         this.plugin = plugin;
     }
 
+    @Override
     public void enable() {
         if (!plugin.getConfigFacade().isMapIntegrationEnabled()) {
             return;
@@ -65,6 +66,7 @@ public class SquaremapIntegration {
         enabled = true;
     }
 
+    @Override
     public void refresh() {
         if (!plugin.getConfigFacade().isMapIntegrationEnabled() || !"SQUAREMAP".equalsIgnoreCase(plugin.getConfigFacade().getMapProvider())) {
             disable();
@@ -78,6 +80,7 @@ public class SquaremapIntegration {
         }
     }
 
+    @Override
     public void disable() {
         try {
             Squaremap api = SquaremapProvider.get();
@@ -97,6 +100,7 @@ public class SquaremapIntegration {
         plugin.getLogger().info("[Squaremap] Metro markers removed.");
     }
 
+    @Override
     public boolean isEnabled() {
         return enabled;
     }

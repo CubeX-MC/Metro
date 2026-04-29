@@ -3,6 +3,7 @@ package org.cubexmc.metro.lifecycle;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.integration.BlueMapIntegration;
 import org.cubexmc.metro.integration.DynmapIntegration;
+import org.cubexmc.metro.integration.MapIntegration;
 import org.cubexmc.metro.integration.SquaremapIntegration;
 import org.cubexmc.metro.util.SchedulerUtil;
 
@@ -12,9 +13,8 @@ import org.cubexmc.metro.util.SchedulerUtil;
 public class MapIntegrationLifecycle {
 
     private final Metro plugin;
-    private BlueMapIntegration blueMapIntegration;
-    private DynmapIntegration dynmapIntegration;
-    private SquaremapIntegration squaremapIntegration;
+    private MapIntegration activeIntegration;
+    private String activeProvider;
     private boolean refreshQueued;
 
     public MapIntegrationLifecycle(Metro plugin) {
@@ -22,51 +22,23 @@ public class MapIntegrationLifecycle {
     }
 
     public void enable() {
-        try {
-            this.blueMapIntegration = new BlueMapIntegration(plugin);
-            this.blueMapIntegration.enable();
-        } catch (Throwable e) {
-            plugin.getLogger().info("BlueMap API not found, skipping BlueMap integration.");
-        }
-
-        try {
-            this.dynmapIntegration = new DynmapIntegration(plugin);
-            this.dynmapIntegration.enable();
-        } catch (Throwable e) {
-            plugin.getLogger().info("Dynmap API not found, skipping Dynmap integration.");
-        }
-
-        try {
-            this.squaremapIntegration = new SquaremapIntegration(plugin);
-            this.squaremapIntegration.enable();
-        } catch (Throwable e) {
-            plugin.getLogger().info("Squaremap API not found, skipping Squaremap integration.");
-        }
+        activateConfiguredProvider();
     }
 
     public void disable() {
-        if (blueMapIntegration != null) {
-            blueMapIntegration.disable();
+        if (activeIntegration != null) {
+            activeIntegration.disable();
         }
-        if (dynmapIntegration != null) {
-            dynmapIntegration.disable();
-        }
-        if (squaremapIntegration != null) {
-            squaremapIntegration.disable();
-        }
+        activeIntegration = null;
+        activeProvider = null;
         refreshQueued = false;
     }
 
     public void refresh() {
-        if (blueMapIntegration != null) {
-            blueMapIntegration.refresh();
+        if (!activateConfiguredProvider()) {
+            return;
         }
-        if (dynmapIntegration != null) {
-            dynmapIntegration.refresh();
-        }
-        if (squaremapIntegration != null) {
-            squaremapIntegration.refresh();
-        }
+        activeIntegration.refresh();
     }
 
     public void requestRefresh() {
@@ -78,5 +50,51 @@ public class MapIntegrationLifecycle {
             refreshQueued = false;
             refresh();
         }, 1L, -1L);
+    }
+
+    private boolean activateConfiguredProvider() {
+        if (plugin.getConfigFacade() == null || !plugin.getConfigFacade().isMapIntegrationEnabled()) {
+            disable();
+            return false;
+        }
+
+        String provider = plugin.getConfigFacade().getMapProvider();
+        if (provider == null || provider.isBlank()) {
+            plugin.getLogger().warning("[Map] map_integration.provider is empty. Skipping map integration.");
+            disable();
+            return false;
+        }
+        provider = provider.toUpperCase();
+
+        if (activeIntegration != null && provider.equals(activeProvider)) {
+            return true;
+        }
+
+        disable();
+        try {
+            activeIntegration = createIntegration(provider);
+            if (activeIntegration == null) {
+                plugin.getLogger().warning("[Map] Unknown map provider '" + provider
+                        + "'. Expected BLUEMAP, DYNMAP, or SQUAREMAP.");
+                return false;
+            }
+            activeProvider = provider;
+            activeIntegration.enable();
+            return true;
+        } catch (Throwable e) {
+            plugin.getLogger().info("[Map] " + provider + " API not found, skipping map integration.");
+            activeIntegration = null;
+            activeProvider = null;
+            return false;
+        }
+    }
+
+    private MapIntegration createIntegration(String provider) {
+        return switch (provider) {
+            case "BLUEMAP" -> new BlueMapIntegration(plugin);
+            case "DYNMAP" -> new DynmapIntegration(plugin);
+            case "SQUAREMAP" -> new SquaremapIntegration(plugin);
+            default -> null;
+        };
     }
 }

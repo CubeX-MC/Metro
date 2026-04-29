@@ -24,7 +24,7 @@ import java.util.logging.Level;
  * 当服务器安装了 Dynmap 插件且配置中 provider 设为 DYNMAP 时，
  * 自动在网页地图上绘制地铁网络的线路和站点。
  */
-public class DynmapIntegration {
+public class DynmapIntegration implements MapIntegration {
 
     private static final String MARKER_SET_ID = "metro_network";
 
@@ -40,6 +40,7 @@ public class DynmapIntegration {
     /**
      * 尝试启用 Dynmap 集成。
      */
+    @Override
     public void enable() {
         // 检查配置是否启用了地图集成
         if (!plugin.getConfigFacade().isMapIntegrationEnabled()) {
@@ -82,6 +83,7 @@ public class DynmapIntegration {
     /**
      * 强制刷新网页地图上的地铁线路标记。
      */
+    @Override
     public void refresh() {
         if (!plugin.getConfigFacade().isMapIntegrationEnabled() || !"DYNMAP".equalsIgnoreCase(plugin.getConfigFacade().getMapProvider())) {
             disable();
@@ -95,6 +97,7 @@ public class DynmapIntegration {
         }
     }
 
+    @Override
     public void disable() {
         if (markerApi != null) {
             MarkerSet markerSet = markerApi.getMarkerSet(MARKER_SET_ID);
@@ -106,6 +109,7 @@ public class DynmapIntegration {
         plugin.getLogger().info("[Dynmap] Metro markers removed.");
     }
 
+    @Override
     public boolean isEnabled() {
         return enabled;
     }
