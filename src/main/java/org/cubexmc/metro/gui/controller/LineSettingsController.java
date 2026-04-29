@@ -7,25 +7,13 @@ import org.bukkit.entity.Player;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.gui.ChatInputManager;
 import org.cubexmc.metro.gui.GuiHolder;
+import org.cubexmc.metro.gui.GuiSlots;
 import org.cubexmc.metro.manager.LanguageManager;
 import org.cubexmc.metro.manager.RouteRecorder;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.service.LineCommandService;
 
 public final class LineSettingsController {
-    private static final int SLOT_ROUTE_RECORDING = 1;
-    private static final int SLOT_ROUTE_INFO = 3;
-    private static final int SLOT_CLEAR_ROUTE = 5;
-    private static final int SLOT_RAIL_PROTECTION = 7;
-    private static final int SLOT_RENAME = 9;
-    private static final int SLOT_MAX_SPEED = 11;
-    private static final int SLOT_TICKET_PRICE = 13;
-    private static final int SLOT_CLONE_REVERSE = 15;
-    private static final int SLOT_DELETE = 17;
-    private static final int SLOT_COLOR = 19;
-    private static final int SLOT_TERMINUS = 21;
-    private static final int SLOT_BACK = 31;
-
     private final Metro plugin;
     private final LineCommandService lineService;
 
@@ -44,29 +32,29 @@ public final class LineSettingsController {
 
         GuiHolder.GuiView previousView = holder.getPreviousView();
         switch (slot) {
-            case SLOT_ROUTE_RECORDING -> {
+            case GuiSlots.LINE_SETTINGS_ROUTE_RECORDING -> {
                 handleRouteRecordingToggle(player, line);
                 plugin.getGuiManager().openLineSettings(player, lineId, previousView);
             }
-            case SLOT_ROUTE_INFO -> {
+            case GuiSlots.LINE_SETTINGS_ROUTE_INFO -> {
                 sendRouteInfo(player, line);
                 plugin.getGuiManager().openLineSettings(player, lineId, previousView);
             }
-            case SLOT_CLEAR_ROUTE -> plugin.getGuiManager().openConfirmAction(player, "CLEAR_ROUTE",
+            case GuiSlots.LINE_SETTINGS_CLEAR_ROUTE -> plugin.getGuiManager().openConfirmAction(player, "CLEAR_ROUTE",
                     lineId, line.getName(), null, 0, holder.snapshot());
-            case SLOT_RAIL_PROTECTION -> {
+            case GuiSlots.LINE_SETTINGS_RAIL_PROTECTION -> {
                 toggleRailProtection(player, line);
                 plugin.getGuiManager().openLineSettings(player, lineId, previousView);
             }
-            case SLOT_RENAME -> requestLineRename(player, line, previousView);
-            case SLOT_MAX_SPEED -> requestLineSpeed(player, line, previousView);
-            case SLOT_TICKET_PRICE -> requestLinePrice(player, line, previousView);
-            case SLOT_CLONE_REVERSE -> requestCloneReverse(player, line, previousView);
-            case SLOT_DELETE -> plugin.getGuiManager().openConfirmAction(player, "DELETE_LINE",
+            case GuiSlots.LINE_SETTINGS_RENAME -> requestLineRename(player, line, previousView);
+            case GuiSlots.LINE_SETTINGS_MAX_SPEED -> requestLineSpeed(player, line, previousView);
+            case GuiSlots.LINE_SETTINGS_TICKET_PRICE -> requestLinePrice(player, line, previousView);
+            case GuiSlots.LINE_SETTINGS_CLONE_REVERSE -> requestCloneReverse(player, line, previousView);
+            case GuiSlots.LINE_SETTINGS_DELETE -> plugin.getGuiManager().openConfirmAction(player, "DELETE_LINE",
                     lineId, line.getName(), null, 0, holder.snapshot());
-            case SLOT_COLOR -> requestLineColor(player, line, previousView);
-            case SLOT_TERMINUS -> requestLineTerminus(player, line, previousView);
-            case SLOT_BACK -> plugin.getGuiManager().openPreviousView(player, holder,
+            case GuiSlots.LINE_SETTINGS_COLOR -> requestLineColor(player, line, previousView);
+            case GuiSlots.LINE_SETTINGS_TERMINUS -> requestLineTerminus(player, line, previousView);
+            case GuiSlots.LINE_SETTINGS_BACK -> plugin.getGuiManager().openPreviousView(player, holder,
                     () -> plugin.getGuiManager().openLineList(player, 0, false));
             default -> {
             }

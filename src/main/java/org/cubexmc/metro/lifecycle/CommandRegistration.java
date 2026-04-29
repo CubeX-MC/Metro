@@ -2,18 +2,22 @@ package org.cubexmc.metro.lifecycle;
 
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.command.newcmd.LineCommand;
 import org.cubexmc.metro.command.newcmd.MetroMainCommand;
 import org.cubexmc.metro.command.newcmd.PortalCommand;
 import org.cubexmc.metro.command.newcmd.StopCommand;
 import org.cubexmc.metro.manager.LineManager;
+import org.cubexmc.metro.manager.PortalManager;
 import org.cubexmc.metro.manager.StopManager;
+import org.cubexmc.metro.service.StopCommandService;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.SenderMapper;
 import org.incendo.cloud.annotations.AnnotationParser;
@@ -33,11 +37,13 @@ public class CommandRegistration {
     private final Metro plugin;
     private final LineManager lineManager;
     private final StopManager stopManager;
+    private final PortalManager portalManager;
 
-    public CommandRegistration(Metro plugin, LineManager lineManager, StopManager stopManager) {
+    public CommandRegistration(Metro plugin, LineManager lineManager, StopManager stopManager, PortalManager portalManager) {
         this.plugin = plugin;
         this.lineManager = lineManager;
         this.stopManager = stopManager;
+        this.portalManager = portalManager;
     }
 
     public Result register() {
@@ -134,6 +140,34 @@ public class CommandRegistration {
                 (context, input) -> toSuggestionsFuture(lineIdSuggestions(context, input)));
         commandManager.parserRegistry().registerSuggestionProvider("stopIds",
                 (context, input) -> toSuggestionsFuture(stopIdSuggestions(context, input)));
+        commandManager.parserRegistry().registerSuggestionProvider("portalIds",
+                (context, input) -> toSuggestionsFuture(portalIdSuggestions(context, input)));
+        commandManager.parserRegistry().registerSuggestionProvider("playerNames",
+                (context, input) -> toSuggestionsFuture(playerNameSuggestions(context, input)));
+        commandManager.parserRegistry().registerSuggestionProvider("lineColors",
+                (context, input) -> toSuggestionsFuture(List.of(
+                        "&0", "&1", "&2", "&3", "&4", "&5", "&6", "&7",
+                        "&8", "&9", "&a", "&b", "&c", "&d", "&e", "&f",
+                        "&#55AAFF")));
+        commandManager.parserRegistry().registerSuggestionProvider("protectModes",
+                (context, input) -> toSuggestionsFuture(List.of(
+                        "status", "on", "off", "enable", "disable", "enabled", "disabled", "true", "false")));
+        commandManager.parserRegistry().registerSuggestionProvider("titleTypes",
+                (context, input) -> toSuggestionsFuture(StopCommandService.TITLE_TYPES.stream().sorted().toList()));
+        commandManager.parserRegistry().registerSuggestionProvider("titleKeys",
+                (context, input) -> toSuggestionsFuture(StopCommandService.TITLE_KEYS.stream().sorted().toList()));
+        commandManager.parserRegistry().registerSuggestionProvider("linkActions",
+                (context, input) -> toSuggestionsFuture(List.of("allow", "deny")));
+        commandManager.parserRegistry().registerSuggestionProvider("pageNumbers",
+                (context, input) -> toSuggestionsFuture(List.of("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")));
+        commandManager.parserRegistry().registerSuggestionProvider("stopIndexes",
+                (context, input) -> toSuggestionsFuture(List.of("0", "1", "2", "3", "4", "5", "10")));
+        commandManager.parserRegistry().registerSuggestionProvider("yawValues",
+                (context, input) -> toSuggestionsFuture(List.of("0", "90", "180", "-90")));
+        commandManager.parserRegistry().registerSuggestionProvider("speedValues",
+                (context, input) -> toSuggestionsFuture(List.of("0.4", "0.8", "1.0", "1.2")));
+        commandManager.parserRegistry().registerSuggestionProvider("priceValues",
+                (context, input) -> toSuggestionsFuture(List.of("0", "1", "2", "5", "10")));
     }
 
     private Iterable<String> lineIdSuggestions(CommandContext<CommandSender> context, CommandInput input) {
@@ -144,6 +178,20 @@ public class CommandRegistration {
 
     private Iterable<String> stopIdSuggestions(CommandContext<CommandSender> context, CommandInput input) {
         return new ArrayList<>(stopManager.getAllStopIds());
+    }
+
+    private Iterable<String> portalIdSuggestions(CommandContext<CommandSender> context, CommandInput input) {
+        return portalManager.getAllPortals().stream()
+                .map(org.cubexmc.metro.model.Portal::getId)
+                .sorted()
+                .toList();
+    }
+
+    private Iterable<String> playerNameSuggestions(CommandContext<CommandSender> context, CommandInput input) {
+        return Bukkit.getOnlinePlayers().stream()
+                .map(Player::getName)
+                .sorted()
+                .toList();
     }
 
     private CompletableFuture<? extends Iterable<? extends Suggestion>> toSuggestionsFuture(Iterable<String> values) {

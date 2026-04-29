@@ -45,13 +45,13 @@ public class StopCommand {
 
     @Command("m|metro stop|s help [page]")
     @CommandDescription("Show Stop Help Menu Page")
-    public void helpPage(CommandSender sender, @Argument("page") Integer page) {
+    public void helpPage(CommandSender sender, @Argument(value = "page", suggestions = "pageNumbers") Integer page) {
         view.showHelp(sender, page);
     }
 
     @Command("m|metro stop|s list [page]")
     @CommandDescription("List all metro stops")
-    public void list(Player player, @Argument("page") Integer page) {
+    public void list(Player player, @Argument(value = "page", suggestions = "pageNumbers") Integer page) {
         view.listStops(player, stopService.listStops(), page);
     }
 
@@ -147,7 +147,7 @@ public class StopCommand {
     @CommandDescription("Set stop point at player position")
     public void setPoint(Player player,
                          @Argument(value = "id", suggestions = "stopIds") String id,
-                         @Argument("yaw") Float yaw) {
+                         @Argument(value = "yaw", suggestions = "yawValues") Float yaw) {
         Stop stop;
         if (id == null) {
             stop = stopManager.getStopContainingLocation(player.getLocation());
@@ -238,8 +238,8 @@ public class StopCommand {
     @CommandDescription("Set custom title entry for stop")
     public void setTitle(Player player,
                          @Argument(value = "id", suggestions = "stopIds") String id,
-                         @Argument("titleType") String titleType,
-                         @Argument("titleKey") String titleKey,
+                         @Argument(value = "titleType", suggestions = "titleTypes") String titleType,
+                         @Argument(value = "titleKey", suggestions = "titleKeys") String titleKey,
                          @Greedy @Argument("titleValue") String titleValue) {
         Stop stop = guard.requireManageableStop(player, id);
         if (stop == null) {
@@ -269,8 +269,8 @@ public class StopCommand {
     @CommandDescription("Delete custom title entry for stop")
     public void delTitle(Player player,
                          @Argument(value = "id", suggestions = "stopIds") String id,
-                         @Argument("titleType") String titleType,
-                         @Argument("titleKey") String titleKey) {
+                         @Argument(value = "titleType", suggestions = "titleTypes") String titleType,
+                         @Argument(value = "titleKey", suggestions = "titleKeys") String titleKey) {
         Stop stop = guard.requireManageableStop(player, id);
         if (stop == null) {
             return;
@@ -354,7 +354,7 @@ public class StopCommand {
     @CommandDescription("Grant stop admin")
     public void trust(Player player,
                       @Argument(value = "id", suggestions = "stopIds") String id,
-                      @Argument("playerName") String playerName) {
+                      @Argument(value = "playerName", suggestions = "playerNames") String playerName) {
         Stop stop = guard.requireManageableStop(player, id);
         if (stop == null) {
             return;
@@ -379,7 +379,7 @@ public class StopCommand {
     @CommandDescription("Revoke stop admin")
     public void untrust(Player player,
                         @Argument(value = "id", suggestions = "stopIds") String id,
-                        @Argument("playerName") String playerName) {
+                        @Argument(value = "playerName", suggestions = "playerNames") String playerName) {
         Stop stop = guard.requireManageableStop(player, id);
         if (stop == null) {
             return;
@@ -403,7 +403,7 @@ public class StopCommand {
     @CommandDescription("Transfer stop ownership")
     public void owner(Player player,
                       @Argument(value = "id", suggestions = "stopIds") String id,
-                      @Argument("playerName") String playerName) {
+                      @Argument(value = "playerName", suggestions = "playerNames") String playerName) {
         Stop stop = guard.requireStop(player, id);
         if (stop == null) {
             return;
@@ -429,7 +429,7 @@ public class StopCommand {
     @Command("m|metro stop|s link <action> <stopId> <lineId>")
     @CommandDescription("Allow or deny linking a line to a stop")
     public void link(Player player,
-                     @Argument("action") String action,
+                     @Argument(value = "action", suggestions = "linkActions") String action,
                      @Argument(value = "stopId", suggestions = "stopIds") String stopId,
                      @Argument(value = "lineId", suggestions = "lineIds") String lineId) {
         Stop stop = guard.requireManageableStop(player, stopId);

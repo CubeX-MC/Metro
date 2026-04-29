@@ -1,6 +1,5 @@
 package org.cubexmc.metro.command.newcmd;
 
-import org.incendo.cloud.annotations.Argument;
 import org.incendo.cloud.annotations.CommandDescription;
 import org.incendo.cloud.annotations.Command;
 import org.incendo.cloud.annotations.Permission;

@@ -124,7 +124,7 @@ public final class Metro extends JavaPlugin {
         MetroConstants.initialize(this);
 
         CommandRegistration.Result commandRegistration =
-                new CommandRegistration(this, lineManager, stopManager).register();
+                new CommandRegistration(this, lineManager, stopManager, portalManager).register();
         if (commandRegistration == null) {
             return;
         }

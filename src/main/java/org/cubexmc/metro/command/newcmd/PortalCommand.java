@@ -97,7 +97,7 @@ public class PortalCommand {
     @Command("m|metro portal setdest <id>")
     @CommandDescription("将当前位置设置为传送门的目标位置")
     @Permission("metro.admin")
-    public void setDestination(Player sender, @Argument("id") String id) {
+    public void setDestination(Player sender, @Argument(value = "id", suggestions = "portalIds") String id) {
         PortalCommandService.PortalWriteResult result = portalService.setDestination(id, sender.getLocation());
         if (result.status() == PortalCommandService.WriteStatus.NOT_FOUND) {
             sender.sendMessage(plugin.getLanguageManager().getMessage("portal.not_found",
@@ -122,8 +122,8 @@ public class PortalCommand {
     @CommandDescription("双向配对两个传送门")
     @Permission("metro.admin")
     public void linkPortals(Player sender,
-                            @Argument("id1") String id1,
-                            @Argument("id2") String id2) {
+                            @Argument(value = "id1", suggestions = "portalIds") String id1,
+                            @Argument(value = "id2", suggestions = "portalIds") String id2) {
         if (portalService.linkPortals(id1, id2) != PortalCommandService.WriteStatus.SUCCESS) {
             sender.sendMessage(plugin.getLanguageManager().getMessage("portal.link_fail"));
             return;
@@ -135,7 +135,7 @@ public class PortalCommand {
     @Command("m|metro portal delete <id>")
     @CommandDescription("删除一个传送门")
     @Permission("metro.admin")
-    public void deletePortal(Player sender, @Argument("id") String id) {
+    public void deletePortal(Player sender, @Argument(value = "id", suggestions = "portalIds") String id) {
         if (portalService.deletePortal(id) != PortalCommandService.WriteStatus.SUCCESS) {
             sender.sendMessage(plugin.getLanguageManager().getMessage("portal.not_found",
                     LanguageManager.put(LanguageManager.args(), "portal_id", id)));
@@ -148,7 +148,7 @@ public class PortalCommand {
     @Command("m|metro portal list [page]")
     @CommandDescription("列出所有传送门")
     @Permission("metro.admin")
-    public void listPortals(CommandSender sender, @Argument("page") Integer page) {
+    public void listPortals(CommandSender sender, @Argument(value = "page", suggestions = "pageNumbers") Integer page) {
         List<Portal> allPortals = portalService.listPortals();
         if (allPortals.isEmpty()) {
             sender.sendMessage(plugin.getLanguageManager().getMessage("portal.list_empty"));
