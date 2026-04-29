@@ -616,7 +616,8 @@ CANCELLED
 4. 所有定时任务记录到 session：
    - cancel session 时统一 cancel。
    - 防止 countdown actionbar 任务残留。
-   - [x] `TrainMovementTask` 内部调度任务已收敛到 `TrainScheduler`；显示层 countdown 任务仍待后续接入 session 级取消。
+   - [x] `TrainMovementTask` 内部调度任务已收敛到 `TrainScheduler`。
+   - [x] `TrainDisplayController` 的等待音效和 countdown actionbar 已优先接入当前 active train session，乘客下车或 session 取消时会随 `TrainScheduler` 一起取消。
 
 5. 增加防御检查：
    - `line == null`
@@ -659,10 +660,14 @@ CANCELLED
    - 保护铁轨数量。
    - 最近一次录制时间。
    - 录制使用的玩家/矿车。
+   - [x] `routeinfo` 已显示保存点数、受保护铁轨数量、最近录制时间、录制发起玩家、录制矿车，以及当前录制缓存状态。
+   - [x] `lines.yml` 已支持可选 `route_recorded_at`、`route_recorded_by`、`route_recorded_cart` 元数据，旧数据文件无需迁移即可继续加载。
 
 3. 增加保护范围校验：
    - route point 世界与 line world 不一致时警告。
    - 找不到铁轨时统计 skipped samples。
+   - [x] `RailProtectionManager` 已记录每条线路的索引统计：采样数量、索引到的铁轨数量、世界不匹配、世界未加载和附近无铁轨的跳过数量。
+   - [x] `routeinfo` / `protect status` 已展示保护索引跳过原因，便于管理员判断是否需要重录路线或加载世界。
 
 4. 增加命令：
 
@@ -722,6 +727,8 @@ MapIntegration {
    - 数据保存后延迟合并刷新。
    - 多次变化只刷新一次。
    - 刷新失败不影响主插件运行。
+   - [x] `MapIntegrationLifecycle` 已使用 `map_integration.refresh_delay_ticks` 合并连续刷新请求。
+   - [x] 地图刷新已包裹异常隔离，provider 刷新失败会记录警告但不影响主插件运行。
 
 4. 增加地图内容校验：
    - stop marker 开关。

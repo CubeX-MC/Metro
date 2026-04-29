@@ -87,6 +87,9 @@ public class LineManager {
                         }
                         line.setRoutePoints(routePoints);
                     }
+                    line.setRouteRecordedAtEpochMillis(config.getLong(lineId + ".route_recorded_at", 0L));
+                    line.setRouteRecordedBy(readUuid(lineId, "route_recorded_by"));
+                    line.setRouteRecordedCartId(readUuid(lineId, "route_recorded_cart"));
 
                     // 加载颜色和终点站方向
                     String color = config.getString(lineId + ".color");
@@ -111,16 +114,7 @@ public class LineManager {
 
                     line.setRailProtected(config.getBoolean(lineId + ".rail_protected", false));
 
-                    String ownerString = config.getString(lineId + ".owner");
-                    if (ownerString != null && !ownerString.isEmpty()) {
-                        try {
-                            line.setOwner(UUID.fromString(ownerString));
-                        } catch (IllegalArgumentException ignored) {
-                            plugin.getLogger()
-                                    .warning("Invalid owner UUID in lines.yml for line " + lineId + ": " + ownerString);
-                            line.setOwner(null);
-                        }
-                    }
+                    line.setOwner(readUuid(lineId, "owner"));
 
                     List<String> adminStrings = config.getStringList(lineId + ".admins");
                     if (adminStrings != null && !adminStrings.isEmpty()) {
@@ -484,6 +478,11 @@ public class LineManager {
     }
 
     public boolean setLineRoutePoints(String lineId, List<RoutePoint> routePoints) {
+        return setLineRoutePoints(lineId, routePoints, null, null, null);
+    }
+
+    public boolean setLineRoutePoints(String lineId, List<RoutePoint> routePoints,
+                                      Long recordedAtEpochMillis, UUID recordedBy, UUID recordedCartId) {
         lock.writeLock().lock();
         try {
             Line line = lines.get(lineId);
@@ -491,6 +490,9 @@ public class LineManager {
                 return false;
             }
             line.setRoutePoints(routePoints);
+            if (recordedAtEpochMillis != null || recordedBy != null || recordedCartId != null) {
+                line.setRouteRecordingMetadata(recordedAtEpochMillis, recordedBy, recordedCartId);
+            }
         } finally {
             lock.writeLock().unlock();
         }
@@ -619,6 +621,19 @@ public class LineManager {
         return values;
     }
 
+    private UUID readUuid(String lineId, String key) {
+        String uuidString = config.getString(lineId + "." + key);
+        if (uuidString == null || uuidString.isEmpty()) {
+            return null;
+        }
+        try {
+            return UUID.fromString(uuidString);
+        } catch (IllegalArgumentException ignored) {
+            plugin.getLogger().warning("Invalid " + key + " UUID in lines.yml for line " + lineId + ": " + uuidString);
+            return null;
+        }
+    }
+
     private String buildSnapshot() {
         YamlConfiguration snapshot = new YamlConfiguration();
         lock.readLock().lock();
@@ -637,6 +652,11 @@ public class LineManager {
                 snapshot.set(lineId + ".name", line.getName());
                 snapshot.set(lineId + ".ordered_stop_ids", line.getOrderedStopIds());
                 snapshot.set(lineId + ".route_points", routePointsToConfig(line));
+                snapshot.set(lineId + ".route_recorded_at", line.getRouteRecordedAtEpochMillis());
+                snapshot.set(lineId + ".route_recorded_by",
+                        line.getRouteRecordedBy() == null ? null : line.getRouteRecordedBy().toString());
+                snapshot.set(lineId + ".route_recorded_cart",
+                        line.getRouteRecordedCartId() == null ? null : line.getRouteRecordedCartId().toString());
                 snapshot.set(lineId + ".color", line.getColor());
                 snapshot.set(lineId + ".terminus_name", line.getTerminusName());
                 snapshot.set(lineId + ".max_speed", line.getMaxSpeed() != null ? line.getMaxSpeed() : null);

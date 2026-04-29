@@ -43,6 +43,7 @@ public class RailProtectionManager implements Listener {
     private final Metro plugin;
     private final Map<String, Set<BlockKey>> lineToBlocks = new HashMap<>();
     private final Map<BlockKey, Set<String>> blockToLines = new HashMap<>();
+    private final Map<String, ProtectionIndexStats> lineToStats = new HashMap<>();
 
     public RailProtectionManager(Metro plugin) {
         this.plugin = plugin;
@@ -51,6 +52,7 @@ public class RailProtectionManager implements Listener {
     public synchronized void rebuildAll() {
         lineToBlocks.clear();
         blockToLines.clear();
+        lineToStats.clear();
         for (Line line : plugin.getLineManager().getAllLines()) {
             rebuildLineLocked(line);
         }
@@ -67,11 +69,19 @@ public class RailProtectionManager implements Listener {
         return blocks == null ? 0 : blocks.size();
     }
 
+    public synchronized ProtectionIndexStats getProtectionIndexStats(String lineId) {
+        ProtectionIndexStats stats = lineToStats.get(lineId);
+        return stats == null ? ProtectionIndexStats.empty() : stats;
+    }
+
     private void rebuildLineLocked(Line line) {
         if (line == null || !line.isRailProtected()) {
             return;
         }
-        Set<BlockKey> blocks = collectRailBlocks(line.getRoutePoints());
+        ProtectionIndexBuilder builder = new ProtectionIndexBuilder(line.getWorldName());
+        Set<BlockKey> blocks = collectRailBlocks(line.getRoutePoints(), builder);
+        ProtectionIndexStats stats = builder.build(blocks.size());
+        lineToStats.put(line.getId(), stats);
         if (blocks.isEmpty()) {
             return;
         }
@@ -82,6 +92,7 @@ public class RailProtectionManager implements Listener {
     }
 
     private void removeLineLocked(String lineId) {
+        lineToStats.remove(lineId);
         Set<BlockKey> oldBlocks = lineToBlocks.remove(lineId);
         if (oldBlocks == null) {
             return;
@@ -98,22 +109,23 @@ public class RailProtectionManager implements Listener {
         }
     }
 
-    private Set<BlockKey> collectRailBlocks(List<RoutePoint> routePoints) {
+    private Set<BlockKey> collectRailBlocks(List<RoutePoint> routePoints, ProtectionIndexBuilder builder) {
         if (routePoints == null || routePoints.isEmpty()) {
             return Collections.emptySet();
         }
         Set<BlockKey> blocks = new HashSet<>();
         List<RoutePoint> points = new ArrayList<>(routePoints);
         for (int i = 0; i < points.size(); i++) {
-            addNearestRail(blocks, points.get(i));
+            addNearestRail(blocks, points.get(i), builder);
             if (i + 1 < points.size()) {
-                interpolateSegment(blocks, points.get(i), points.get(i + 1));
+                interpolateSegment(blocks, points.get(i), points.get(i + 1), builder);
             }
         }
         return blocks;
     }
 
-    private void interpolateSegment(Set<BlockKey> blocks, RoutePoint from, RoutePoint to) {
+    private void interpolateSegment(Set<BlockKey> blocks, RoutePoint from, RoutePoint to,
+                                    ProtectionIndexBuilder builder) {
         if (from == null || to == null || !from.worldName().equals(to.worldName())) {
             return;
         }
@@ -129,14 +141,29 @@ public class RailProtectionManager implements Listener {
                     from.x() + dx * ratio,
                     from.y() + dy * ratio,
                     from.z() + dz * ratio
-            ));
+            ), builder);
         }
     }
 
-    private void addNearestRail(Set<BlockKey> blocks, RoutePoint point) {
+    private void addNearestRail(Set<BlockKey> blocks, RoutePoint point, ProtectionIndexBuilder builder) {
+        builder.sample(point);
+        if (point == null) {
+            return;
+        }
+        if (builder.isWorldMismatch(point)) {
+            builder.skippedWorldMismatch();
+            return;
+        }
+        World world = Bukkit.getWorld(point.worldName());
+        if (world == null) {
+            builder.skippedMissingWorld();
+            return;
+        }
         BlockKey nearestRail = findNearestRail(point);
         if (nearestRail != null) {
             blocks.add(nearestRail);
+        } else {
+            builder.skippedNoRail();
         }
     }
 
@@ -237,6 +264,63 @@ public class RailProtectionManager implements Listener {
 
     private boolean isRail(Block block) {
         return block != null && RAIL_MATERIALS.contains(block.getType());
+    }
+
+    public record ProtectionIndexStats(int sampledPoints, int indexedBlocks, int skippedWorldMismatch,
+                                       int skippedMissingWorld, int skippedNoRail) {
+        public static ProtectionIndexStats empty() {
+            return new ProtectionIndexStats(0, 0, 0, 0, 0);
+        }
+
+        public int skippedTotal() {
+            return skippedWorldMismatch + skippedMissingWorld + skippedNoRail;
+        }
+
+        public boolean hasWarnings() {
+            return skippedTotal() > 0;
+        }
+    }
+
+    private static final class ProtectionIndexBuilder {
+        private final String lineWorldName;
+        private int sampledPoints;
+        private int skippedWorldMismatch;
+        private int skippedMissingWorld;
+        private int skippedNoRail;
+
+        private ProtectionIndexBuilder(String lineWorldName) {
+            this.lineWorldName = lineWorldName;
+        }
+
+        private void sample(RoutePoint point) {
+            if (point != null) {
+                sampledPoints++;
+            }
+        }
+
+        private boolean isWorldMismatch(RoutePoint point) {
+            return point != null
+                    && lineWorldName != null
+                    && !lineWorldName.isBlank()
+                    && !lineWorldName.equals(point.worldName());
+        }
+
+        private void skippedWorldMismatch() {
+            skippedWorldMismatch++;
+        }
+
+        private void skippedMissingWorld() {
+            skippedMissingWorld++;
+        }
+
+        private void skippedNoRail() {
+            skippedNoRail++;
+        }
+
+        private ProtectionIndexStats build(int indexedBlocks) {
+            return new ProtectionIndexStats(sampledPoints, indexedBlocks, skippedWorldMismatch,
+                    skippedMissingWorld, skippedNoRail);
+        }
     }
 
     private record BlockKey(String worldName, int x, int y, int z) {

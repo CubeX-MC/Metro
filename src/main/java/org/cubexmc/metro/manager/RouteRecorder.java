@@ -8,6 +8,7 @@ import org.cubexmc.metro.model.RoutePoint;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class RouteRecorder {
@@ -23,7 +24,11 @@ public class RouteRecorder {
     }
 
     public boolean start(String lineId) {
-        return sessions.putIfAbsent(lineId, new RecordingSession(lineId)) == null;
+        return start(lineId, null);
+    }
+
+    public boolean start(String lineId, UUID recorderId) {
+        return sessions.putIfAbsent(lineId, new RecordingSession(lineId, recorderId)) == null;
     }
 
     public FinishResult stopAndSave(String lineId) {
@@ -47,9 +52,14 @@ public class RouteRecorder {
         return session == null ? 0 : session.pointCount();
     }
 
-    public java.util.UUID getRecordingCartId(String lineId) {
+    public UUID getRecordingCartId(String lineId) {
         RecordingSession session = sessions.get(lineId);
         return session == null ? null : session.cartId;
+    }
+
+    public UUID getRecordingPlayerId(String lineId) {
+        RecordingSession session = sessions.get(lineId);
+        return session == null ? null : session.recorderId;
     }
 
     public void sample(String lineId, Minecart minecart, Location location) {
@@ -82,7 +92,8 @@ public class RouteRecorder {
         if (points.size() < MIN_SAVE_POINTS) {
             return FinishResult.tooFewPoints(points.size());
         }
-        if (!plugin.getLineManager().setLineRoutePoints(session.lineId, points)) {
+        if (!plugin.getLineManager().setLineRoutePoints(session.lineId, points, System.currentTimeMillis(),
+                session.recorderId, session.cartId)) {
             return FinishResult.failed(points.size());
         }
         plugin.getLogger().info("[RouteRecorder] Saved " + points.size() + " route points for line " + session.lineId + ".");
@@ -91,15 +102,17 @@ public class RouteRecorder {
 
     private static class RecordingSession {
         private final String lineId;
+        private final UUID recorderId;
         private final List<RoutePoint> points = new ArrayList<>();
-        private java.util.UUID cartId;
+        private UUID cartId;
         private RoutePoint lastPoint;
 
-        private RecordingSession(String lineId) {
+        private RecordingSession(String lineId, UUID recorderId) {
             this.lineId = lineId;
+            this.recorderId = recorderId;
         }
 
-        private synchronized void sample(java.util.UUID candidateCartId, RoutePoint routePoint) {
+        private synchronized void sample(UUID candidateCartId, RoutePoint routePoint) {
             if (cartId == null) {
                 cartId = candidateCartId;
             }
@@ -113,7 +126,7 @@ public class RouteRecorder {
             lastPoint = routePoint;
         }
 
-        private synchronized boolean matchesCart(java.util.UUID candidateCartId) {
+        private synchronized boolean matchesCart(UUID candidateCartId) {
             return cartId == null || cartId.equals(candidateCartId);
         }
 

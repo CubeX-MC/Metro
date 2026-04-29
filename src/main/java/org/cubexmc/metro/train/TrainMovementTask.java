@@ -96,6 +96,10 @@ public class TrainMovementTask implements Listener {
         return activeTasks.get(cart.getUniqueId());
     }
 
+    Object scheduleSessionTask(Runnable task, long delay, long period) {
+        return trainScheduler.entityRun(session.getMinecart(), task, delay, period);
+    }
+
     TrainSession getSession() {
         return session;
     }

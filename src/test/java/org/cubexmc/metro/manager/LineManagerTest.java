@@ -16,6 +16,7 @@ import java.util.logging.Logger;
 
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.model.Line;
+import org.cubexmc.metro.model.RoutePoint;
 import org.cubexmc.metro.persistence.SaveCoordinator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -27,6 +28,8 @@ class LineManagerTest {
 
     @Test
     void shouldLoadLineAndBuildStopIndexFromConfig() throws IOException {
+        UUID recorderId = UUID.randomUUID();
+        UUID cartId = UUID.randomUUID();
         Files.writeString(tempDir.resolve("lines.yml"), """
                 l1:
                   name: MainLine
@@ -34,8 +37,11 @@ class LineManagerTest {
                     - A
                     - B
                     - C
+                  route_recorded_at: 1700000000000
+                  route_recorded_by: '%s'
+                  route_recorded_cart: '%s'
                   color: '&a'
-                """);
+                """.formatted(recorderId, cartId));
 
         LineManager manager = new LineManager(createPluginMock(tempDir));
         Line line = manager.getLine("l1");
@@ -43,6 +49,9 @@ class LineManagerTest {
         assertNotNull(line);
         assertEquals("MainLine", line.getName());
         assertEquals(List.of("A", "B", "C"), line.getOrderedStopIds());
+        assertEquals(1700000000000L, line.getRouteRecordedAtEpochMillis());
+        assertEquals(recorderId, line.getRouteRecordedBy());
+        assertEquals(cartId, line.getRouteRecordedCartId());
         assertEquals(1, manager.getLinesForStop("B").size());
         assertTrue(manager.getLinesForStop("B").stream().anyMatch(it -> "l1".equals(it.getId())));
     }
@@ -78,6 +87,34 @@ class LineManagerTest {
         String savedYaml = Files.readString(tempDir.resolve("lines.yml"));
         assertFalse(savedYaml.contains("blue:"));
         assertFalse(savedYaml.contains("BlueLine"));
+    }
+
+    @Test
+    void shouldSaveAndClearRouteRecordingMetadataWithRoutePoints() throws IOException {
+        Files.writeString(tempDir.resolve("lines.yml"), "");
+        LineManager manager = new LineManager(createPluginMock(tempDir));
+        UUID recorderId = UUID.randomUUID();
+        UUID cartId = UUID.randomUUID();
+
+        assertTrue(manager.createLine("red", "RedLine", UUID.randomUUID()));
+        assertTrue(manager.setLineRoutePoints("red", List.of(
+                new RoutePoint("world", 0.0, 64.0, 0.0),
+                new RoutePoint("world", 5.0, 64.0, 0.0)
+        ), 1700000000000L, recorderId, cartId));
+        manager.forceSaveSync();
+
+        String savedYaml = Files.readString(tempDir.resolve("lines.yml"));
+        assertTrue(savedYaml.contains("route_recorded_at: 1700000000000"));
+        assertTrue(savedYaml.contains("route_recorded_by: " + recorderId));
+        assertTrue(savedYaml.contains("route_recorded_cart: " + cartId));
+
+        assertTrue(manager.clearLineRoutePoints("red"));
+        manager.forceSaveSync();
+
+        savedYaml = Files.readString(tempDir.resolve("lines.yml"));
+        assertFalse(savedYaml.contains("route_recorded_at"));
+        assertFalse(savedYaml.contains("route_recorded_by"));
+        assertFalse(savedYaml.contains("route_recorded_cart"));
     }
 
     private Metro createPluginMock(Path dataDir) {

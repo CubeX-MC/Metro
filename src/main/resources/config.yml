@@ -228,6 +228,9 @@ map_integration:
   # 是否在站点 POI 标记上显示换乘信息
   # Whether to show transfer information on stop POI markers
   show_transfer_info: true
+  # 数据连续变化后的地图刷新合并延迟（单位 tick，20 tick = 1 秒）
+  # Delay used to merge repeated map refresh requests after data changes (in ticks, 20 ticks = 1 second)
+  refresh_delay_ticks: 20
 
 # 矿车传送门设置
 # Minecart Portal Settings

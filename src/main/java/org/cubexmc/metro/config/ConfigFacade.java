@@ -99,6 +99,7 @@ public class ConfigFacade {
     private int mapLineWidth;
     private boolean mapShowStopMarkers;
     private boolean mapShowTransferInfo;
+    private long mapRefreshDelayTicks;
 
     // Portals
     private boolean portalsEnabled;
@@ -246,6 +247,7 @@ public class ConfigFacade {
         mapLineWidth = plugin.getConfig().getInt("map_integration.line_width", 3);
         mapShowStopMarkers = plugin.getConfig().getBoolean("map_integration.show_stop_markers", true);
         mapShowTransferInfo = plugin.getConfig().getBoolean("map_integration.show_transfer_info", true);
+        mapRefreshDelayTicks = Math.max(1L, plugin.getConfig().getLong("map_integration.refresh_delay_ticks", 20L));
 
         // Portals
         portalsEnabled = plugin.getConfig().getBoolean("portals.enabled", true);
@@ -653,6 +655,7 @@ public class ConfigFacade {
     public int getMapLineWidth() { return mapLineWidth; }
     public boolean isMapShowStopMarkers() { return mapShowStopMarkers; }
     public boolean isMapShowTransferInfo() { return mapShowTransferInfo; }
+    public long getMapRefreshDelayTicks() { return mapRefreshDelayTicks; }
 
     // Portal Getters
     public boolean isPortalsEnabled() { return portalsEnabled; }

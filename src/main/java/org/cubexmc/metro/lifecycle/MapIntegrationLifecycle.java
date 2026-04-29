@@ -35,10 +35,15 @@ public class MapIntegrationLifecycle {
     }
 
     public void refresh() {
-        if (!activateConfiguredProvider()) {
-            return;
+        try {
+            if (!activateConfiguredProvider()) {
+                return;
+            }
+            activeIntegration.refresh();
+        } catch (Throwable e) {
+            plugin.getLogger().warning("[Map] Failed to refresh " + activeProvider
+                    + " integration: " + e.getMessage());
         }
-        activeIntegration.refresh();
     }
 
     public void requestRefresh() {
@@ -46,10 +51,11 @@ public class MapIntegrationLifecycle {
             return;
         }
         refreshQueued = true;
+        long delay = plugin.getConfigFacade().getMapRefreshDelayTicks();
         SchedulerUtil.globalRun(plugin, () -> {
             refreshQueued = false;
             refresh();
-        }, 1L, -1L);
+        }, delay, -1L);
     }
 
     private boolean activateConfiguredProvider() {

@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -26,17 +28,20 @@ class RouteRecorderTest {
         Metro plugin = mock(Metro.class);
         when(plugin.getLineManager()).thenReturn(lineManager);
         when(plugin.getLogger()).thenReturn(Logger.getLogger("RouteRecorderTest"));
-        when(lineManager.setLineRoutePoints(eq("red"), argThat(points -> points.size() == 2))).thenReturn(true);
+        UUID recorderId = UUID.randomUUID();
+        when(lineManager.setLineRoutePoints(eq("red"), argThat(points -> points.size() == 2),
+                anyLong(), eq(recorderId), any())).thenReturn(true);
 
         World world = mock(World.class);
         when(world.getName()).thenReturn("world");
         Minecart cart = mock(Minecart.class);
-        when(cart.getUniqueId()).thenReturn(UUID.randomUUID());
+        UUID cartId = UUID.randomUUID();
+        when(cart.getUniqueId()).thenReturn(cartId);
         Minecart otherCart = mock(Minecart.class);
         when(otherCart.getUniqueId()).thenReturn(UUID.randomUUID());
 
         RouteRecorder recorder = new RouteRecorder(plugin);
-        assertTrue(recorder.start("red"));
+        assertTrue(recorder.start("red", recorderId));
         recorder.sample("red", cart, new Location(world, 0.0, 64.0, 0.0));
         recorder.sample("red", cart, new Location(world, 1.0, 64.0, 0.0));
         recorder.sample("red", otherCart, new Location(world, 10.0, 64.0, 0.0));
@@ -46,6 +51,18 @@ class RouteRecorderTest {
 
         assertEquals(FinishResult.Status.SAVED, result.status());
         assertEquals(2, result.pointCount());
-        verify(lineManager).setLineRoutePoints(eq("red"), argThat(points -> points.size() == 2));
+        verify(lineManager).setLineRoutePoints(eq("red"), argThat(points -> points.size() == 2),
+                anyLong(), eq(recorderId), eq(cartId));
+    }
+
+    @Test
+    void shouldExposeActiveRecorderMetadataBeforeSaving() {
+        RouteRecorder recorder = new RouteRecorder(mock(Metro.class));
+        UUID recorderId = UUID.randomUUID();
+
+        assertTrue(recorder.start("blue", recorderId));
+
+        assertEquals(recorderId, recorder.getRecordingPlayerId("blue"));
+        assertEquals(0, recorder.getActivePointCount("blue"));
     }
 }

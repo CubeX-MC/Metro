@@ -20,6 +20,9 @@ public class Line {
     private Double maxSpeed; // 线路最大速度
     private double ticketPrice; // 线路乘车价格
     private boolean railProtected; // 是否保护已记录线路上的铁轨
+    private Long routeRecordedAtEpochMillis;
+    private UUID routeRecordedBy;
+    private UUID routeRecordedCartId;
     private UUID owner; // 线路所有者 UUID，null 表示服务器所有
     private final Set<UUID> admins; // 线路管理员 UUID 集合
     private String worldName; // 线路所在世界名称，null 表示还未添加任何站点
@@ -178,6 +181,45 @@ public class Line {
 
     public void clearRoutePoints() {
         routePoints.clear();
+        clearRouteRecordingMetadata();
+    }
+
+    public Long getRouteRecordedAtEpochMillis() {
+        return routeRecordedAtEpochMillis;
+    }
+
+    public void setRouteRecordedAtEpochMillis(Long routeRecordedAtEpochMillis) {
+        this.routeRecordedAtEpochMillis = routeRecordedAtEpochMillis != null && routeRecordedAtEpochMillis > 0
+                ? routeRecordedAtEpochMillis
+                : null;
+    }
+
+    public UUID getRouteRecordedBy() {
+        return routeRecordedBy;
+    }
+
+    public void setRouteRecordedBy(UUID routeRecordedBy) {
+        this.routeRecordedBy = routeRecordedBy;
+    }
+
+    public UUID getRouteRecordedCartId() {
+        return routeRecordedCartId;
+    }
+
+    public void setRouteRecordedCartId(UUID routeRecordedCartId) {
+        this.routeRecordedCartId = routeRecordedCartId;
+    }
+
+    public void setRouteRecordingMetadata(Long recordedAtEpochMillis, UUID recordedBy, UUID recordedCartId) {
+        setRouteRecordedAtEpochMillis(recordedAtEpochMillis);
+        this.routeRecordedBy = recordedBy;
+        this.routeRecordedCartId = recordedCartId;
+    }
+
+    public void clearRouteRecordingMetadata() {
+        this.routeRecordedAtEpochMillis = null;
+        this.routeRecordedBy = null;
+        this.routeRecordedCartId = null;
     }
     
     /**

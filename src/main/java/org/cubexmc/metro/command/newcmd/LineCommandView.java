@@ -3,11 +3,17 @@ package org.cubexmc.metro.command.newcmd;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 
+import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.manager.LanguageManager;
+import org.cubexmc.metro.manager.RailProtectionManager;
 import org.cubexmc.metro.manager.RouteRecorder;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
@@ -23,6 +29,9 @@ import net.md_5.bungee.api.chat.hover.content.Text;
  * Rendering helper for line commands.
  */
 final class LineCommandView {
+
+    private static final DateTimeFormatter ROUTE_TIME_FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z").withZone(ZoneId.systemDefault());
 
     private static final List<String> HELP_KEYS = List.of(
             "line.help_create",
@@ -179,11 +188,19 @@ final class LineCommandView {
                 "line_id", line.getId()));
         player.sendMessage(msg("line.routeinfo_saved_points",
                 "point_count", line.getRoutePoints().size()));
+        player.sendMessage(msg("line.routeinfo_last_recorded_at",
+                "time", formatRouteRecordedAt(line)));
+        player.sendMessage(msg("line.routeinfo_last_recorded_by",
+                "player", formatUuidAsPlayer(line.getRouteRecordedBy())));
+        player.sendMessage(msg("line.routeinfo_last_cart",
+                "cart_id", formatUuid(line.getRouteRecordedCartId())));
         sendProtectionStatus(player, line);
         if (recorder.isRecording(line.getId())) {
             UUID cartId = recorder.getRecordingCartId(line.getId());
             player.sendMessage(msg("line.routeinfo_recording",
                     "state", msg("line.routeinfo_recording_active")));
+            player.sendMessage(msg("line.routeinfo_recording_by",
+                    "player", formatUuidAsPlayer(recorder.getRecordingPlayerId(line.getId()))));
             player.sendMessage(msg("line.routeinfo_buffered_points",
                     "point_count", recorder.getActivePointCount(line.getId())));
             player.sendMessage(msg("line.routeinfo_bound_cart",
@@ -198,10 +215,30 @@ final class LineCommandView {
         int protectedBlocks = plugin.getRailProtectionManager() == null
                 ? 0
                 : plugin.getRailProtectionManager().getProtectedBlockCount(line.getId());
+        RailProtectionManager.ProtectionIndexStats stats = plugin.getRailProtectionManager() == null
+                ? RailProtectionManager.ProtectionIndexStats.empty()
+                : plugin.getRailProtectionManager().getProtectionIndexStats(line.getId());
         player.sendMessage(msg("line.protect_status",
                 "state", msg(line.isRailProtected() ? "line.protect_state_enabled" : "line.protect_state_disabled")));
         player.sendMessage(msg("line.protect_blocks",
                 "count", protectedBlocks));
+        if (line.isRailProtected()) {
+            player.sendMessage(msg("line.protect_index_samples",
+                    "sampled", stats.sampledPoints(),
+                    "skipped", stats.skippedTotal()));
+            if (stats.skippedWorldMismatch() > 0) {
+                player.sendMessage(msg("line.protect_skipped_world_mismatch",
+                        "count", stats.skippedWorldMismatch()));
+            }
+            if (stats.skippedMissingWorld() > 0) {
+                player.sendMessage(msg("line.protect_skipped_missing_world",
+                        "count", stats.skippedMissingWorld()));
+            }
+            if (stats.skippedNoRail() > 0) {
+                player.sendMessage(msg("line.protect_skipped_no_rail",
+                        "count", stats.skippedNoRail()));
+            }
+        }
         if (line.isRailProtected() && protectedBlocks == 0) {
             player.sendMessage(msg("line.protect_no_blocks"));
         }
@@ -216,6 +253,27 @@ final class LineCommandView {
             LanguageManager.put(args, String.valueOf(replacements[i]), replacements[i + 1]);
         }
         return plugin.getLanguageManager().getMessage(key, args);
+    }
+
+    private String formatRouteRecordedAt(Line line) {
+        Long recordedAt = line.getRouteRecordedAtEpochMillis();
+        if (recordedAt == null) {
+            return msg("line.routeinfo_never_recorded");
+        }
+        return ROUTE_TIME_FORMATTER.format(Instant.ofEpochMilli(recordedAt));
+    }
+
+    private String formatUuidAsPlayer(UUID playerId) {
+        if (playerId == null) {
+            return msg("line.routeinfo_unknown");
+        }
+        OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(playerId);
+        String name = offlinePlayer.getName();
+        return name == null || name.isBlank() ? playerId.toString() : name;
+    }
+
+    private String formatUuid(UUID value) {
+        return value == null ? msg("line.routeinfo_unknown") : value.toString();
     }
 
     private TextComponent createTeleportComponent(Stop stop) {

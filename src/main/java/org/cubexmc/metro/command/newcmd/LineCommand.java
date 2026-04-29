@@ -300,7 +300,7 @@ public class LineCommand {
             return;
         }
 
-        if (recorder.start(id)) {
+        if (recorder.start(id, player.getUniqueId())) {
             player.sendMessage(msg("line.record_started", "line_id", id));
             player.sendMessage(msg("line.record_hint"));
         } else {
