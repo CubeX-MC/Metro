@@ -131,7 +131,7 @@
    - [x] 已将 Bukkit listener 创建和事件注册拆到 `ListenerRegistration`。
    - [x] 已将 BlueMap/Dynmap/Squaremap 启停与刷新队列拆到 `MapIntegrationLifecycle`。
    - [x] 已将自动保存定时任务和旧矿车 PDC 兼容迁移任务拆到 `ScheduledTaskLifecycle`。
-5. 将列车运行状态机拆分为状态、调度和显示事件三层。
+5. [x] 将列车运行状态机拆分为状态、调度和显示事件三层。
 
 验收标准：
 
@@ -592,7 +592,11 @@ train.TrainPhysicsController
    - [x] 已新增 `TrainStateMachine`，统一状态切换和状态转换 debug 日志。
    - [x] 已新增 `TrainScheduler`，让 `TrainMovementTask` 自有的延迟发车、防卡辅助和终点清理任务可统一取消。
    - [x] 已新增 `TrainPhysicsController`，收敛进站减速、发车初速度和防卡辅助速度计算。
-   - [x] 已将 `TrainMovementTask` 从 600+ 行降至 400 行以内，并保留现有事件驱动行为。
+   - [x] 已新增 `TrainEventPublisher`，将 arrival/departure 事件发布从移动状态机中分离，显示层继续由 `TrainDisplayController` 消费事件。
+   - [x] 已新增 `TrainScoreboardController`，将 ride scoreboard 更新从移动状态机中分离。
+   - [x] 已新增 `TrainTaskRegistry` 和 `TrainTaskStarter`，将 active task 注册、shutdown 清理和启动入口从 `TrainMovementTask` 中分离。
+   - [x] 已新增 `TrainMovementAssistController`，将 safe-mode 防卡辅助从 `TrainMovementTask` 中分离。
+   - [x] 已将 `TrainMovementTask` 从 600+ 行降至 365 行，并保留现有事件驱动行为。
 
 2. 明确状态：
 
@@ -686,6 +690,7 @@ CANCELLED
    - blockToLines 索引重建。
    - 管理员可破坏自己有权限的受保护线路。
    - 非管理员无法破坏受保护线路。
+   - [x] 已新增 `RailProtectionManagerTest` 覆盖 route point 插值索引、线路重建移除索引、世界不匹配统计，以及受保护铁轨破坏权限。
 
 验收：
 
@@ -764,14 +769,18 @@ MapIntegration {
    - region 任务何时用。
    - entity 任务何时用。
    - async 任务中禁止访问 Bukkit 实体和世界对象。
+   - [x] 已写入 `docs/architecture.md` 的 Scheduler Policy，明确 Paper/Bukkit 与 Folia 下各类调度入口的使用边界。
 
 3. 为 `SchedulerUtil` 增加测试或运行时自检：
    - Folia reflection 初始化失败时只提示一次。
    - fallback 到 Bukkit 调度时警告当前可能不完全 Folia safe。
+   - [x] `SchedulerUtil` 已在 Folia 反射不可用或调度调用失败时只记录一次 Bukkit fallback 风险警告。
 
 4. 对 `onDisable` 中世界实体扫描做风险评估：
    - Paper 可接受。
    - Folia 可能需要分世界/分 region 安全清理。
+   - [x] 已在 `docs/architecture.md` 记录当前 Paper/Bukkit 可接受、Folia 仍需后续改造的风险边界。
+   - [x] `onDisable` 已优先通过 `TrainMovementTask` active registry 清理本次生命周期内的列车；Folia 下跳过全世界实体兜底扫描，Paper/Bukkit 保留兜底清理旧残留。
 
 验收：
 
@@ -861,6 +870,7 @@ MapIntegration {
    - 每次 PR 跑 `mvn verify`。
    - 发布 tag 跑 `mvn clean verify package`。
    - 上传构建产物。
+   - [x] 已将 GitHub Actions 从旧 `metro-modern` 模块路径改为当前单模块 Maven 命令，并修正发布产物路径为 `target/*.jar`。
 
 验收：
 
@@ -886,6 +896,7 @@ MapIntegration {
    - README 同步。
    - plugin.yml 权限同步。
    - 服务器实测。
+   - [x] 发布清单已补充 `mvn verify`、`mvn clean verify package` 和 GitHub Actions 通过要求。
 
 2. 发布说明模板：
 
@@ -897,16 +908,20 @@ Migration Notes
 Compatibility Notes
 Known Issues
 ```
+   - [x] 已新增 `docs/release-notes-template.md`，覆盖 Added/Changed/Fixed/Migration/Compatibility/Known Issues/Verification。
 
 3. 数据迁移策略：
    - 所有 schema 变化必须写测试。
    - 迁移前备份旧文件，例如 `lines.yml.bak-<version>`。
    - 迁移日志写明变更文件和 schema version。
+   - [x] `DataFileUpdater` 已在写入迁移结果前创建 `<file>.bak-<schema_version>` 备份，备份文件名冲突时自动追加序号，并补充回归测试。
 
 4. 兼容性说明：
    - 支持的 Minecraft 版本。
    - 支持的 Paper/Spigot/Folia 状态。
    - 可选依赖版本。
+   - [x] release workflow 已支持 `v*` tag 自动发布，并只上传最终 `target/metro-*.jar` 插件产物。
+   - [x] 已新增 `docs/compatibility.md`，记录 Java/Minecraft/API、Spigot/Paper/Folia 和 Vault/地图插件兼容状态。
 
 验收：
 

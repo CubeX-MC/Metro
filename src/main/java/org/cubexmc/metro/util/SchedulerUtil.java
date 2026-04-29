@@ -37,6 +37,7 @@ public class SchedulerUtil {
     private static Method entityRunAtFixedRateMethod;
     private static Method scheduledTaskCancelMethod;
     private static boolean reflectionInitialized = false;
+    private static boolean warnedUnsafeBukkitFallback = false;
 
     static {
         if (IS_FOLIA) {
@@ -109,6 +110,7 @@ public class SchedulerUtil {
         if (IS_FOLIA && reflectionInitialized) {
             return foliaGlobalRun(plugin, task, delay, period);
         } else {
+            warnUnsafeBukkitFallbackIfNeeded(plugin, "global scheduler reflection is unavailable");
             return bukkitGlobalRun(plugin, task, delay, period);
         }
     }
@@ -128,7 +130,7 @@ public class SchedulerUtil {
                 return globalRunAtFixedRateMethod.invoke(scheduler, plugin, foliaTask, Math.max(1, delay), period);
             }
         } catch (Exception e) {
-            plugin.getLogger().warning("Folia scheduler error: " + e.getMessage());
+            warnUnsafeBukkitFallbackIfNeeded(plugin, "global scheduler error: " + e.getMessage());
             return bukkitGlobalRun(plugin, task, delay, period);
         }
     }
@@ -184,6 +186,7 @@ public class SchedulerUtil {
         if (IS_FOLIA && reflectionInitialized) {
             return foliaEntityRun(plugin, entity, task, delay, period);
         } else {
+            warnUnsafeBukkitFallbackIfNeeded(plugin, "entity scheduler reflection is unavailable");
             return bukkitGlobalRun(plugin, task, delay, period);
         }
     }
@@ -206,7 +209,7 @@ public class SchedulerUtil {
                 return entityRunAtFixedRateMethod.invoke(scheduler, plugin, foliaTask, retiredCallback, Math.max(1, delay), period);
             }
         } catch (Exception e) {
-            plugin.getLogger().warning("Folia entity scheduler error: " + e.getMessage());
+            warnUnsafeBukkitFallbackIfNeeded(plugin, "entity scheduler error: " + e.getMessage());
             return bukkitGlobalRun(plugin, task, delay, period);
         }
     }
@@ -252,6 +255,7 @@ public class SchedulerUtil {
         if (IS_FOLIA && reflectionInitialized) {
             return foliaRegionRun(plugin, location, task, delay, period);
         } else {
+            warnUnsafeBukkitFallbackIfNeeded(plugin, "region scheduler reflection is unavailable");
             return bukkitGlobalRun(plugin, task, delay, period);
         }
     }
@@ -271,7 +275,7 @@ public class SchedulerUtil {
                 return regionRunAtFixedRateMethod.invoke(scheduler, plugin, location, foliaTask, Math.max(1, delay), period);
             }
         } catch (Exception e) {
-            plugin.getLogger().warning("Folia region scheduler error: " + e.getMessage());
+            warnUnsafeBukkitFallbackIfNeeded(plugin, "region scheduler error: " + e.getMessage());
             return bukkitGlobalRun(plugin, task, delay, period);
         }
     }
@@ -288,6 +292,7 @@ public class SchedulerUtil {
         if (IS_FOLIA && reflectionInitialized) {
             foliaAsyncRun(plugin, task, delay);
         } else {
+            warnUnsafeBukkitFallbackIfNeeded(plugin, "async scheduler reflection is unavailable");
             Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, task, delay);
         }
     }
@@ -303,8 +308,16 @@ public class SchedulerUtil {
                 asyncRunDelayedMethod.invoke(scheduler, plugin, foliaTask, delay * 50L, TimeUnit.MILLISECONDS);
             }
         } catch (Exception e) {
-            plugin.getLogger().warning("Folia async scheduler error: " + e.getMessage());
+            warnUnsafeBukkitFallbackIfNeeded(plugin, "async scheduler error: " + e.getMessage());
             Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, task, delay);
         }
+    }
+
+    private static void warnUnsafeBukkitFallbackIfNeeded(Plugin plugin, String reason) {
+        if (!IS_FOLIA || warnedUnsafeBukkitFallback) {
+            return;
+        }
+        warnedUnsafeBukkitFallback = true;
+        plugin.getLogger().warning("Folia scheduler fallback to Bukkit scheduler; this may not be fully Folia-safe. Reason: " + reason);
     }
 }

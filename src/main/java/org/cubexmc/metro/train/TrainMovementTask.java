@@ -1,10 +1,5 @@
 package org.cubexmc.metro.train;
 
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Minecart;
 import org.bukkit.entity.Player;
@@ -15,8 +10,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.vehicle.VehicleMoveEvent;
 import org.bukkit.util.Vector;
 import org.cubexmc.metro.Metro;
-import org.cubexmc.metro.event.MetroTrainArrivalEvent;
-import org.cubexmc.metro.event.MetroTrainDepartureEvent;
 import org.cubexmc.metro.event.TrainEnterStopEvent;
 import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.StopManager;
@@ -35,13 +28,13 @@ public class TrainMovementTask implements Listener {
         MOVING_BETWEEN_STATIONS
     }
 
-    private static final Map<UUID, TrainMovementTask> activeTasks = new ConcurrentHashMap<>();
-
     private final TrainSession session;
     private final TrainStateMachine stateMachine;
     private final TrainScheduler trainScheduler;
     private final TrainPhysicsController physicsController;
-    private Object movementAssistTaskId;
+    private final TrainEventPublisher eventPublisher;
+    private final TrainScoreboardController scoreboardController;
+    private final TrainMovementAssistController movementAssistController;
 
     public TrainMovementTask(Metro plugin, Minecart minecart, Player passenger, String lineId, String fromStopId) {
         this(plugin, minecart, passenger, lineId, fromStopId, TrainState.STOPPED_AT_STATION);
@@ -55,18 +48,20 @@ public class TrainMovementTask implements Listener {
         this.stateMachine = new TrainStateMachine(session);
         this.trainScheduler = new TrainScheduler(plugin);
         this.physicsController = new TrainPhysicsController();
+        this.eventPublisher = new TrainEventPublisher(session);
+        this.scoreboardController = new TrainScoreboardController();
+        this.movementAssistController = new TrainMovementAssistController(session, trainScheduler,
+                physicsController, this::cancel, this::handlePassengerExit);
 
         if (line != null && session.getTargetStopId() != null) {
-            updateScoreboardBasedOnState();
+            scoreboardController.updateBasedOnState(session);
         }
     }
 
     public void cancel() {
         Minecart minecart = session.getMinecart();
-        if (minecart != null) {
-            activeTasks.remove(minecart.getUniqueId());
-        }
-        stopMovementAssist();
+        TrainTaskRegistry.unregister(minecart);
+        movementAssistController.stop();
         trainScheduler.cancelAll();
         HandlerList.unregisterAll(this);
         session.debug("Task cancelled for passenger=" + session.safePassengerName()
@@ -74,16 +69,22 @@ public class TrainMovementTask implements Listener {
                 + ", targetStop=" + session.getTargetStopId());
     }
 
+    public void removeMinecartAndCancel() {
+        Minecart minecart = session.getMinecart();
+        if (minecart != null && !minecart.isDead()) {
+            minecart.eject();
+            minecart.remove();
+        }
+        cancel();
+    }
+
     public void transferMinecart(Minecart newCart) {
         Minecart previousCart = session.getMinecart();
-        if (previousCart != null) {
-            activeTasks.remove(previousCart.getUniqueId());
-        }
         session.setMinecart(newCart);
         session.setTeleporting(false);
-        activeTasks.put(newCart.getUniqueId(), this);
+        TrainTaskRegistry.transfer(previousCart, newCart, this);
         if (session.getState() == TrainState.MOVING_BETWEEN_STATIONS) {
-            startMovementAssist();
+            movementAssistController.start();
         }
         session.debug("Transferred movement task to new minecart UUID=" + newCart.getUniqueId());
     }
@@ -93,7 +94,11 @@ public class TrainMovementTask implements Listener {
     }
 
     public static TrainMovementTask getTaskFor(Minecart cart) {
-        return activeTasks.get(cart.getUniqueId());
+        return TrainTaskRegistry.get(cart);
+    }
+
+    public static int shutdownActiveTasks() {
+        return TrainTaskRegistry.shutdownActiveTasks();
     }
 
     Object scheduleSessionTask(Runnable task, long delay, long period) {
@@ -102,32 +107,6 @@ public class TrainMovementTask implements Listener {
 
     TrainSession getSession() {
         return session;
-    }
-
-    private void updateScoreboardBasedOnState() {
-        Player passenger = session.getPassenger();
-        Line line = session.getLine();
-        if (passenger == null || !passenger.isOnline() || line == null) {
-            return;
-        }
-
-        switch (session.getState()) {
-            case STOPPED_AT_STATION:
-                if (session.getTargetStopId() == null) {
-                    session.getPlugin().getScoreboardManager()
-                            .updateTerminalScoreboard(passenger, line, session.getCurrentStopId());
-                } else {
-                    session.getPlugin().getScoreboardManager()
-                            .updateEnteringStopScoreboard(passenger, line, session.getCurrentStopId());
-                }
-                break;
-            case MOVING_IN_STATION:
-                session.getPlugin().getScoreboardManager()
-                        .updateTravelingScoreboard(passenger, line, session.getTargetStopId());
-                break;
-            case MOVING_BETWEEN_STATIONS:
-                break;
-        }
     }
 
     @EventHandler(priority = EventPriority.NORMAL)
@@ -190,7 +169,7 @@ public class TrainMovementTask implements Listener {
         Minecart minecart = session.getMinecart();
         minecart.setVelocity(new Vector(0, 0, 0));
         minecart.setMaxSpeed(0);
-        stopMovementAssist();
+        movementAssistController.stop();
 
         Location snapLocation = stop.getStopPointLocation().clone();
         snapLocation.setX(snapLocation.getBlockX() + 0.5);
@@ -205,19 +184,19 @@ public class TrainMovementTask implements Listener {
             handleArrivalAtStation();
         }
 
-        updateScoreboardBasedOnState();
+        scoreboardController.updateBasedOnState(session);
     }
 
     private void transitionToMovingInStation(Stop targetStop) {
-        stopMovementAssist();
+        movementAssistController.stop();
 
         TrainState previousState = stateMachine.transitionTo(TrainState.MOVING_IN_STATION,
                 "enteredStop=" + targetStop.getId());
         if (previousState == TrainState.MOVING_BETWEEN_STATIONS) {
-            handleEnteringStation(targetStop);
+            eventPublisher.publishEnteringStop(targetStop);
         }
 
-        updateScoreboardBasedOnState();
+        scoreboardController.updateBasedOnState(session);
     }
 
     private void transitionToMovingBetweenStations() {
@@ -227,24 +206,15 @@ public class TrainMovementTask implements Listener {
         if (passenger != null && passenger.isOnline()) {
             passenger.sendTitle("", "", 0, 0, 0);
         }
-        updateScoreboardBasedOnState();
-    }
-
-    private void handleEnteringStation(Stop targetStop) {
-        Player passenger = session.getPassenger();
-        Line line = session.getLine();
-        if (passenger == null || !passenger.isOnline() || line == null || targetStop == null) {
-            return;
-        }
-
-        String nextStopId = line.getNextStopId(session.getTargetStopId());
-        boolean isTerminus = nextStopId == null;
-        Bukkit.getPluginManager().callEvent(new MetroTrainArrivalEvent(session.getMinecart(), passenger, line,
-                targetStop, isTerminus, MetroTrainArrivalEvent.ArrivalType.ENTERING));
+        scoreboardController.updateBasedOnState(session);
     }
 
     private void handleArrivalAtStation() {
         handleArrivalAtStation(false);
+    }
+
+    void startAtStation() {
+        handleArrivalAtStation(true);
     }
 
     private void handleArrivalAtStation(boolean isNewlySpawned) {
@@ -270,14 +240,12 @@ public class TrainMovementTask implements Listener {
                 return;
             }
             session.setTargetStopId(null);
-            Bukkit.getPluginManager().callEvent(new MetroTrainArrivalEvent(session.getMinecart(),
-                    session.getPassenger(), line, currentStop, true, MetroTrainArrivalEvent.ArrivalType.DOCKED));
+            eventPublisher.publishDockedAtStop(currentStop, true);
             return;
         }
 
-        Bukkit.getPluginManager().callEvent(new MetroTrainArrivalEvent(session.getMinecart(),
-                session.getPassenger(), line, currentStop, false, MetroTrainArrivalEvent.ArrivalType.DOCKED));
-        updateScoreboardBasedOnState();
+        eventPublisher.publishDockedAtStop(currentStop, false);
+        scoreboardController.updateBasedOnState(session);
         scheduleNextDeparture();
     }
 
@@ -305,8 +273,7 @@ public class TrainMovementTask implements Listener {
 
         session.getPlugin().getRouteRecorder().sample(line.getId(), session.getMinecart(),
                 currentStop.getStopPointLocation());
-        Bukkit.getPluginManager().callEvent(new MetroTrainDepartureEvent(session.getMinecart(), session.getPassenger(),
-                line, currentStop, nextStop));
+        eventPublisher.publishDeparture(currentStop, nextStop);
 
         double maxSpeed = line.getMaxSpeed();
         if (maxSpeed == -1.0) {
@@ -321,7 +288,7 @@ public class TrainMovementTask implements Listener {
         }
 
         transitionToMovingBetweenStations();
-        startMovementAssist();
+        movementAssistController.start();
     }
 
     private void scheduleNextDeparture() {
@@ -379,71 +346,7 @@ public class TrainMovementTask implements Listener {
 
     public static void startTrainTask(Metro plugin, Minecart minecart, Player passenger, String lineId,
             String currentStopId) {
-        LineManager lineManager = plugin.getLineManager();
-        Line line = lineManager.getLine(lineId);
-        if (line == null) {
-            return;
-        }
-
-        if (passenger == null || !passenger.isOnline() || passenger.getVehicle() != minecart) {
-            if (minecart.isValid()) {
-                minecart.remove();
-            }
-            return;
-        }
-
-        TrainMovementTask trainTask = new TrainMovementTask(plugin, minecart, passenger, lineId, currentStopId);
-        Bukkit.getPluginManager().registerEvents(trainTask, plugin);
-        activeTasks.put(minecart.getUniqueId(), trainTask);
-
-        minecart.setMaxSpeed(0);
-        minecart.setVelocity(new Vector(0, 0, 0));
-        trainTask.handleArrivalAtStation(true);
-    }
-
-    private void startMovementAssist() {
-        stopMovementAssist();
-        if (!session.getPlugin().getConfigFacade().isSafeModeMovementAssist()
-                || session.getMinecart() == null) {
-            return;
-        }
-        long interval = Math.max(1L, session.getPlugin().getConfigFacade().getSafeModeStallRecoveryTicks());
-        movementAssistTaskId = trainScheduler.entityRun(session.getMinecart(), this::recoverStalledMinecart,
-                interval, interval);
-    }
-
-    private void stopMovementAssist() {
-        trainScheduler.cancel(movementAssistTaskId);
-        movementAssistTaskId = null;
-    }
-
-    private void recoverStalledMinecart() {
-        if (!session.getPlugin().getConfigFacade().isSafeModeMovementAssist()) {
-            stopMovementAssist();
-            return;
-        }
-        Minecart minecart = session.getMinecart();
-        if (minecart == null || minecart.isDead() || !minecart.isValid()) {
-            cancel();
-            return;
-        }
-        if (!physicsController.canRecoverStalledMinecart(session)) {
-            return;
-        }
-        if (!session.isPassengerStillRiding()) {
-            handlePassengerExit();
-            return;
-        }
-
-        double minCruiseSpeed = Math.max(0.01,
-                session.getPlugin().getConfigFacade().getSafeModeMinCruiseSpeed());
-        if (!physicsController.isBelowCruiseSpeed(minecart, minCruiseSpeed)) {
-            return;
-        }
-
-        double targetSpeed = physicsController.resolveAssistSpeed(minecart,
-                session.getPlugin().getConfigFacade().getCartSpeed(), minCruiseSpeed);
-        minecart.setVelocity(physicsController.buildAssistVelocity(session.getLastTravelDirection(), targetSpeed));
+        TrainTaskStarter.start(plugin, minecart, passenger, lineId, currentStopId);
     }
 
     private void updateLastTravelDirection(Location from, Location to) {

@@ -6,6 +6,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.Collections;
 import java.util.List;
@@ -233,10 +234,23 @@ public final class DataFileUpdater {
             return;
         }
         try {
+            File backupFile = backupFile(file);
+            Files.copy(file.toPath(), backupFile.toPath());
             config.save(file);
-            plugin.getLogger().info("Migrated Metro data file: " + fileName);
+            plugin.getLogger().info("Migrated Metro data file: " + fileName
+                    + " (backup: " + backupFile.getName() + ")");
         } catch (IOException ex) {
             plugin.getLogger().warning("Failed to migrate " + fileName + ": " + ex.getMessage());
         }
+    }
+
+    private static File backupFile(File file) {
+        File backup = new File(file.getParentFile(), file.getName() + ".bak-" + CURRENT_SCHEMA_VERSION);
+        int suffix = 2;
+        while (backup.exists()) {
+            backup = new File(file.getParentFile(), file.getName() + ".bak-" + CURRENT_SCHEMA_VERSION + "." + suffix);
+            suffix++;
+        }
+        return backup;
     }
 }

@@ -1,4 +1,4 @@
-name: metro-modern-ci
+name: metro-ci
 
 on:
   push:
@@ -21,8 +21,8 @@ jobs:
           cache: maven
 
       - name: Verify with coverage gate
-        run: mvn -B -pl metro-modern -am verify
+        run: mvn -B verify
 
-      - name: Package metro-modern
-        run: mvn -B -pl metro-modern -am package
+      - name: Package metro
+        run: mvn -B package
 

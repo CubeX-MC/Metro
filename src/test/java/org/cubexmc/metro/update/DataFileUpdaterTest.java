@@ -39,6 +39,10 @@ class DataFileUpdaterTest {
         assertFalse(config.contains("red.ordered_platform_ids"));
         assertTrue(config.contains("red.route_points"));
         assertFalse(config.getBoolean("red.rail_protected"));
+
+        Path backup = tempDir.resolve("lines.yml.bak-" + DataFileUpdater.CURRENT_SCHEMA_VERSION);
+        assertTrue(Files.exists(backup));
+        assertTrue(Files.readString(backup).contains("ordered_platform_ids"));
     }
 
     @Test

@@ -31,9 +31,11 @@ import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.persistence.SaveCoordinator;
 import org.cubexmc.metro.train.ScoreboardManager;
 import org.cubexmc.metro.train.TrainDisplayController;
+import org.cubexmc.metro.train.TrainMovementTask;
 import org.cubexmc.metro.update.ConfigUpdater;
 import org.cubexmc.metro.update.DataFileUpdater;
 import org.cubexmc.metro.util.MetroConstants;
+import org.cubexmc.metro.util.VersionUtil;
 
 public final class Metro extends JavaPlugin {
 
@@ -172,22 +174,32 @@ public final class Metro extends JavaPlugin {
             globalScoreboardLibrary.close();
         }
 
-        // 清理在线玩家显示与地铁矿车
+        // 清理在线玩家显示与本次生命周期内仍在运行的地铁矿车。
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (scoreboardManager != null) {
                 scoreboardManager.clearPlayerDisplay(player);
             }
         }
-        for (org.bukkit.World world : Bukkit.getWorlds()) {
-            for (Entity entity : world.getEntities()) {
-                if (entity instanceof Minecart minecart
-                        && minecart.getPersistentDataContainer().has(
-                                org.cubexmc.metro.util.MetroConstants.getMinecartKey(),
-                                org.bukkit.persistence.PersistentDataType.BYTE)) {
-                    minecart.eject();
-                    minecart.remove();
+        int activeTrainCount = TrainMovementTask.shutdownActiveTasks();
+        if (activeTrainCount > 0) {
+            getLogger().info("Cleaned up " + activeTrainCount + " active Metro train(s).");
+        }
+
+        // Paper/Bukkit 兜底清理旧残留；Folia 不做全世界实体扫描，避免跨 region 访问风险。
+        if (!VersionUtil.isFolia()) {
+            for (org.bukkit.World world : Bukkit.getWorlds()) {
+                for (Entity entity : world.getEntities()) {
+                    if (entity instanceof Minecart minecart
+                            && minecart.getPersistentDataContainer().has(
+                                    org.cubexmc.metro.util.MetroConstants.getMinecartKey(),
+                                    org.bukkit.persistence.PersistentDataType.BYTE)) {
+                        minecart.eject();
+                        minecart.remove();
+                    }
                 }
             }
+        } else {
+            getLogger().info("Skipped fallback world minecart scan during Folia shutdown; active trains were cleaned through the train registry.");
         }
 
         if (scheduledTaskLifecycle != null) {
