@@ -151,6 +151,7 @@ line:
   protect_no_blocks: "&e未索引到受保護鐵軌。請在路線鐵軌建好後重新錄製軌跡，再試一次。"
   record_saved: "&a已為路線 {line_id} 儲存 {point_count} 個軌跡點。"
   record_too_few: "&c軌跡錄製已停止，但只收集到 {point_count} 個點。請乘坐更遠距離後重試。"
+  record_too_few_hint: "&7可能原因：軌跡點每隔數格取樣一次，且本次錄製只追蹤最先使用的 Metro 礦車。"
   record_failed: "&c儲存路線 {line_id} 的軌跡點失敗。"
   record_not_recording: "&e路線 {line_id} 目前沒有在錄製。"
   record_started: "&a已開始錄製路線 {line_id} 的軌跡。"

@@ -292,8 +292,7 @@ public class LineCommand {
                 case SAVED -> player.sendMessage(msg("line.record_saved",
                         "line_id", id,
                         "point_count", result.pointCount()));
-                case TOO_FEW_POINTS -> player.sendMessage(msg("line.record_too_few",
-                        "point_count", result.pointCount()));
+                case TOO_FEW_POINTS -> sendRecordTooFew(player, result);
                 case FAILED -> player.sendMessage(msg("line.record_failed", "line_id", id));
                 case NOT_RECORDING -> player.sendMessage(msg("line.record_not_recording", "line_id", id));
             }
@@ -348,6 +347,11 @@ public class LineCommand {
 
     private String msg(String key, Object... replacements) {
         return view.msg(key, replacements);
+    }
+
+    private void sendRecordTooFew(Player player, RouteRecorder.FinishResult result) {
+        player.sendMessage(msg("line.record_too_few", "point_count", result.pointCount()));
+        player.sendMessage(msg("line.record_too_few_hint"));
     }
 
     @Command("m|metro line|l trust <id> <playerName>")

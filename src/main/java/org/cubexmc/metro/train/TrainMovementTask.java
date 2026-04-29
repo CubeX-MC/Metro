@@ -368,6 +368,9 @@ public class TrainMovementTask implements Listener {
         if (key != null) {
             recorder.sendMessage(session.getPlugin().getLanguageManager().getMessage(key, args));
         }
+        if (result.status() == org.cubexmc.metro.manager.RouteRecorder.FinishResult.Status.TOO_FEW_POINTS) {
+            recorder.sendMessage(session.getPlugin().getLanguageManager().getMessage("line.record_too_few_hint"));
+        }
     }
 
     private void handlePassengerExit() {

@@ -151,6 +151,7 @@ line:
   protect_no_blocks: "&eEr zijn geen beschermde sporen geindexeerd. Neem de route op nadat de sporen zijn gebouwd en probeer het opnieuw."
   record_saved: "&a{point_count} routepunten opgeslagen voor lijn {line_id}."
   record_too_few: "&cRoute-opname gestopt, maar er zijn slechts {point_count} punt(en) verzameld. Reis verder en probeer het opnieuw."
+  record_too_few_hint: "&7Mogelijke oorzaken: routepunten worden om de paar blokken vastgelegd en alleen de eerste Metro-mijnkar van deze opname wordt gevolgd."
   record_failed: "&cRoutepunten voor lijn {line_id} konden niet worden opgeslagen."
   record_not_recording: "&eLijn {line_id} wordt momenteel niet opgenomen."
   record_started: "&aRoute-opname gestart voor lijn {line_id}."

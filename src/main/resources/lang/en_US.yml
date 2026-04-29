@@ -151,6 +151,7 @@ line:
   protect_no_blocks: "&eNo protected rails were indexed. Record the route after rails are built, then try again."
   record_saved: "&aSaved {point_count} route points for line {line_id}."
   record_too_few: "&cRoute recording stopped, but only {point_count} point(s) were collected. Ride the line farther and try again."
+  record_too_few_hint: "&7Possible causes: route points are sampled every few blocks, and only the first Metro minecart used for this recording is tracked."
   record_failed: "&cFailed to save route points for line {line_id}."
   record_not_recording: "&eLine {line_id} is not currently recording."
   record_started: "&aStarted route recording for line {line_id}."

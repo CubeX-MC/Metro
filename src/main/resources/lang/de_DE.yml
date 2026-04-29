@@ -151,6 +151,7 @@ line:
   protect_no_blocks: "&eEs wurden keine geschützten Gleise indiziert. Zeichne die Route nach dem Bau der Gleise auf und versuche es erneut."
   record_saved: "&a{point_count} Routenpunkte für Linie {line_id} gespeichert."
   record_too_few: "&cDie Routenaufzeichnung wurde beendet, aber es wurden nur {point_count} Punkt(e) gesammelt. Fahre weiter und versuche es erneut."
+  record_too_few_hint: "&7Mögliche Ursachen: Routenpunkte werden nur alle paar Blöcke erfasst, und nur der erste Metro-Minecart dieser Aufzeichnung wird verfolgt."
   record_failed: "&cRoutenpunkte für Linie {line_id} konnten nicht gespeichert werden."
   record_not_recording: "&eLinie {line_id} wird derzeit nicht aufgezeichnet."
   record_started: "&aRoutenaufzeichnung für Linie {line_id} gestartet."

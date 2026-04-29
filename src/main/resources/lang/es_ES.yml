@@ -151,6 +151,7 @@ line:
   protect_no_blocks: "&eNo se indexaron vías protegidas. Graba la ruta después de construir las vías e inténtalo de nuevo."
   record_saved: "&aSe guardaron {point_count} puntos de ruta para la línea {line_id}."
   record_too_few: "&cLa grabación de ruta se detuvo, pero solo se recopilaron {point_count} punto(s). Viaja más lejos e inténtalo de nuevo."
+  record_too_few_hint: "&7Posibles causas: los puntos de ruta se muestrean cada pocos bloques y solo se sigue el primer minecart de Metro usado en esta grabación."
   record_failed: "&cNo se pudieron guardar los puntos de ruta de la línea {line_id}."
   record_not_recording: "&eLa línea {line_id} no se está grabando actualmente."
   record_started: "&aGrabación de ruta iniciada para la línea {line_id}."

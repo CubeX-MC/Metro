@@ -246,8 +246,7 @@ public final class LineSettingsController {
             switch (result.status()) {
                 case SAVED -> player.sendMessage(plugin.getLanguageManager().getMessage("line.record_saved",
                         args("line_id", lineId, "point_count", String.valueOf(result.pointCount()))));
-                case TOO_FEW_POINTS -> player.sendMessage(plugin.getLanguageManager().getMessage("line.record_too_few",
-                        LanguageManager.put(LanguageManager.args(), "point_count", String.valueOf(result.pointCount()))));
+                case TOO_FEW_POINTS -> sendRecordTooFew(player, result);
                 case FAILED -> player.sendMessage(plugin.getLanguageManager().getMessage("line.record_failed",
                         LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
                 case NOT_RECORDING -> player.sendMessage(plugin.getLanguageManager().getMessage("line.record_not_recording",
@@ -310,5 +309,11 @@ public final class LineSettingsController {
             LanguageManager.put(args, String.valueOf(replacements[i]), replacements[i + 1]);
         }
         return args;
+    }
+
+    private void sendRecordTooFew(Player player, RouteRecorder.FinishResult result) {
+        player.sendMessage(plugin.getLanguageManager().getMessage("line.record_too_few",
+                LanguageManager.put(LanguageManager.args(), "point_count", String.valueOf(result.pointCount()))));
+        player.sendMessage(plugin.getLanguageManager().getMessage("line.record_too_few_hint"));
     }
 }

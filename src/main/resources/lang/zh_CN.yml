@@ -151,6 +151,7 @@ line:
   protect_no_blocks: "&e未索引到受保护铁轨。请在线路铁轨建好后重新录制轨迹，再试一次。"
   record_saved: "&a已为线路 {line_id} 保存 {point_count} 个轨迹点。"
   record_too_few: "&c轨迹录制已停止，但只收集到 {point_count} 个点。请乘坐更远距离后重试。"
+  record_too_few_hint: "&7可能原因：轨迹点每隔数格采样一次，且本次录制只跟踪最先使用的 Metro 矿车。"
   record_failed: "&c保存线路 {line_id} 的轨迹点失败。"
   record_not_recording: "&e线路 {line_id} 当前没有在录制。"
   record_started: "&a已开始录制线路 {line_id} 的轨迹。"
