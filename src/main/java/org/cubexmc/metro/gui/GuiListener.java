@@ -9,18 +9,15 @@ import org.bukkit.inventory.Inventory;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.gui.controller.ConfirmActionController;
 import org.cubexmc.metro.gui.controller.LineBoardingChoiceController;
+import org.cubexmc.metro.gui.controller.LineSettingsController;
+import org.cubexmc.metro.gui.controller.StopSettingsController;
 import org.cubexmc.metro.manager.LanguageManager;
-import org.cubexmc.metro.manager.RouteRecorder;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Stop;
-import org.cubexmc.metro.service.LineCommandService;
-import org.cubexmc.metro.service.StopCommandService;
 import org.cubexmc.metro.util.OwnershipUtil;
 import org.cubexmc.metro.util.SchedulerUtil;
 
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * GUI 事件监听器
@@ -39,21 +36,16 @@ public class GuiListener implements Listener {
     private static final int SLOT_LINE_MANAGE = 11;
     private static final int SLOT_STOP_MANAGE = 15;
 
-    private static final int SLOT_LINE_SETTINGS_COLOR = 19;
-    private static final int SLOT_LINE_SETTINGS_TERMINUS = 21;
-    private static final int SLOT_LINE_SETTINGS_BACK = 31;
-    private static final int SLOT_STOP_SETTINGS_SET_POINT = 13;
-
-    private final LineCommandService lineService;
-    private final StopCommandService stopService;
     private final LineBoardingChoiceController lineBoardingChoiceController;
+    private final LineSettingsController lineSettingsController;
+    private final StopSettingsController stopSettingsController;
     private final ConfirmActionController confirmActionController;
     
     public GuiListener(Metro plugin) {
         this.plugin = plugin;
-        this.lineService = new LineCommandService(plugin.getLineManager());
-        this.stopService = new StopCommandService(plugin.getStopManager());
         this.lineBoardingChoiceController = new LineBoardingChoiceController(plugin);
+        this.lineSettingsController = new LineSettingsController(plugin);
+        this.stopSettingsController = new StopSettingsController(plugin);
         this.confirmActionController = new ConfirmActionController(plugin);
     }
     
@@ -93,8 +85,8 @@ public class GuiListener implements Listener {
             case ADD_STOP_VARIANTS -> handleAddStopVariantsClick(player, holder, slot);
             case LINE_BOARDING_CHOICE -> lineBoardingChoiceController.handleClick(player, holder, slot,
                     event.isRightClick());
-            case LINE_SETTINGS -> handleLineSettingsClick(player, holder, slot);
-            case STOP_SETTINGS -> handleStopSettingsClick(player, holder, slot);
+            case LINE_SETTINGS -> lineSettingsController.handleClick(player, holder, slot);
+            case STOP_SETTINGS -> stopSettingsController.handleClick(player, holder, slot);
             case CONFIRM_ACTION -> confirmActionController.handleClick(player, holder, slot);
             case STOP_DETAIL -> {
                 // STOP_DETAIL is reserved for future expansion.
@@ -569,337 +561,6 @@ public class GuiListener implements Listener {
         if (!plugin.getGuiManager().openView(player, view)) {
             plugin.getGuiManager().openLineDetail(player, line.getId(), 0);
         }
-    }
-
-    private void handleLineSettingsClick(Player player, GuiHolder holder, int slot) {
-        String lineId = holder.getData("lineId");
-        Line line = plugin.getLineManager().getLine(lineId);
-        if (line == null) {
-            player.closeInventory();
-            return;
-        }
-        GuiHolder.GuiView previousView = holder.getPreviousView();
-
-        switch (slot) {
-            case 1 -> { // Route recording
-                handleRouteRecordingToggle(player, line);
-                plugin.getGuiManager().openLineSettings(player, lineId, previousView);
-            }
-            case 3 -> { // Route info
-                sendRouteInfo(player, line);
-                plugin.getGuiManager().openLineSettings(player, lineId, previousView);
-            }
-            case 5 -> { // Clear route
-                plugin.getGuiManager().openConfirmAction(player, "CLEAR_ROUTE",
-                        lineId, line.getName(), null, 0, holder.snapshot());
-            }
-            case 7 -> { // Rail protection toggle
-                boolean enabled = !line.isRailProtected();
-                if (plugin.getLineManager().setLineRailProtected(lineId, enabled)) {
-                    player.sendMessage(plugin.getLanguageManager().getMessage("line.protect_updated",
-                            args("line_id", lineId,
-                                    "state", plugin.getLanguageManager().getMessage(enabled
-                                            ? "line.protect_state_enabled"
-                                            : "line.protect_state_disabled"))));
-                } else {
-                    player.sendMessage(plugin.getLanguageManager().getMessage("line.protect_update_fail",
-                            LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
-                }
-                plugin.getGuiManager().openLineSettings(player, lineId, previousView);
-            }
-            case 9 -> { // Rename
-                plugin.getChatInputManager().requestInput(player, plugin.getLanguageManager().getMessage("chat.enter_new_name"), new ChatInputManager.ChatInputCallback() {
-                    @Override
-                    public void onInput(String input) {
-                        if (plugin.getLineManager().setLineName(lineId, input)) {
-                            player.sendMessage(plugin.getLanguageManager().getMessage("line.rename_success",
-                                    LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                                            "old_name", line.getName()), "new_name", input)));
-                        } else {
-                            player.sendMessage(plugin.getLanguageManager().getMessage("line.rename_fail"));
-                        }
-                        plugin.getGuiManager().openLineSettings(player, lineId, previousView);
-                    }
-                    @Override
-                    public void onCancel() {
-                        plugin.getGuiManager().openLineSettings(player, lineId, previousView);
-                    }
-                });
-            }
-            case 11 -> { // Max Speed
-                plugin.getChatInputManager().requestInput(player, plugin.getLanguageManager().getMessage("chat.enter_new_speed"), new ChatInputManager.ChatInputCallback() {
-                    @Override
-                    public void onInput(String input) {
-                        try {
-                            double speed = Double.parseDouble(input);
-                            if (speed <= 0) throw new NumberFormatException();
-                            if (plugin.getLineManager().setLineMaxSpeed(lineId, speed)) {
-                                player.sendMessage(plugin.getLanguageManager().getMessage("line.setmaxspeed_success",
-                                        LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                                                "line_id", lineId), "max_speed", String.valueOf(speed))));
-                            }
-                        } catch (NumberFormatException e) {
-                            player.sendMessage(plugin.getLanguageManager().getMessage("line.setmaxspeed_invalid"));
-                        }
-                        plugin.getGuiManager().openLineSettings(player, lineId, previousView);
-                    }
-                    @Override
-                    public void onCancel() {
-                        plugin.getGuiManager().openLineSettings(player, lineId, previousView);
-                    }
-                });
-            }
-            case 13 -> { // Set Price
-                plugin.getChatInputManager().requestInput(player, plugin.getLanguageManager().getMessage("chat.enter_new_price"), new ChatInputManager.ChatInputCallback() {
-                    @Override
-                    public void onInput(String input) {
-                        try {
-                            double price = Double.parseDouble(input);
-                            if (price < 0) throw new NumberFormatException();
-                            if (plugin.getLineManager().setLineTicketPrice(lineId, price)) {
-                                player.sendMessage(plugin.getLanguageManager().getMessage("line.setprice_success",
-                                        LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                                                "line_name", line.getName()), "price", String.valueOf(price))));
-                            } else {
-                                player.sendMessage(plugin.getLanguageManager().getMessage("line.setprice_fail"));
-                            }
-                        } catch (NumberFormatException e) {
-                            player.sendMessage(plugin.getLanguageManager().getMessage("line.setprice_invalid"));
-                        }
-                        plugin.getGuiManager().openLineSettings(player, lineId, previousView);
-                    }
-                    @Override
-                    public void onCancel() {
-                        plugin.getGuiManager().openLineSettings(player, lineId, previousView);
-                    }
-                });
-            }
-            case 15 -> { // Clone reverse
-                plugin.getChatInputManager().requestInput(player, plugin.getLanguageManager().getMessage("chat.enter_clone_info"), new ChatInputManager.ChatInputCallback() {
-                    @Override
-                    public void onInput(String input) {
-                        String[] parts = input.split(" ");
-                        if (parts.length >= 1 && !parts[0].isEmpty()) {
-                            String newId = parts[0];
-                            String stopIdSuffix = parts.length > 1 ? parts[1] : "_rev";
-                            if (plugin.getLineManager().cloneReverseLine(lineId, newId, stopIdSuffix, player.getUniqueId())) {
-                                player.sendMessage(plugin.getLanguageManager().getMessage("line.clone_success",
-                                        LanguageManager.put(LanguageManager.args(), "new_line_id", newId)));
-                            } else {
-                                player.sendMessage(plugin.getLanguageManager().getMessage("line.clone_fail"));
-                            }
-                        }
-                        plugin.getGuiManager().openLineSettings(player, lineId, previousView);
-                    }
-                    @Override
-                    public void onCancel() {
-                        plugin.getGuiManager().openLineSettings(player, lineId, previousView);
-                    }
-                });
-            }
-            case 17 -> { // Delete
-                plugin.getGuiManager().openConfirmAction(player, "DELETE_LINE",
-                        lineId, line.getName(), null, 0, holder.snapshot());
-            }
-            case SLOT_LINE_SETTINGS_COLOR -> {
-                requestLineColor(player, line, previousView);
-            }
-            case SLOT_LINE_SETTINGS_TERMINUS -> {
-                requestLineTerminus(player, line, previousView);
-            }
-            case SLOT_LINE_SETTINGS_BACK -> { // Back
-                plugin.getGuiManager().openPreviousView(player, holder, () -> plugin.getGuiManager().openLineList(player, 0, false));
-            }
-        }
-    }
-
-    private void requestLineColor(Player player, Line line, GuiHolder.GuiView previousView) {
-        String lineId = line.getId();
-        plugin.getChatInputManager().requestInput(player,
-                plugin.getLanguageManager().getMessage("chat.enter_new_color"),
-                new ChatInputManager.ChatInputCallback() {
-                    @Override
-                    public void onInput(String input) {
-                        String color = input.trim();
-                        LineCommandService.WriteStatus status = lineService.setColor(lineId, color);
-                        if (status == LineCommandService.WriteStatus.INVALID_COLOR) {
-                            player.sendMessage(plugin.getLanguageManager().getMessage("line.setcolor_invalid",
-                                    LanguageManager.put(LanguageManager.args(), "color", color)));
-                        } else if (status == LineCommandService.WriteStatus.SUCCESS) {
-                            player.sendMessage(plugin.getLanguageManager().getMessage("line.setcolor_success",
-                                    args("line_id", lineId, "line_name", line.getName(), "color", color)));
-                        } else {
-                            player.sendMessage(plugin.getLanguageManager().getMessage("line.setcolor_fail"));
-                        }
-                        plugin.getGuiManager().openLineSettings(player, lineId, previousView);
-                    }
-
-                    @Override
-                    public void onCancel() {
-                        plugin.getGuiManager().openLineSettings(player, lineId, previousView);
-                    }
-                });
-    }
-
-    private void requestLineTerminus(Player player, Line line, GuiHolder.GuiView previousView) {
-        String lineId = line.getId();
-        plugin.getChatInputManager().requestInput(player,
-                plugin.getLanguageManager().getMessage("chat.enter_new_terminus"),
-                new ChatInputManager.ChatInputCallback() {
-                    @Override
-                    public void onInput(String input) {
-                        String terminusName = input.trim();
-                        if (lineService.setTerminusName(lineId, terminusName)
-                                == LineCommandService.WriteStatus.SUCCESS) {
-                            player.sendMessage(plugin.getLanguageManager().getMessage("line.setterminus_success",
-                                    args("line_id", lineId, "terminus_name", terminusName)));
-                        } else {
-                            player.sendMessage(plugin.getLanguageManager().getMessage("line.setterminus_fail"));
-                        }
-                        plugin.getGuiManager().openLineSettings(player, lineId, previousView);
-                    }
-
-                    @Override
-                    public void onCancel() {
-                        plugin.getGuiManager().openLineSettings(player, lineId, previousView);
-                    }
-                });
-    }
-
-    private void handleRouteRecordingToggle(Player player, Line line) {
-        String lineId = line.getId();
-        RouteRecorder recorder = plugin.getRouteRecorder();
-        if (recorder.isRecording(lineId)) {
-            RouteRecorder.FinishResult result = recorder.stopAndSave(lineId);
-            switch (result.status()) {
-                case SAVED -> player.sendMessage(plugin.getLanguageManager().getMessage("line.record_saved",
-                        args("line_id", lineId, "point_count", String.valueOf(result.pointCount()))));
-                case TOO_FEW_POINTS -> player.sendMessage(plugin.getLanguageManager().getMessage("line.record_too_few",
-                        LanguageManager.put(LanguageManager.args(), "point_count", String.valueOf(result.pointCount()))));
-                case FAILED -> player.sendMessage(plugin.getLanguageManager().getMessage("line.record_failed",
-                        LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
-                case NOT_RECORDING -> player.sendMessage(plugin.getLanguageManager().getMessage("line.record_not_recording",
-                        LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
-            }
-            return;
-        }
-
-        if (recorder.start(lineId)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.record_started",
-                    LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.record_hint"));
-        } else {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.record_already",
-                    LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
-        }
-    }
-
-    private void sendRouteInfo(Player player, Line line) {
-        RouteRecorder recorder = plugin.getRouteRecorder();
-        player.sendMessage(plugin.getLanguageManager().getMessage("line.routeinfo_header",
-                args("line_name", line.getName(), "line_id", line.getId())));
-        player.sendMessage(plugin.getLanguageManager().getMessage("line.routeinfo_saved_points",
-                LanguageManager.put(LanguageManager.args(), "point_count", String.valueOf(line.getRoutePoints().size()))));
-        player.sendMessage(plugin.getLanguageManager().getMessage("line.protect_status",
-                LanguageManager.put(LanguageManager.args(), "state", plugin.getLanguageManager().getMessage(line.isRailProtected()
-                        ? "line.protect_state_enabled"
-                        : "line.protect_state_disabled"))));
-        int protectedBlocks = plugin.getRailProtectionManager() == null
-                ? 0
-                : plugin.getRailProtectionManager().getProtectedBlockCount(line.getId());
-        player.sendMessage(plugin.getLanguageManager().getMessage("line.protect_blocks",
-                LanguageManager.put(LanguageManager.args(), "count", String.valueOf(protectedBlocks))));
-        if (line.isRailProtected() && protectedBlocks == 0) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.protect_no_blocks"));
-        }
-        if (recorder.isRecording(line.getId())) {
-            UUID cartId = recorder.getRecordingCartId(line.getId());
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.routeinfo_recording",
-                    LanguageManager.put(LanguageManager.args(), "state",
-                            plugin.getLanguageManager().getMessage("line.routeinfo_recording_active"))));
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.routeinfo_buffered_points",
-                    LanguageManager.put(LanguageManager.args(), "point_count",
-                            String.valueOf(recorder.getActivePointCount(line.getId())))));
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.routeinfo_bound_cart",
-                    LanguageManager.put(LanguageManager.args(), "cart_id",
-                            cartId == null
-                                    ? plugin.getLanguageManager().getMessage("line.routeinfo_waiting_cart")
-                                    : cartId.toString())));
-        } else {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.routeinfo_recording",
-                    LanguageManager.put(LanguageManager.args(), "state",
-                            plugin.getLanguageManager().getMessage("line.routeinfo_recording_inactive"))));
-        }
-    }
-
-    private void handleStopSettingsClick(Player player, GuiHolder holder, int slot) {
-        String stopId = holder.getData("stopId");
-        String fromLineId = holder.getData("fromLineId");
-        Stop stop = plugin.getStopManager().getStop(stopId);
-        if (stop == null) {
-            player.closeInventory();
-            return;
-        }
-        GuiHolder.GuiView previousView = holder.getPreviousView();
-
-        switch (slot) {
-            case 11 -> { // Rename
-                plugin.getChatInputManager().requestInput(player, plugin.getLanguageManager().getMessage("chat.enter_new_name"), new ChatInputManager.ChatInputCallback() {
-                    @Override
-                    public void onInput(String input) {
-                        if (plugin.getStopManager().setStopName(stopId, input)) {
-                            player.sendMessage(plugin.getLanguageManager().getMessage("stop.rename_success",
-                                    LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                                            "old_name", stop.getName()), "new_name", input)));
-                        } else {
-                            player.sendMessage(plugin.getLanguageManager().getMessage("stop.rename_fail"));
-                        }
-                        plugin.getGuiManager().openStopSettings(player, stopId, fromLineId, previousView);
-                    }
-                    @Override
-                    public void onCancel() {
-                        plugin.getGuiManager().openStopSettings(player, stopId, fromLineId, previousView);
-                    }
-                });
-            }
-            case SLOT_STOP_SETTINGS_SET_POINT -> {
-                handleSetStopPoint(player, stop, previousView, fromLineId);
-            }
-            case 15 -> { // Delete
-                plugin.getGuiManager().openConfirmAction(player, "DELETE_STOP",
-                        stopId, stop.getName(), fromLineId, 0, holder.snapshot());
-            }
-            case 22 -> { // Back
-                plugin.getGuiManager().openPreviousView(player, holder, () -> {
-                    if (fromLineId != null) {
-                        plugin.getGuiManager().openLineDetail(player, fromLineId, 0);
-                    } else {
-                        plugin.getGuiManager().openStopList(player, 0, false);
-                    }
-                });
-            }
-        }
-    }
-
-    private void handleSetStopPoint(Player player, Stop stop, GuiHolder.GuiView previousView, String fromLineId) {
-        StopCommandService.SetPointResult result = stopService.setPoint(stop.getId(), stop, player.getLocation(), null);
-        switch (result.status()) {
-            case SUCCESS -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_success",
-                    args("stop_id", stop.getId(), "yaw", String.format("%.1f", result.yaw()))));
-            case NOT_RAIL -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_not_rail"));
-            case NOT_IN_STOP -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_not_in_area",
-                    LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName())));
-            default -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_fail"));
-        }
-        plugin.getGuiManager().openStopSettings(player, stop.getId(), fromLineId, previousView);
-    }
-
-    private Map<String, Object> args(Object... replacements) {
-        Map<String, Object> args = LanguageManager.args();
-        for (int i = 0; i < replacements.length - 1; i += 2) {
-            LanguageManager.put(args, String.valueOf(replacements[i]), replacements[i + 1]);
-        }
-        return args;
     }
 }
 

@@ -117,6 +117,11 @@
    - [x] 已将站点列表/站点变体渲染拆到 `gui.view.StopListView`。
    - [x] 已将线路详情页渲染拆到 `gui.view.LineDetailView`。
    - [x] 已将添加站点列表/添加站点变体渲染拆到 `gui.view.AddStopView`。
+   - [x] 已将线路设置页渲染拆到 `gui.view.LineSettingsView`。
+   - [x] 已将站点设置页渲染拆到 `gui.view.StopSettingsView`。
+   - [x] 已将线路设置页点击处理拆到 `gui.controller.LineSettingsController`。
+   - [x] 已将站点设置页点击处理拆到 `gui.controller.StopSettingsController`。
+   - [x] 已将主菜单渲染拆到 `gui.view.MainMenuView`，`GuiManager` 仅保留 view 路由与返回栈打开逻辑。
 4. 将 `Metro` 启动类拆成生命周期注册步骤。
    - [x] 已将 Cloud 命令管理器创建、suggestion providers 和 annotation command 注册拆到 `CommandRegistration`。
    - [x] 已将 Bukkit listener 创建和事件注册拆到 `ListenerRegistration`。
