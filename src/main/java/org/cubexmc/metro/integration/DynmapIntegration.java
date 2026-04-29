@@ -187,7 +187,8 @@ public class DynmapIntegration implements MapIntegration {
         );
 
         if (polyLine != null) {
-            polyLine.setLineStyle(plugin.getConfigFacade().getMapLineWidth(), 0.8, parseLineColorRGB(line.getColor()));
+            polyLine.setLineStyle(plugin.getConfigFacade().getMapLineWidth(), 0.8,
+                    MapLineColor.fromLineColor(line.getColor()).asRgbInt());
         }
     }
 
@@ -232,29 +233,4 @@ public class DynmapIntegration implements MapIntegration {
         return String.join("<br>", parts);
     }
 
-    private int parseLineColorRGB(String chatColor) {
-        if (chatColor == null || chatColor.isEmpty()) {
-            return 0xFFFFFF;
-        }
-
-        char code = chatColor.charAt(chatColor.length() - 1);
-        return switch (code) {
-            case '0' -> 0x000000;
-            case '1' -> 0x0000AA;
-            case '2' -> 0x00AA00;
-            case '3' -> 0x00AAAA;
-            case '4' -> 0xAA0000;
-            case '5' -> 0xAA00AA;
-            case '6' -> 0xFFAA00;
-            case '7' -> 0xAAAAAA;
-            case '8' -> 0x555555;
-            case '9' -> 0x5555FF;
-            case 'a' -> 0x55FF55;
-            case 'b' -> 0x55FFFF;
-            case 'c' -> 0xFF5555;
-            case 'd' -> 0xFF55FF;
-            case 'e' -> 0xFFFF55;
-            default  -> 0xFFFFFF;
-        };
-    }
 }

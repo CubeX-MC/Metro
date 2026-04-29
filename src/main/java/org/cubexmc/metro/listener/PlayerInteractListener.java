@@ -51,8 +51,17 @@ public class PlayerInteractListener implements Listener {
     private final Object pendingMinecartCleanupTaskId;
 
     public PlayerInteractListener(Metro plugin) {
+        this(plugin, true);
+    }
+
+    PlayerInteractListener(Metro plugin, boolean scheduleCleanupTask) {
         this.plugin = plugin;
         this.selectionManager = plugin.getSelectionManager();
+
+        if (!scheduleCleanupTask) {
+            this.pendingMinecartCleanupTaskId = null;
+            return;
+        }
 
         // 定期清理过期的矿车等待记录
         this.pendingMinecartCleanupTaskId = SchedulerUtil.globalRun(plugin, () -> {

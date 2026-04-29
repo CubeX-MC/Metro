@@ -149,7 +149,10 @@
 
 1. 为线路选择、权限、数据保存、配置迁移补单元测试。
 2. 引入 MockBukkit 或等效测试方案覆盖 Bukkit 事件流。
-3. 建立手工回归清单和测试地图场景。
+   - [x] 已用 Mockito 覆盖 `GuiListener` 的 `InventoryClickEvent` / `InventoryDragEvent` 边界分流。
+   - [x] 已用 Mockito 覆盖 `VehicleListener` 的 safe mode 矿车伤害、销毁、碰撞和实体攻击事件。
+   - [x] 已用 Mockito 覆盖 `PlayerInteractListener` 的选区工具和无权限右键铁轨边界行为。
+3. [x] 建立手工回归清单和测试地图场景，已在 `docs/regression-baseline.md` 覆盖单线路、双向重叠站、三线换乘、终点站、跨世界传送门和受保护铁轨场景。
 4. 在 CI 中运行 `mvn verify`。
 5. 发布前生成变更摘要和兼容性说明。
 
@@ -736,10 +739,10 @@ MapIntegration {
    - [x] 地图刷新已包裹异常隔离，provider 刷新失败会记录警告但不影响主插件运行。
 
 4. 增加地图内容校验：
-   - stop marker 开关。
-   - transfer info 开关。
-   - line width。
-   - line color fallback。
+   - [x] stop marker 开关。
+   - [x] transfer info 开关。
+   - [x] line width。
+   - [x] line color fallback，三种地图 provider 均支持传统颜色码和 `&#RRGGBB` 十六进制线路颜色。
 
 验收：
 
@@ -849,17 +852,18 @@ MapIntegration {
    - `RailProtectionManagerTest`
 
 2. 引入 MockBukkit 或等效方案：
-   - 模拟 PlayerInteractEvent。
-   - 模拟 VehicleMoveEvent。
-   - 模拟 InventoryClickEvent。
+   - [x] 模拟 PlayerInteractEvent 的选区工具和无权限右键铁轨边界行为。
+   - [x] 模拟 VehicleMoveEvent 的非 Metro 矿车忽略和 Metro 矿车脱轨清理边界行为。
+   - [x] 模拟 VehicleDamageEvent / VehicleDestroyEvent / VehicleEntityCollisionEvent 的 safe mode 边界行为。
+   - [x] 模拟 InventoryClickEvent / InventoryDragEvent 的 GUI 监听器边界行为。
 
 3. 增加回归测试地图说明：
-   - 单线路普通站。
-   - 双向线路重叠站。
-   - 三线换乘站。
-   - 终点站。
-   - 传送门跨世界线路。
-   - 受保护铁轨。
+   - [x] 单线路普通站。
+   - [x] 双向线路重叠站。
+   - [x] 三线换乘站。
+   - [x] 终点站。
+   - [x] 传送门跨世界线路。
+   - [x] 受保护铁轨。
 
 4. 覆盖率目标：
    - 第一阶段：15%-20%。

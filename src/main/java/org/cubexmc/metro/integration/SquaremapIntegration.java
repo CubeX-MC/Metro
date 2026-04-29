@@ -192,7 +192,7 @@ public class SquaremapIntegration implements MapIntegration {
 
             Marker polyline = Marker.polyline(points);
             polyline.markerOptions(MarkerOptions.builder()
-                    .strokeColor(parseLineColor(line.getColor()))
+                    .strokeColor(toAwtColor(MapLineColor.fromLineColor(line.getColor())))
                     .strokeWeight(plugin.getConfigFacade().getMapLineWidth())
                     .hoverTooltip(line.getName() + " (" + line.getId() + ")")
                     .build());
@@ -240,32 +240,10 @@ public class SquaremapIntegration implements MapIntegration {
         if (servedLines.isEmpty()) {
             return Color.WHITE;
         }
-        return parseLineColor(servedLines.get(0).getColor());
+        return toAwtColor(MapLineColor.fromLineColor(servedLines.get(0).getColor()));
     }
 
-    private Color parseLineColor(String chatColor) {
-        if (chatColor == null || chatColor.isEmpty()) {
-            return Color.WHITE;
-        }
-
-        char code = chatColor.charAt(chatColor.length() - 1);
-        return switch (code) {
-            case '0' -> new Color(0, 0, 0);
-            case '1' -> new Color(0, 0, 170);
-            case '2' -> new Color(0, 170, 0);
-            case '3' -> new Color(0, 170, 170);
-            case '4' -> new Color(170, 0, 0);
-            case '5' -> new Color(170, 0, 170);
-            case '6' -> new Color(255, 170, 0);
-            case '7' -> new Color(170, 170, 170);
-            case '8' -> new Color(85, 85, 85);
-            case '9' -> new Color(85, 85, 255);
-            case 'a' -> new Color(85, 255, 85);
-            case 'b' -> new Color(85, 255, 255);
-            case 'c' -> new Color(255, 85, 85);
-            case 'd' -> new Color(255, 85, 255);
-            case 'e' -> new Color(255, 255, 85);
-            default  -> Color.WHITE;
-        };
+    private Color toAwtColor(MapLineColor color) {
+        return new Color(color.red(), color.green(), color.blue());
     }
 }

@@ -176,7 +176,7 @@ public class BlueMapIntegration implements MapIntegration {
             LineMarker lineMarker = LineMarker.builder()
                     .label(line.getName() + " (" + line.getId() + ")")
                     .line(lineBuilder.build())
-                    .lineColor(parseLineColor(line.getColor()))
+                    .lineColor(toBlueMapColor(MapLineColor.fromLineColor(line.getColor())))
                     .lineWidth(plugin.getConfigFacade().getMapLineWidth())
                     .build();
             markerSet.put("route_" + line.getId(), lineMarker);
@@ -249,29 +249,7 @@ public class BlueMapIntegration implements MapIntegration {
         return String.join("<br>", detail);
     }
 
-    private Color parseLineColor(String chatColor) {
-        if (chatColor == null || chatColor.isEmpty()) {
-            return new Color(255, 255, 255, 255);
-        }
-
-        char code = chatColor.charAt(chatColor.length() - 1);
-        return switch (code) {
-            case '0' -> new Color(0, 0, 0, 255);
-            case '1' -> new Color(0, 0, 170, 255);
-            case '2' -> new Color(0, 170, 0, 255);
-            case '3' -> new Color(0, 170, 170, 255);
-            case '4' -> new Color(170, 0, 0, 255);
-            case '5' -> new Color(170, 0, 170, 255);
-            case '6' -> new Color(255, 170, 0, 255);
-            case '7' -> new Color(170, 170, 170, 255);
-            case '8' -> new Color(85, 85, 85, 255);
-            case '9' -> new Color(85, 85, 255, 255);
-            case 'a' -> new Color(85, 255, 85, 255);
-            case 'b' -> new Color(85, 255, 255, 255);
-            case 'c' -> new Color(255, 85, 85, 255);
-            case 'd' -> new Color(255, 85, 255, 255);
-            case 'e' -> new Color(255, 255, 85, 255);
-            default  -> new Color(255, 255, 255, 255);
-        };
+    private Color toBlueMapColor(MapLineColor color) {
+        return new Color(color.red(), color.green(), color.blue(), 255);
     }
 }
