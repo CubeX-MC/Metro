@@ -13,6 +13,7 @@ import java.util.UUID;
 
 import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.model.Line;
+import org.cubexmc.metro.model.Portal;
 import org.cubexmc.metro.model.Stop;
 import org.cubexmc.metro.service.LineCommandService.AddStopResult;
 import org.cubexmc.metro.service.LineCommandService.WriteStatus;
@@ -152,6 +153,27 @@ class LineCommandServiceTest {
 
         verify(lineManager).delStopFromLine("red", "central");
         verify(lineManager, never()).setLineWorldName(org.mockito.Mockito.anyString(), org.mockito.Mockito.any());
+    }
+
+    @Test
+    void shouldAddAndRemoveLinePortalsThroughManager() {
+        Line line = line("red", "world", List.of());
+        Portal portal = new Portal("p1");
+        when(lineManager.addPortalToLine("red", "p1")).thenReturn(true);
+
+        assertEquals(WriteStatus.SUCCESS, service.addPortalToLine(line, portal));
+        line.addPortal("p1");
+        assertEquals(WriteStatus.EXISTS, service.addPortalToLine(line, portal));
+
+        when(lineManager.delPortalFromLine("red", "p1")).thenAnswer(invocation -> {
+            line.delPortal("p1");
+            return true;
+        });
+        assertEquals(WriteStatus.SUCCESS, service.removePortalFromLine(line, "p1"));
+        assertEquals(WriteStatus.NOT_FOUND, service.removePortalFromLine(line, "p1"));
+
+        verify(lineManager).addPortalToLine("red", "p1");
+        verify(lineManager).delPortalFromLine("red", "p1");
     }
 
     @Test

@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.logging.Level;
 
 /**
@@ -78,12 +79,41 @@ public class PortalManager {
 
     // =============== CRUD ===============
 
-    public Portal createPortal(String id, Location entrance) {
+    public Portal createPortal(String id, Location entrance, UUID ownerId) {
         Portal portal = new Portal(id);
         portal.setEntrance(entrance);
+        portal.setOwner(ownerId);
         portals.put(id, portal);
         save();
         return portal;
+    }
+
+    public boolean setPortalOwner(String id, UUID ownerId) {
+        Portal portal = portals.get(id);
+        if (portal == null) return false;
+        portal.setOwner(ownerId);
+        save();
+        return true;
+    }
+
+    public boolean addPortalAdmin(String id, UUID adminId) {
+        Portal portal = portals.get(id);
+        if (portal == null) return false;
+        boolean changed = portal.addAdmin(adminId);
+        if (changed) {
+            save();
+        }
+        return changed;
+    }
+
+    public boolean removePortalAdmin(String id, UUID adminId) {
+        Portal portal = portals.get(id);
+        if (portal == null) return false;
+        boolean changed = portal.removeAdmin(adminId);
+        if (changed) {
+            save();
+        }
+        return changed;
     }
 
     public boolean deletePortal(String id) {
@@ -95,6 +125,9 @@ public class PortalManager {
                 if (linked != null) {
                     linked.setLinkedPortalId(null);
                 }
+            }
+            if (plugin.getLineManager() != null) {
+                plugin.getLineManager().delPortalFromAllLines(id);
             }
             save();
             return true;

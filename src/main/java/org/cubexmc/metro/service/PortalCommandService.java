@@ -2,6 +2,7 @@ package org.cubexmc.metro.service;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 import org.bukkit.Location;
@@ -39,7 +40,7 @@ public class PortalCommandService {
     public record ReloadResult(WriteStatus status, int portalCount) {
     }
 
-    public PortalWriteResult createPortal(String id, Location fallbackLocation, Block targetBlock) {
+    public PortalWriteResult createPortal(String id, Location fallbackLocation, Block targetBlock, UUID ownerId) {
         if (!isValidId(id)) {
             return new PortalWriteResult(WriteStatus.INVALID_ID, null, null);
         }
@@ -50,7 +51,7 @@ public class PortalCommandService {
         if (entrance == null || entrance.getWorld() == null) {
             return new PortalWriteResult(WriteStatus.INVALID_LOCATION, null, entrance);
         }
-        Portal portal = portalManager.createPortal(id, entrance);
+        Portal portal = portalManager.createPortal(id, entrance, ownerId);
         return new PortalWriteResult(WriteStatus.SUCCESS, portal, entrance);
     }
 
@@ -73,6 +74,30 @@ public class PortalCommandService {
 
     public WriteStatus deletePortal(String id) {
         return portalManager.deletePortal(id) ? WriteStatus.SUCCESS : WriteStatus.NOT_FOUND;
+    }
+
+    public WriteStatus addAdmin(Portal portal, UUID adminId) {
+        if (portal == null || adminId == null) {
+            return WriteStatus.FAILED;
+        }
+        if (portal.getAdmins().contains(adminId)) {
+            return WriteStatus.EXISTS;
+        }
+        return portalManager.addPortalAdmin(portal.getId(), adminId) ? WriteStatus.SUCCESS : WriteStatus.FAILED;
+    }
+
+    public WriteStatus removeAdmin(Portal portal, UUID adminId) {
+        if (portal == null || adminId == null) {
+            return WriteStatus.FAILED;
+        }
+        return portalManager.removePortalAdmin(portal.getId(), adminId) ? WriteStatus.SUCCESS : WriteStatus.FAILED;
+    }
+
+    public WriteStatus setOwner(Portal portal, UUID ownerId) {
+        if (portal == null || ownerId == null) {
+            return WriteStatus.FAILED;
+        }
+        return portalManager.setPortalOwner(portal.getId(), ownerId) ? WriteStatus.SUCCESS : WriteStatus.FAILED;
     }
 
     public List<Portal> listPortals() {

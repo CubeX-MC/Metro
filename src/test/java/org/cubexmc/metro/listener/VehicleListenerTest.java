@@ -31,8 +31,10 @@ import org.cubexmc.metro.manager.PortalManager;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Portal;
 import org.cubexmc.metro.train.ScoreboardManager;
+import org.cubexmc.metro.train.TrainMovementTask;
 import org.cubexmc.metro.util.MetroConstants;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 
 class VehicleListenerTest {
 
@@ -206,6 +208,9 @@ class VehicleListenerTest {
         Block trigger = block(Material.EMERALD_BLOCK);
         Block belowTrigger = block(Material.STONE);
         Portal portal = mock(Portal.class);
+        TrainMovementTask task = mock(TrainMovementTask.class);
+        when(portal.getId()).thenReturn("p1");
+        when(task.canUsePortal("p1")).thenReturn(true);
         when(to.getBlock().getRelative(BlockFace.DOWN)).thenReturn(trigger);
         when(trigger.getRelative(BlockFace.DOWN)).thenReturn(belowTrigger);
         when(plugin.getConfigFacade().isPortalsEnabled()).thenReturn(true);
@@ -216,10 +221,46 @@ class VehicleListenerTest {
         when(event.getTo()).thenReturn(to);
         when(minecart.getMaxSpeed()).thenReturn(0.4);
 
-        listener.onVehicleMove(event);
+        try (MockedStatic<TrainMovementTask> taskRegistry = org.mockito.Mockito.mockStatic(TrainMovementTask.class)) {
+            taskRegistry.when(() -> TrainMovementTask.getTaskFor(minecart)).thenReturn(task);
+            listener.onVehicleMove(event);
+        }
 
         verify(plugin.getPortalManager()).teleportMinecart(minecart, portal);
         verify(minecart, never()).setVelocity(any());
+    }
+
+    @Test
+    void shouldIgnorePortalWhenCurrentLineHasNotEnabledIt() {
+        Metro plugin = plugin(false, false);
+        VehicleListener listener = new VehicleListener(plugin);
+        Minecart minecart = metroMinecart();
+        VehicleMoveEvent event = mock(VehicleMoveEvent.class);
+        World world = mock(World.class);
+        Location from = railLocation(Material.RAIL, 64, world);
+        Location to = railLocation(Material.RAIL, 64, world);
+        Block trigger = block(Material.EMERALD_BLOCK);
+        Block belowTrigger = block(Material.STONE);
+        Portal portal = mock(Portal.class);
+        TrainMovementTask task = mock(TrainMovementTask.class);
+        when(portal.getId()).thenReturn("p1");
+        when(task.canUsePortal("p1")).thenReturn(false);
+        when(to.getBlock().getRelative(BlockFace.DOWN)).thenReturn(trigger);
+        when(trigger.getRelative(BlockFace.DOWN)).thenReturn(belowTrigger);
+        when(plugin.getConfigFacade().isPortalsEnabled()).thenReturn(true);
+        when(plugin.getConfigFacade().getPortalTriggerBlock()).thenReturn("EMERALD_BLOCK");
+        when(plugin.getPortalManager().getPortalAt(to)).thenReturn(portal);
+        when(event.getVehicle()).thenReturn(minecart);
+        when(event.getFrom()).thenReturn(from);
+        when(event.getTo()).thenReturn(to);
+        when(minecart.getMaxSpeed()).thenReturn(0.4);
+
+        try (MockedStatic<TrainMovementTask> taskRegistry = org.mockito.Mockito.mockStatic(TrainMovementTask.class)) {
+            taskRegistry.when(() -> TrainMovementTask.getTaskFor(minecart)).thenReturn(task);
+            listener.onVehicleMove(event);
+        }
+
+        verify(plugin.getPortalManager(), never()).teleportMinecart(minecart, portal);
     }
 
     @Test

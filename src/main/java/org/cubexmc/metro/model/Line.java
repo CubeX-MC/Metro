@@ -14,6 +14,7 @@ public class Line {
     private String id;
     private String name;
     private final List<String> orderedStopIds;
+    private final List<String> portalIds;
     private List<RoutePoint> routePoints;
     private String color; // 线路颜色
     private String terminusName; // 终点站方向名称
@@ -37,6 +38,7 @@ public class Line {
         this.id = id;
         this.name = name;
         this.orderedStopIds = new ArrayList<>();
+        this.portalIds = new ArrayList<>();
         this.routePoints = new ArrayList<>();
         this.color = "&f"; // 默认白色
         this.terminusName = ""; // 默认空
@@ -164,6 +166,10 @@ public class Line {
         return new ArrayList<>(orderedStopIds);
     }
 
+    public List<String> getPortalIds() {
+        return new ArrayList<>(portalIds);
+    }
+
     public List<RoutePoint> getRoutePoints() {
         return new ArrayList<>(routePoints);
     }
@@ -278,6 +284,21 @@ public class Line {
      */
     public boolean containsStop(String stopId) {
         return orderedStopIds.contains(stopId);
+    }
+
+    public boolean addPortal(String portalId) {
+        if (portalId == null || portalId.isBlank() || portalIds.contains(portalId)) {
+            return false;
+        }
+        return portalIds.add(portalId);
+    }
+
+    public boolean delPortal(String portalId) {
+        return portalIds.remove(portalId);
+    }
+
+    public boolean containsPortal(String portalId) {
+        return portalIds.contains(portalId);
     }
     
     /**

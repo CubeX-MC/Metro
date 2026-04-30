@@ -5,6 +5,12 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+
 /**
  * 代表一个矿车传送门。
  * 当 Metro 矿车经过传送门入口铁轨下方的触发方块时，
@@ -25,6 +31,8 @@ public class Portal {
 
     // 可选的双向配对
     private String linkedPortalId;
+    private UUID owner;
+    private final Set<UUID> admins = new HashSet<>();
 
     public Portal(String id) {
         this.id = id;
@@ -47,6 +55,26 @@ public class Portal {
         portal.destZ = section.getDouble("dest_z");
         portal.destYaw = (float) section.getDouble("dest_yaw", 0.0);
         portal.linkedPortalId = section.getString("linked", null);
+        String ownerString = section.getString("owner");
+        if (ownerString != null && !ownerString.isEmpty()) {
+            try {
+                portal.owner = UUID.fromString(ownerString);
+                portal.admins.add(portal.owner);
+            } catch (IllegalArgumentException ignored) {
+                portal.owner = null;
+            }
+        }
+
+        List<String> adminStrings = section.getStringList("admins");
+        if (adminStrings != null) {
+            for (String entry : adminStrings) {
+                try {
+                    portal.admins.add(UUID.fromString(entry));
+                } catch (IllegalArgumentException ignored) {
+                }
+            }
+        }
+        portal.admins.remove(null);
         return portal;
     }
 
@@ -65,6 +93,14 @@ public class Portal {
         section.set("dest_yaw", (double) destYaw);
         if (linkedPortalId != null) {
             section.set("linked", linkedPortalId);
+        }
+        section.set("owner", owner != null ? owner.toString() : null);
+        if (!admins.isEmpty()) {
+            List<String> adminStrings = admins.stream()
+                    .filter(adminId -> owner == null || !owner.equals(adminId))
+                    .map(UUID::toString)
+                    .toList();
+            section.set("admins", adminStrings);
         }
     }
 
@@ -128,4 +164,48 @@ public class Portal {
     public float getDestYaw() { return destYaw; }
     public String getLinkedPortalId() { return linkedPortalId; }
     public void setLinkedPortalId(String linkedPortalId) { this.linkedPortalId = linkedPortalId; }
+    public UUID getOwner() { return owner; }
+
+    public void setOwner(UUID owner) {
+        this.owner = owner;
+        if (owner != null) {
+            admins.add(owner);
+        }
+        admins.remove(null);
+    }
+
+    public Set<UUID> getAdmins() {
+        return new HashSet<>(admins);
+    }
+
+    public void setAdmins(Collection<UUID> adminIds) {
+        admins.clear();
+        if (adminIds != null) {
+            admins.addAll(adminIds);
+        }
+        if (owner != null) {
+            admins.add(owner);
+        }
+        admins.remove(null);
+    }
+
+    public boolean addAdmin(UUID adminId) {
+        if (adminId == null) {
+            return false;
+        }
+        admins.remove(null);
+        return admins.add(adminId);
+    }
+
+    public boolean removeAdmin(UUID adminId) {
+        if (adminId == null) {
+            return false;
+        }
+        if (owner != null && owner.equals(adminId)) {
+            return false;
+        }
+        boolean removed = admins.remove(adminId);
+        admins.remove(null);
+        return removed;
+    }
 }

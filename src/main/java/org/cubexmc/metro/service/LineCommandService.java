@@ -7,6 +7,7 @@ import java.util.regex.Pattern;
 
 import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.model.Line;
+import org.cubexmc.metro.model.Portal;
 import org.cubexmc.metro.model.Stop;
 
 /**
@@ -31,6 +32,7 @@ public class LineCommandService {
         INVALID_COLOR,
         INVALID_VALUE,
         EXISTS,
+        NOT_FOUND,
         FAILED,
         STOP_NO_WORLD,
         WORLD_MISMATCH,
@@ -122,6 +124,26 @@ public class LineCommandService {
             lineManager.setLineWorldName(line.getId(), null);
         }
         return WriteStatus.SUCCESS;
+    }
+
+    public WriteStatus addPortalToLine(Line line, Portal portal) {
+        if (line == null || portal == null) {
+            return WriteStatus.FAILED;
+        }
+        if (line.containsPortal(portal.getId())) {
+            return WriteStatus.EXISTS;
+        }
+        return lineManager.addPortalToLine(line.getId(), portal.getId()) ? WriteStatus.SUCCESS : WriteStatus.FAILED;
+    }
+
+    public WriteStatus removePortalFromLine(Line line, String portalId) {
+        if (line == null || portalId == null || portalId.isBlank()) {
+            return WriteStatus.FAILED;
+        }
+        if (!line.containsPortal(portalId)) {
+            return WriteStatus.NOT_FOUND;
+        }
+        return lineManager.delPortalFromLine(line.getId(), portalId) ? WriteStatus.SUCCESS : WriteStatus.FAILED;
     }
 
     public WriteStatus setRailProtected(String id, boolean enabled) {

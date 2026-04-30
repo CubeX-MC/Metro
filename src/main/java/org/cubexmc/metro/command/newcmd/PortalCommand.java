@@ -4,7 +4,9 @@ import org.incendo.cloud.annotations.Argument;
 import org.incendo.cloud.annotations.CommandDescription;
 import org.incendo.cloud.annotations.Command;
 import org.incendo.cloud.annotations.Permission;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.cubexmc.metro.Metro;
@@ -14,12 +16,12 @@ import org.cubexmc.metro.model.Portal;
 import org.cubexmc.metro.service.CommandDisplayService;
 import org.cubexmc.metro.service.PortalCommandService;
 import org.cubexmc.metro.update.DataFileUpdater;
+import org.cubexmc.metro.util.OwnershipUtil;
 
 import java.util.List;
 
 /**
  * 矿车传送门管理命令。
- * 所有命令均需要 metro.admin 权限。
  */
 public class PortalCommand {
 
@@ -29,6 +31,9 @@ public class PortalCommand {
             "portal.help_link",
             "portal.help_delete",
             "portal.help_list",
+            "portal.help_trust",
+            "portal.help_untrust",
+            "portal.help_owner",
             "portal.help_reload"
     );
 
@@ -36,24 +41,24 @@ public class PortalCommand {
     private final PortalManager portalManager;
     private final CommandDisplayService displayService;
     private final PortalCommandService portalService;
+    private final CommandGuard guard;
 
     public PortalCommand(Metro plugin) {
         this.plugin = plugin;
         this.portalManager = plugin.getPortalManager();
         this.displayService = new CommandDisplayService();
         this.portalService = new PortalCommandService(portalManager);
+        this.guard = new CommandGuard(plugin, plugin.getLineManager(), plugin.getStopManager());
     }
 
     @Command("m|metro portal")
     @CommandDescription("显示传送门管理帮助")
-    @Permission("metro.admin")
     public void help(CommandSender sender) {
         showHelp(sender);
     }
 
     @Command("m|metro portal help")
     @CommandDescription("显示传送门管理帮助")
-    @Permission("metro.admin")
     public void helpPage(CommandSender sender) {
         showHelp(sender);
     }
@@ -70,10 +75,15 @@ public class PortalCommand {
 
     @Command("m|metro portal create <id>")
     @CommandDescription("在当前位置创建一个传送门入口")
-    @Permission("metro.admin")
     public void createPortal(Player sender, @Argument("id") String id) {
+        if (!OwnershipUtil.canCreatePortal(sender)) {
+            sender.sendMessage(plugin.getLanguageManager().getMessage("portal.permission_create"));
+            return;
+        }
+
         PortalCommandService.PortalWriteResult result =
-                portalService.createPortal(id, sender.getLocation(), sender.getTargetBlockExact(5));
+                portalService.createPortal(id, sender.getLocation(), sender.getTargetBlockExact(5),
+                        sender.getUniqueId());
         switch (result.status()) {
             case SUCCESS -> {
                 Location loc = result.location();
@@ -96,8 +106,12 @@ public class PortalCommand {
 
     @Command("m|metro portal setdest <id>")
     @CommandDescription("将当前位置设置为传送门的目标位置")
-    @Permission("metro.admin")
     public void setDestination(Player sender, @Argument(value = "id", suggestions = "portalIds") String id) {
+        Portal portal = guard.requireManageablePortal(sender, id);
+        if (portal == null) {
+            return;
+        }
+
         PortalCommandService.PortalWriteResult result = portalService.setDestination(id, sender.getLocation());
         if (result.status() == PortalCommandService.WriteStatus.NOT_FOUND) {
             sender.sendMessage(plugin.getLanguageManager().getMessage("portal.not_found",
@@ -120,10 +134,18 @@ public class PortalCommand {
 
     @Command("m|metro portal link <id1> <id2>")
     @CommandDescription("双向配对两个传送门")
-    @Permission("metro.admin")
     public void linkPortals(Player sender,
                             @Argument(value = "id1", suggestions = "portalIds") String id1,
                             @Argument(value = "id2", suggestions = "portalIds") String id2) {
+        Portal portal1 = guard.requireManageablePortal(sender, id1);
+        if (portal1 == null) {
+            return;
+        }
+        Portal portal2 = guard.requireManageablePortal(sender, id2);
+        if (portal2 == null) {
+            return;
+        }
+
         if (portalService.linkPortals(id1, id2) != PortalCommandService.WriteStatus.SUCCESS) {
             sender.sendMessage(plugin.getLanguageManager().getMessage("portal.link_fail"));
             return;
@@ -134,8 +156,12 @@ public class PortalCommand {
 
     @Command("m|metro portal delete <id>")
     @CommandDescription("删除一个传送门")
-    @Permission("metro.admin")
     public void deletePortal(Player sender, @Argument(value = "id", suggestions = "portalIds") String id) {
+        Portal portal = guard.requireManageablePortal(sender, id);
+        if (portal == null) {
+            return;
+        }
+
         if (portalService.deletePortal(id) != PortalCommandService.WriteStatus.SUCCESS) {
             sender.sendMessage(plugin.getLanguageManager().getMessage("portal.not_found",
                     LanguageManager.put(LanguageManager.args(), "portal_id", id)));
@@ -147,7 +173,6 @@ public class PortalCommand {
 
     @Command("m|metro portal list [page]")
     @CommandDescription("列出所有传送门")
-    @Permission("metro.admin")
     public void listPortals(CommandSender sender, @Argument(value = "page", suggestions = "pageNumbers") Integer page) {
         List<Portal> allPortals = portalService.listPortals();
         if (allPortals.isEmpty()) {
@@ -173,6 +198,84 @@ public class PortalCommand {
                             "z", String.valueOf(p.getZ())), "dest_world", p.getDestWorldName()),
                             "dest", String.format("%.0f,%.0f,%.0f", p.getDestX(), p.getDestY(), p.getDestZ())),
                             "linked", linked)));
+        }
+    }
+
+    @Command("m|metro portal trust <id> <playerName>")
+    @CommandDescription("授予传送门管理权限")
+    public void trust(Player player,
+                      @Argument(value = "id", suggestions = "portalIds") String id,
+                      @Argument(value = "playerName", suggestions = "players") String playerName) {
+        Portal portal = guard.requireManageablePortal(player, id);
+        if (portal == null) {
+            return;
+        }
+        OfflinePlayer target = Bukkit.getOfflinePlayer(playerName);
+        if (!target.hasPlayedBefore() && !target.isOnline()) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("command.player_not_found",
+                    LanguageManager.put(LanguageManager.args(), "player", playerName)));
+            return;
+        }
+        PortalCommandService.WriteStatus status = portalService.addAdmin(portal, target.getUniqueId());
+        if (status == PortalCommandService.WriteStatus.EXISTS) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("portal.trust_exists",
+                    LanguageManager.put(LanguageManager.args(), "player", playerName)));
+        } else if (status == PortalCommandService.WriteStatus.SUCCESS) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("portal.trust_success",
+                    LanguageManager.put(LanguageManager.put(LanguageManager.args(), "portal_id", id), "player", playerName)));
+        } else {
+            player.sendMessage(plugin.getLanguageManager().getMessage("portal.trust_fail",
+                    LanguageManager.put(LanguageManager.put(LanguageManager.args(), "portal_id", id), "player", playerName)));
+        }
+    }
+
+    @Command("m|metro portal untrust <id> <playerName>")
+    @CommandDescription("移除传送门管理权限")
+    public void untrust(Player player,
+                        @Argument(value = "id", suggestions = "portalIds") String id,
+                        @Argument(value = "playerName", suggestions = "players") String playerName) {
+        Portal portal = guard.requireManageablePortal(player, id);
+        if (portal == null) {
+            return;
+        }
+        OfflinePlayer target = Bukkit.getOfflinePlayer(playerName);
+        if (!target.hasPlayedBefore() && !target.isOnline()) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("command.player_not_found",
+                    LanguageManager.put(LanguageManager.args(), "player", playerName)));
+            return;
+        }
+        PortalCommandService.WriteStatus status = portalService.removeAdmin(portal, target.getUniqueId());
+        if (status == PortalCommandService.WriteStatus.SUCCESS) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("portal.untrust_success",
+                    LanguageManager.put(LanguageManager.put(LanguageManager.args(), "portal_id", id), "player", playerName)));
+        } else {
+            player.sendMessage(plugin.getLanguageManager().getMessage("portal.untrust_fail",
+                    LanguageManager.put(LanguageManager.put(LanguageManager.args(), "portal_id", id), "player", playerName)));
+        }
+    }
+
+    @Command("m|metro portal owner <id> <playerName>")
+    @CommandDescription("转移传送门所有权")
+    public void owner(Player player,
+                      @Argument(value = "id", suggestions = "portalIds") String id,
+                      @Argument(value = "playerName", suggestions = "players") String playerName) {
+        Portal portal = guard.requireManageablePortal(player, id);
+        if (portal == null || !guard.requirePortalOwner(player, portal)) {
+            return;
+        }
+        OfflinePlayer target = Bukkit.getOfflinePlayer(playerName);
+        if (!target.hasPlayedBefore() && !target.isOnline()) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("command.player_not_found",
+                    LanguageManager.put(LanguageManager.args(), "player", playerName)));
+            return;
+        }
+        PortalCommandService.WriteStatus status = portalService.setOwner(portal, target.getUniqueId());
+        if (status == PortalCommandService.WriteStatus.SUCCESS) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("portal.owner_success",
+                    LanguageManager.put(LanguageManager.put(LanguageManager.args(), "portal_id", id), "owner", playerName)));
+        } else {
+            player.sendMessage(plugin.getLanguageManager().getMessage("portal.owner_fail",
+                    LanguageManager.put(LanguageManager.args(), "portal_id", id)));
         }
     }
 

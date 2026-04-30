@@ -33,6 +33,9 @@ Metro是一个受牛腩小镇启发的地铁交通系统插件，允许管理员
 | `/m line addstop <line_id> <stop_id> [位置索引]` | 将停靠区添加到线路（可指定位置） |
 | `/m line delstop <line_id> <stop_id>`    | 从线路中移除停靠区       |
 | `/m line stops <line_id>`                | 查看线路的所有停靠区     |
+| `/m line addportal <line_id> <portal_id>` | 允许线路使用传送门       |
+| `/m line delportal <line_id> <portal_id>` | 从线路中移除传送门       |
+| `/m line portals <line_id>`              | 查看线路启用的传送门     |
 | `/m line info <line_id>`                 | 查看线路详细信息及权限   |
 | `/m line trust <line_id> <玩家>`         | 授予线路管理权限          |
 | `/m line untrust <line_id> <玩家>`       | 移除线路管理权限          |
@@ -61,6 +64,20 @@ Metro是一个受牛腩小镇启发的地铁交通系统插件，允许管理员
 | `/m stop owner <stop_id> <玩家>`                        | 转移停靠区所有权              |
 | `/m stop link <allow|deny> <stop_id> <line_id>`         | 管理线路接入白名单            |
 
+### 传送门管理
+
+| 命令                                      | 描述                         |
+| :---------------------------------------- | :--------------------------- |
+| `/m portal create <portal_id>`            | 创建新的矿车传送门入口       |
+| `/m portal setdest <portal_id>`           | 设置传送门目标位置           |
+| `/m portal link <portal_id_1> <portal_id_2>` | 双向配对两个传送门        |
+| `/m portal delete <portal_id>`            | 删除传送门                   |
+| `/m portal list`                          | 列出所有传送门               |
+| `/m portal trust <portal_id> <玩家>`      | 授予传送门管理权限           |
+| `/m portal untrust <portal_id> <玩家>`    | 移除传送门管理权限           |
+| `/m portal owner <portal_id> <玩家>`      | 转移传送门所有权             |
+| `/m portal reload`                        | 重新加载传送门配置           |
+
 ### 系统管理
 
 | 命令               | 描述                         |
@@ -78,13 +95,15 @@ Metro是一个受牛腩小镇启发的地铁交通系统插件，允许管理员
 | `metro.tp`           | 否     | 允许在 GUI 中传送到停靠区                 |
 | `metro.line.create`  | 否     | 允许玩家创建新的线路                      |
 | `metro.stop.create`  | 否     | 允许玩家创建新的停靠区                    |
+| `metro.portal.create`| 否     | 允许玩家创建新的矿车传送门                |
 
 ## 所有权与权限管理
 
-* 新创建的线路和停靠区会自动将创建者设置为所有者，并加入管理员列表。
-* 使用 `/m line trust/untrust/owner` 与 `/m stop trust/untrust/owner` 可以维护线路或站点的管理成员。
+* 新创建的线路、停靠区和传送门会自动将创建者设置为所有者，并加入管理员列表。
+* 使用 `/m line trust/untrust/owner`、`/m stop trust/untrust/owner` 与 `/m portal trust/untrust/owner` 可以维护各元素的管理成员。
 * 停靠区可通过 `/m stop link allow/deny` 为特定线路开放接入；线路管理员必须获得停靠区授权后才能将其加入线路。
-* 旧版本数据中没有权限配置的线路/停靠区会被视为“服务器所有”，只有 OP 或 `metro.admin` 拥有者可以操作。
+* 传送门可独立存在；线路管理员使用 `/m line addportal/delportal` 控制线路是否能使用指定传送门。
+* 旧版本数据中没有权限配置的线路/停靠区/传送门会被视为“服务器所有”，只有 OP 或 `metro.admin` 拥有者可以操作。
 
 ## 快速开始
 

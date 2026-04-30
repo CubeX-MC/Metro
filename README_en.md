@@ -31,6 +31,9 @@ Metro is a subway transit system plugin that lets administrators create automate
 | `/m line addstop <line_id> <stop_id> [index]`     | Add a stop to the line (optional position) |
 | `/m line delstop <line_id> <stop_id>`             | Remove a stop from the line                |
 | `/m line stops <line_id>`                         | Show all stops on the line                 |
+| `/m line addportal <line_id> <portal_id>`         | Allow the line to use a portal             |
+| `/m line delportal <line_id> <portal_id>`         | Remove a portal from the line              |
+| `/m line portals <line_id>`                       | Show portals enabled for the line          |
 | `/m line info <line_id>`                          | Display detailed line info and members     |
 | `/m line trust <line_id> <player>`                | Add a line administrator                   |
 | `/m line untrust <line_id> <player>`              | Remove a line administrator                |
@@ -58,6 +61,20 @@ Metro is a subway transit system plugin that lets administrators create automate
 | `/m stop untrust <stop_id> <player>`                           | Remove a stop administrator        |
 | `/m stop owner <stop_id> <player>`                             | Transfer stop ownership            |
 | `/m stop link <allow|deny> <stop_id> <line_id>`                | Manage line link whitelist         |
+
+### Portal Management
+
+| Command                                           | Description                         |
+| :------------------------------------------------ | :---------------------------------- |
+| `/m portal create <portal_id>`                    | Create a minecart portal entrance   |
+| `/m portal setdest <portal_id>`                   | Set the portal destination          |
+| `/m portal link <portal_id_1> <portal_id_2>`      | Link two portals both ways          |
+| `/m portal delete <portal_id>`                    | Delete a portal                     |
+| `/m portal list`                                  | List all portals                    |
+| `/m portal trust <portal_id> <player>`            | Add a portal administrator          |
+| `/m portal untrust <portal_id> <player>`          | Remove a portal administrator       |
+| `/m portal owner <portal_id> <player>`            | Transfer portal ownership           |
+| `/m portal reload`                                | Reload portal configuration         |
 
 ### System Management
 
@@ -96,12 +113,14 @@ Players right-click the powered rail inside a Stop to summon and board a minecar
 | `metro.tp`         | false   | Allows players to teleport to stops through the GUI |
 | `metro.line.create`| false   | Allows players to create new lines               |
 | `metro.stop.create`| false   | Allows players to create new stops               |
+| `metro.portal.create`| false | Allows players to create minecart portals         |
 
 ## Ownership & Permission Flow
 
-* Newly created lines/stops record the creator as owner and add them to the admin list.
-* `/m line trust/untrust/owner` and `/m stop trust/untrust/owner` manage who can edit each resource.
+* Newly created lines/stops/portals record the creator as owner and add them to the admin list.
+* `/m line trust/untrust/owner`, `/m stop trust/untrust/owner`, and `/m portal trust/untrust/owner` manage who can edit each resource.
 * `/m stop link allow/deny` controls which lines are whitelisted to use a stop; line admins must obtain authorization before running `/m line addstop`.
+* Portals can exist independently; line admins use `/m line addportal/delportal` to control whether a line can use a portal.
 * Legacy data without ownership entries is treated as server-owned and can only be modified by OPs or players with `metro.admin`.
 
 ## Configuration Files

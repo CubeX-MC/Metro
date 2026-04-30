@@ -39,6 +39,8 @@ class LineManagerTest {
                     - A
                     - B
                     - C
+                  portal_ids:
+                    - p1
                   route_recorded_at: 1700000000000
                   route_recorded_by: '%s'
                   route_recorded_cart: '%s'
@@ -51,6 +53,7 @@ class LineManagerTest {
         assertNotNull(line);
         assertEquals("MainLine", line.getName());
         assertEquals(List.of("A", "B", "C"), line.getOrderedStopIds());
+        assertEquals(List.of("p1"), line.getPortalIds());
         assertEquals(1700000000000L, line.getRouteRecordedAtEpochMillis());
         assertEquals(recorderId, line.getRouteRecordedBy());
         assertEquals(cartId, line.getRouteRecordedCartId());
@@ -176,6 +179,33 @@ class LineManagerTest {
         assertEquals(List.of("harbor"), manager.getLine("red").getOrderedStopIds());
         assertTrue(manager.getLine("blue").getOrderedStopIds().isEmpty());
         assertFalse(manager.delStopFromLine("missing", "central"));
+    }
+
+    @Test
+    void shouldPersistAndRemoveLinePortals() throws IOException {
+        Files.writeString(tempDir.resolve("lines.yml"), "");
+        LineManager manager = new LineManager(createPluginMock(tempDir));
+
+        assertTrue(manager.createLine("red", "RedLine", UUID.randomUUID()));
+        assertTrue(manager.createLine("blue", "BlueLine", UUID.randomUUID()));
+        assertTrue(manager.addPortalToLine("red", "p1"));
+        assertFalse(manager.addPortalToLine("red", "p1"));
+        assertTrue(manager.addPortalToLine("blue", "p1"));
+        assertTrue(manager.addPortalToLine("red", "p2"));
+        assertEquals(List.of("p1", "p2"), manager.getLine("red").getPortalIds());
+
+        assertTrue(manager.delPortalFromLine("red", "p2"));
+        assertFalse(manager.delPortalFromLine("red", "missing"));
+        manager.forceSaveSync();
+
+        String savedYaml = Files.readString(tempDir.resolve("lines.yml"));
+        assertTrue(savedYaml.contains("portal_ids:"));
+        assertTrue(savedYaml.contains("- p1"));
+        assertFalse(savedYaml.contains("- p2"));
+
+        manager.delPortalFromAllLines("p1");
+        assertTrue(manager.getLine("red").getPortalIds().isEmpty());
+        assertTrue(manager.getLine("blue").getPortalIds().isEmpty());
     }
 
     @Test

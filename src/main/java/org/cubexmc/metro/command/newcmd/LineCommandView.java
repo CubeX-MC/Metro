@@ -17,6 +17,7 @@ import org.cubexmc.metro.manager.RailProtectionManager;
 import org.cubexmc.metro.manager.RouteRecorder;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
+import org.cubexmc.metro.model.Portal;
 import org.cubexmc.metro.model.Stop;
 import org.cubexmc.metro.service.CommandDisplayService;
 
@@ -43,6 +44,9 @@ final class LineCommandView {
             "line.help_addstop",
             "line.help_delstop",
             "line.help_stops",
+            "line.help_addportal",
+            "line.help_delportal",
+            "line.help_portals",
             "line.help_rename",
             "line.help_info",
             "line.help_trust",
@@ -134,6 +138,32 @@ final class LineCommandView {
                             "status", status));
             row.addExtra(new TextComponent(suffix));
             player.spigot().sendMessage(row);
+        }
+    }
+
+    void sendPortals(Player player, Line line, Integer page) {
+        List<String> portalIds = line.getPortalIds();
+        if (portalIds.isEmpty()) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.portals_list_empty",
+                    LanguageManager.put(LanguageManager.args(), "line_name", line.getName())));
+            return;
+        }
+
+        CommandDisplayService.Page<String> portalPage = displayService.paginate(portalIds, page);
+        player.sendMessage(displayService.pageHeader(
+                plugin.getLanguageManager().getMessage("line.portals_list_header"), portalPage));
+        for (String portalId : portalPage.items()) {
+            Portal portal = plugin.getPortalManager() != null ? plugin.getPortalManager().getPortal(portalId) : null;
+            if (portal == null) {
+                player.sendMessage(plugin.getLanguageManager().getMessage("line.portals_list_invalid_portal",
+                        LanguageManager.put(LanguageManager.args(), "portal_id", portalId)));
+                continue;
+            }
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.portals_list_item",
+                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.put(
+                            LanguageManager.put(LanguageManager.args(), "portal_id", portal.getId()),
+                            "world", portal.getWorldName()), "x", String.valueOf(portal.getX())),
+                            "y", String.valueOf(portal.getY())), "z", String.valueOf(portal.getZ()))));
         }
     }
 

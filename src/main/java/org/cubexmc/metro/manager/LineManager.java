@@ -76,6 +76,11 @@ public class LineManager {
                         line.addStop(stopId, -1);
                     }
 
+                    List<String> portalIds = config.getStringList(lineId + ".portal_ids");
+                    for (String portalId : portalIds) {
+                        line.addPortal(portalId);
+                    }
+
                     List<String> routePointStrings = config.getStringList(lineId + ".route_points");
                     if (routePointStrings != null && !routePointStrings.isEmpty()) {
                         List<RoutePoint> routePoints = new ArrayList<>();
@@ -477,6 +482,59 @@ public class LineManager {
         return true;
     }
 
+    public boolean addPortalToLine(String lineId, String portalId) {
+        boolean changed;
+        lock.writeLock().lock();
+        try {
+            Line line = lines.get(lineId);
+            if (line == null) {
+                return false;
+            }
+            changed = line.addPortal(portalId);
+        } finally {
+            lock.writeLock().unlock();
+        }
+        if (changed) {
+            saveConfig();
+        }
+        return changed;
+    }
+
+    public boolean delPortalFromLine(String lineId, String portalId) {
+        boolean changed;
+        lock.writeLock().lock();
+        try {
+            Line line = lines.get(lineId);
+            if (line == null) {
+                return false;
+            }
+            changed = line.delPortal(portalId);
+        } finally {
+            lock.writeLock().unlock();
+        }
+        if (changed) {
+            saveConfig();
+        }
+        return changed;
+    }
+
+    public void delPortalFromAllLines(String portalId) {
+        boolean changed = false;
+        lock.writeLock().lock();
+        try {
+            for (Line line : lines.values()) {
+                if (line.delPortal(portalId)) {
+                    changed = true;
+                }
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+        if (changed) {
+            saveConfig();
+        }
+    }
+
     public boolean setLineRoutePoints(String lineId, List<RoutePoint> routePoints) {
         return setLineRoutePoints(lineId, routePoints, null, null, null);
     }
@@ -651,6 +709,7 @@ public class LineManager {
                 }
                 snapshot.set(lineId + ".name", line.getName());
                 snapshot.set(lineId + ".ordered_stop_ids", line.getOrderedStopIds());
+                snapshot.set(lineId + ".portal_ids", line.getPortalIds().isEmpty() ? null : line.getPortalIds());
                 snapshot.set(lineId + ".route_points", routePointsToConfig(line));
                 snapshot.set(lineId + ".route_recorded_at", line.getRouteRecordedAtEpochMillis());
                 snapshot.set(lineId + ".route_recorded_by",

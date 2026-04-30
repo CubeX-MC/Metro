@@ -35,3 +35,6 @@ permissions:
   metro.stop.create:
     description: Allow players to create new stops
     default: false
+  metro.portal.create:
+    description: Allow players to create new minecart portals
+    default: false

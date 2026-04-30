@@ -15,6 +15,7 @@ import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.RouteRecorder;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
+import org.cubexmc.metro.model.Portal;
 import org.cubexmc.metro.model.Stop;
 import org.cubexmc.metro.service.CommandDisplayService;
 import org.cubexmc.metro.service.LineCommandService;
@@ -217,6 +218,65 @@ public class LineCommand {
         } else {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.delstop_fail"));
         }
+    }
+
+    @Command("m|metro line|l addportal <lineId> <portalId>")
+    @CommandDescription("Allow a line to use a portal")
+    public void addPortal(Player player,
+                          @Argument(value = "lineId", suggestions = "lineIds") String lineId,
+                          @Argument(value = "portalId", suggestions = "portalIds") String portalId) {
+        Line line = guard.requireManageableLine(player, lineId);
+        if (line == null) {
+            return;
+        }
+
+        Portal portal = plugin.getPortalManager() != null ? plugin.getPortalManager().getPortal(portalId) : null;
+        if (portal == null) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("portal.not_found",
+                    LanguageManager.put(LanguageManager.args(), "portal_id", portalId)));
+            return;
+        }
+
+        LineCommandService.WriteStatus status = lineService.addPortalToLine(line, portal);
+        if (status == LineCommandService.WriteStatus.EXISTS) {
+            player.sendMessage(msg("line.addportal_exists", "portal_id", portalId, "line_id", line.getId()));
+        } else if (status == LineCommandService.WriteStatus.SUCCESS) {
+            player.sendMessage(msg("line.addportal_success", "portal_id", portalId, "line_id", line.getId()));
+        } else {
+            player.sendMessage(msg("line.addportal_fail", "portal_id", portalId, "line_id", line.getId()));
+        }
+    }
+
+    @Command("m|metro line|l delportal <lineId> <portalId>")
+    @CommandDescription("Remove a portal from a line")
+    public void delPortal(Player player,
+                          @Argument(value = "lineId", suggestions = "lineIds") String lineId,
+                          @Argument(value = "portalId", suggestions = "portalIds") String portalId) {
+        Line line = guard.requireManageableLine(player, lineId);
+        if (line == null) {
+            return;
+        }
+
+        LineCommandService.WriteStatus status = lineService.removePortalFromLine(line, portalId);
+        if (status == LineCommandService.WriteStatus.SUCCESS) {
+            player.sendMessage(msg("line.delportal_success", "portal_id", portalId, "line_id", line.getId()));
+        } else if (status == LineCommandService.WriteStatus.NOT_FOUND) {
+            player.sendMessage(msg("line.delportal_missing", "portal_id", portalId, "line_id", line.getId()));
+        } else {
+            player.sendMessage(msg("line.delportal_fail", "portal_id", portalId, "line_id", line.getId()));
+        }
+    }
+
+    @Command("m|metro line|l portals <id> [page]")
+    @CommandDescription("List portals enabled for a line")
+    public void portals(Player player, @Argument(value = "id", suggestions = "lineIds") String id,
+                        @Argument(value = "page", suggestions = "pageNumbers") Integer page) {
+        Line line = guard.requireLine(player, id);
+        if (line == null) {
+            return;
+        }
+
+        view.sendPortals(player, line, page);
     }
 
     @Command("m|metro line|l stops <id> [page]")

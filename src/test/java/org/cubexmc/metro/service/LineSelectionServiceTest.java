@@ -51,6 +51,27 @@ class LineSelectionServiceTest {
     }
 
     @Test
+    void shouldExposeTerminalLinesForStationDisplayOnly() {
+        World world = world("world");
+        Stop current = stop("central", world);
+        Stop next = stop("next", world);
+
+        Line boardable = line("boardable", "world", "central", "next");
+        Line terminal = line("terminal", "world", "central");
+        Line wrongWorld = line("wrong_world", "nether", "central");
+
+        LineManager lineManager = mock(LineManager.class);
+        StopManager stopManager = mock(StopManager.class);
+        when(lineManager.getLinesForStop("central")).thenReturn(List.of(wrongWorld, terminal, boardable));
+        when(stopManager.getStop("next")).thenReturn(next);
+
+        LineSelectionService service = new LineSelectionService(lineManager, stopManager);
+
+        assertEquals(List.of(boardable), service.getBoardableLines(current));
+        assertEquals(List.of(terminal), service.getTerminalLines(current));
+    }
+
+    @Test
     void shouldSortByIdAndUseRememberedChoice() {
         World world = world("world");
         Stop current = stop("central", world);

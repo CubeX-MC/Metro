@@ -7,6 +7,8 @@
 #     - stop_id1
 #     - stop_id2
 #     ...
+#   portal_ids:
+#     - portal_id1
 #   route_points: []
 #   rail_protected: false
 #
@@ -17,3 +19,4 @@
 #     - east_station
 #     - central_station
 #     - west_station
+#   portal_ids: []

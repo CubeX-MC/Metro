@@ -16,8 +16,10 @@ import org.bukkit.entity.Player;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.manager.LanguageManager;
 import org.cubexmc.metro.manager.LineManager;
+import org.cubexmc.metro.manager.PortalManager;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
+import org.cubexmc.metro.model.Portal;
 import org.cubexmc.metro.model.Stop;
 import org.junit.jupiter.api.Test;
 
@@ -93,6 +95,51 @@ class CommandGuardTest {
     }
 
     @Test
+    void shouldSendNotFoundWhenPortalIsMissing() {
+        Fixtures fixtures = new Fixtures();
+        when(fixtures.portalManager.getPortal("missing")).thenReturn(null);
+        when(fixtures.languageManager.getMessage(eq("portal.not_found"), anyMap())).thenReturn("portal missing");
+
+        Portal portal = fixtures.guard.requirePortal(fixtures.player, "missing");
+
+        assertNull(portal);
+        verify(fixtures.player).sendMessage("portal missing");
+    }
+
+    @Test
+    void shouldSendPermissionMessageWhenPortalCannotBeManaged() {
+        Fixtures fixtures = new Fixtures();
+        Portal portal = new Portal("gate");
+        when(fixtures.portalManager.getPortal("gate")).thenReturn(portal);
+        when(fixtures.player.hasPermission("metro.admin")).thenReturn(false);
+        when(fixtures.player.isOp()).thenReturn(false);
+        when(fixtures.languageManager.getMessage("ownership.server")).thenReturn("Server");
+        when(fixtures.languageManager.getMessage("ownership.none")).thenReturn("none");
+        when(fixtures.languageManager.getMessage(eq("portal.permission_manage"), anyMap())).thenReturn("no portal access");
+
+        Portal resolved = fixtures.guard.requireManageablePortal(fixtures.player, "gate");
+
+        assertNull(resolved);
+        verify(fixtures.player).sendMessage("no portal access");
+    }
+
+    @Test
+    void shouldReturnManageablePortalForPortalAdmin() {
+        Fixtures fixtures = new Fixtures();
+        UUID playerId = UUID.randomUUID();
+        Portal portal = new Portal("gate");
+        portal.setOwner(UUID.randomUUID());
+        portal.addAdmin(playerId);
+        when(fixtures.portalManager.getPortal("gate")).thenReturn(portal);
+        when(fixtures.player.getUniqueId()).thenReturn(playerId);
+        when(fixtures.player.hasPermission("metro.admin")).thenReturn(false);
+
+        Portal resolved = fixtures.guard.requireManageablePortal(fixtures.player, "gate");
+
+        assertSame(portal, resolved);
+    }
+
+    @Test
     void shouldApplyLinkedStopPermissionWhenAddingStopsToLine() {
         Fixtures fixtures = new Fixtures();
         UUID playerId = UUID.randomUUID();
@@ -120,11 +167,13 @@ class CommandGuardTest {
         private final LanguageManager languageManager = mock(LanguageManager.class);
         private final LineManager lineManager = mock(LineManager.class);
         private final StopManager stopManager = mock(StopManager.class);
+        private final PortalManager portalManager = mock(PortalManager.class);
         private final Player player = mock(Player.class);
         private final CommandGuard guard = new CommandGuard(plugin, lineManager, stopManager);
 
         private Fixtures() {
             when(plugin.getLanguageManager()).thenReturn(languageManager);
+            when(plugin.getPortalManager()).thenReturn(portalManager);
             when(languageManager.getMessage(eq("line.line_not_found"), anyMap())).thenReturn("line missing");
             when(languageManager.getMessage(eq("line.permission_manage"), anyMap())).thenReturn("no access");
         }

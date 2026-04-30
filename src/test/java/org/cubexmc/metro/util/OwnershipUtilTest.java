@@ -10,6 +10,7 @@ import java.util.UUID;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.cubexmc.metro.model.Line;
+import org.cubexmc.metro.model.Portal;
 import org.cubexmc.metro.model.Stop;
 import org.junit.jupiter.api.Test;
 
@@ -26,12 +27,14 @@ class OwnershipUtilTest {
 
         when(player.hasPermission("metro.line.create")).thenReturn(true);
         when(player.hasPermission("metro.stop.create")).thenReturn(true);
+        when(player.hasPermission("metro.portal.create")).thenReturn(true);
         assertTrue(OwnershipUtil.canCreateLine(player));
         assertTrue(OwnershipUtil.canCreateStop(player));
+        assertTrue(OwnershipUtil.canCreatePortal(player));
     }
 
     @Test
-    void shouldEvaluateLineAndStopManagement() {
+    void shouldEvaluateLineStopAndPortalManagement() {
         UUID owner = UUID.randomUUID();
         UUID admin = UUID.randomUUID();
         Player ownerPlayer = player(owner, false, false);
@@ -41,26 +44,36 @@ class OwnershipUtilTest {
 
         Line line = new Line("red", "Red");
         Stop stop = new Stop("central", "Central");
+        Portal portal = new Portal("gate");
 
         assertTrue(OwnershipUtil.isServerOwned(line));
         assertTrue(OwnershipUtil.isServerOwned(stop));
+        assertTrue(OwnershipUtil.isServerOwned(portal));
         assertTrue(OwnershipUtil.canManageLine(opPlayer, line));
         assertTrue(OwnershipUtil.canManageStop(opPlayer, stop));
+        assertTrue(OwnershipUtil.canManagePortal(opPlayer, portal));
         assertTrue(OwnershipUtil.canManageLine(bypassPlayer, line));
+        assertTrue(OwnershipUtil.canManagePortal(bypassPlayer, portal));
         assertFalse(OwnershipUtil.canManageLine(adminPlayer, line));
+        assertFalse(OwnershipUtil.canManagePortal(adminPlayer, portal));
 
         line.setOwner(owner);
         line.addAdmin(admin);
         stop.setOwner(owner);
         stop.addAdmin(admin);
+        portal.setOwner(owner);
+        portal.addAdmin(admin);
 
         assertTrue(OwnershipUtil.isLineAdmin(owner, line));
         assertTrue(OwnershipUtil.isLineAdmin(admin, line));
         assertTrue(OwnershipUtil.isStopAdmin(admin, stop));
+        assertTrue(OwnershipUtil.isPortalAdmin(admin, portal));
         assertTrue(OwnershipUtil.canManageLine(adminPlayer, line));
         assertTrue(OwnershipUtil.canManageStop(adminPlayer, stop));
+        assertTrue(OwnershipUtil.canManagePortal(adminPlayer, portal));
         assertFalse(OwnershipUtil.isLineAdmin(null, line));
         assertFalse(OwnershipUtil.isStopAdmin(admin, null));
+        assertFalse(OwnershipUtil.isPortalAdmin(admin, null));
     }
 
     @Test

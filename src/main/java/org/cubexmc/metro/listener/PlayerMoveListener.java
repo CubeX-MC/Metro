@@ -138,15 +138,21 @@ public class PlayerMoveListener implements Listener {
         LineManager lineManager = plugin.getLineManager();
         List<Line> boardableLines = plugin.getLineSelectionService().getBoardableLines(stop);
 
+        Line singleLine = null;
         if (boardableLines.isEmpty()) {
-            return;
-        }
-        if (boardableLines.size() > 1) {
+            List<Line> terminalLines = plugin.getLineSelectionService().getTerminalLines(stop);
+            if (terminalLines.isEmpty()) {
+                return;
+            }
+            singleLine = terminalLines.get(0);
+        } else if (boardableLines.size() > 1) {
             startMultiLineInfoTask(player, stop, boardableLines);
             return;
+        } else {
+            singleLine = boardableLines.get(0);
         }
 
-        final Line line = boardableLines.get(0);
+        final Line line = singleLine;
 
         ConfigFacade config = plugin.getConfigFacade();
         int interval = config.getStopContinuousInterval();

@@ -97,6 +97,11 @@ public class TrainMovementTask implements Listener {
         session.setTeleporting(teleporting);
     }
 
+    public boolean canUsePortal(String portalId) {
+        Line line = session.getLine();
+        return line != null && line.containsPortal(portalId);
+    }
+
     public static TrainMovementTask getTaskFor(Minecart cart) {
         return TrainTaskRegistry.get(cart);
     }

@@ -44,6 +44,21 @@ public class LineSelectionService {
         return lines;
     }
 
+    public List<Line> getTerminalLines(Stop stop) {
+        if (stop == null) {
+            return List.of();
+        }
+
+        List<Line> lines = new ArrayList<>();
+        for (Line line : lineManager.getLinesForStop(stop.getId())) {
+            if (isTerminalLine(line, stop)) {
+                lines.add(line);
+            }
+        }
+        lines.sort(Comparator.comparing(Line::getId));
+        return lines;
+    }
+
     public Line resolveDefaultLine(Player player, Stop stop, Location clickedLocation) {
         List<Line> lines = getBoardableLines(stop);
         if (lines.isEmpty()) {
@@ -70,7 +85,7 @@ public class LineSelectionService {
     }
 
     private boolean isBoardable(Line line, Stop stop) {
-        if (line == null || stop == null || !line.containsStop(stop.getId()) || stop.getStopPointLocation() == null) {
+        if (!isUsableLineAtStop(line, stop)) {
             return false;
         }
 
@@ -81,6 +96,23 @@ public class LineSelectionService {
 
         Stop nextStop = stopManager.getStop(nextStopId);
         if (nextStop == null || nextStop.getStopPointLocation() == null) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean isTerminalLine(Line line, Stop stop) {
+        if (!isUsableLineAtStop(line, stop)) {
+            return false;
+        }
+
+        String nextStopId = line.getNextStopId(stop.getId());
+        return nextStopId == null || nextStopId.isEmpty();
+    }
+
+    private boolean isUsableLineAtStop(Line line, Stop stop) {
+        if (line == null || stop == null || !line.containsStop(stop.getId()) || stop.getStopPointLocation() == null) {
             return false;
         }
 

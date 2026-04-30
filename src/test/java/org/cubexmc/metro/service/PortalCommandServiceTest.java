@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.bukkit.Location;
@@ -28,20 +29,22 @@ class PortalCommandServiceTest {
 
     @Test
     void shouldRejectUnsafePortalIdsBeforeCreating() {
-        PortalWriteResult result = service.createPortal("bad.path", location("world"), null);
+        PortalWriteResult result = service.createPortal("bad.path", location("world"), null, UUID.randomUUID());
 
         assertEquals(WriteStatus.INVALID_ID, result.status());
-        verify(portalManager, never()).createPortal(org.mockito.Mockito.anyString(), org.mockito.Mockito.any());
+        verify(portalManager, never()).createPortal(org.mockito.Mockito.anyString(), org.mockito.Mockito.any(),
+                org.mockito.Mockito.any());
     }
 
     @Test
     void shouldReportExistingPortalBeforeCreating() {
         when(portalManager.getPortal("p1")).thenReturn(new Portal("p1"));
 
-        PortalWriteResult result = service.createPortal("p1", location("world"), null);
+        PortalWriteResult result = service.createPortal("p1", location("world"), null, UUID.randomUUID());
 
         assertEquals(WriteStatus.EXISTS, result.status());
-        verify(portalManager, never()).createPortal(org.mockito.Mockito.anyString(), org.mockito.Mockito.any());
+        verify(portalManager, never()).createPortal(org.mockito.Mockito.anyString(), org.mockito.Mockito.any(),
+                org.mockito.Mockito.any());
     }
 
     @Test
@@ -50,14 +53,15 @@ class PortalCommandServiceTest {
         Location railLocation = location("world");
         Block targetBlock = block(Material.POWERED_RAIL, railLocation);
         Portal portal = new Portal("p1");
-        when(portalManager.createPortal("p1", railLocation)).thenReturn(portal);
+        UUID ownerId = UUID.randomUUID();
+        when(portalManager.createPortal("p1", railLocation, ownerId)).thenReturn(portal);
 
-        PortalWriteResult result = service.createPortal("p1", fallback, targetBlock);
+        PortalWriteResult result = service.createPortal("p1", fallback, targetBlock, ownerId);
 
         assertEquals(WriteStatus.SUCCESS, result.status());
         assertSame(portal, result.portal());
         assertSame(railLocation, result.location());
-        verify(portalManager).createPortal("p1", railLocation);
+        verify(portalManager).createPortal("p1", railLocation, ownerId);
     }
 
     @Test
@@ -87,6 +91,34 @@ class PortalCommandServiceTest {
 
         when(portalManager.linkPortals("p1", "p2")).thenReturn(true);
         assertEquals(WriteStatus.SUCCESS, service.linkPortals("p1", "p2"));
+    }
+
+    @Test
+    void shouldGrantAndRemovePortalAdminsThroughManager() {
+        Portal portal = new Portal("p1");
+        UUID adminId = UUID.randomUUID();
+
+        when(portalManager.addPortalAdmin("p1", adminId)).thenReturn(true);
+        assertEquals(WriteStatus.SUCCESS, service.addAdmin(portal, adminId));
+        verify(portalManager).addPortalAdmin("p1", adminId);
+
+        portal.addAdmin(adminId);
+        assertEquals(WriteStatus.EXISTS, service.addAdmin(portal, adminId));
+
+        when(portalManager.removePortalAdmin("p1", adminId)).thenReturn(true);
+        assertEquals(WriteStatus.SUCCESS, service.removeAdmin(portal, adminId));
+        verify(portalManager).removePortalAdmin("p1", adminId);
+    }
+
+    @Test
+    void shouldTransferPortalOwnerThroughManager() {
+        Portal portal = new Portal("p1");
+        UUID ownerId = UUID.randomUUID();
+        when(portalManager.setPortalOwner("p1", ownerId)).thenReturn(true);
+
+        assertEquals(WriteStatus.SUCCESS, service.setOwner(portal, ownerId));
+
+        verify(portalManager).setPortalOwner("p1", ownerId);
     }
 
     @Test

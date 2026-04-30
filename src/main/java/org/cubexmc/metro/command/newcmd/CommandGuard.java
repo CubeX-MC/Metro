@@ -12,6 +12,7 @@ import org.cubexmc.metro.manager.LanguageManager;
 import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
+import org.cubexmc.metro.model.Portal;
 import org.cubexmc.metro.model.Stop;
 import org.cubexmc.metro.util.OwnershipUtil;
 
@@ -78,6 +79,30 @@ final class CommandGuard {
         return stop;
     }
 
+    Portal requirePortal(Player player, String portalId) {
+        Portal portal = plugin.getPortalManager().getPortal(portalId);
+        if (portal == null) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("portal.not_found",
+                    LanguageManager.put(LanguageManager.args(), "portal_id", portalId)));
+        }
+        return portal;
+    }
+
+    Portal requireManageablePortal(Player player, String portalId) {
+        Portal portal = requirePortal(player, portalId);
+        if (portal == null) {
+            return null;
+        }
+        if (!OwnershipUtil.canManagePortal(player, portal)) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("portal.permission_manage",
+                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
+                            "portal_id", portal.getId()), "owner", formatOwner(portal.getOwner())),
+                            "admins", formatAdmins(portal.getAdmins()))));
+            return null;
+        }
+        return portal;
+    }
+
     boolean canModifyLineStops(Player player, Line line, Stop stop) {
         if (OwnershipUtil.canModifyLineStops(player, line, stop)) {
             return true;
@@ -101,6 +126,14 @@ final class CommandGuard {
             return true;
         }
         player.sendMessage(plugin.getLanguageManager().getMessage("stop.permission_owner"));
+        return false;
+    }
+
+    boolean requirePortalOwner(Player player, Portal portal) {
+        if (portal.getOwner() == null || portal.getOwner().equals(player.getUniqueId()) || OwnershipUtil.hasAdminBypass(player)) {
+            return true;
+        }
+        player.sendMessage(plugin.getLanguageManager().getMessage("portal.permission_owner"));
         return false;
     }
 
