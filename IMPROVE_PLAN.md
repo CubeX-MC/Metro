@@ -6,15 +6,15 @@
 
 - `docs/archive/improve-plan-2026-04-29.md`
 
-最近整理时间：2026-04-29
+最近整理时间：2026-04-30
 
 ## 1. 当前状态
 
 - Maven 单模块项目，主插件版本 `1.1.5`。
 - 最近记录的验证结果：`mvn verify` 已通过。
-- 最近记录的测试状态：263 个单元测试，通过率 100%。
+- 最近记录的测试状态：344 个单元测试，通过率 100%。
 - 最近记录的静态检查：SpotBugs 0 个问题。
-- 最近记录的覆盖率：JaCoCo 行覆盖率约 33.3%，指令覆盖率约 32.9%，质量门最低行覆盖率 25%。
+- 最近记录的覆盖率：JaCoCo 行覆盖率约 38.9%，指令覆盖率约 37.9%，质量门最低行覆盖率 25%。
 - 核心能力已覆盖线路、站点、矿车运行、站台提示、计分板、音效、GUI、Vault、BlueMap/Dynmap/Squaremap、Folia 调度适配和数据迁移。
 
 如果准备发布、调整质量门或做跨模块重构，应先重新运行本地验证，不要只依赖上述历史记录。
@@ -63,13 +63,23 @@
 - `StopManager` 约 85% 行覆盖率。
 - `TrainMovementAssistController` 约 95% 行覆盖率。
 - `TrainTaskRegistry` 100% 行覆盖率。
+- `TrainSession` 约 95% 行覆盖率。
+- `TrainEventPublisher` 100% 行覆盖率。
+- `TrainStateMachine` 100% 行覆盖率。
+- `ScoreboardManager` 约 86% 行覆盖率。
+- `TrainDisplayController` 约 61% 行覆盖率。
+- `TrainMovementTask` 约 60% 行覆盖率。
+- `TrainPhysicsController` 100% 行覆盖率。
+- `PlayerInteractListener` 约 45% 行覆盖率。
+- `VehicleListener` 约 59% 行覆盖率。
 
 下一步：
 
-1. 重新生成最新 JaCoCo 报告，确认当前低覆盖核心类。
-2. 优先补纯服务、状态机、边界条件和失败路径测试。
+1. 重新生成最新 JaCoCo 报告，确认当前低覆盖核心类。（✓ 已完成 2026-04-30）
+2. 优先补纯服务、状态机、边界条件和失败路径测试。（进行中：已覆盖 TrainDisplayController 0→61%、ScoreboardManager 0→86%、TrainMovementTask 36→60%、TrainPhysicsController 54→100%、PlayerInteractListener 19→45%、VehicleListener 37→59%）
 3. 对 Bukkit/Folia 事件流使用现有 Mockito 测试风格扩展，不引入重型测试框架，除非收益明确。
 4. 覆盖率稳定后，再把 JaCoCo 行覆盖率门槛从 25% 提到下一个安全档位。
+5. 当前仍需重点提高的低覆盖核心类：`TrainDisplayController`（61%）、`PlayerInteractListener`（45%）、`VehicleListener`（59%）。
 
 ### P1：防止核心交互路径回归
 

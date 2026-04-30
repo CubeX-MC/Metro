@@ -123,4 +123,165 @@ class TrainPhysicsControllerExtendedTest {
     private void assertFalseHelper(boolean value) {
         org.junit.jupiter.api.Assertions.assertFalse(value);
     }
+
+    // --- initMinecartVelocity tests ---
+
+    @Test
+    void shouldReturnNullWhenNotPoweredRail() {
+        Minecart minecart = mock(Minecart.class);
+        Location location = mock(Location.class);
+        Block block = mock(Block.class);
+        when(minecart.getLocation()).thenReturn(location);
+        when(location.getBlock()).thenReturn(block);
+        when(block.getType()).thenReturn(Material.RAIL);
+        when(block.getBlockData()).thenReturn(mock(BlockData.class));
+
+        assertNull(controller.initMinecartVelocity(minecart, 90.0f));
+    }
+
+    @Test
+    void shouldReturnNullWhenRailNotPowered() {
+        Minecart minecart = mock(Minecart.class);
+        Location location = mock(Location.class);
+        Block block = mock(Block.class);
+        Powerable powerable = mock(Powerable.class);
+        when(minecart.getLocation()).thenReturn(location);
+        when(location.getBlock()).thenReturn(block);
+        when(block.getType()).thenReturn(Material.POWERED_RAIL);
+        when(block.getBlockData()).thenReturn(powerable);
+        when(powerable.isPowered()).thenReturn(false);
+
+        assertNull(controller.initMinecartVelocity(minecart, 90.0f));
+    }
+
+    @Test
+    void shouldLaunchInYawDirectionWhenPowered() {
+        Minecart minecart = mock(Minecart.class);
+        Location location = mock(Location.class);
+        Block block = mock(Block.class);
+        Powerable powerable = mock(Powerable.class);
+        when(minecart.getLocation()).thenReturn(location);
+        when(location.getBlock()).thenReturn(block);
+        when(block.getType()).thenReturn(Material.POWERED_RAIL);
+        when(block.getBlockData()).thenReturn(powerable);
+        when(powerable.isPowered()).thenReturn(true);
+
+        Vector result = controller.initMinecartVelocity(minecart, 0.0f);
+        assertNotNull(result);
+        assertEquals(1.0, result.length(), 0.001);
+        org.mockito.Mockito.verify(minecart).setVelocity(org.mockito.ArgumentMatchers.any(Vector.class));
+    }
+
+    @Test
+    void shouldLaunchSouthWhenYaw90() {
+        Minecart minecart = mock(Minecart.class);
+        Location location = mock(Location.class);
+        Block block = mock(Block.class);
+        Powerable powerable = mock(Powerable.class);
+        when(minecart.getLocation()).thenReturn(location);
+        when(location.getBlock()).thenReturn(block);
+        when(block.getType()).thenReturn(Material.POWERED_RAIL);
+        when(block.getBlockData()).thenReturn(powerable);
+        when(powerable.isPowered()).thenReturn(true);
+
+        Vector result = controller.initMinecartVelocity(minecart, 90.0f);
+        assertNotNull(result);
+        // yaw=90: direction = (-sin(90), 0, cos(90)) = (-1, 0, 0), normalized
+        assertEquals(-1.0, result.getX(), 0.001);
+        assertEquals(0.0, result.getY(), 0.001);
+        assertEquals(0.0, result.getZ(), 0.001);
+    }
+
+    @Test
+    void shouldReturnNullWhenBlockDataIsNotPowerable() {
+        Minecart minecart = mock(Minecart.class);
+        Location location = mock(Location.class);
+        Block block = mock(Block.class);
+        BlockData nonPowerable = mock(BlockData.class);
+        when(minecart.getLocation()).thenReturn(location);
+        when(location.getBlock()).thenReturn(block);
+        when(block.getType()).thenReturn(Material.POWERED_RAIL);
+        when(block.getBlockData()).thenReturn(nonPowerable);
+
+        assertNull(controller.initMinecartVelocity(minecart, 0.0f));
+    }
+
+    // --- canRecoverStalledMinecart success path ---
+
+    @Test
+    void shouldRecoverWhenAllConditionsMet() {
+        Metro plugin = mock(Metro.class);
+        Line line = new Line("l1", "L");
+        line.addStop("A", -1);
+        line.addStop("B", -1);
+        Minecart minecart = mock(Minecart.class);
+        when(minecart.isDead()).thenReturn(false);
+        when(minecart.isValid()).thenReturn(true);
+        when(minecart.getMaxSpeed()).thenReturn(0.4);
+
+        org.bukkit.entity.Player player = mock(org.bukkit.entity.Player.class);
+        TrainSession session = new TrainSession(plugin, minecart, player, line, "A",
+                TrainMovementTask.TrainState.MOVING_BETWEEN_STATIONS);
+
+        // Set a travel direction
+        session.setLastTravelDirection(new Vector(1, 0, 0));
+
+        // Mock LocationUtil.isOnRail via the location
+        org.bukkit.Location loc = mock(org.bukkit.Location.class);
+        org.bukkit.block.Block railBlock = mock(org.bukkit.block.Block.class);
+        when(minecart.getLocation()).thenReturn(loc);
+        when(loc.getBlock()).thenReturn(railBlock);
+        when(railBlock.getType()).thenReturn(Material.POWERED_RAIL);
+
+        TrainPhysicsController ctrl = new TrainPhysicsController();
+        org.junit.jupiter.api.Assertions.assertTrue(ctrl.canRecoverStalledMinecart(session));
+    }
+
+    @Test
+    void shouldNotRecoverWhenInvalidMinecart() {
+        Metro plugin = mock(Metro.class);
+        Line line = new Line("l1", "L");
+        line.addStop("A", -1);
+        line.addStop("B", -1);
+        Minecart minecart = mock(Minecart.class);
+        when(minecart.isDead()).thenReturn(false);
+        when(minecart.isValid()).thenReturn(false);
+
+        TrainSession session = new TrainSession(plugin, minecart, mock(org.bukkit.entity.Player.class),
+                line, "A", TrainMovementTask.TrainState.MOVING_BETWEEN_STATIONS);
+        session.setLastTravelDirection(new Vector(1, 0, 0));
+
+        TrainPhysicsController ctrl = new TrainPhysicsController();
+        org.junit.jupiter.api.Assertions.assertFalse(ctrl.canRecoverStalledMinecart(session));
+    }
+
+    @Test
+    void shouldNotRecoverWhenNotOnRail() {
+        Metro plugin = mock(Metro.class);
+        Line line = new Line("l1", "L");
+        line.addStop("A", -1);
+        line.addStop("B", -1);
+        Minecart minecart = mock(Minecart.class);
+        when(minecart.isDead()).thenReturn(false);
+        when(minecart.isValid()).thenReturn(true);
+        when(minecart.getMaxSpeed()).thenReturn(0.4);
+
+        TrainSession session = new TrainSession(plugin, minecart, mock(org.bukkit.entity.Player.class),
+                line, "A", TrainMovementTask.TrainState.MOVING_BETWEEN_STATIONS);
+        session.setLastTravelDirection(new Vector(1, 0, 0));
+
+        org.bukkit.Location loc = mock(org.bukkit.Location.class);
+        org.bukkit.block.Block dirtBlock = mock(org.bukkit.block.Block.class);
+        org.bukkit.block.Block belowBlock = mock(org.bukkit.block.Block.class);
+        when(minecart.getLocation()).thenReturn(loc);
+        when(loc.getBlock()).thenReturn(dirtBlock);
+        when(dirtBlock.getType()).thenReturn(Material.DIRT);
+        when(loc.clone()).thenReturn(loc);
+        when(loc.subtract(0, 1, 0)).thenReturn(loc);
+        when(loc.getBlock()).thenReturn(belowBlock);
+        when(belowBlock.getType()).thenReturn(Material.STONE);
+
+        TrainPhysicsController ctrl = new TrainPhysicsController();
+        org.junit.jupiter.api.Assertions.assertFalse(ctrl.canRecoverStalledMinecart(session));
+    }
 }
