@@ -144,6 +144,8 @@ public class CommandRegistration {
                 (context, input) -> toSuggestionsFuture(portalIdSuggestions(context, input)));
         commandManager.parserRegistry().registerSuggestionProvider("playerNames",
                 (context, input) -> toSuggestionsFuture(playerNameSuggestions(context, input)));
+        commandManager.parserRegistry().registerSuggestionProvider("players",
+                (context, input) -> toSuggestionsFuture(playerNameSuggestions(context, input)));
         commandManager.parserRegistry().registerSuggestionProvider("lineColors",
                 (context, input) -> toSuggestionsFuture(List.of(
                         "&0", "&1", "&2", "&3", "&4", "&5", "&6", "&7",

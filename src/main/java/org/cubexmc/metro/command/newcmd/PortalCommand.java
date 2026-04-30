@@ -205,7 +205,7 @@ public class PortalCommand {
     @CommandDescription("授予传送门管理权限")
     public void trust(Player player,
                       @Argument(value = "id", suggestions = "portalIds") String id,
-                      @Argument(value = "playerName", suggestions = "players") String playerName) {
+                      @Argument(value = "playerName", suggestions = "playerNames") String playerName) {
         Portal portal = guard.requireManageablePortal(player, id);
         if (portal == null) {
             return;
@@ -233,7 +233,7 @@ public class PortalCommand {
     @CommandDescription("移除传送门管理权限")
     public void untrust(Player player,
                         @Argument(value = "id", suggestions = "portalIds") String id,
-                        @Argument(value = "playerName", suggestions = "players") String playerName) {
+                        @Argument(value = "playerName", suggestions = "playerNames") String playerName) {
         Portal portal = guard.requireManageablePortal(player, id);
         if (portal == null) {
             return;
@@ -258,7 +258,7 @@ public class PortalCommand {
     @CommandDescription("转移传送门所有权")
     public void owner(Player player,
                       @Argument(value = "id", suggestions = "portalIds") String id,
-                      @Argument(value = "playerName", suggestions = "players") String playerName) {
+                      @Argument(value = "playerName", suggestions = "playerNames") String playerName) {
         Portal portal = guard.requireManageablePortal(player, id);
         if (portal == null || !guard.requirePortalOwner(player, portal)) {
             return;
