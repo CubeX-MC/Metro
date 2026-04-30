@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
@@ -115,6 +117,84 @@ class LineManagerTest {
         assertFalse(savedYaml.contains("route_recorded_at"));
         assertFalse(savedYaml.contains("route_recorded_by"));
         assertFalse(savedYaml.contains("route_recorded_cart"));
+    }
+
+    @Test
+    void shouldPersistLineSettingsOwnerAdminsWorldAndRailProtection() throws IOException {
+        Files.writeString(tempDir.resolve("lines.yml"), "");
+        UUID ownerId = UUID.randomUUID();
+        UUID adminId = UUID.randomUUID();
+        LineManager manager = new LineManager(createPluginMock(tempDir));
+
+        assertTrue(manager.createLine("green", "GreenLine", ownerId));
+        assertTrue(manager.setLineName("green", "Renamed Green"));
+        assertTrue(manager.setLineColor("green", "&#00FF00"));
+        assertTrue(manager.setLineTerminusName("green", "Downtown"));
+        assertTrue(manager.setLineMaxSpeed("green", 0.45D));
+        assertTrue(manager.setLineTicketPrice("green", 2.5D));
+        assertTrue(manager.setLineWorldName("green", "world"));
+        assertTrue(manager.setLineRailProtected("green", true));
+        assertFalse(manager.addLineAdmin("missing", adminId));
+        assertTrue(manager.addLineAdmin("green", adminId));
+        assertFalse(manager.addLineAdmin("green", adminId));
+        assertFalse(manager.removeLineAdmin("green", ownerId));
+        manager.forceSaveSync();
+
+        String savedYaml = Files.readString(tempDir.resolve("lines.yml"));
+        assertTrue(savedYaml.contains("name: Renamed Green"));
+        assertTrue(savedYaml.contains("color: '&#00FF00'"));
+        assertTrue(savedYaml.contains("terminus_name: Downtown"));
+        assertTrue(savedYaml.contains("max_speed: 0.45"));
+        assertTrue(savedYaml.contains("ticket_price: 2.5"));
+        assertTrue(savedYaml.contains("rail_protected: true"));
+        assertTrue(savedYaml.contains("owner: " + ownerId));
+        assertTrue(savedYaml.contains("- " + adminId));
+        assertTrue(savedYaml.contains("world: world"));
+    }
+
+    @Test
+    void shouldMaintainStopIndexWhenStopsMoveAndAreRemovedFromAllLines() throws IOException {
+        Files.writeString(tempDir.resolve("lines.yml"), "");
+        LineManager manager = new LineManager(createPluginMock(tempDir));
+        UUID ownerId = UUID.randomUUID();
+
+        assertTrue(manager.createLine("red", "RedLine", ownerId));
+        assertTrue(manager.createLine("blue", "BlueLine", ownerId));
+        assertTrue(manager.addStopToLine("red", "central", -1));
+        assertTrue(manager.addStopToLine("red", "harbor", -1));
+        assertTrue(manager.addStopToLine("blue", "central", -1));
+
+        assertEquals(2, manager.getLinesForStop("central").size());
+        assertTrue(manager.addStopToLine("red", "central", 1));
+        assertEquals(List.of("harbor", "central"), manager.getLine("red").getOrderedStopIds());
+        assertEquals(2, manager.getLinesForStop("central").size());
+
+        assertTrue(manager.delStopFromLine("blue", "central"));
+        assertEquals(1, manager.getLinesForStop("central").size());
+        manager.delStopFromAllLines("central");
+        assertTrue(manager.getLinesForStop("central").isEmpty());
+        assertEquals(List.of("harbor"), manager.getLine("red").getOrderedStopIds());
+        assertTrue(manager.getLine("blue").getOrderedStopIds().isEmpty());
+        assertFalse(manager.delStopFromLine("missing", "central"));
+    }
+
+    @Test
+    void shouldNotifyRailProtectionManagerForLineLifecycleChanges() throws IOException {
+        Files.writeString(tempDir.resolve("lines.yml"), "");
+        RailProtectionManager railProtectionManager = mock(RailProtectionManager.class);
+        Metro plugin = createPluginMock(tempDir);
+        when(plugin.getRailProtectionManager()).thenReturn(railProtectionManager);
+        LineManager manager = new LineManager(plugin);
+
+        assertFalse(manager.setLineRailProtected("missing", true));
+        verify(railProtectionManager, never()).rebuildLine("missing");
+
+        assertTrue(manager.createLine("red", "RedLine", UUID.randomUUID()));
+        assertTrue(manager.setLineRoutePoints("red", List.of(new RoutePoint("world", 1, 64, 1))));
+        assertTrue(manager.clearLineRoutePoints("red"));
+        assertTrue(manager.deleteLine("red"));
+
+        verify(railProtectionManager, org.mockito.Mockito.times(4)).rebuildLine("red");
     }
 
     private Metro createPluginMock(Path dataDir) {

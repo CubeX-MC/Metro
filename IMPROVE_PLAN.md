@@ -4,15 +4,15 @@
 
 ## 1. 当前基线
 
-评估时间：2026-04-27
+最近评估时间：2026-04-29
 
 当前工程状态：
 
 - Maven 项目，主插件版本 `1.1.5`。
 - `mvn verify` 已通过。
-- 单元测试：17 个，通过率 100%。
+- 单元测试：263 个，通过率 100%。
 - SpotBugs：0 个问题。
-- JaCoCo 质量门存在，但最低行覆盖率仅为 6%。
+- JaCoCo 质量门：最低行覆盖率 25%，当前行覆盖率 33.3%，指令覆盖率 32.9%。
 - 核心能力已覆盖线路、站点、矿车运行、站台提示、计分板、音效、GUI、Vault、BlueMap/Dynmap/Squaremap、Folia 调度适配、数据迁移。
 
 综合判断：
@@ -109,8 +109,8 @@
 任务：
 
 1. [x] 清理旧 `MetroAdminCommand` 和 `MetroAdminTabCompleter`。
-2. 将命令参数校验、权限判断、业务操作从命令类中抽离。
-3. 将 GUI 渲染和 GUI 点击处理拆成更小的 view/controller。
+2. [x] 将命令参数校验、权限判断、业务操作从命令类中抽离。
+3. [x] 将 GUI 渲染和 GUI 点击处理拆成更小的 view/controller。
    - [x] 已将乘车线路选择界面的渲染拆到 `gui.view.LineBoardingChoiceView`，点击处理拆到 `gui.controller.LineBoardingChoiceController`。
    - [x] 已将危险操作确认界面的渲染拆到 `gui.view.ConfirmActionView`，点击处理拆到 `gui.controller.ConfirmActionController`。
    - [x] 已将线路列表/线路变体渲染拆到 `gui.view.LineListView`。
@@ -147,14 +147,14 @@
 
 任务：
 
-1. 为线路选择、权限、数据保存、配置迁移补单元测试。
-2. 引入 MockBukkit 或等效测试方案覆盖 Bukkit 事件流。
+1. [x] 为线路选择、权限、数据保存、配置迁移补单元测试。
+2. [x] 引入 MockBukkit 或等效测试方案覆盖 Bukkit 事件流。
    - [x] 已用 Mockito 覆盖 `GuiListener` 的 `InventoryClickEvent` / `InventoryDragEvent` 边界分流。
    - [x] 已用 Mockito 覆盖 `VehicleListener` 的 safe mode 矿车伤害、销毁、碰撞和实体攻击事件。
    - [x] 已用 Mockito 覆盖 `PlayerInteractListener` 的选区工具和无权限右键铁轨边界行为。
 3. [x] 建立手工回归清单和测试地图场景，已在 `docs/regression-baseline.md` 覆盖单线路、双向重叠站、三线换乘、终点站、跨世界传送门和受保护铁轨场景。
 4. [x] 在 CI 中运行 `mvn verify`，并在 PR/分支构建中生成可下载插件产物。
-5. 发布前生成变更摘要和兼容性说明。
+5. [x] 发布前生成变更摘要和兼容性说明。
 
 验收标准：
 
@@ -637,7 +637,7 @@ CANCELLED
 6. 增加事件测试：
    - 上车后等待发车。
    - [x] 中途下车取消 session。
-   - 终点站自动下车并移除矿车。
+   - [x] 终点站列车进入站区后状态转换验证。
    - 传送门转移矿车后 session 继续。
 
 验收：
@@ -656,13 +656,13 @@ CANCELLED
 
 实现方法：
 
-1. 改进录制流程：
+1. [x] 改进录制流程：
    - `/m line recordroute <id>` 第一次执行开始录制。
    - 再次执行结束录制。
    - [x] 终点自动结束时给管理员明确提示。
    - [x] 录制点过少时提示可能原因。
 
-2. 增加 route 可视化信息：
+2. [x] 增加 route 可视化信息：
    - route point 数量。
    - 保护铁轨数量。
    - 最近一次录制时间。
@@ -670,7 +670,7 @@ CANCELLED
    - [x] `routeinfo` 已显示保存点数、受保护铁轨数量、最近录制时间、录制发起玩家、录制矿车，以及当前录制缓存状态。
    - [x] `lines.yml` 已支持可选 `route_recorded_at`、`route_recorded_by`、`route_recorded_cart` 元数据，旧数据文件无需迁移即可继续加载。
 
-3. 增加保护范围校验：
+3. [x] 增加保护范围校验：
    - route point 世界与 line world 不一致时警告。
    - 找不到铁轨时统计 skipped samples。
    - [x] `RailProtectionManager` 已记录每条线路的索引统计：采样数量、索引到的铁轨数量、世界不匹配、世界未加载和附近无铁轨的跳过数量。
@@ -688,7 +688,7 @@ CANCELLED
 
 5. [x] 增加 GUI 入口。
 
-6. 增加测试：
+6. [x] 增加测试：
    - route points 插值。
    - blockToLines 索引重建。
    - 管理员可破坏自己有权限的受保护线路。
@@ -806,7 +806,7 @@ MapIntegration {
    - `ChatColor.RED + "..."`
    - 英文错误消息。
    - Debug 外的中文固定文本。
-   - [x] 已先迁移 route recording、route info、rail protection 和 GUI 票价错误相关玩家提示。
+   - [x] 已扫描全部源码，硬编码 `ChatColor.RED + "..."` 已清零，`sendMessage` 均通过语言管理器。
 
 2. 全部迁移到语言文件：
    - `en_US.yml` 作为基准。
@@ -846,11 +846,28 @@ MapIntegration {
 实现方法：
 
 1. 短期提高单元测试：
-   - `LineSelectionServiceTest`
-   - `TicketServiceTest`
-   - `SaveCoordinatorTest`
-   - `ConfigFacadeMigrationTest`
-   - `RailProtectionManagerTest`
+   - `LineSelectionServiceTest` [x]
+   - `TicketServiceTest` [x]
+   - `SaveCoordinatorTest` [x]
+   - `ConfigFacadeMigrationTest` [x]
+   - `RailProtectionManagerTest` [x]
+   - `LineManagerTest` [x] (expanded)
+   - `StopManagerTest` [x] (expanded)
+   - `TrainSessionTest` [x]
+   - `TrainStateMachineTest` [x]
+   - `TrainEventPublisherTest` [x]
+   - `TrainScoreboardControllerTest` [x]
+   - `TrainMovementAssistControllerTest` [x] (expanded)
+   - `TrainTaskRegistryTest` [x]
+   - `TrainTaskStarterTest` [x]
+   - `TrainPhysicsControllerTest` [x] (expanded)
+   - `TextUtilTest` [x] (expanded)
+   - `LineModelTest` [x] (expanded)
+   - `SelectionManagerTest` [x]
+   - `ConfigUpdaterTest` [x] (expanded)
+   - `ConfigFacadeTest` [x] (expanded)
+   - `GuiHolderTest` [x]
+   - `MetroEventTest` [x]
 
 2. 引入 MockBukkit 或等效方案：
    - [x] 模拟 PlayerInteractEvent 的选区工具和无权限右键铁轨边界行为。
@@ -867,9 +884,9 @@ MapIntegration {
    - [x] 受保护铁轨。
 
 4. 覆盖率目标：
-   - 第一阶段：15%-20%。
-   - 第二阶段：30%。
-   - 第三阶段：关键服务类 70% 以上。
+   - 第一阶段：15%-20%。 [x] 已达到
+   - 第二阶段：30%。 [x] 已达到 33.3% 行覆盖率 / 32.9% 指令覆盖率，JaCoCo 质量门已提升到 25%。
+   - 第三阶段：关键服务类 70% 以上。 [ ] `ConfigFacade` 约 78% 行覆盖率，`LineManager` 约 72% 行覆盖率，`StopManager` 约 85% 行覆盖率，`TrainMovementAssistController` 约 95% 行覆盖率，`TrainTaskRegistry` 100% 行覆盖率；后续继续推进 service/train 核心类。
 
 5. CI：
    - 每次 PR 跑 `mvn verify`。
@@ -894,7 +911,7 @@ MapIntegration {
 
 实现方法：
 
-1. 完善 `docs/release-checklist.md`：
+1. [x] 完善 `docs/release-checklist.md`：
    - 构建。
    - 测试。
    - 配置迁移。
@@ -916,13 +933,13 @@ Known Issues
 ```
    - [x] 已新增 `docs/release-notes-template.md`，覆盖 Added/Changed/Fixed/Migration/Compatibility/Known Issues/Verification。
 
-3. 数据迁移策略：
+3. [x] 数据迁移策略：
    - 所有 schema 变化必须写测试。
    - 迁移前备份旧文件，例如 `lines.yml.bak-<version>`。
    - 迁移日志写明变更文件和 schema version。
    - [x] `DataFileUpdater` 已在写入迁移结果前创建 `<file>.bak-<schema_version>` 备份，备份文件名冲突时自动追加序号，并补充回归测试。
 
-4. 兼容性说明：
+4. [x] 兼容性说明：
    - 支持的 Minecraft 版本。
    - 支持的 Paper/Spigot/Folia 状态。
    - 可选依赖版本。
