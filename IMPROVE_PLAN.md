@@ -497,9 +497,9 @@ PortalCommandService
    - [x] 列表类命令如需分页时继续复用统一页码校验。
 
 6. 增加命令测试：
-   - create/delete/rename 权限。
-   - addstop 权限与 linked line 规则。
-   - setprice 非法输入。
+   - [x] create/delete/rename 权限和写操作边界。
+   - [x] addstop 权限与 linked line 规则。
+   - [x] setprice 非法输入。
 
 验收：
 
@@ -636,7 +636,7 @@ CANCELLED
 
 6. 增加事件测试：
    - 上车后等待发车。
-   - 中途下车取消 session。
+   - [x] 中途下车取消 session。
    - 终点站自动下车并移除矿车。
    - 传送门转移矿车后 session 继续。
 
@@ -722,12 +722,12 @@ MapIntegration {
 }
 ```
 
-   - [x] 已新增 `integration.MapIntegration`，并让 BlueMap/Dynmap/Squaremap 集成实现统一启停和刷新接口。
+   - [x] 已新增 `integration.MapIntegration`，并让 BlueMap/Dynmap/Squaremap 集成实现统一可用性检查、启停和刷新接口。
 
 2. 新增 `MapIntegrationManager`：
    - 根据配置 provider 只启用指定 provider。
    - 如果配置 provider 不可用，记录明确日志。
-   - 可选支持 AUTO 模式。
+   - [x] 支持 AUTO 模式，按 BlueMap、Dynmap、Squaremap 顺序选择第一个可用 provider。
    - [x] 已将 `MapIntegrationLifecycle` 改为只实例化并启用 `map_integration.provider` 指定的 provider。
    - [x] 未知 provider 会记录明确警告并跳过地图集成。
 
@@ -736,6 +736,7 @@ MapIntegration {
    - 多次变化只刷新一次。
    - 刷新失败不影响主插件运行。
    - [x] `MapIntegrationLifecycle` 已使用 `map_integration.refresh_delay_ticks` 合并连续刷新请求。
+   - [x] `MapIntegrationLifecycle` 在 disable/reload 时会取消尚未执行的延迟刷新任务。
    - [x] 地图刷新已包裹异常隔离，provider 刷新失败会记录警告但不影响主插件运行。
 
 4. 增加地图内容校验：

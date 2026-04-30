@@ -40,24 +40,30 @@ public class SquaremapIntegration implements MapIntegration {
     }
 
     @Override
+    public boolean isAvailable() {
+        try {
+            if (Bukkit.getPluginManager().getPlugin("squaremap") == null) {
+                return false;
+            }
+            Class.forName("xyz.jpenilla.squaremap.api.SquaremapProvider");
+            return true;
+        } catch (ClassNotFoundException | RuntimeException e) {
+            return false;
+        }
+    }
+
+    @Override
     public void enable() {
         if (!plugin.getConfigFacade().isMapIntegrationEnabled()) {
             return;
         }
 
-        if (!"SQUAREMAP".equalsIgnoreCase(plugin.getConfigFacade().getMapProvider())) {
+        if (!matchesProvider()) {
             return;
         }
 
-        if (Bukkit.getPluginManager().getPlugin("squaremap") == null) {
+        if (!isAvailable()) {
             plugin.getLogger().warning("[Squaremap] squaremap plugin not found. Skipping integration.");
-            return;
-        }
-
-        try {
-            Class.forName("xyz.jpenilla.squaremap.api.SquaremapProvider");
-        } catch (ClassNotFoundException e) {
-            plugin.getLogger().info("[Squaremap] API not found, skipping integration.");
             return;
         }
 
@@ -68,7 +74,7 @@ public class SquaremapIntegration implements MapIntegration {
 
     @Override
     public void refresh() {
-        if (!plugin.getConfigFacade().isMapIntegrationEnabled() || !"SQUAREMAP".equalsIgnoreCase(plugin.getConfigFacade().getMapProvider())) {
+        if (!plugin.getConfigFacade().isMapIntegrationEnabled() || !matchesProvider()) {
             disable();
             return;
         }
@@ -103,6 +109,11 @@ public class SquaremapIntegration implements MapIntegration {
     @Override
     public boolean isEnabled() {
         return enabled;
+    }
+
+    private boolean matchesProvider() {
+        String provider = plugin.getConfigFacade().getMapProvider();
+        return "SQUAREMAP".equalsIgnoreCase(provider) || "AUTO".equalsIgnoreCase(provider);
     }
 
     private void renderMetroNetwork() {

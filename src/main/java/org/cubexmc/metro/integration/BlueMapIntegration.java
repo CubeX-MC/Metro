@@ -38,6 +38,16 @@ public class BlueMapIntegration implements MapIntegration {
         this.plugin = plugin;
     }
 
+    @Override
+    public boolean isAvailable() {
+        try {
+            Class.forName("de.bluecolored.bluemap.api.BlueMapAPI");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
+
     /**
      * 尝试启用 BlueMap 集成。
      * 如果 BlueMap 不在 classpath 中，将安静地跳过。
@@ -50,16 +60,14 @@ public class BlueMapIntegration implements MapIntegration {
             return;
         }
 
-        // 检查配置的 provider 是否为 BLUEMAP
-        if (!"BLUEMAP".equalsIgnoreCase(plugin.getConfigFacade().getMapProvider())) {
+        // 检查配置的 provider 是否为 BLUEMAP 或 AUTO
+        if (!matchesProvider()) {
             plugin.getLogger().info("[BlueMap] Map provider is set to '" 
                 + plugin.getConfigFacade().getMapProvider() + "', skipping BlueMap integration.");
             return;
         }
 
-        try {
-            Class.forName("de.bluecolored.bluemap.api.BlueMapAPI");
-        } catch (ClassNotFoundException e) {
+        if (!isAvailable()) {
             plugin.getLogger().info("[BlueMap] BlueMap not detected, skipping map integration.");
             return;
         }
@@ -77,7 +85,7 @@ public class BlueMapIntegration implements MapIntegration {
      */
     @Override
     public void refresh() {
-        if (!plugin.getConfigFacade().isMapIntegrationEnabled() || !"BLUEMAP".equalsIgnoreCase(plugin.getConfigFacade().getMapProvider())) {
+        if (!plugin.getConfigFacade().isMapIntegrationEnabled() || !matchesProvider()) {
             disable();
             return;
         }
@@ -108,6 +116,11 @@ public class BlueMapIntegration implements MapIntegration {
     @Override
     public boolean isEnabled() {
         return enabled;
+    }
+
+    private boolean matchesProvider() {
+        String provider = plugin.getConfigFacade().getMapProvider();
+        return "BLUEMAP".equalsIgnoreCase(provider) || "AUTO".equalsIgnoreCase(provider);
     }
 
     // ========== 核心渲染逻辑 ==========

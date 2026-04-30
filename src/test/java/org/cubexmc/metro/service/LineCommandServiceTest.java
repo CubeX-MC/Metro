@@ -61,6 +61,24 @@ class LineCommandServiceTest {
     }
 
     @Test
+    void shouldRouteDeleteAndRenameThroughManager() {
+        when(lineManager.deleteLine("red")).thenReturn(true);
+        when(lineManager.deleteLine("missing")).thenReturn(false);
+        when(lineManager.setLineName("red", "Ruby Line")).thenReturn(true);
+        when(lineManager.setLineName("missing", "Ghost Line")).thenReturn(false);
+
+        assertEquals(WriteStatus.SUCCESS, service.deleteLine("red"));
+        assertEquals(WriteStatus.FAILED, service.deleteLine("missing"));
+        assertEquals(WriteStatus.SUCCESS, service.renameLine("red", "Ruby Line"));
+        assertEquals(WriteStatus.FAILED, service.renameLine("missing", "Ghost Line"));
+
+        verify(lineManager).deleteLine("red");
+        verify(lineManager).deleteLine("missing");
+        verify(lineManager).setLineName("red", "Ruby Line");
+        verify(lineManager).setLineName("missing", "Ghost Line");
+    }
+
+    @Test
     void shouldRejectAddingStopsWithoutUsableWorld() {
         Line line = line("red", null, List.of());
         Stop stop = stop("central", null);
@@ -112,6 +130,31 @@ class LineCommandServiceTest {
     }
 
     @Test
+    void shouldClearLineWorldWhenRemovingLastStop() {
+        Line line = line("red", "world", List.of("central"));
+        when(lineManager.delStopFromLine("red", "central")).thenAnswer(invocation -> {
+            line.delStop("central");
+            return true;
+        });
+
+        assertEquals(WriteStatus.SUCCESS, service.removeStopFromLine(line, "central"));
+
+        verify(lineManager).delStopFromLine("red", "central");
+        verify(lineManager).setLineWorldName("red", null);
+    }
+
+    @Test
+    void shouldNotClearLineWorldWhenStopRemovalFails() {
+        Line line = line("red", "world", List.of("central"));
+        when(lineManager.delStopFromLine("red", "central")).thenReturn(false);
+
+        assertEquals(WriteStatus.FAILED, service.removeStopFromLine(line, "central"));
+
+        verify(lineManager).delStopFromLine("red", "central");
+        verify(lineManager, never()).setLineWorldName(org.mockito.Mockito.anyString(), org.mockito.Mockito.any());
+    }
+
+    @Test
     void shouldGrantLineAdminOnlyWhenTargetIsNotAlreadyAdmin() {
         UUID existingAdmin = UUID.randomUUID();
         UUID newAdmin = UUID.randomUUID();
@@ -139,6 +182,21 @@ class LineCommandServiceTest {
 
         verify(lineManager).removeLineAdmin("red", adminId);
         verify(lineManager).setLineOwner("red", ownerId);
+    }
+
+    @Test
+    void shouldReturnPreviousRouteCountWhenClearingRoutePoints() {
+        Line line = line("red", "world", List.of());
+        line.setRoutePoints(List.of(
+                new org.cubexmc.metro.model.RoutePoint("world", 1.0, 64.0, 1.0),
+                new org.cubexmc.metro.model.RoutePoint("world", 2.0, 64.0, 2.0)));
+        when(lineManager.clearLineRoutePoints("red")).thenReturn(true);
+
+        LineCommandService.ClearRouteResult result = service.clearRoutePoints(line);
+
+        assertEquals(WriteStatus.SUCCESS, result.status());
+        assertEquals(2, result.previousPointCount());
+        verify(lineManager).clearLineRoutePoints("red");
     }
 
     private Line line(String id, String worldName, List<String> stopIds) {

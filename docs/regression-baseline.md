@@ -109,7 +109,7 @@ Build or keep a small regression world with these named scenarios. The IDs below
 Run one pass per provider that the test server has installed:
 
 1. Set `map_integration.enabled: true`.
-2. Set `map_integration.provider` to `BLUEMAP`, `DYNMAP`, or `SQUAREMAP`.
+2. Set `map_integration.provider` to `AUTO` for the first pass, then to `BLUEMAP`, `DYNMAP`, or `SQUAREMAP` for provider-specific passes.
 3. Set a line color to a legacy color, such as `&a`, and verify the route renders with that color.
 4. Set a line color to a hex color, such as `&#55AAFF`, and verify the route renders with the hex color.
 5. Toggle `map_integration.show_stop_markers` and verify stop markers appear/disappear without affecting route lines.

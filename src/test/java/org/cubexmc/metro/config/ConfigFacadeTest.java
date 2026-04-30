@@ -68,6 +68,14 @@ class ConfigFacadeTest {
         assertEquals(1L, facade.getMapRefreshDelayTicks());
     }
 
+    @Test
+    void shouldDefaultMapProviderToAuto() {
+        ConfigFacade facade = createFacade(new YamlConfiguration());
+        facade.reload();
+
+        assertEquals("AUTO", facade.getMapProvider());
+    }
+
     private ConfigFacade createFacade(YamlConfiguration config) {
         Metro plugin = mock(Metro.class);
         when(plugin.getConfig()).thenReturn(config);

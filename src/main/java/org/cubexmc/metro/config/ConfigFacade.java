@@ -241,7 +241,7 @@ public class ConfigFacade {
 
         // Map Integration
         mapIntegrationEnabled = plugin.getConfig().getBoolean("map_integration.enabled", false);
-        mapProvider = plugin.getConfig().getString("map_integration.provider", "BLUEMAP").toUpperCase();
+        mapProvider = plugin.getConfig().getString("map_integration.provider", "AUTO").toUpperCase();
         mapMarkerSetLabel = plugin.getConfig().getString("map_integration.marker_set_label", "Metro Network");
         mapDefaultVisible = plugin.getConfig().getBoolean("map_integration.default_visible", true);
         mapLineWidth = plugin.getConfig().getInt("map_integration.line_width", 3);

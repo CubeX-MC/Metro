@@ -37,6 +37,16 @@ public class DynmapIntegration implements MapIntegration {
         this.plugin = plugin;
     }
 
+    @Override
+    public boolean isAvailable() {
+        try {
+            Plugin dynmapPlugin = Bukkit.getPluginManager().getPlugin("dynmap");
+            return dynmapPlugin != null && dynmapPlugin.isEnabled();
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
     /**
      * 尝试启用 Dynmap 集成。
      */
@@ -48,19 +58,19 @@ public class DynmapIntegration implements MapIntegration {
             return;
         }
 
-        // 检查配置的 provider 是否为 DYNMAP
-        if (!"DYNMAP".equalsIgnoreCase(plugin.getConfigFacade().getMapProvider())) {
+        // 检查配置的 provider 是否为 DYNMAP 或 AUTO
+        if (!matchesProvider()) {
             plugin.getLogger().info("[Dynmap] Map provider is set to '"
                     + plugin.getConfigFacade().getMapProvider() + "', skipping Dynmap integration.");
             return;
         }
 
         // 检验 Dynmap 插件是否已加载
-        Plugin dynmapPlugin = Bukkit.getPluginManager().getPlugin("dynmap");
-        if (dynmapPlugin == null || !dynmapPlugin.isEnabled()) {
+        if (!isAvailable()) {
             plugin.getLogger().warning("[Dynmap] Dynmap plugin not found or not enabled. Skipping integration.");
             return;
         }
+        Plugin dynmapPlugin = Bukkit.getPluginManager().getPlugin("dynmap");
 
         try {
             dynmapApi = (DynmapCommonAPI) dynmapPlugin;
@@ -85,7 +95,7 @@ public class DynmapIntegration implements MapIntegration {
      */
     @Override
     public void refresh() {
-        if (!plugin.getConfigFacade().isMapIntegrationEnabled() || !"DYNMAP".equalsIgnoreCase(plugin.getConfigFacade().getMapProvider())) {
+        if (!plugin.getConfigFacade().isMapIntegrationEnabled() || !matchesProvider()) {
             disable();
             return;
         }
@@ -112,6 +122,11 @@ public class DynmapIntegration implements MapIntegration {
     @Override
     public boolean isEnabled() {
         return enabled;
+    }
+
+    private boolean matchesProvider() {
+        String provider = plugin.getConfigFacade().getMapProvider();
+        return "DYNMAP".equalsIgnoreCase(provider) || "AUTO".equalsIgnoreCase(provider);
     }
 
     // ========== 核心渲染逻辑 ==========
