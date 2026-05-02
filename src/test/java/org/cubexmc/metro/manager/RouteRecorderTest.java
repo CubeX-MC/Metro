@@ -62,6 +62,47 @@ class RouteRecorderTest {
     }
 
     @Test
+    void shouldContinueRecordingAfterMinecartTransfer() {
+        LineManager lineManager = mock(LineManager.class);
+        Metro plugin = mock(Metro.class);
+        when(plugin.getLineManager()).thenReturn(lineManager);
+        when(plugin.getLogger()).thenReturn(Logger.getLogger("RouteRecorderTest"));
+
+        World world = mock(World.class);
+        when(world.getName()).thenReturn("world");
+        Minecart oldCart = mock(Minecart.class);
+        UUID oldCartId = UUID.randomUUID();
+        when(oldCart.getUniqueId()).thenReturn(oldCartId);
+        Minecart newCart = mock(Minecart.class);
+        UUID newCartId = UUID.randomUUID();
+        when(newCart.getUniqueId()).thenReturn(newCartId);
+
+        when(lineManager.setLineRoutePoints(eq("red"), argThat(points -> points.equals(List.of(
+                new RoutePoint("world", 0.0, 64.0, 0.0),
+                new RoutePoint("world", 5.0, 64.0, 0.0),
+                new RoutePoint("world", 5.0, 64.0, 5.0)
+        ))), anyLong(), any(), eq(newCartId))).thenReturn(true);
+
+        RouteRecorder recorder = new RouteRecorder(plugin);
+        assertTrue(recorder.start("red"));
+        recorder.sample("red", oldCart, new Location(world, 0.0, 64.0, 0.0));
+        recorder.sample("red", oldCart, new Location(world, 5.0, 64.0, 0.0));
+
+        assertTrue(recorder.transferCart("red", oldCart, newCart));
+        recorder.sample("red", newCart, new Location(world, 5.0, 64.0, 5.0));
+        FinishResult result = recorder.finishIfRecording("red", newCart);
+
+        assertEquals(FinishResult.Status.SAVED, result.status());
+        assertEquals(3, result.pointCount());
+        assertEquals(newCartId, result.cartId());
+        verify(lineManager).setLineRoutePoints(eq("red"), argThat(points -> points.equals(List.of(
+                new RoutePoint("world", 0.0, 64.0, 0.0),
+                new RoutePoint("world", 5.0, 64.0, 0.0),
+                new RoutePoint("world", 5.0, 64.0, 5.0)
+        ))), anyLong(), any(), eq(newCartId));
+    }
+
+    @Test
     void shouldReturnRecordingMetadataWhenTerminalAutoFinishHasTooFewPoints() {
         Metro plugin = mock(Metro.class);
         UUID recorderId = UUID.randomUUID();

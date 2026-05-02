@@ -63,6 +63,14 @@ public class RouteRecorder {
         return session == null ? null : session.recorderId;
     }
 
+    public boolean transferCart(String lineId, Minecart previousCart, Minecart newCart) {
+        RecordingSession session = sessions.get(lineId);
+        if (session == null || previousCart == null || newCart == null) {
+            return false;
+        }
+        return session.transferCart(previousCart.getUniqueId(), newCart.getUniqueId());
+    }
+
     public void sample(String lineId, Minecart minecart, Location location) {
         RecordingSession session = sessions.get(lineId);
         if (session == null || minecart == null || location == null) {
@@ -198,6 +206,24 @@ public class RouteRecorder {
 
         private synchronized boolean matchesCart(UUID candidateCartId) {
             return cartId == null || cartId.equals(candidateCartId);
+        }
+
+        private synchronized boolean transferCart(UUID previousCartId, UUID newCartId) {
+            if (previousCartId == null || newCartId == null) {
+                return false;
+            }
+            if (cartId == null) {
+                cartId = newCartId;
+                return true;
+            }
+            if (cartId.equals(newCartId)) {
+                return true;
+            }
+            if (!cartId.equals(previousCartId)) {
+                return false;
+            }
+            cartId = newCartId;
+            return true;
         }
 
         private synchronized int pointCount() {

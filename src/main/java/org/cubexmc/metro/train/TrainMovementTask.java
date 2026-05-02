@@ -87,6 +87,10 @@ public class TrainMovementTask implements Listener {
         session.setMinecart(newCart);
         session.setTeleporting(false);
         TrainTaskRegistry.transfer(previousCart, newCart, this);
+        Line line = session.getLine();
+        if (line != null && session.getPlugin().getRouteRecorder() != null) {
+            session.getPlugin().getRouteRecorder().transferCart(line.getId(), previousCart, newCart);
+        }
         if (session.getState() == TrainState.MOVING_BETWEEN_STATIONS) {
             movementAssistController.start();
         }
