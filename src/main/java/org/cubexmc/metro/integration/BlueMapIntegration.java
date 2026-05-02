@@ -6,7 +6,9 @@ import de.bluecolored.bluemap.api.BlueMapWorld;
 import de.bluecolored.bluemap.api.markers.LineMarker;
 import de.bluecolored.bluemap.api.markers.MarkerSet;
 import de.bluecolored.bluemap.api.markers.POIMarker;
+import de.bluecolored.bluemap.api.markers.ShapeMarker;
 import de.bluecolored.bluemap.api.math.Color;
+import de.bluecolored.bluemap.api.math.Shape;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -181,17 +183,14 @@ public class BlueMapIntegration implements MapIntegration {
         }
         for (BlueMapMap map : getMapsForWorld(api, worldName)) {
             MarkerSet markerSet = getMarkerSet(map);
+            List<RoutePoint> displayPoints = MapGeometry.orthogonalRoutePoints(routePoints, worldName);
+            if (displayPoints.size() < 2) {
+                return;
+            }
             de.bluecolored.bluemap.api.math.Line.Builder lineBuilder =
                     de.bluecolored.bluemap.api.math.Line.builder();
-            int pointCount = 0;
-            for (RoutePoint point : routePoints) {
-                if (worldName.equals(point.worldName())) {
-                    lineBuilder.addPoint(new com.flowpowered.math.vector.Vector3d(point.x(), point.y(), point.z()));
-                    pointCount++;
-                }
-            }
-            if (pointCount < 2) {
-                return;
+            for (RoutePoint point : displayPoints) {
+                lineBuilder.addPoint(new com.flowpowered.math.vector.Vector3d(point.x(), point.y(), point.z()));
             }
 
             LineMarker lineMarker = LineMarker.builder()
@@ -205,7 +204,37 @@ public class BlueMapIntegration implements MapIntegration {
     }
 
     private void renderStop(BlueMapAPI api, Stop stop) {
-        if (stop == null || stop.getStopPointLocation() == null) return;
+        if (stop == null) return;
+
+        if (MapGeometry.stopBounds(stop).map(bounds -> renderStopArea(api, stop, bounds)).orElse(false)) {
+            return;
+        }
+
+        renderStopPoi(api, stop);
+    }
+
+    private boolean renderStopArea(BlueMapAPI api, Stop stop, MapGeometry.StopBounds bounds) {
+        boolean rendered = false;
+        for (BlueMapMap map : getMapsForWorld(api, bounds.worldName())) {
+            MarkerSet markerSet = getMarkerSet(map);
+            MapLineColor stopColor = getStopColor(stop);
+            ShapeMarker area = ShapeMarker.builder()
+                    .label(stopLabel(stop))
+                    .shape(Shape.createRect(bounds.minX(), bounds.minZ(), bounds.maxX(), bounds.maxZ()),
+                            (float) (bounds.maxY() + 0.05D))
+                    .lineColor(toBlueMapColor(stopColor, 1.0F))
+                    .fillColor(toBlueMapColor(stopColor, 0.22F))
+                    .lineWidth(Math.max(1, plugin.getConfigFacade().getMapLineWidth()))
+                    .build();
+            area.setDetail(buildStopDetail(stop));
+            markerSet.put("stop_area_" + stop.getId(), area);
+            rendered = true;
+        }
+        return rendered;
+    }
+
+    private void renderStopPoi(BlueMapAPI api, Stop stop) {
+        if (stop.getStopPointLocation() == null) return;
 
         Location loc = stop.getStopPointLocation();
         if (loc.getWorld() == null) return;
@@ -215,9 +244,8 @@ public class BlueMapIntegration implements MapIntegration {
         for (BlueMapMap map : getMapsForWorld(api, worldName)) {
             MarkerSet markerSet = getMarkerSet(map);
 
-            String label = (stop.getName() != null && !stop.getName().isEmpty()) ? stop.getName() : stop.getId();
             POIMarker poi = POIMarker.builder()
-                    .label(label)
+                    .label(stopLabel(stop))
                     .position(loc.getX(), loc.getY(), loc.getZ())
                     .build();
             poi.setDetail(buildStopDetail(stop));
@@ -271,6 +299,7 @@ public class BlueMapIntegration implements MapIntegration {
 
     private String buildStopDetail(Stop stop) {
         List<String> detail = new ArrayList<>();
+        detail.add("<b>" + stopLabel(stop) + "</b>");
         List<org.cubexmc.metro.model.Line> servedLines = plugin.getLineManager().getLinesForStop(stop.getId());
         if (!servedLines.isEmpty()) {
             detail.add("<b>Lines:</b> " + servedLines.stream()
@@ -285,7 +314,23 @@ public class BlueMapIntegration implements MapIntegration {
         return String.join("<br>", detail);
     }
 
+    private String stopLabel(Stop stop) {
+        return (stop.getName() != null && !stop.getName().isEmpty()) ? stop.getName() : stop.getId();
+    }
+
+    private MapLineColor getStopColor(Stop stop) {
+        List<org.cubexmc.metro.model.Line> servedLines = plugin.getLineManager().getLinesForStop(stop.getId());
+        if (servedLines.isEmpty()) {
+            return MapLineColor.WHITE;
+        }
+        return MapLineColor.fromLineColor(servedLines.get(0).getColor());
+    }
+
     private Color toBlueMapColor(MapLineColor color) {
-        return new Color(color.red(), color.green(), color.blue(), 255);
+        return toBlueMapColor(color, 1.0F);
+    }
+
+    private Color toBlueMapColor(MapLineColor color, float alpha) {
+        return new Color(color.red(), color.green(), color.blue(), alpha);
     }
 }

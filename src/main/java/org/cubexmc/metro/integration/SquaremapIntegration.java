@@ -144,11 +144,18 @@ public class SquaremapIntegration implements MapIntegration {
             }
 
             for (Stop stop : allStops) {
-                if (stop == null || stop.getStopPointLocation() == null || stop.getStopPointLocation().getWorld() == null) {
+                if (stop == null) {
                     continue;
                 }
 
-                String worldName = stop.getStopPointLocation().getWorld().getName();
+                String worldName = MapGeometry.stopBounds(stop)
+                        .map(MapGeometry.StopBounds::worldName)
+                        .orElseGet(() -> stop.getStopPointLocation() != null && stop.getStopPointLocation().getWorld() != null
+                                ? stop.getStopPointLocation().getWorld().getName()
+                                : null);
+                if (worldName == null) {
+                    continue;
+                }
 
                 org.bukkit.World bukkitWorld = Bukkit.getWorld(worldName);
                 if (bukkitWorld == null) continue;
@@ -177,6 +184,9 @@ public class SquaremapIntegration implements MapIntegration {
         }
 
         String worldName = routePoints.get(0).worldName();
+        if (worldName == null || worldName.isBlank()) {
+            return;
+        }
         org.bukkit.World bukkitWorld = Bukkit.getWorld(worldName);
         if (bukkitWorld == null) {
             return;
@@ -192,10 +202,8 @@ public class SquaremapIntegration implements MapIntegration {
             });
 
             List<Point> points = new ArrayList<>();
-            for (RoutePoint routePoint : routePoints) {
-                if (worldName.equals(routePoint.worldName())) {
-                    points.add(Point.of(routePoint.x(), routePoint.z()));
-                }
+            for (RoutePoint routePoint : MapGeometry.orthogonalRoutePoints(routePoints, worldName)) {
+                points.add(Point.of(routePoint.x(), routePoint.z()));
             }
             if (points.size() < 2) {
                 return;
@@ -212,7 +220,34 @@ public class SquaremapIntegration implements MapIntegration {
     }
 
     private void renderStop(SimpleLayerProvider provider, Stop stop) {
+        if (MapGeometry.stopBounds(stop).map(bounds -> renderStopArea(provider, stop, bounds)).orElse(false)) {
+            return;
+        }
+        renderStopMarker(provider, stop);
+    }
+
+    private boolean renderStopArea(SimpleLayerProvider provider, Stop stop, MapGeometry.StopBounds bounds) {
+        String stopId = ("stop_area_" + stop.getId()).toLowerCase();
+        Marker area = Marker.rectangle(Point.of(bounds.minX(), bounds.minZ()), Point.of(bounds.maxX(), bounds.maxZ()));
+        Color color = getStopColor(stop);
+        area.markerOptions(MarkerOptions.builder()
+                .hoverTooltip(buildStopTooltip(stop))
+                .strokeColor(color)
+                .strokeWeight(Math.max(1, plugin.getConfigFacade().getMapLineWidth()))
+                .strokeOpacity(0.85)
+                .fill(true)
+                .fillColor(color)
+                .fillOpacity(0.22)
+                .build());
+
+        provider.addMarker(Key.of(stopId), area);
+        return true;
+    }
+
+    private void renderStopMarker(SimpleLayerProvider provider, Stop stop) {
+        if (stop.getStopPointLocation() == null) return;
         Location loc = stop.getStopPointLocation();
+        if (loc.getWorld() == null) return;
         String stopLabel = (stop.getName() != null && !stop.getName().isEmpty()) ? stop.getName() : stop.getId();
         String poiId = ("stop_" + stop.getId()).toLowerCase();
 
@@ -220,6 +255,7 @@ public class SquaremapIntegration implements MapIntegration {
         poi.markerOptions(MarkerOptions.builder()
                 .hoverTooltip(buildStopTooltip(stop))
                 .fillColor(getStopColor(stop))
+                .fill(true)
                 .strokeColor(Color.BLACK)
                 .strokeWeight(1)
                 .build());

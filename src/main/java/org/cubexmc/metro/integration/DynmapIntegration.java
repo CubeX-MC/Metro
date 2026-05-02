@@ -9,6 +9,7 @@ import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.RoutePoint;
 import org.cubexmc.metro.model.Stop;
 import org.dynmap.DynmapCommonAPI;
+import org.dynmap.markers.AreaMarker;
 import org.dynmap.markers.Marker;
 import org.dynmap.markers.MarkerAPI;
 import org.dynmap.markers.MarkerIcon;
@@ -173,13 +174,18 @@ public class DynmapIntegration implements MapIntegration {
         }
 
         String worldName = routePoints.get(0).worldName();
+        if (worldName == null || worldName.isBlank()) {
+            return;
+        }
+        List<RoutePoint> displayPoints = MapGeometry.orthogonalRoutePoints(routePoints, worldName);
+        if (displayPoints.size() < 2) {
+            return;
+        }
+
         List<Double> xList = new ArrayList<>();
         List<Double> yList = new ArrayList<>();
         List<Double> zList = new ArrayList<>();
-        for (RoutePoint point : routePoints) {
-            if (!worldName.equals(point.worldName())) {
-                continue;
-            }
+        for (RoutePoint point : displayPoints) {
             xList.add(point.x());
             yList.add(point.y());
             zList.add(point.z());
@@ -208,16 +214,46 @@ public class DynmapIntegration implements MapIntegration {
     }
 
     private void renderStop(MarkerSet markerSet, Stop stop) {
-        if (stop == null || stop.getStopPointLocation() == null) return;
+        if (stop == null) return;
+
+        if (MapGeometry.stopBounds(stop).map(bounds -> renderStopArea(markerSet, stop, bounds)).orElse(false)) {
+            return;
+        }
+
+        renderStopMarker(markerSet, stop);
+    }
+
+    private boolean renderStopArea(MarkerSet markerSet, Stop stop, MapGeometry.StopBounds bounds) {
+        double[] x = {bounds.minX(), bounds.maxX(), bounds.maxX(), bounds.minX()};
+        double[] z = {bounds.minZ(), bounds.minZ(), bounds.maxZ(), bounds.maxZ()};
+        AreaMarker area = markerSet.createAreaMarker(
+                "stop_area_" + stop.getId(),
+                stopLabel(stop),
+                false,
+                bounds.worldName(),
+                x,
+                z,
+                false
+        );
+        if (area == null) {
+            return false;
+        }
+        int color = getStopColor(stop).asRgbInt();
+        area.setRangeY(bounds.maxY(), bounds.minY());
+        area.setLineStyle(Math.max(1, plugin.getConfigFacade().getMapLineWidth()), 0.85, color);
+        area.setFillStyle(0.22, color);
+        area.setDescription(buildStopDescription(stop));
+        return true;
+    }
+
+    private void renderStopMarker(MarkerSet markerSet, Stop stop) {
+        if (stop.getStopPointLocation() == null) return;
         Location loc = stop.getStopPointLocation();
         if (loc.getWorld() == null) return;
 
-        String stopLabel = (stop.getName() != null && !stop.getName().isEmpty())
-                ? stop.getName() : stop.getId();
-
         Marker marker = markerSet.createMarker(
                 "stop_" + stop.getId(),
-                stopLabel,
+                stopLabel(stop),
                 loc.getWorld().getName(),
                 loc.getX(), loc.getY(), loc.getZ(),
                 markerApi.getMarkerIcon(MarkerIcon.DEFAULT),
@@ -231,8 +267,7 @@ public class DynmapIntegration implements MapIntegration {
 
     private String buildStopDescription(Stop stop) {
         List<String> parts = new ArrayList<>();
-        String stopLabel = (stop.getName() != null && !stop.getName().isEmpty()) ? stop.getName() : stop.getId();
-        parts.add("<b>" + stopLabel + "</b>");
+        parts.add("<b>" + stopLabel(stop) + "</b>");
 
         List<org.cubexmc.metro.model.Line> servedLines = plugin.getLineManager().getLinesForStop(stop.getId());
         if (!servedLines.isEmpty()) {
@@ -246,6 +281,18 @@ public class DynmapIntegration implements MapIntegration {
             parts.add("Transfers: " + String.join(", ", transfers));
         }
         return String.join("<br>", parts);
+    }
+
+    private String stopLabel(Stop stop) {
+        return (stop.getName() != null && !stop.getName().isEmpty()) ? stop.getName() : stop.getId();
+    }
+
+    private MapLineColor getStopColor(Stop stop) {
+        List<org.cubexmc.metro.model.Line> servedLines = plugin.getLineManager().getLinesForStop(stop.getId());
+        if (servedLines.isEmpty()) {
+            return MapLineColor.WHITE;
+        }
+        return MapLineColor.fromLineColor(servedLines.get(0).getColor());
     }
 
 }

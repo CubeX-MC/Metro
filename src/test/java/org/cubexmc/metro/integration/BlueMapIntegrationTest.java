@@ -2,6 +2,7 @@ package org.cubexmc.metro.integration;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -11,7 +12,7 @@ import de.bluecolored.bluemap.api.BlueMapMap;
 import de.bluecolored.bluemap.api.BlueMapWorld;
 import de.bluecolored.bluemap.api.markers.LineMarker;
 import de.bluecolored.bluemap.api.markers.MarkerSet;
-import de.bluecolored.bluemap.api.markers.POIMarker;
+import de.bluecolored.bluemap.api.markers.ShapeMarker;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -54,8 +55,9 @@ class BlueMapIntegrationTest {
             MarkerSet markerSet = fixtures.markerSets.get("metro_network");
             assertNotNull(markerSet);
             assertFalse(markerSet.isDefaultHidden());
-            assertInstanceOf(LineMarker.class, markerSet.get("route_red"));
-            assertInstanceOf(POIMarker.class, markerSet.get("stop_central"));
+            LineMarker lineMarker = assertInstanceOf(LineMarker.class, markerSet.get("route_red"));
+            assertEquals(3, lineMarker.getLine().getPointCount());
+            assertInstanceOf(ShapeMarker.class, markerSet.get("stop_area_central"));
         } finally {
             integration.disable();
         }
@@ -119,6 +121,8 @@ class BlueMapIntegrationTest {
             ));
 
             Stop stop = new Stop("central", "Central");
+            stop.setCorner1(new Location(bukkitWorld, 6.0, 63.0, 6.0));
+            stop.setCorner2(new Location(bukkitWorld, 10.0, 65.0, 10.0));
             stop.setStopPointLocation(new Location(bukkitWorld, 8.0, 64.0, 8.0));
 
             when(lineManager.getAllLines()).thenReturn(List.of(line));
