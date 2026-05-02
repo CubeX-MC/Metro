@@ -7,6 +7,22 @@
 - Primary build API: Spigot API 1.18.2
 - Plugin API version: `1.18`
 
+## Minecraft 26.1.2 Strategy
+
+- Metro keeps Java 17 bytecode and Spigot API 1.18.2 as the build baseline so one jar can continue to support 1.18+ servers.
+- Minecraft/Paper 26.1.2 is treated as a runtime validation target, not as the compile API baseline.
+- Paper 26.1.2 servers require Java 25 at runtime. This does not require Metro to compile with Java 25 unless Metro intentionally adopts Java 25 language/runtime APIs.
+- Newer Paper-only APIs must stay behind reflection or compatibility adapters with older-version fallbacks.
+- Do not add NMS, CraftBukkit, or versioned server package references for this compatibility work.
+
+Recommended smoke-test matrix before releasing a 26.1.2-compatible build:
+
+- 1.18.2 server on Java 17.
+- Current stable Paper 1.21.x server on Java 21.
+- Paper 26.1.2 server on Java 25.
+
+Smoke tests should cover plugin startup, Cloud command registration, GUI opening, line/stop management, train departure, passenger billing, and optional map/economy dependencies disabled.
+
 ## Server Platforms
 
 - Spigot: supported for core gameplay and administration features.

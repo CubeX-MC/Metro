@@ -52,6 +52,28 @@
 
 ## 4. 当前剩余重点
 
+### P0：Minecraft 26.1.2 兼容升级
+
+目标：发布一个继续向前兼容到 Minecraft 1.18 的 Metro jar，同时确认它能在 Minecraft/Paper 26.1.2 上加载并完成核心流程。
+
+决策：
+
+- 主构建继续使用 Java 17 bytecode 和 Spigot API 1.18.2 编译，避免把 1.18 支持切断。
+- `plugin.yml` 继续声明 `api-version: 1.18`，除非后续明确放弃 1.18。
+- 不直接引入 26.1.2 专属 API；必须使用时放进反射/适配层，并提供旧版本 fallback。
+- Paper 26.1.2 作为运行时验证目标处理，不作为主编译 API 基线。
+- 26.1.2 服务端需要 Java 25 运行；Metro jar 本身仍以 Java 17 产物发布。
+
+实施顺序：
+
+1. 补强版本解析，确保 `1.18.2-R0.1-SNAPSHOT`、`1.21.11-R0.1-SNAPSHOT`、`26.1.2-R0.1-SNAPSHOT` 等格式都有测试覆盖。
+2. 检查命令注册适配层，重点关注 `PaperCommandManager` / `LegacyPaperCommandManager` 在 Paper 26.1.2 的加载表现。
+3. 保持 Bukkit/Spigot/Paper 公共 API 优先；禁止新增 NMS、CraftBukkit 或版本包依赖。
+4. 建立运行矩阵：`1.18.2 + Java 17`、当前 LTS Paper（如 1.21.x + Java 21）、`26.1.2 + Java 25`。
+5. 在真服 smoke test 覆盖插件加载、命令注册、GUI 打开、站点/线路管理、矿车发车、乘车扣费和地图软依赖禁用场景。
+6. 如果 26.1.2 真服暴露 cloud 命令框架问题，再升级 `cloud-paper` / `cloud-minecraft-extras`，并回跑旧版本 smoke test。
+7. 后续为世界标识增加 `world_key` 持久化字段，旧数据继续按 world name fallback。
+
 ### P1：推进核心服务与列车类覆盖率
 
 目标：把关键 service/train 类逐步推到 70% 以上覆盖率，并在稳定后考虑提高 JaCoCo 质量门。
