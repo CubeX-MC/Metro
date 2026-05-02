@@ -8,7 +8,9 @@ import de.bluecolored.bluemap.api.markers.MarkerSet;
 import de.bluecolored.bluemap.api.markers.POIMarker;
 import de.bluecolored.bluemap.api.math.Color;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.StopManager;
@@ -16,6 +18,7 @@ import org.cubexmc.metro.model.RoutePoint;
 import org.cubexmc.metro.model.Stop;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -77,6 +80,10 @@ public class BlueMapIntegration implements MapIntegration {
             BlueMapAPI.onDisable(disableListener);
             listenersRegistered = true;
         }
+
+        if (!enabled) {
+            BlueMapAPI.getInstance().ifPresent(this::handleBlueMapEnabled);
+        }
     }
 
     /**
@@ -90,9 +97,11 @@ public class BlueMapIntegration implements MapIntegration {
             return;
         }
 
+        boolean wasEnabled = enabled;
         if (!enabled) {
             enable();
-        } else {
+        }
+        if (wasEnabled && enabled) {
             BlueMapAPI.getInstance().ifPresent(this::renderMetroNetwork);
         }
     }
@@ -167,11 +176,10 @@ public class BlueMapIntegration implements MapIntegration {
         }
 
         String worldName = routePoints.get(0).worldName();
-        for (BlueMapMap map : api.getMaps()) {
-            if (!matchesWorld(map, worldName)) {
-                continue;
-            }
-
+        if (worldName == null || worldName.isBlank()) {
+            return;
+        }
+        for (BlueMapMap map : getMapsForWorld(api, worldName)) {
             MarkerSet markerSet = getMarkerSet(map);
             de.bluecolored.bluemap.api.math.Line.Builder lineBuilder =
                     de.bluecolored.bluemap.api.math.Line.builder();
@@ -204,13 +212,7 @@ public class BlueMapIntegration implements MapIntegration {
 
         String worldName = loc.getWorld().getName();
 
-        // 获取该世界对应的 BlueMap 世界和地图
-        for (BlueMapMap map : api.getMaps()) {
-            if (!matchesWorld(map, worldName)) {
-                continue;
-            }
-
-            // 获取或创建 MarkerSet
+        for (BlueMapMap map : getMapsForWorld(api, worldName)) {
             MarkerSet markerSet = getMarkerSet(map);
 
             String label = (stop.getName() != null && !stop.getName().isEmpty()) ? stop.getName() : stop.getId();
@@ -221,6 +223,27 @@ public class BlueMapIntegration implements MapIntegration {
             poi.setDetail(buildStopDetail(stop));
             markerSet.put("stop_" + stop.getId(), poi);
         }
+    }
+
+    private Collection<BlueMapMap> getMapsForWorld(BlueMapAPI api, String worldName) {
+        World bukkitWorld = Bukkit.getWorld(worldName);
+        if (bukkitWorld != null) {
+            return api.getWorld(bukkitWorld)
+                    .map(BlueMapWorld::getMaps)
+                    .filter(maps -> !maps.isEmpty())
+                    .orElseGet(() -> getMapsByWorldName(api, worldName));
+        }
+        return getMapsByWorldName(api, worldName);
+    }
+
+    private List<BlueMapMap> getMapsByWorldName(BlueMapAPI api, String worldName) {
+        List<BlueMapMap> maps = new ArrayList<>();
+        for (BlueMapMap map : api.getMaps()) {
+            if (matchesWorld(map, worldName)) {
+                maps.add(map);
+            }
+        }
+        return maps;
     }
 
     private boolean matchesWorld(BlueMapMap map, String worldName) {
