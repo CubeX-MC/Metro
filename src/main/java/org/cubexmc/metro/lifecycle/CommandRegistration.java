@@ -18,6 +18,7 @@ import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.PortalManager;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.service.StopCommandService;
+import org.cubexmc.metro.util.VersionUtil;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.SenderMapper;
 import org.incendo.cloud.annotations.AnnotationParser;
@@ -47,6 +48,19 @@ public class CommandRegistration {
     }
 
     public Result register() {
+        if (VersionUtil.isVersionAtLeast(26, 1, 0)) {
+            try {
+                new BukkitFallbackCommandRegistration(plugin, lineManager, stopManager, portalManager).register();
+                plugin.getLogger().info("已为 Minecraft 26.1+ 启用 Bukkit 命令兼容层。");
+                return new Result(null, null);
+            } catch (Exception e) {
+                plugin.getLogger().severe("Failed to initialize Bukkit command fallback:");
+                e.printStackTrace();
+                Bukkit.getPluginManager().disablePlugin(plugin);
+                return null;
+            }
+        }
+
         try {
             CommandManager<CommandSender> commandManager = createCommandManager();
             AnnotationParser<CommandSender> annotationParser =
@@ -62,11 +76,18 @@ public class CommandRegistration {
 
             plugin.getLogger().info("Cloud Command Framework initialized successfully.");
             return new Result(commandManager, annotationParser);
-        } catch (Exception e) {
-            plugin.getLogger().severe("Failed to initialize Cloud Command Framework:");
-            e.printStackTrace();
-            Bukkit.getPluginManager().disablePlugin(plugin);
-            return null;
+        } catch (Exception | LinkageError e) {
+            plugin.getLogger().warning("Cloud Command Framework 初始化失败，将尝试 Bukkit fallback。原因: "
+                    + e.getClass().getSimpleName() + ": " + e.getMessage());
+            try {
+                new BukkitFallbackCommandRegistration(plugin, lineManager, stopManager, portalManager).register();
+                return new Result(null, null);
+            } catch (Exception fallbackError) {
+                plugin.getLogger().severe("Failed to initialize Cloud Command Framework and Bukkit fallback:");
+                fallbackError.printStackTrace();
+                Bukkit.getPluginManager().disablePlugin(plugin);
+                return null;
+            }
         }
     }
 
@@ -113,26 +134,53 @@ public class CommandRegistration {
                     )
             );
 
-            CommandManager<CommandSender> manager =
-                    (CommandManager<CommandSender>) PaperCommandManager.builder((SenderMapper) mapper)
-                            .executionCoordinator(ExecutionCoordinator.simpleCoordinator())
-                            .buildOnEnable(plugin);
-            plugin.getLogger().info("已加载新版 PaperCommandManager (1.20.5+)");
-            return manager;
+            try {
+                CommandManager<CommandSender> manager =
+                        (CommandManager<CommandSender>) PaperCommandManager.builder((SenderMapper) mapper)
+                                .executionCoordinator(ExecutionCoordinator.simpleCoordinator())
+                                .buildOnEnable(plugin);
+                plugin.getLogger().info("已加载新版 PaperCommandManager (1.20.5+)");
+                return manager;
+            } catch (RuntimeException | LinkageError e) {
+                plugin.getLogger().warning("新版 PaperCommandManager 初始化失败，将降级为兼容命令注册。原因: "
+                        + e.getClass().getSimpleName() + ": " + e.getMessage());
+                return createLegacyCommandManager(false);
+            }
         } catch (ClassNotFoundException e) {
-            LegacyPaperCommandManager<CommandSender> legacyManager =
-                    LegacyPaperCommandManager.createNative(plugin, ExecutionCoordinator.simpleCoordinator());
-
-            if (legacyManager.hasCapability(CloudBukkitCapabilities.NATIVE_BRIGADIER)) {
-                legacyManager.registerBrigadier();
-            }
-            if (legacyManager.hasCapability(CloudBukkitCapabilities.ASYNCHRONOUS_COMPLETION)) {
-                legacyManager.registerAsynchronousCompletions();
-            }
-
-            plugin.getLogger().info("已加载兼容版 LegacyPaperCommandManager (1.20.4 及以下)");
-            return legacyManager;
+            return createLegacyCommandManager(true);
         }
+    }
+
+    private LegacyPaperCommandManager<CommandSender> createLegacyCommandManager(boolean enableNativeBrigadier)
+            throws Exception {
+        LegacyPaperCommandManager<CommandSender> legacyManager =
+                new LegacyPaperCommandManager<>(
+                        plugin,
+                        ExecutionCoordinator.simpleCoordinator(),
+                        SenderMapper.identity()
+                );
+
+        if (enableNativeBrigadier && legacyManager.hasCapability(CloudBukkitCapabilities.NATIVE_BRIGADIER)) {
+            try {
+                legacyManager.registerBrigadier();
+            } catch (RuntimeException | LinkageError e) {
+                plugin.getLogger().warning("Legacy Brigadier 注册失败，将继续使用 Bukkit 命令。原因: "
+                        + e.getClass().getSimpleName() + ": " + e.getMessage());
+            }
+        }
+        if (legacyManager.hasCapability(CloudBukkitCapabilities.ASYNCHRONOUS_COMPLETION)) {
+            try {
+                legacyManager.registerAsynchronousCompletions();
+            } catch (RuntimeException | LinkageError e) {
+                plugin.getLogger().warning("异步命令补全注册失败，将继续使用同步补全。原因: "
+                        + e.getClass().getSimpleName() + ": " + e.getMessage());
+            }
+        }
+
+        plugin.getLogger().info(enableNativeBrigadier
+                ? "已加载兼容版 LegacyPaperCommandManager (1.20.4 及以下)"
+                : "已加载降级版 LegacyPaperCommandManager (Bukkit command fallback)");
+        return legacyManager;
     }
 
     private void registerSuggestionProviders(CommandManager<CommandSender> commandManager) {

@@ -20,6 +20,7 @@ import org.cubexmc.metro.lifecycle.MapIntegrationLifecycle;
 import org.cubexmc.metro.lifecycle.ScheduledTaskLifecycle;
 import net.megavex.scoreboardlibrary.api.ScoreboardLibrary;
 import net.megavex.scoreboardlibrary.api.exception.NoPacketAdapterAvailableException;
+import net.megavex.scoreboardlibrary.api.noop.NoopScoreboardLibrary;
 import org.cubexmc.metro.manager.LanguageManager;
 import org.cubexmc.metro.listener.PlayerInteractListener;
 import org.cubexmc.metro.listener.PlayerMoveListener;
@@ -118,7 +119,8 @@ public final class Metro extends JavaPlugin {
         try {
             this.globalScoreboardLibrary = ScoreboardLibrary.loadScoreboardLibrary(this);
         } catch (NoPacketAdapterAvailableException e) {
-            getLogger().severe("无法加载 ScoreboardLibrary 数据包适配器，计分板功能将被禁用！");
+            this.globalScoreboardLibrary = new NoopScoreboardLibrary();
+            getLogger().warning("当前服务端暂无可用 ScoreboardLibrary 数据包适配器，计分板显示将临时不可见。");
         }
 
         // 初始化计分板管理器
