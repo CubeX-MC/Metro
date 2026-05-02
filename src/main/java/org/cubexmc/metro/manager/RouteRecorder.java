@@ -13,7 +13,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class RouteRecorder {
 
-    private static final double MIN_SAMPLE_DISTANCE_SQUARED = 16.0;
+    private static final double DEFAULT_MIN_SAMPLE_DISTANCE_BLOCKS = 1.0;
+    private static final double DEFAULT_SIMPLIFY_EPSILON_BLOCKS = 0.15;
     private static final int MIN_SAVE_POINTS = 2;
 
     private final Metro plugin;
@@ -71,7 +72,7 @@ public class RouteRecorder {
         if (routePoint == null) {
             return;
         }
-        session.sample(minecart.getUniqueId(), routePoint);
+        session.sample(minecart.getUniqueId(), routePoint, minSampleDistanceSquared());
     }
 
     public FinishResult finishIfRecording(String lineId, Minecart minecart) {
@@ -88,7 +89,7 @@ public class RouteRecorder {
     }
 
     private FinishResult saveSession(RecordingSession session) {
-        List<RoutePoint> points = session.snapshot();
+        List<RoutePoint> points = simplifyRoutePoints(session.snapshot());
         if (points.size() < MIN_SAVE_POINTS) {
             return FinishResult.tooFewPoints(session.lineId, points.size(), session.recorderId, session.cartId);
         }
@@ -98,6 +99,75 @@ public class RouteRecorder {
         }
         plugin.getLogger().info("[RouteRecorder] Saved " + points.size() + " route points for line " + session.lineId + ".");
         return FinishResult.saved(session.lineId, points.size(), session.recorderId, session.cartId);
+    }
+
+    private List<RoutePoint> simplifyRoutePoints(List<RoutePoint> points) {
+        if (points == null || points.size() < 3 || !shouldSimplifyCollinearPoints()) {
+            return points == null ? List.of() : points;
+        }
+
+        List<RoutePoint> simplified = new ArrayList<>();
+        simplified.add(points.get(0));
+        double epsilon = simplifyEpsilonBlocks();
+        for (int i = 1; i < points.size() - 1; i++) {
+            RoutePoint previous = simplified.get(simplified.size() - 1);
+            RoutePoint current = points.get(i);
+            RoutePoint next = points.get(i + 1);
+            if (!isRedundantCollinearPoint(previous, current, next, epsilon)) {
+                simplified.add(current);
+            }
+        }
+        simplified.add(points.get(points.size() - 1));
+        return simplified;
+    }
+
+    private boolean shouldSimplifyCollinearPoints() {
+        return plugin.getConfigFacade() == null || plugin.getConfigFacade().isRouteRecordingSimplifyCollinearPoints();
+    }
+
+    private double minSampleDistanceSquared() {
+        double distance = plugin.getConfigFacade() == null
+                ? DEFAULT_MIN_SAMPLE_DISTANCE_BLOCKS
+                : plugin.getConfigFacade().getRouteRecordingMinSampleDistanceBlocks();
+        return distance * distance;
+    }
+
+    private double simplifyEpsilonBlocks() {
+        return plugin.getConfigFacade() == null
+                ? DEFAULT_SIMPLIFY_EPSILON_BLOCKS
+                : plugin.getConfigFacade().getRouteRecordingSimplifyEpsilonBlocks();
+    }
+
+    private static boolean isRedundantCollinearPoint(RoutePoint previous, RoutePoint current, RoutePoint next,
+                                                    double epsilon) {
+        if (previous == null || current == null || next == null
+                || !previous.worldName().equals(current.worldName())
+                || !previous.worldName().equals(next.worldName())) {
+            return false;
+        }
+
+        double acX = next.x() - previous.x();
+        double acY = next.y() - previous.y();
+        double acZ = next.z() - previous.z();
+        double abX = current.x() - previous.x();
+        double abY = current.y() - previous.y();
+        double abZ = current.z() - previous.z();
+        double acLengthSquared = acX * acX + acY * acY + acZ * acZ;
+        if (acLengthSquared <= 0.000001D) {
+            return current.distanceSquared(previous) <= epsilon * epsilon;
+        }
+
+        double projection = abX * acX + abY * acY + abZ * acZ;
+        double tolerance = Math.max(epsilon, 0.000001D);
+        if (projection < -tolerance || projection > acLengthSquared + tolerance) {
+            return false;
+        }
+
+        double crossX = abY * acZ - abZ * acY;
+        double crossY = abZ * acX - abX * acZ;
+        double crossZ = abX * acY - abY * acX;
+        double distanceSquared = (crossX * crossX + crossY * crossY + crossZ * crossZ) / acLengthSquared;
+        return distanceSquared <= epsilon * epsilon;
     }
 
     private static class RecordingSession {
@@ -112,14 +182,14 @@ public class RouteRecorder {
             this.recorderId = recorderId;
         }
 
-        private synchronized void sample(UUID candidateCartId, RoutePoint routePoint) {
+        private synchronized void sample(UUID candidateCartId, RoutePoint routePoint, double minSampleDistanceSquared) {
             if (cartId == null) {
                 cartId = candidateCartId;
             }
             if (!cartId.equals(candidateCartId)) {
                 return;
             }
-            if (lastPoint != null && lastPoint.distanceSquared(routePoint) < MIN_SAMPLE_DISTANCE_SQUARED) {
+            if (lastPoint != null && lastPoint.distanceSquared(routePoint) < minSampleDistanceSquared) {
                 return;
             }
             points.add(routePoint);

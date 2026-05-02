@@ -10,9 +10,9 @@ import static org.mockito.Mockito.when;
 import de.bluecolored.bluemap.api.BlueMapAPI;
 import de.bluecolored.bluemap.api.BlueMapMap;
 import de.bluecolored.bluemap.api.BlueMapWorld;
+import de.bluecolored.bluemap.api.markers.ExtrudeMarker;
 import de.bluecolored.bluemap.api.markers.LineMarker;
 import de.bluecolored.bluemap.api.markers.MarkerSet;
-import de.bluecolored.bluemap.api.markers.ShapeMarker;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -57,7 +57,9 @@ class BlueMapIntegrationTest {
             assertFalse(markerSet.isDefaultHidden());
             LineMarker lineMarker = assertInstanceOf(LineMarker.class, markerSet.get("route_red"));
             assertEquals(3, lineMarker.getLine().getPointCount());
-            assertInstanceOf(ShapeMarker.class, markerSet.get("stop_area_central"));
+            ExtrudeMarker stopArea = assertInstanceOf(ExtrudeMarker.class, markerSet.get("stop_area_central"));
+            assertEquals(63.0F, stopArea.getShapeMinY());
+            assertEquals(66.0F, stopArea.getShapeMaxY());
         } finally {
             integration.disable();
         }

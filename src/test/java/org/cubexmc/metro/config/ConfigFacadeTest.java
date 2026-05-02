@@ -66,11 +66,15 @@ class ConfigFacadeTest {
     void shouldClampMapRefreshDelayToAtLeastOneTick() {
         YamlConfiguration config = new YamlConfiguration();
         config.set("map_integration.refresh_delay_ticks", 0L);
+        config.set("route_recording.min_sample_distance_blocks", 0.0D);
+        config.set("route_recording.simplify_epsilon_blocks", -1.0D);
 
         ConfigFacade facade = createFacade(config);
         facade.reload();
 
         assertEquals(1L, facade.getMapRefreshDelayTicks());
+        assertEquals(0.1D, facade.getRouteRecordingMinSampleDistanceBlocks());
+        assertEquals(0.0D, facade.getRouteRecordingSimplifyEpsilonBlocks());
     }
 
     @Test
@@ -139,6 +143,9 @@ class ConfigFacadeTest {
         config.set("map_integration.line_width", 5);
         config.set("map_integration.show_stop_markers", false);
         config.set("map_integration.show_transfer_info", false);
+        config.set("route_recording.min_sample_distance_blocks", 0.75D);
+        config.set("route_recording.simplify_collinear_points", false);
+        config.set("route_recording.simplify_epsilon_blocks", 0.05D);
         config.set("portals.enabled", false);
         config.set("portals.trigger_block", "nether_portal");
         config.set("portals.teleport_delay", 9);
@@ -174,6 +181,9 @@ class ConfigFacadeTest {
         assertEquals(5, facade.getMapLineWidth());
         assertFalse(facade.isMapShowStopMarkers());
         assertFalse(facade.isMapShowTransferInfo());
+        assertEquals(0.75D, facade.getRouteRecordingMinSampleDistanceBlocks());
+        assertFalse(facade.isRouteRecordingSimplifyCollinearPoints());
+        assertEquals(0.05D, facade.getRouteRecordingSimplifyEpsilonBlocks());
         assertFalse(facade.isPortalsEnabled());
         assertEquals("NETHER_PORTAL", facade.getPortalTriggerBlock());
         assertEquals(9, facade.getPortalTeleportDelay());

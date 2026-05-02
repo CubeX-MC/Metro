@@ -232,6 +232,19 @@ map_integration:
   # Delay used to merge repeated map refresh requests after data changes (in ticks, 20 ticks = 1 second)
   refresh_delay_ticks: 20
 
+# 线路录制配置
+# Route Recording Settings
+route_recording:
+  # 录制线路时两个保存采样点之间的最小距离（单位：方块）
+  # Minimum distance between saved raw route samples while recording (in blocks)
+  min_sample_distance_blocks: 1.0
+  # 保存线路前是否删除同一直线上的中间采样点
+  # Whether to remove middle samples on the same straight segment before saving
+  simplify_collinear_points: true
+  # 共线压缩容差（单位：方块）；较大值会更积极地压缩轻微抖动
+  # Collinearity tolerance in blocks; larger values compress small jitter more aggressively
+  simplify_epsilon_blocks: 0.15
+
 # 矿车传送门设置
 # Minecart Portal Settings
 portals:

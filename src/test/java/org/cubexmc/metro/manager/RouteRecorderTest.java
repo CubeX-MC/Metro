@@ -10,6 +10,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.logging.Logger;
 
@@ -17,7 +18,9 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Minecart;
 import org.cubexmc.metro.Metro;
+import org.cubexmc.metro.config.ConfigFacade;
 import org.cubexmc.metro.manager.RouteRecorder.FinishResult;
+import org.cubexmc.metro.model.RoutePoint;
 import org.junit.jupiter.api.Test;
 
 class RouteRecorderTest {
@@ -90,5 +93,45 @@ class RouteRecorderTest {
 
         assertEquals(recorderId, recorder.getRecordingPlayerId("blue"));
         assertEquals(0, recorder.getActivePointCount("blue"));
+    }
+
+    @Test
+    void shouldUseDenseSamplingAndSimplifyCollinearPointsBeforeSaving() {
+        LineManager lineManager = mock(LineManager.class);
+        ConfigFacade configFacade = mock(ConfigFacade.class);
+        Metro plugin = mock(Metro.class);
+        when(plugin.getLineManager()).thenReturn(lineManager);
+        when(plugin.getConfigFacade()).thenReturn(configFacade);
+        when(plugin.getLogger()).thenReturn(Logger.getLogger("RouteRecorderTest"));
+        when(configFacade.getRouteRecordingMinSampleDistanceBlocks()).thenReturn(0.5D);
+        when(configFacade.isRouteRecordingSimplifyCollinearPoints()).thenReturn(true);
+        when(configFacade.getRouteRecordingSimplifyEpsilonBlocks()).thenReturn(0.05D);
+        when(lineManager.setLineRoutePoints(eq("red"), argThat(points -> points.equals(List.of(
+                new RoutePoint("world", 0.0, 64.0, 0.0),
+                new RoutePoint("world", 2.0, 64.0, 0.0),
+                new RoutePoint("world", 2.0, 64.0, 1.0)
+        ))), anyLong(), any(), any())).thenReturn(true);
+
+        World world = mock(World.class);
+        when(world.getName()).thenReturn("world");
+        Minecart cart = mock(Minecart.class);
+        when(cart.getUniqueId()).thenReturn(UUID.randomUUID());
+
+        RouteRecorder recorder = new RouteRecorder(plugin);
+        assertTrue(recorder.start("red"));
+        recorder.sample("red", cart, new Location(world, 0.0, 64.0, 0.0));
+        recorder.sample("red", cart, new Location(world, 1.0, 64.0, 0.0));
+        recorder.sample("red", cart, new Location(world, 2.0, 64.0, 0.0));
+        recorder.sample("red", cart, new Location(world, 2.0, 64.0, 1.0));
+
+        FinishResult result = recorder.stopAndSave("red");
+
+        assertEquals(FinishResult.Status.SAVED, result.status());
+        assertEquals(3, result.pointCount());
+        verify(lineManager).setLineRoutePoints(eq("red"), argThat(points -> points.equals(List.of(
+                new RoutePoint("world", 0.0, 64.0, 0.0),
+                new RoutePoint("world", 2.0, 64.0, 0.0),
+                new RoutePoint("world", 2.0, 64.0, 1.0)
+        ))), anyLong(), any(), any());
     }
 }

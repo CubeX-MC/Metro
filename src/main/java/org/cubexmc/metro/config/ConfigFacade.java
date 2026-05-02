@@ -101,6 +101,11 @@ public class ConfigFacade {
     private boolean mapShowTransferInfo;
     private long mapRefreshDelayTicks;
 
+    // Route Recording
+    private double routeRecordingMinSampleDistanceBlocks;
+    private boolean routeRecordingSimplifyCollinearPoints;
+    private double routeRecordingSimplifyEpsilonBlocks;
+
     // Portals
     private boolean portalsEnabled;
     private String portalTriggerBlock;
@@ -248,6 +253,14 @@ public class ConfigFacade {
         mapShowStopMarkers = plugin.getConfig().getBoolean("map_integration.show_stop_markers", true);
         mapShowTransferInfo = plugin.getConfig().getBoolean("map_integration.show_transfer_info", true);
         mapRefreshDelayTicks = Math.max(1L, plugin.getConfig().getLong("map_integration.refresh_delay_ticks", 20L));
+
+        // Route Recording
+        routeRecordingMinSampleDistanceBlocks = Math.max(0.1D,
+                plugin.getConfig().getDouble("route_recording.min_sample_distance_blocks", 1.0D));
+        routeRecordingSimplifyCollinearPoints = plugin.getConfig()
+                .getBoolean("route_recording.simplify_collinear_points", true);
+        routeRecordingSimplifyEpsilonBlocks = Math.max(0.0D,
+                plugin.getConfig().getDouble("route_recording.simplify_epsilon_blocks", 0.15D));
 
         // Portals
         portalsEnabled = plugin.getConfig().getBoolean("portals.enabled", true);
@@ -656,6 +669,11 @@ public class ConfigFacade {
     public boolean isMapShowStopMarkers() { return mapShowStopMarkers; }
     public boolean isMapShowTransferInfo() { return mapShowTransferInfo; }
     public long getMapRefreshDelayTicks() { return mapRefreshDelayTicks; }
+
+    // Route Recording Getters
+    public double getRouteRecordingMinSampleDistanceBlocks() { return routeRecordingMinSampleDistanceBlocks; }
+    public boolean isRouteRecordingSimplifyCollinearPoints() { return routeRecordingSimplifyCollinearPoints; }
+    public double getRouteRecordingSimplifyEpsilonBlocks() { return routeRecordingSimplifyEpsilonBlocks; }
 
     // Portal Getters
     public boolean isPortalsEnabled() { return portalsEnabled; }

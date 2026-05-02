@@ -3,10 +3,10 @@ package org.cubexmc.metro.integration;
 import de.bluecolored.bluemap.api.BlueMapAPI;
 import de.bluecolored.bluemap.api.BlueMapMap;
 import de.bluecolored.bluemap.api.BlueMapWorld;
+import de.bluecolored.bluemap.api.markers.ExtrudeMarker;
 import de.bluecolored.bluemap.api.markers.LineMarker;
 import de.bluecolored.bluemap.api.markers.MarkerSet;
 import de.bluecolored.bluemap.api.markers.POIMarker;
-import de.bluecolored.bluemap.api.markers.ShapeMarker;
 import de.bluecolored.bluemap.api.math.Color;
 import de.bluecolored.bluemap.api.math.Shape;
 
@@ -218,10 +218,10 @@ public class BlueMapIntegration implements MapIntegration {
         for (BlueMapMap map : getMapsForWorld(api, bounds.worldName())) {
             MarkerSet markerSet = getMarkerSet(map);
             MapLineColor stopColor = getStopColor(stop);
-            ShapeMarker area = ShapeMarker.builder()
+            ExtrudeMarker area = ExtrudeMarker.builder()
                     .label(stopLabel(stop))
                     .shape(Shape.createRect(bounds.minX(), bounds.minZ(), bounds.maxX(), bounds.maxZ()),
-                            (float) (bounds.maxY() + 0.05D))
+                            (float) bounds.minY(), (float) bounds.maxY())
                     .lineColor(toBlueMapColor(stopColor, 1.0F))
                     .fillColor(toBlueMapColor(stopColor, 0.22F))
                     .lineWidth(Math.max(1, plugin.getConfigFacade().getMapLineWidth()))
