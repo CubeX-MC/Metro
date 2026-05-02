@@ -1,5 +1,5 @@
 name: Metro
-version: '1.1.5'
+version: '1.1.6'
 main: org.cubexmc.metro.Metro
 api-version: '1.18'
 folia-supported: true
@@ -9,6 +9,9 @@ website: https://cubexmc.org
 softdepend:
   - ViaVersion
   - Vault
+  - BlueMap
+  - dynmap
+  - squaremap
 
 
 permissions:
@@ -20,6 +23,9 @@ permissions:
   metro.use:
     description: Allow players to use Metro plugin features (such as riding trains)
     default: true
+  metro.gui:
+    description: Allow players to open the Metro GUI
+    default: true
   metro.tp:
     description: Allow players to teleport to stops via GUI
     default: false
@@ -28,4 +34,7 @@ permissions:
     default: false
   metro.stop.create:
     description: Allow players to create new stops
+    default: false
+  metro.portal.create:
+    description: Allow players to create new minecart portals
     default: false

@@ -6,100 +6,53 @@ import org.incendo.cloud.annotations.Command;
 import org.incendo.cloud.annotation.specifier.Greedy;
 
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.manager.LanguageManager;
 import org.cubexmc.metro.manager.LineManager;
+import org.cubexmc.metro.manager.RouteRecorder;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
+import org.cubexmc.metro.model.Portal;
 import org.cubexmc.metro.model.Stop;
+import org.cubexmc.metro.service.CommandDisplayService;
+import org.cubexmc.metro.service.LineCommandService;
 import org.cubexmc.metro.util.OwnershipUtil;
-import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.chat.TextComponent;
-import net.md_5.bungee.api.chat.hover.content.Text;
-
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 public class LineCommand {
 
     private final Metro plugin;
     private final LineManager lineManager;
-    private final StopManager stopManager;
+    private final CommandGuard guard;
+    private final LineCommandService lineService;
+    private final LineCommandView view;
 
     public LineCommand(Metro plugin, LineManager lineManager, StopManager stopManager) {
         this.plugin = plugin;
         this.lineManager = lineManager;
-        this.stopManager = stopManager;
+        this.guard = new CommandGuard(plugin, lineManager, stopManager);
+        this.lineService = new LineCommandService(lineManager);
+        this.view = new LineCommandView(plugin, stopManager, guard, new CommandDisplayService());
     }
 
     @Command("m|metro line|l")
     @CommandDescription("Show Line Help Menu")
     public void help(CommandSender sender) {
-        showHelp(sender, 1);
+        view.showHelp(sender, 1);
     }
 
     @Command("m|metro line|l help [page]")
     @CommandDescription("Show Line Help Menu Page")
-    public void helpPage(CommandSender sender, @Argument("page") Integer page) {
-        showHelp(sender, page == null ? 1 : page);
+    public void helpPage(CommandSender sender, @Argument(value = "page", suggestions = "pageNumbers") Integer page) {
+        view.showHelp(sender, page);
     }
 
-    private void showHelp(CommandSender sender, int page) {
-        org.cubexmc.metro.manager.LanguageManager lang = plugin.getLanguageManager();
-        java.util.List<String> helpList = java.util.Arrays.asList(
-                lang.getMessage("line.help_create"),
-                lang.getMessage("line.help_delete"),
-                lang.getMessage("line.help_list"),
-                lang.getMessage("line.help_setcolor"),
-                lang.getMessage("line.help_setterminus"),
-                lang.getMessage("line.help_setmaxspeed"),
-                lang.getMessage("line.help_addstop"),
-                lang.getMessage("line.help_delstop"),
-                lang.getMessage("line.help_stops"),
-                lang.getMessage("line.help_rename"),
-                lang.getMessage("line.help_info"),
-                lang.getMessage("line.help_trust"),
-                lang.getMessage("line.help_untrust"),
-                lang.getMessage("line.help_owner"),
-                lang.getMessage("line.help_clonereverse"),
-                lang.getMessage("line.help_setprice")
-        );
-
-        int pageSize = 8;
-        int totalPages = (int) Math.ceil((double) helpList.size() / pageSize);
-        if (page < 1) page = 1;
-        if (page > totalPages) page = totalPages;
-
-        sender.sendMessage(lang.getMessage("line.help_header") + " §e(" + page + "/" + totalPages + ")");
-        int start = (page - 1) * pageSize;
-        int end = Math.min(start + pageSize, helpList.size());
-        for (int i = start; i < end; i++) {
-            sender.sendMessage(helpList.get(i));
-        }
-    }
-
-    @Command("m|metro line|l list")
+    @Command("m|metro line|l list [page]")
     @CommandDescription("List all metro lines")
-    public void list(CommandSender sender) {
-        Collection<Line> lines = lineManager.getAllLines();
-        if (lines.isEmpty()) {
-            sender.sendMessage(plugin.getLanguageManager().getMessage("line.list_empty"));
-        } else {
-            sender.sendMessage(plugin.getLanguageManager().getMessage("line.list_header"));
-            for (Line line : lines) {
-                sender.sendMessage(plugin.getLanguageManager().getMessage("line.list_item_format",
-                        LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                                "line_name", line.getName()), "line_id", line.getId())));
-            }
-        }
+    public void list(CommandSender sender, @Argument(value = "page", suggestions = "pageNumbers") Integer page) {
+        view.listLines(sender, lineService.listLines(), page);
     }
 
     @Command("m|metro line|l create <id> <name>")
@@ -110,11 +63,15 @@ public class LineCommand {
             return;
         }
 
-        if (lineManager.createLine(id, name, player.getUniqueId())) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.create_success",
+        LineCommandService.WriteStatus status = lineService.createLine(id, name, player.getUniqueId());
+        switch (status) {
+            case SUCCESS -> player.sendMessage(plugin.getLanguageManager().getMessage("line.create_success",
                     LanguageManager.put(LanguageManager.args(), "line_id", id)));
-        } else {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.create_exists",
+            case INVALID_ID -> player.sendMessage(plugin.getLanguageManager().getMessage("line.id_invalid",
+                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
+            case EXISTS -> player.sendMessage(plugin.getLanguageManager().getMessage("line.create_exists",
+                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
+            default -> player.sendMessage(plugin.getLanguageManager().getMessage("line.create_fail",
                     LanguageManager.put(LanguageManager.args(), "line_id", id)));
         }
     }
@@ -122,21 +79,12 @@ public class LineCommand {
     @Command("m|metro line|l delete <id>")
     @CommandDescription("Delete a metro line")
     public void delete(Player player, @Argument(value = "id", suggestions = "lineIds") String id) {
-        Line line = lineManager.getLine(id);
+        Line line = guard.requireManageableLine(player, id);
         if (line == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
-            return;
-        }
-        if (!OwnershipUtil.canManageLine(player, line)) {
-            String ownerName = line.getOwner() == null ? "Server" : line.getOwner().toString();
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "line_id", line.getId()), "owner", ownerName), "admins", "none")));
             return;
         }
 
-        if (lineManager.deleteLine(id)) {
+        if (lineService.deleteLine(id) == LineCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.delete_success",
                     LanguageManager.put(LanguageManager.args(), "line_id", id)));
         } else {
@@ -147,20 +95,12 @@ public class LineCommand {
     @Command("m|metro line|l rename <id> <name>")
     @CommandDescription("Rename a metro line")
     public void rename(Player player, @Argument(value = "id", suggestions = "lineIds") String id, @Greedy @Argument("name") String name) {
-        Line line = lineManager.getLine(id);
+        Line line = guard.requireManageableLine(player, id);
         if (line == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
-            return;
-        }
-        if (!OwnershipUtil.canManageLine(player, line)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "line_id", line.getId()), "owner", formatOwner(line.getOwner())), "admins", formatAdmins(line.getAdmins()))));
             return;
         }
 
-        if (lineManager.setLineName(id, name)) {
+        if (lineService.renameLine(id, name) == LineCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.rename_success",
                     LanguageManager.put(LanguageManager.put(LanguageManager.args(),
                             "line_id", id), "new_name", name)));
@@ -171,21 +111,21 @@ public class LineCommand {
 
     @Command("m|metro line|l setcolor <id> <color>")
     @CommandDescription("Set the color of a metro line")
-    public void setColor(Player player, @Argument(value = "id", suggestions = "lineIds") String id, @Argument("color") String color) {
-        Line line = lineManager.getLine(id);
+    public void setColor(Player player,
+                         @Argument(value = "id", suggestions = "lineIds") String id,
+                         @Argument(value = "color", suggestions = "lineColors") String color) {
+        Line line = guard.requireManageableLine(player, id);
         if (line == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
-            return;
-        }
-        if (!OwnershipUtil.canManageLine(player, line)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "line_id", line.getId()), "owner", formatOwner(line.getOwner())), "admins", formatAdmins(line.getAdmins()))));
             return;
         }
 
-        if (lineManager.setLineColor(id, color)) {
+        LineCommandService.WriteStatus status = lineService.setColor(id, color);
+        if (status == LineCommandService.WriteStatus.INVALID_COLOR) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.setcolor_invalid",
+                    LanguageManager.put(LanguageManager.args(), "color", color)));
+            return;
+        }
+        if (status == LineCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.setcolor_success",
                     LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
                             "line_id", line.getId()), "line_name", line.getName()), "color", color)));
@@ -197,20 +137,12 @@ public class LineCommand {
     @Command("m|metro line|l setterminus <id> <terminus>")
     @CommandDescription("Set terminus name for a line")
     public void setTerminus(Player player, @Argument(value = "id", suggestions = "lineIds") String id, @Greedy @Argument("terminus") String terminus) {
-        Line line = lineManager.getLine(id);
+        Line line = guard.requireManageableLine(player, id);
         if (line == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
-            return;
-        }
-        if (!OwnershipUtil.canManageLine(player, line)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "line_id", line.getId()), "owner", formatOwner(line.getOwner())), "admins", formatAdmins(line.getAdmins()))));
             return;
         }
 
-        if (lineManager.setLineTerminusName(id, terminus)) {
+        if (lineService.setTerminusName(id, terminus) == LineCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.setterminus_success",
                     LanguageManager.put(LanguageManager.put(LanguageManager.args(), "line_id", id), "terminus_name", terminus)));
         }
@@ -218,24 +150,19 @@ public class LineCommand {
 
     @Command("m|metro line|l setmaxspeed <id> <speed>")
     @CommandDescription("Set max speed for a line")
-    public void setMaxSpeed(Player player, @Argument(value = "id", suggestions = "lineIds") String id, @Argument("speed") double speed) {
-        Line line = lineManager.getLine(id);
+    public void setMaxSpeed(Player player,
+                            @Argument(value = "id", suggestions = "lineIds") String id,
+                            @Argument(value = "speed", suggestions = "speedValues") double speed) {
+        Line line = guard.requireManageableLine(player, id);
         if (line == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
             return;
         }
-        if (!OwnershipUtil.canManageLine(player, line)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "line_id", line.getId()), "owner", formatOwner(line.getOwner())), "admins", formatAdmins(line.getAdmins()))));
-            return;
-        }
-        if (speed <= 0) {
+        LineCommandService.WriteStatus status = lineService.setMaxSpeed(id, speed);
+        if (status == LineCommandService.WriteStatus.INVALID_VALUE) {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.setmaxspeed_invalid"));
             return;
         }
-        if (lineManager.setLineMaxSpeed(id, speed)) {
+        if (status == LineCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.setmaxspeed_success",
                     LanguageManager.put(LanguageManager.put(LanguageManager.args(), "line_id", id), "max_speed", String.valueOf(speed))));
         }
@@ -246,86 +173,45 @@ public class LineCommand {
     public void addStop(Player player,
                         @Argument(value = "lineId", suggestions = "lineIds") String lineId,
                         @Argument(value = "stopId", suggestions = "stopIds") String stopId,
-                        @Argument("index") Integer index) {
-        Line line = lineManager.getLine(lineId);
+                        @Argument(value = "index", suggestions = "stopIndexes") Integer index) {
+        Line line = guard.requireManageableLine(player, lineId);
         if (line == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
-            return;
-        }
-        if (!OwnershipUtil.canManageLine(player, line)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "line_id", line.getId()), "owner", formatOwner(line.getOwner())), "admins", formatAdmins(line.getAdmins()))));
             return;
         }
 
-        Stop stop = stopManager.getStop(stopId);
+        Stop stop = guard.requireStop(player, stopId);
         if (stop == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_not_found",
-                    LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
             return;
         }
 
-        if (!OwnershipUtil.canModifyLineStops(player, line, stop)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("stop.permission_link",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "stop_id", stopId), "owner", formatOwner(stop.getOwner())), "line_id", lineId)));
+        if (!guard.canModifyLineStops(player, line, stop)) {
             return;
         }
 
-        String stopWorld = stop.getWorldName();
-        String lineWorld = line.getWorldName();
-        if (stopWorld == null || stopWorld.isBlank()) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_stop_no_world",
-                    LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
-            return;
-        }
-        if (lineWorld != null && !lineWorld.equals(stopWorld)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_world_mismatch",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "line_id", lineId), "line_world", lineWorld), "stop_world", stopWorld)));
-            return;
-        }
-
-        int targetIndex = index == null ? -1 : index;
-        if (line.isCircular() && (targetIndex < 0 || targetIndex >= line.getOrderedStopIds().size())) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_circular_invalid_index"));
-            return;
-        }
-
-        if (lineManager.addStopToLine(lineId, stopId, targetIndex)) {
-            if (lineWorld == null) {
-                lineManager.setLineWorldName(lineId, stopWorld);
-            }
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_success",
+        LineCommandService.AddStopResult result = lineService.addStopToLine(line, stop, index);
+        switch (result.status()) {
+            case SUCCESS -> player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_success",
                     LanguageManager.put(LanguageManager.put(LanguageManager.args(),
                             "stop_id", stopId), "line_id", line.getId())));
-        } else {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_fail"));
+            case STOP_NO_WORLD -> player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_stop_no_world",
+                    LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
+            case WORLD_MISMATCH -> player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_world_mismatch",
+                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
+                            "line_id", lineId), "line_world", result.lineWorld()), "stop_world", result.stopWorld())));
+            case CIRCULAR_INVALID_INDEX -> player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_circular_invalid_index"));
+            default -> player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_fail"));
         }
     }
 
     @Command("m|metro line|l delstop <lineId> <stopId>")
     @CommandDescription("Remove a stop from a line")
     public void delStop(Player player, @Argument(value = "lineId", suggestions = "lineIds") String lineId, @Argument(value = "stopId", suggestions = "stopIds") String stopId) {
-        Line line = lineManager.getLine(lineId);
+        Line line = guard.requireManageableLine(player, lineId);
         if (line == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
-            return;
-        }
-        if (!OwnershipUtil.canManageLine(player, line)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "line_id", line.getId()), "owner", formatOwner(line.getOwner())), "admins", formatAdmins(line.getAdmins()))));
             return;
         }
 
-        if (lineManager.delStopFromLine(lineId, stopId)) {
-            if (line.getOrderedStopIds().isEmpty()) {
-                lineManager.setLineWorldName(lineId, null);
-            }
+        if (lineService.removeStopFromLine(line, stopId) == LineCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.delstop_success",
                     LanguageManager.put(LanguageManager.put(LanguageManager.args(),
                             "stop_id", stopId), "line_id", line.getId())));
@@ -334,115 +220,207 @@ public class LineCommand {
         }
     }
 
-    @Command("m|metro line|l stops <id>")
-    @CommandDescription("List all stops in line")
-    public void stops(Player player, @Argument(value = "id", suggestions = "lineIds") String id) {
-        Line line = lineManager.getLine(id);
+    @Command("m|metro line|l addportal <lineId> <portalId>")
+    @CommandDescription("Allow a line to use a portal")
+    public void addPortal(Player player,
+                          @Argument(value = "lineId", suggestions = "lineIds") String lineId,
+                          @Argument(value = "portalId", suggestions = "portalIds") String portalId) {
+        Line line = guard.requireManageableLine(player, lineId);
         if (line == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
             return;
         }
 
-        List<String> stopIds = line.getOrderedStopIds();
-        if (stopIds.isEmpty()) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.stops_list_empty",
-                    LanguageManager.put(LanguageManager.args(), "line_name", line.getName())));
+        Portal portal = plugin.getPortalManager() != null ? plugin.getPortalManager().getPortal(portalId) : null;
+        if (portal == null) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("portal.not_found",
+                    LanguageManager.put(LanguageManager.args(), "portal_id", portalId)));
             return;
         }
 
-        player.sendMessage(plugin.getLanguageManager().getMessage("line.stops_list_header"));
-        for (int i = 0; i < stopIds.size(); i++) {
-            String stopId = stopIds.get(i);
-            Stop stop = stopManager.getStop(stopId);
-            if (stop == null) {
-                player.sendMessage(plugin.getLanguageManager().getMessage("line.stops_list_invalid_stop",
-                        LanguageManager.put(LanguageManager.put(LanguageManager.args(), "index", String.valueOf(i + 1)), "stop_id", stopId)));
-                continue;
-            }
-
-            TextComponent row = new TextComponent(plugin.getLanguageManager().getMessage(
-                    "line.stops_list_prefix",
-                    LanguageManager.put(LanguageManager.args(), "index", String.valueOf(i + 1))));
-            row.addExtra(createTeleportComponent(stop));
-
-            String status = "";
-            if (i == 0) {
-                status = plugin.getLanguageManager().getMessage("line.stops_status_start");
-            } else if (i == stopIds.size() - 1) {
-                status = plugin.getLanguageManager().getMessage("line.stops_status_end");
-            }
-            String suffix = plugin.getLanguageManager().getMessage("line.stops_list_suffix",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.args(), "stop_id", stopId), "status", status));
-            row.addExtra(new TextComponent(suffix));
-            player.spigot().sendMessage(row);
+        LineCommandService.WriteStatus status = lineService.addPortalToLine(line, portal);
+        if (status == LineCommandService.WriteStatus.EXISTS) {
+            player.sendMessage(msg("line.addportal_exists", "portal_id", portalId, "line_id", line.getId()));
+        } else if (status == LineCommandService.WriteStatus.SUCCESS) {
+            player.sendMessage(msg("line.addportal_success", "portal_id", portalId, "line_id", line.getId()));
+        } else {
+            player.sendMessage(msg("line.addportal_fail", "portal_id", portalId, "line_id", line.getId()));
         }
+    }
+
+    @Command("m|metro line|l delportal <lineId> <portalId>")
+    @CommandDescription("Remove a portal from a line")
+    public void delPortal(Player player,
+                          @Argument(value = "lineId", suggestions = "lineIds") String lineId,
+                          @Argument(value = "portalId", suggestions = "portalIds") String portalId) {
+        Line line = guard.requireManageableLine(player, lineId);
+        if (line == null) {
+            return;
+        }
+
+        LineCommandService.WriteStatus status = lineService.removePortalFromLine(line, portalId);
+        if (status == LineCommandService.WriteStatus.SUCCESS) {
+            player.sendMessage(msg("line.delportal_success", "portal_id", portalId, "line_id", line.getId()));
+        } else if (status == LineCommandService.WriteStatus.NOT_FOUND) {
+            player.sendMessage(msg("line.delportal_missing", "portal_id", portalId, "line_id", line.getId()));
+        } else {
+            player.sendMessage(msg("line.delportal_fail", "portal_id", portalId, "line_id", line.getId()));
+        }
+    }
+
+    @Command("m|metro line|l portals <id> [page]")
+    @CommandDescription("List portals enabled for a line")
+    public void portals(Player player, @Argument(value = "id", suggestions = "lineIds") String id,
+                        @Argument(value = "page", suggestions = "pageNumbers") Integer page) {
+        Line line = guard.requireLine(player, id);
+        if (line == null) {
+            return;
+        }
+
+        view.sendPortals(player, line, page);
+    }
+
+    @Command("m|metro line|l stops <id> [page]")
+    @CommandDescription("List all stops in line")
+    public void stops(Player player, @Argument(value = "id", suggestions = "lineIds") String id,
+                      @Argument(value = "page", suggestions = "pageNumbers") Integer page) {
+        Line line = guard.requireLine(player, id);
+        if (line == null) {
+            return;
+        }
+
+        view.sendStops(player, line, page);
     }
 
     @Command("m|metro line|l info <id>")
     @CommandDescription("Show line details")
     public void info(Player player, @Argument(value = "id", suggestions = "lineIds") String id) {
-        Line line = lineManager.getLine(id);
+        Line line = guard.requireLine(player, id);
         if (line == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
             return;
         }
 
-        player.sendMessage(plugin.getLanguageManager().getMessage("line.info_header",
-                LanguageManager.put(LanguageManager.args(), "line_name", line.getName())));
-        player.sendMessage(plugin.getLanguageManager().getMessage("line.info_id",
-                LanguageManager.put(LanguageManager.args(), "line_id", line.getId())));
-        player.sendMessage(plugin.getLanguageManager().getMessage("line.info_name",
-                LanguageManager.put(LanguageManager.args(), "line_name", line.getName())));
-        player.sendMessage(plugin.getLanguageManager().getMessage("line.info_color",
-                LanguageManager.put(LanguageManager.args(), "color", line.getColor())));
-        player.sendMessage(plugin.getLanguageManager().getMessage("line.info_terminus",
-                LanguageManager.put(LanguageManager.args(), "terminus_name",
-                        line.getTerminusName().isBlank() ? plugin.getLanguageManager().getMessage("line.info_default") : line.getTerminusName())));
-        player.sendMessage(plugin.getLanguageManager().getMessage("line.info_max_speed",
-                LanguageManager.put(LanguageManager.args(), "max_speed", String.valueOf(line.getMaxSpeed()))));
-        player.sendMessage(plugin.getLanguageManager().getMessage("line.info_owner",
-                LanguageManager.put(LanguageManager.args(), "owner", formatOwner(line.getOwner()))));
-        player.sendMessage(plugin.getLanguageManager().getMessage("line.info_admins",
-                LanguageManager.put(LanguageManager.args(), "admins", formatAdmins(line.getAdmins()))));
+        view.sendInfo(player, line);
+    }
 
-        List<String> stopIds = line.getOrderedStopIds();
-        if (stopIds.isEmpty()) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.info_no_stops"));
+    @Command("m|metro line|l protect <id> <mode>")
+    @CommandDescription("Enable, disable, or inspect rail protection for a line")
+    public void protectRoute(Player player,
+                             @Argument(value = "id", suggestions = "lineIds") String id,
+                             @Argument(value = "mode", suggestions = "protectModes") String mode) {
+        Line line = guard.requireManageableLine(player, id);
+        if (line == null) {
             return;
         }
 
-        player.sendMessage(plugin.getLanguageManager().getMessage("line.info_stops_header"));
-        for (int i = 0; i < stopIds.size(); i++) {
-            String stopId = stopIds.get(i);
-            Stop stop = stopManager.getStop(stopId);
-            if (stop == null) {
-                player.sendMessage(plugin.getLanguageManager().getMessage("line.info_stops_item_invalid",
-                        LanguageManager.put(LanguageManager.put(LanguageManager.args(), "index", String.valueOf(i + 1)), "stop_id", stopId)));
-                continue;
+        String normalizedMode = mode.toLowerCase(java.util.Locale.ROOT);
+        if ("status".equals(normalizedMode)) {
+            view.sendProtectionStatus(player, line);
+            return;
+        }
+
+        Boolean enabled = parseToggle(normalizedMode);
+        if (enabled == null) {
+            player.sendMessage(msg("line.usage_protect"));
+            return;
+        }
+        if (lineService.setRailProtected(id, enabled) != LineCommandService.WriteStatus.SUCCESS) {
+            player.sendMessage(msg("line.protect_update_fail", "line_id", id));
+            return;
+        }
+
+        Line updatedLine = lineManager.getLine(id);
+        player.sendMessage(msg("line.protect_updated",
+                "line_id", id,
+                "state", msg(enabled ? "line.protect_state_enabled" : "line.protect_state_disabled")));
+        if (updatedLine != null) {
+            view.sendProtectionStatus(player, updatedLine);
+        }
+    }
+
+    @Command("m|metro line|l recordroute <id>")
+    @CommandDescription("Start or finish recording route points for a line")
+    public void recordRoute(Player player, @Argument(value = "id", suggestions = "lineIds") String id) {
+        Line line = guard.requireManageableLine(player, id);
+        if (line == null) {
+            return;
+        }
+
+        RouteRecorder recorder = plugin.getRouteRecorder();
+        if (recorder.isRecording(id)) {
+            RouteRecorder.FinishResult result = recorder.stopAndSave(id);
+            switch (result.status()) {
+                case SAVED -> player.sendMessage(msg("line.record_saved",
+                        "line_id", id,
+                        "point_count", result.pointCount()));
+                case TOO_FEW_POINTS -> sendRecordTooFew(player, result);
+                case FAILED -> player.sendMessage(msg("line.record_failed", "line_id", id));
+                case NOT_RECORDING -> player.sendMessage(msg("line.record_not_recording", "line_id", id));
             }
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.info_stops_item",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "index", String.valueOf(i + 1)), "stop_id", stopId), "stop_name", stop.getName())));
+            return;
         }
+
+        if (recorder.start(id, player.getUniqueId())) {
+            player.sendMessage(msg("line.record_started", "line_id", id));
+            player.sendMessage(msg("line.record_hint"));
+        } else {
+            player.sendMessage(msg("line.record_already", "line_id", id));
+        }
+    }
+
+    @Command("m|metro line|l clearroute <id>")
+    @CommandDescription("Clear recorded route points for a line")
+    public void clearRoute(Player player, @Argument(value = "id", suggestions = "lineIds") String id) {
+        Line line = guard.requireManageableLine(player, id);
+        if (line == null) {
+            return;
+        }
+
+        plugin.getRouteRecorder().clearActive(id);
+        LineCommandService.ClearRouteResult result = lineService.clearRoutePoints(line);
+        if (result.status() == LineCommandService.WriteStatus.SUCCESS) {
+            player.sendMessage(msg("line.clearroute_success",
+                    "line_id", id,
+                    "point_count", result.previousPointCount()));
+        } else {
+            player.sendMessage(msg("line.clearroute_fail", "line_id", id));
+        }
+    }
+
+    @Command("m|metro line|l routeinfo <id>")
+    @CommandDescription("Show recorded route point status for a line")
+    public void routeInfo(Player player, @Argument(value = "id", suggestions = "lineIds") String id) {
+        Line line = guard.requireLine(player, id);
+        if (line == null) {
+            return;
+        }
+
+        view.sendRouteInfo(player, line);
+    }
+
+    private Boolean parseToggle(String mode) {
+        return switch (mode) {
+            case "on", "true", "enable", "enabled" -> true;
+            case "off", "false", "disable", "disabled" -> false;
+            default -> null;
+        };
+    }
+
+    private String msg(String key, Object... replacements) {
+        return view.msg(key, replacements);
+    }
+
+    private void sendRecordTooFew(Player player, RouteRecorder.FinishResult result) {
+        player.sendMessage(msg("line.record_too_few", "point_count", result.pointCount()));
+        player.sendMessage(msg("line.record_too_few_hint"));
     }
 
     @Command("m|metro line|l trust <id> <playerName>")
     @CommandDescription("Grant line admin")
     public void trust(Player player,
                       @Argument(value = "id", suggestions = "lineIds") String id,
-                      @Argument("playerName") String playerName) {
-        Line line = lineManager.getLine(id);
+                      @Argument(value = "playerName", suggestions = "playerNames") String playerName) {
+        Line line = guard.requireManageableLine(player, id);
         if (line == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
-            return;
-        }
-        if (!OwnershipUtil.canManageLine(player, line)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "line_id", line.getId()), "owner", formatOwner(line.getOwner())), "admins", formatAdmins(line.getAdmins()))));
             return;
         }
         OfflinePlayer target = Bukkit.getOfflinePlayer(playerName);
@@ -451,12 +429,11 @@ public class LineCommand {
                     LanguageManager.put(LanguageManager.args(), "player", playerName)));
             return;
         }
-        if (line.getAdmins().contains(target.getUniqueId())) {
+        LineCommandService.WriteStatus status = lineService.grantAdmin(line, target.getUniqueId());
+        if (status == LineCommandService.WriteStatus.EXISTS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.trust_exists",
                     LanguageManager.put(LanguageManager.args(), "player", playerName)));
-            return;
-        }
-        if (lineManager.addLineAdmin(id, target.getUniqueId())) {
+        } else if (status == LineCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.trust_success",
                     LanguageManager.put(LanguageManager.put(LanguageManager.args(), "line_id", id), "player", playerName)));
         }
@@ -466,17 +443,9 @@ public class LineCommand {
     @CommandDescription("Revoke line admin")
     public void untrust(Player player,
                         @Argument(value = "id", suggestions = "lineIds") String id,
-                        @Argument("playerName") String playerName) {
-        Line line = lineManager.getLine(id);
+                        @Argument(value = "playerName", suggestions = "playerNames") String playerName) {
+        Line line = guard.requireManageableLine(player, id);
         if (line == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
-            return;
-        }
-        if (!OwnershipUtil.canManageLine(player, line)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "line_id", line.getId()), "owner", formatOwner(line.getOwner())), "admins", formatAdmins(line.getAdmins()))));
             return;
         }
         OfflinePlayer target = Bukkit.getOfflinePlayer(playerName);
@@ -485,7 +454,7 @@ public class LineCommand {
                     LanguageManager.put(LanguageManager.args(), "player", playerName)));
             return;
         }
-        if (lineManager.removeLineAdmin(id, target.getUniqueId())) {
+        if (lineService.revokeAdmin(line, target.getUniqueId()) == LineCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.untrust_success",
                     LanguageManager.put(LanguageManager.put(LanguageManager.args(), "line_id", id), "player", playerName)));
         } else {
@@ -498,15 +467,12 @@ public class LineCommand {
     @CommandDescription("Transfer line ownership")
     public void owner(Player player,
                       @Argument(value = "id", suggestions = "lineIds") String id,
-                      @Argument("playerName") String playerName) {
-        Line line = lineManager.getLine(id);
+                      @Argument(value = "playerName", suggestions = "playerNames") String playerName) {
+        Line line = guard.requireLine(player, id);
         if (line == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
             return;
         }
-        if (line.getOwner() != null && !line.getOwner().equals(player.getUniqueId()) && !OwnershipUtil.hasAdminBypass(player)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_owner"));
+        if (!guard.requireLineOwner(player, line)) {
             return;
         }
         OfflinePlayer target = Bukkit.getOfflinePlayer(playerName);
@@ -515,7 +481,7 @@ public class LineCommand {
                     LanguageManager.put(LanguageManager.args(), "player", playerName)));
             return;
         }
-        if (lineManager.setLineOwner(id, target.getUniqueId())) {
+        if (lineService.transferOwner(line, target.getUniqueId()) == LineCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.owner_success",
                     LanguageManager.put(LanguageManager.put(LanguageManager.args(), "line_id", id), "owner", playerName)));
         } else {
@@ -533,17 +499,8 @@ public class LineCommand {
     @Command("m|metro line|l clonereverse <sourceId> <newId> <stopIdSuffix>")
     @CommandDescription("Clone a line and its stops in reverse order with custom suffix")
     public void cloneReverseWithSuffix(Player player, @Argument(value = "sourceId", suggestions = "lineIds") String sourceId, @Argument("newId") String newId, @Argument("stopIdSuffix") String stopIdSuffix) {
-        Line sourceLine = lineManager.getLine(sourceId);
+        Line sourceLine = guard.requireManageableLine(player, sourceId);
         if (sourceLine == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", sourceId)));
-            return;
-        }
-        if (!OwnershipUtil.canManageLine(player, sourceLine)) {
-            String ownerName = sourceLine.getOwner() == null ? "Server" : sourceLine.getOwner().toString();
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "line_id", sourceLine.getId()), "owner", ownerName), "admins", "none")));
             return;
         }
         if (!OwnershipUtil.canCreateLine(player)) {
@@ -551,7 +508,13 @@ public class LineCommand {
             return;
         }
 
-        if (lineManager.cloneReverseLine(sourceId, newId, stopIdSuffix, player.getUniqueId())) {
+        LineCommandService.WriteStatus status = lineService.cloneReverseLine(sourceId, newId, stopIdSuffix, player.getUniqueId());
+        if (status == LineCommandService.WriteStatus.INVALID_ID) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.id_invalid",
+                    LanguageManager.put(LanguageManager.args(), "line_id", newId)));
+            return;
+        }
+        if (status == LineCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.clone_success",
                     LanguageManager.put(LanguageManager.args(), "new_line_id", newId)));
         } else {
@@ -561,26 +524,21 @@ public class LineCommand {
 
     @Command("m|metro line|l setprice <id> <price>")
     @CommandDescription("Set the ticket price for a metro line")
-    public void setPrice(Player player, @Argument(value = "id", suggestions = "lineIds") String id, @Argument("price") double price) {
-        Line line = lineManager.getLine(id);
+    public void setPrice(Player player,
+                         @Argument(value = "id", suggestions = "lineIds") String id,
+                         @Argument(value = "price", suggestions = "priceValues") double price) {
+        Line line = guard.requireManageableLine(player, id);
         if (line == null) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
-                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
-            return;
-        }
-        if (!OwnershipUtil.canManageLine(player, line)) {
-            player.sendMessage(plugin.getLanguageManager().getMessage("line.permission_manage",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "line_id", line.getId()), "owner", formatOwner(line.getOwner())), "admins", formatAdmins(line.getAdmins()))));
             return;
         }
 
-        if (price < 0) {
-            player.sendMessage(ChatColor.RED + "Price cannot be negative.");
+        LineCommandService.WriteStatus status = lineService.setTicketPrice(id, price);
+        if (status == LineCommandService.WriteStatus.INVALID_VALUE) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.setprice_invalid"));
             return;
         }
 
-        if (lineManager.setLineTicketPrice(id, price)) {
+        if (status == LineCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.setprice_success",
                     LanguageManager.put(LanguageManager.put(LanguageManager.args(),
                             "line_name", line.getName()), "price", String.valueOf(price))));
@@ -589,31 +547,4 @@ public class LineCommand {
         }
     }
 
-    private String formatOwner(UUID ownerId) {
-        if (ownerId == null) {
-            return plugin.getLanguageManager().getMessage("ownership.server");
-        }
-        OfflinePlayer owner = Bukkit.getOfflinePlayer(ownerId);
-        return owner.getName() == null ? ownerId.toString() : owner.getName();
-    }
-
-    private String formatAdmins(Set<UUID> adminIds) {
-        if (adminIds == null || adminIds.isEmpty()) {
-            return plugin.getLanguageManager().getMessage("ownership.none");
-        }
-        String text = adminIds.stream().map(this::formatOwner).collect(Collectors.joining(", "));
-        return text.isBlank() ? plugin.getLanguageManager().getMessage("ownership.none") : text;
-    }
-
-    private TextComponent createTeleportComponent(Stop stop) {
-        TextComponent stopComponent = new TextComponent(stop.getName());
-        if (stop.getStopPointLocation() != null) {
-            stopComponent.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/metro stop tp " + stop.getId()));
-            String hoverText = plugin.getLanguageManager().getMessage(
-                    "command.teleport_to",
-                    LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName()));
-            stopComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(hoverText)));
-        }
-        return stopComponent;
-    }
 }

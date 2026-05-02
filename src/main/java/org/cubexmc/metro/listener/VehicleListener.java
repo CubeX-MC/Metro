@@ -10,6 +10,8 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.vehicle.VehicleDamageEvent;
+import org.bukkit.event.vehicle.VehicleDestroyEvent;
+import org.bukkit.event.vehicle.VehicleEntityCollisionEvent;
 import org.bukkit.event.vehicle.VehicleExitEvent;
 import org.bukkit.event.vehicle.VehicleMoveEvent;
 import org.bukkit.persistence.PersistentDataContainer;
@@ -19,6 +21,8 @@ import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.event.TrainEnterStopEvent;
 import org.cubexmc.metro.event.TrainExitStopEvent;
 import org.cubexmc.metro.manager.StopManager;
+import org.cubexmc.metro.model.Portal;
+import org.cubexmc.metro.train.TrainMovementTask;
 import org.cubexmc.metro.util.LocationUtil;
 import org.cubexmc.metro.util.MetroConstants;
 import org.cubexmc.metro.util.SchedulerUtil;
@@ -53,8 +57,7 @@ public class VehicleListener implements Listener {
         Minecart minecart = (Minecart) vehicle;
 
         // 检查是否是Metro的矿车
-        if (!minecart.getPersistentDataContainer().has(MetroConstants.getMinecartKey(),
-                org.bukkit.persistence.PersistentDataType.BYTE)) {
+        if (!isMetroMinecart(minecart)) {
             return;
         }
 
@@ -103,7 +106,7 @@ public class VehicleListener implements Listener {
         PersistentDataContainer pdc = minecart.getPersistentDataContainer();
 
         // 检查是否是Metro的矿车
-        if (!pdc.has(MetroConstants.getMinecartKey(), PersistentDataType.BYTE)) {
+        if (!isMetroMinecart(minecart)) {
             return;
         }
 
@@ -185,14 +188,16 @@ public class VehicleListener implements Listener {
                 }
 
                 if (isTriggered) {
-                    org.cubexmc.metro.model.Portal portal = plugin.getPortalManager().getPortalAt(to);
+                    Portal portal = plugin.getPortalManager().getPortalAt(to);
                     if (portal == null) {
                         // 尝试往下偏移一格检测（有时玩家脚踩位置低于/高于实际判定中心）
                         portal = plugin.getPortalManager().getPortalAt(to.clone().subtract(0, 1, 0));
                     }
                     if (portal != null) {
-                        plugin.getPortalManager().teleportMinecart(minecart, portal);
-                        return; // 传送后不再处理后续逻辑
+                        if (isPortalEnabledForCurrentLine(minecart, portal)) {
+                            plugin.getPortalManager().teleportMinecart(minecart, portal);
+                            return; // 传送后不再处理后续逻辑
+                        }
                     } else {
                         plugin.getLogger().warning("[Debug-Portal] 矿车经过了触发方块 (" + triggerBlockType + ")，但该坐标 " + to.getBlockX() + " " + to.getBlockY() + " " + to.getBlockZ() + " 并没有绑定任何传送门入口！请重新站在上面执行 /metro portal create");
                     }
@@ -214,7 +219,7 @@ public class VehicleListener implements Listener {
     /**
      * safe_mode.damage_protection：阻止其他实体攻击/破坏地铁矿车
      */
-    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
     public void onMetroMinecartDamage(VehicleDamageEvent event) {
         if (!plugin.getConfigFacade().isSafeModeDamageProtection()) {
             return;
@@ -223,19 +228,60 @@ public class VehicleListener implements Listener {
         if (!(vehicle instanceof Minecart minecart)) {
             return;
         }
-        if (!minecart.getPersistentDataContainer().has(
-                MetroConstants.getMinecartKey(), PersistentDataType.BYTE)) {
+        if (!isMetroMinecart(minecart)) {
             return;
         }
         // 阻止任何来源对地铁矿车造成伤害（包括玩家攻击）
+        event.setDamage(0);
         event.setCancelled(true);
+    }
+
+    /**
+     * safe_mode.damage_protection：阻止地铁矿车被直接销毁
+     */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
+    public void onMetroMinecartDestroy(VehicleDestroyEvent event) {
+        if (!plugin.getConfigFacade().isSafeModeDamageProtection()) {
+            return;
+        }
+        Vehicle vehicle = event.getVehicle();
+        if (!(vehicle instanceof Minecart minecart)) {
+            return;
+        }
+        if (!isMetroMinecart(minecart)) {
+            return;
+        }
+        event.setCancelled(true);
+    }
+
+    /**
+     * safe_mode.entity_push_protection：阻止其他实体与地铁矿车发生物理碰撞
+     */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
+    public void onMetroMinecartCollision(VehicleEntityCollisionEvent event) {
+        if (!plugin.getConfigFacade().isSafeModeEntityPushProtection()) {
+            return;
+        }
+        Vehicle vehicle = event.getVehicle();
+        if (!(vehicle instanceof Minecart minecart)) {
+            return;
+        }
+        if (!isMetroMinecart(minecart)) {
+            return;
+        }
+        if (minecart.getPassengers().contains(event.getEntity())) {
+            return;
+        }
+        event.setCancelled(true);
+        event.setCollisionCancelled(true);
+        event.setPickupCancelled(true);
     }
 
     /**
      * safe_mode.entity_push_protection：
      * EntityDamageByEntityEvent 覆盖 VehicleDamageEvent 未捕获的远程/投射伤害场景
      */
-    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
     public void onEntityHitMetroMinecart(EntityDamageByEntityEvent event) {
         if (!plugin.getConfigFacade().isSafeModeEntityPushProtection()) {
             return;
@@ -244,8 +290,7 @@ public class VehicleListener implements Listener {
         if (!(damaged instanceof Minecart minecart)) {
             return;
         }
-        if (!minecart.getPersistentDataContainer().has(
-                MetroConstants.getMinecartKey(), PersistentDataType.BYTE)) {
+        if (!isMetroMinecart(minecart)) {
             return;
         }
         event.setCancelled(true);
@@ -257,5 +302,17 @@ public class VehicleListener implements Listener {
     private boolean isAtStop(Location location) {
         StopManager stopManager = plugin.getStopManager();
         return stopManager.getStopContainingLocation(location) != null;
+    }
+
+    private boolean isMetroMinecart(Minecart minecart) {
+        return minecart.getPersistentDataContainer().has(MetroConstants.getMinecartKey(), PersistentDataType.BYTE);
+    }
+
+    private boolean isPortalEnabledForCurrentLine(Minecart minecart, Portal portal) {
+        if (portal == null) {
+            return false;
+        }
+        TrainMovementTask task = TrainMovementTask.getTaskFor(minecart);
+        return task != null && task.canUsePortal(portal.getId());
     }
 }

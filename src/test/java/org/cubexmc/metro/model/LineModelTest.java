@@ -1,8 +1,11 @@
 package org.cubexmc.metro.model;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
@@ -34,5 +37,37 @@ class LineModelTest {
         assertEquals("A", line.getNextStopId("C"));
         assertEquals("C", line.getPreviousStopId("A"));
     }
-}
 
+    @Test
+    void shouldStoreDefensiveRoutePointCopies() {
+        Line line = new Line("l1", "Line1");
+        RoutePoint first = new RoutePoint("world", 1.0, 64.0, 2.0);
+        RoutePoint second = new RoutePoint("world", 5.0, 64.0, 2.0);
+
+        line.setRoutePoints(List.of(first, second));
+        List<RoutePoint> returned = line.getRoutePoints();
+        returned.clear();
+
+        assertEquals(List.of(first, second), line.getRoutePoints());
+
+        line.clearRoutePoints();
+        assertTrue(line.getRoutePoints().isEmpty());
+    }
+
+    @Test
+    void shouldStorePortalReferencesWithoutDuplicates() {
+        Line line = new Line("l1", "Line1");
+
+        assertTrue(line.addPortal("p1"));
+        assertFalse(line.addPortal("p1"));
+        assertTrue(line.containsPortal("p1"));
+        assertEquals(List.of("p1"), line.getPortalIds());
+
+        List<String> returned = line.getPortalIds();
+        returned.clear();
+        assertEquals(List.of("p1"), line.getPortalIds());
+
+        assertTrue(line.delPortal("p1"));
+        assertFalse(line.containsPortal("p1"));
+    }
+}

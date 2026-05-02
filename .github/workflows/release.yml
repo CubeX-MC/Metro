@@ -1,6 +1,8 @@
-name: metro-modern-release
+name: metro-release
 
 on:
+  push:
+    tags: [ "v*" ]
   workflow_dispatch:
     inputs:
       tag:
@@ -8,7 +10,7 @@ on:
         required: true
       release_name:
         description: "Release title"
-        required: true
+        required: false
 
 jobs:
   release:
@@ -26,21 +28,18 @@ jobs:
           java-version: "17"
           cache: maven
 
-      - name: Verify quality gates
-        run: mvn -B -pl metro-modern -am verify
-
-      - name: Build artifact
-        run: mvn -B -pl metro-modern -am package -DskipTests
+      - name: Verify quality gates and build artifact
+        run: mvn -B clean verify package
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: metro-modern-jar
-          path: metro-modern/target/*.jar
+          name: metro-jar
+          path: target/metro-*.jar
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event.inputs.tag }}
-          name: ${{ github.event.inputs.release_name }}
-          files: metro-modern/target/*.jar
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          name: ${{ github.event.inputs.release_name || github.ref_name }}
+          files: target/metro-*.jar

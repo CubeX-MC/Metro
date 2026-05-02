@@ -1,4 +1,4 @@
-# Metro-modern Architecture
+# Metro Architecture
 
 ## High-level Components
 
@@ -12,8 +12,8 @@
   - `TrainMovementTask`: train state machine and ride lifecycle.
   - `ScoreboardManager`: ride-time visual status.
 - Interaction:
-  - Command entry: `MetroAdminCommand`.
-  - Shared command handlers: `LineCommandHandler`, `StopCommandHandler`.
+  - Command entry: Cloud annotation commands in `command.newcmd`.
+  - Main command groups: `MetroMainCommand`, `LineCommand`, `StopCommand`, `PortalCommand`.
   - Listeners: `PlayerInteractListener`, `PlayerMoveListener`, `VehicleListener`, `GuiListener`.
 
 ## Configuration Access
@@ -41,6 +41,18 @@ flowchart TD
   movingBetween --> arrival[ArrivalAndScoreboardUpdate]
   arrival --> nextTarget[ResolveNextStopOrTerminal]
 ```
+
+## Scheduler Policy
+
+Metro supports Paper/Bukkit and Folia through `SchedulerUtil`. Folia APIs are reached by reflection so the plugin can still compile against the Spigot API.
+
+- Global tasks are for plugin-level work that does not touch a specific entity or region, such as autosave coordination and delayed map refresh requests.
+- Entity tasks are required when reading or mutating a player, minecart, or other entity. Ride display updates, countdowns, and minecart session tasks should stay on the entity scheduler.
+- Region tasks are required when reading or mutating world or block state at a specific location. Spawning minecarts, portal destination work, and rail/block checks should be scheduled by location.
+- Async tasks are only for file I/O, serialization work on already-created snapshots, or other non-Bukkit work. Async code must not access Bukkit worlds, entities, blocks, inventories, or player state.
+- `SchedulerUtil` logs one warning when Folia reflection fails and it must fall back to Bukkit scheduling. That fallback keeps Paper/Bukkit compatibility but is not considered fully Folia-safe.
+
+Shutdown cleanup: `Metro.onDisable()` clears online player displays and asks `TrainMovementTask` to remove active Metro trains tracked by the current runtime registry. Paper/Bukkit then runs a fallback world scan to remove old Metro minecart leftovers. Folia skips that fallback scan because full world entity scans are not region-owned; future Folia hardening should move active-train removal itself onto entity schedulers before plugin shutdown completes.
 
 ## Quality Gates
 

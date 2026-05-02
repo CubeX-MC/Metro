@@ -1,5 +1,6 @@
 package org.cubexmc.metro.listener;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -15,6 +16,7 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.metadata.MetadataValue;
 import org.cubexmc.metro.Metro;
+import org.cubexmc.metro.config.ConfigFacade;
 import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
@@ -88,7 +90,7 @@ public class PlayerMoveListener implements Listener {
                 cancelContinuousInfoTask(playerId);
 
                 // 启动新的持续显示任务
-                if (plugin.getConfig().getBoolean("titles.stop_continuous.enabled", true)) {
+                if (plugin.getConfigFacade().isStopContinuousTitleEnabled()) {
                     startContinuousInfoTask(player, stop);
                 }
             }
@@ -133,20 +135,31 @@ public class PlayerMoveListener implements Listener {
         // 取消已有的ActionBar任务
         cancelActionBarTask(playerId);
 
-        // 查找该停靠区所属的线路
         LineManager lineManager = plugin.getLineManager();
-        final Line line = findLineForStop(stop);
+        List<Line> boardableLines = plugin.getLineSelectionService().getBoardableLines(stop);
 
-        if (line == null) {
+        Line singleLine = null;
+        if (boardableLines.isEmpty()) {
+            List<Line> terminalLines = plugin.getLineSelectionService().getTerminalLines(stop);
+            if (terminalLines.isEmpty()) {
+                return;
+            }
+            singleLine = terminalLines.get(0);
+        } else if (boardableLines.size() > 1) {
+            startMultiLineInfoTask(player, stop, boardableLines);
             return;
+        } else {
+            singleLine = boardableLines.get(0);
         }
 
-        // 获取配置
-        int interval = plugin.getConfig().getInt("titles.stop_continuous.interval", 60);
-        boolean alwaysShow = plugin.getConfig().getBoolean("titles.stop_continuous.always", true);
-        int configuredFadeIn = plugin.getConfig().getInt("titles.stop_continuous.fade_in", 10);
-        int configuredStay = plugin.getConfig().getInt("titles.stop_continuous.stay", 40);
-        int configuredFadeOut = plugin.getConfig().getInt("titles.stop_continuous.fade_out", 10);
+        final Line line = singleLine;
+
+        ConfigFacade config = plugin.getConfigFacade();
+        int interval = config.getStopContinuousInterval();
+        boolean alwaysShow = config.isStopContinuousAlways();
+        int configuredFadeIn = config.getStopContinuousFadeIn();
+        int configuredStay = config.getStopContinuousStay();
+        int configuredFadeOut = config.getStopContinuousFadeOut();
 
         int continuousFadeIn = configuredFadeIn;
         int continuousStay = configuredStay;
@@ -185,27 +198,12 @@ public class PlayerMoveListener implements Listener {
         }
 
         // 确定站点类型并获取对应配置
-        String configPath = "titles.stop_continuous";
         boolean isStartStop = (lastStop == null); // 没有上一站，是始发站
         boolean isEndStop = (nextStop == null); // 没有下一站，是终点站
 
-        if (isStartStop) {
-            configPath += ".start_stop";
-        } else if (isEndStop) {
-            configPath += ".end_stop";
-        }
-
-        // 获取配置
-        String title = plugin.getConfig().getString(configPath + ".title",
-                plugin.getConfig().getString("titles.stop_continuous.title", "{line_color_code}{line}"));
-
-        String subtitle = plugin.getConfig().getString(configPath + ".subtitle",
-                plugin.getConfig().getString("titles.stop_continuous.subtitle",
-                        "开往 &d{terminus_name} &f方向 | 下一站: &e{next_stop_name}"));
-
-        String actionbar = plugin.getConfig().getString(configPath + ".actionbar",
-                plugin.getConfig().getString("titles.stop_continuous.actionbar",
-                        "§f上一站: §7{last_stop_name} §f| 下一站: §a{next_stop_name} §f| §e可换乘: {transfer_lines}"));
+        String title = config.getStopContinuousTitle(isStartStop, isEndStop);
+        String subtitle = config.getStopContinuousSubtitle(isStartStop, isEndStop);
+        String actionbar = config.getStopContinuousActionbar(isStartStop, isEndStop);
 
         Map<String, String> customTitle = stop.getCustomTitle("stop_continuous");
         if (customTitle != null) {
@@ -345,21 +343,123 @@ public class PlayerMoveListener implements Listener {
         }
     }
 
-    /**
-     * 查找包含指定停靠区的线路
-     */
-    private Line findLineForStop(Stop stop) {
-        if (stop == null) {
-            return null;
+    private void startMultiLineInfoTask(Player player, Stop stop, List<Line> boardableLines) {
+        UUID playerId = player.getUniqueId();
+        ConfigFacade config = plugin.getConfigFacade();
+        int interval = config.getStopContinuousInterval();
+        boolean alwaysShow = config.isStopContinuousAlways();
+        int configuredFadeIn = config.getStopContinuousFadeIn();
+        int configuredStay = config.getStopContinuousStay();
+        int configuredFadeOut = config.getStopContinuousFadeOut();
+
+        int continuousFadeIn = configuredFadeIn;
+        int continuousStay = configuredStay;
+        int continuousFadeOut = configuredFadeOut;
+
+        if (alwaysShow) {
+            continuousFadeIn = 0;
+            continuousFadeOut = 0;
+            continuousStay = Math.max(configuredStay, interval + 1);
         }
 
-        LineManager lineManager = plugin.getLineManager();
-        List<Line> lines = lineManager.getLinesForStop(stop.getId());
-        if (!lines.isEmpty()) {
-            return lines.get(0);
-        }
+        final String translatedTitle = ChatColor.translateAlternateColorCodes('&',
+                plugin.getLanguageManager().getMessage("interact.multi_line_title",
+                        Map.of("stop_name", stop.getName())));
+        final String translatedSubtitle = ChatColor.translateAlternateColorCodes('&',
+                plugin.getLanguageManager().getMessage("interact.multi_line_subtitle",
+                        Map.of("count", String.valueOf(boardableLines.size()))));
+        final net.md_5.bungee.api.chat.BaseComponent[] actionbarComponent = TextComponent.fromLegacyText(
+                ChatColor.translateAlternateColorCodes('&',
+                        plugin.getLanguageManager().getMessage("interact.multi_line_actionbar",
+                                Map.of("routes", buildBoardableRouteSummary(stop, boardableLines)))));
 
-        return null;
+        final int effectiveContinuousFadeIn = continuousFadeIn;
+        final int effectiveContinuousStay = continuousStay;
+        final int effectiveContinuousFadeOut = continuousFadeOut;
+        final int singleFadeIn = configuredFadeIn;
+        final int singleStay = configuredStay;
+        final int singleFadeOut = configuredFadeOut;
+
+        if (alwaysShow) {
+            Object actionBarTaskId = SchedulerUtil.entityRun(plugin, player, new Runnable() {
+                @Override
+                public void run() {
+                    if (!actionBarTasks.containsKey(playerId)) {
+                        return;
+                    }
+                    if (!player.isOnline() || !stop.isInStop(player.getLocation()) || isInMetroMinecart(player)) {
+                        return;
+                    }
+                    player.spigot().sendMessage(ChatMessageType.ACTION_BAR, actionbarComponent);
+                }
+            }, 0L, 20L);
+            actionBarTasks.put(playerId, actionBarTaskId);
+
+            Object titleTaskId = SchedulerUtil.entityRun(plugin, player, new Runnable() {
+                @Override
+                public void run() {
+                    if (!continuousInfoTasks.containsKey(playerId)) {
+                        return;
+                    }
+                    if (!player.isOnline() || !stop.isInStop(player.getLocation()) || isInMetroMinecart(player)) {
+                        return;
+                    }
+                    player.sendTitle(translatedTitle, translatedSubtitle, effectiveContinuousFadeIn,
+                            effectiveContinuousStay, effectiveContinuousFadeOut);
+                }
+            }, 0L, interval);
+            continuousInfoTasks.put(playerId, titleTaskId);
+        } else {
+            String metaKey = "metro_first_run_" + stop.getId();
+            List<MetadataValue> metaList = player.getMetadata(metaKey);
+
+            if (metaList.isEmpty()) {
+                player.setMetadata(metaKey, new FixedMetadataValue(plugin, true));
+
+                if (!isInMetroMinecart(player)) {
+                    player.sendTitle(translatedTitle, translatedSubtitle, singleFadeIn, singleStay, singleFadeOut);
+
+                    final int totalDisplayTime = singleStay + singleFadeOut;
+                    Object actionBarTaskId = SchedulerUtil.entityRun(plugin, player, new Runnable() {
+                        private int count = 0;
+                        private final int maxCount = totalDisplayTime / 20 + 1;
+
+                        @Override
+                        public void run() {
+                            if (!player.isOnline() || count >= maxCount || !stop.isInStop(player.getLocation())) {
+                                cancelActionBarTask(playerId);
+                                return;
+                            }
+                            if (!isInMetroMinecart(player)) {
+                                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, actionbarComponent);
+                            }
+                            count++;
+                        }
+                    }, 0L, 20L);
+                    actionBarTasks.put(playerId, actionBarTaskId);
+                }
+            }
+        }
+    }
+
+    private String buildBoardableRouteSummary(Stop stop, List<Line> boardableLines) {
+        List<String> routes = new ArrayList<>();
+        for (Line line : boardableLines) {
+            Stop nextStop = plugin.getStopManager().getStop(line.getNextStopId(stop.getId()));
+            String nextStopName = nextStop != null ? nextStop.getName() : line.getNextStopId(stop.getId());
+            String lineName = (line.getColor() != null ? line.getColor() : "&f") + line.getName();
+            routes.add(plugin.getLanguageManager().getMessage("interact.multi_line_route",
+                    Map.of("line_name", lineName, "next_stop_name", nextStopName)));
+        }
+        return String.join("&7 | ", routes);
+    }
+
+    private boolean isInMetroMinecart(Player player) {
+        if (player.isInsideVehicle() && player.getVehicle() instanceof org.bukkit.entity.Minecart minecart) {
+            return minecart.getPersistentDataContainer().has(MetroConstants.getMinecartKey(),
+                    org.bukkit.persistence.PersistentDataType.BYTE);
+        }
+        return false;
     }
 
     /**

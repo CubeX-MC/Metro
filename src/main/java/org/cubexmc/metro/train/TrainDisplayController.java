@@ -261,7 +261,7 @@ public class TrainDisplayController implements Listener {
             final int secondsLeft = i;
             long delayTicks = (totalSeconds - i) * 20L;
 
-            SchedulerUtil.entityRun(plugin, minecart, () -> {
+            scheduleTrainTask(minecart, () -> {
                 if (passenger == null || !passenger.isOnline() || passenger.getVehicle() != minecart)
                     return;
 
@@ -280,7 +280,7 @@ public class TrainDisplayController implements Listener {
                 || passenger == null)
             return;
 
-        SchedulerUtil.entityRun(plugin, minecart, () -> {
+        scheduleTrainTask(minecart, () -> {
             playWaitingSoundOnce(passenger);
         }, plugin.getConfigFacade().getWaitingInitialDelay(), -1);
 
@@ -291,12 +291,20 @@ public class TrainDisplayController implements Listener {
         long repeatTimes = (plugin.getConfigFacade().getCartDepartureDelay() + interval - 1L) / interval;
 
         for (long i = 1; i <= repeatTimes; i++) {
-            SchedulerUtil.entityRun(plugin, minecart, () -> {
+            scheduleTrainTask(minecart, () -> {
                 if (passenger != null && passenger.isOnline() && passenger.getVehicle() == minecart) {
                     playWaitingSoundOnce(passenger);
                 }
             }, plugin.getConfigFacade().getWaitingInitialDelay() + (interval * i), -1);
         }
+    }
+
+    private Object scheduleTrainTask(Minecart minecart, Runnable task, long delay, long period) {
+        TrainMovementTask movementTask = TrainMovementTask.getTaskFor(minecart);
+        if (movementTask != null) {
+            return movementTask.scheduleSessionTask(task, delay, period);
+        }
+        return SchedulerUtil.entityRun(plugin, minecart, task, delay, period);
     }
 
     private void playWaitingSoundOnce(Player passenger) {

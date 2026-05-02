@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.cubexmc.metro.model.Line;
+import org.cubexmc.metro.model.Portal;
 import org.cubexmc.metro.model.Stop;
 
 /**
@@ -17,6 +18,7 @@ public final class OwnershipUtil {
     public static final String PERMISSION_ADMIN = "metro.admin";
     public static final String PERMISSION_LINE_CREATE = "metro.line.create";
     public static final String PERMISSION_STOP_CREATE = "metro.stop.create";
+    public static final String PERMISSION_PORTAL_CREATE = "metro.portal.create";
 
     private OwnershipUtil() {
     }
@@ -33,12 +35,20 @@ public final class OwnershipUtil {
         return hasAdminBypass(sender) || sender.hasPermission(PERMISSION_STOP_CREATE);
     }
 
+    public static boolean canCreatePortal(CommandSender sender) {
+        return hasAdminBypass(sender) || sender.hasPermission(PERMISSION_PORTAL_CREATE);
+    }
+
     public static boolean isServerOwned(Line line) {
         return line != null && line.getOwner() == null;
     }
 
     public static boolean isServerOwned(Stop stop) {
         return stop != null && stop.getOwner() == null;
+    }
+
+    public static boolean isServerOwned(Portal portal) {
+        return portal != null && portal.getOwner() == null;
     }
 
     public static boolean isLineAdmin(UUID playerId, Line line) {
@@ -54,6 +64,14 @@ public final class OwnershipUtil {
             return false;
         }
         Set<UUID> admins = stop.getAdmins();
+        return admins.contains(playerId);
+    }
+
+    public static boolean isPortalAdmin(UUID playerId, Portal portal) {
+        if (portal == null || playerId == null) {
+            return false;
+        }
+        Set<UUID> admins = portal.getAdmins();
         return admins.contains(playerId);
     }
 
@@ -81,6 +99,19 @@ public final class OwnershipUtil {
             return player.isOp();
         }
         return isStopAdmin(player.getUniqueId(), stop);
+    }
+
+    public static boolean canManagePortal(CommandSender sender, Portal portal) {
+        if (hasAdminBypass(sender)) {
+            return true;
+        }
+        if (!(sender instanceof Player player) || portal == null) {
+            return false;
+        }
+        if (isServerOwned(portal)) {
+            return player.isOp();
+        }
+        return isPortalAdmin(player.getUniqueId(), portal);
     }
 
     public static boolean canModifyLineStops(CommandSender sender, Line line, Stop stop) {

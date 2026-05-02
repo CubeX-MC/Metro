@@ -4,7 +4,7 @@
 [Discord](https://discord.com/invite/7tJeSZPZgv) | [QQ频道](https://pd.qq.com/s/1n3hpe4e7?b=9)
 ## Plugin Overview
 
-Metro is a subway transit system plugin that lets administrators create automated subway lines and provides players with a convenient riding experience, inspired by Newnan.city. The project ships a modern build for Paper 1.20+ (including Folia) and a legacy build for servers on 1.19 or earlier.
+Metro is a subway transit system plugin that lets administrators create automated subway lines and provides players with a convenient riding experience, inspired by Newnan.city. The repository is a single-module Maven project targeting Java 17 and 1.18+ servers, with Paper/Folia compatibility logic included.
 
 ![Demo](https://i.imgur.com/K335iWj.gif)
 
@@ -31,6 +31,9 @@ Metro is a subway transit system plugin that lets administrators create automate
 | `/m line addstop <line_id> <stop_id> [index]`     | Add a stop to the line (optional position) |
 | `/m line delstop <line_id> <stop_id>`             | Remove a stop from the line                |
 | `/m line stops <line_id>`                         | Show all stops on the line                 |
+| `/m line addportal <line_id> <portal_id>`         | Allow the line to use a portal             |
+| `/m line delportal <line_id> <portal_id>`         | Remove a portal from the line              |
+| `/m line portals <line_id>`                       | Show portals enabled for the line          |
 | `/m line info <line_id>`                          | Display detailed line info and members     |
 | `/m line trust <line_id> <player>`                | Add a line administrator                   |
 | `/m line untrust <line_id> <player>`              | Remove a line administrator                |
@@ -59,10 +62,25 @@ Metro is a subway transit system plugin that lets administrators create automate
 | `/m stop owner <stop_id> <player>`                             | Transfer stop ownership            |
 | `/m stop link <allow|deny> <stop_id> <line_id>`                | Manage line link whitelist         |
 
+### Portal Management
+
+| Command                                           | Description                         |
+| :------------------------------------------------ | :---------------------------------- |
+| `/m portal create <portal_id>`                    | Create a minecart portal entrance   |
+| `/m portal setdest <portal_id>`                   | Set the portal destination          |
+| `/m portal link <portal_id_1> <portal_id_2>`      | Link two portals both ways          |
+| `/m portal delete <portal_id>`                    | Delete a portal                     |
+| `/m portal list`                                  | List all portals                    |
+| `/m portal trust <portal_id> <player>`            | Add a portal administrator          |
+| `/m portal untrust <portal_id> <player>`          | Remove a portal administrator       |
+| `/m portal owner <portal_id> <player>`            | Transfer portal ownership           |
+| `/m portal reload`                                | Reload portal configuration         |
+
 ### System Management
 
 | Command          | Description                         |
 | :---------------  | :---------------------------------- |
+| `/m gui`          | Open the Metro GUI                  |
 | `/m reload`       | Reload all plugin configs and data  |
 
 ## Quick Start
@@ -87,18 +105,22 @@ Players right-click the powered rail inside a Stop to summon and board a minecar
 
 ## Permissions
 
-| Permission         | Description                               |
-| :----------------- | :---------------------------------------- |
-| `metro.admin`      | Allows use of all admin commands          |
-| `metro.use`        | Allows players to use the subway system   |
-| `metro.line.create`| Allows players to create new lines        |
-| `metro.stop.create`| Allows players to create new stops        |
+| Permission         | Default | Description                                      |
+| :----------------- | :------ | :----------------------------------------------- |
+| `metro.admin`      | OP      | Allows use of all admin commands, including teleport access |
+| `metro.use`        | Everyone | Allows players to use the subway system         |
+| `metro.gui`        | Everyone | Allows players to open `/m gui`; visible actions are filtered by permission |
+| `metro.tp`         | false   | Allows players to teleport to stops through the GUI |
+| `metro.line.create`| false   | Allows players to create new lines               |
+| `metro.stop.create`| false   | Allows players to create new stops               |
+| `metro.portal.create`| false | Allows players to create minecart portals         |
 
 ## Ownership & Permission Flow
 
-* Newly created lines/stops record the creator as owner and add them to the admin list.
-* `/m line trust/untrust/owner` and `/m stop trust/untrust/owner` manage who can edit each resource.
+* Newly created lines/stops/portals record the creator as owner and add them to the admin list.
+* `/m line trust/untrust/owner`, `/m stop trust/untrust/owner`, and `/m portal trust/untrust/owner` manage who can edit each resource.
 * `/m stop link allow/deny` controls which lines are whitelisted to use a stop; line admins must obtain authorization before running `/m line addstop`.
+* Portals can exist independently; line admins use `/m line addportal/delportal` to control whether a line can use a portal.
 * Legacy data without ownership entries is treated as server-owned and can only be modified by OPs or players with `metro.admin`.
 
 ## Configuration Files
@@ -110,11 +132,9 @@ Players right-click the powered rail inside a Stop to summon and board a minecar
 
 ## Build Targets
 
-- **Build both variants**: `mvn clean package`
-  - Produces `metro-modern/target/metro-1.1.0-1.20+.jar`
-  - Produces `metro-legacy/target/metro-1.1.0-1.19-.jar`
-- **Only modern (Paper/Folia 1.20+)**: `mvn -pl metro-modern -am clean package`
-- **Only legacy (Spigot/Paper ≤1.19)**: `mvn -pl metro-legacy -am clean package`
+- **Build the plugin**: `mvn clean package`
+  - Produces `target/metro-<version>.jar`
+  - The current version comes from `pom.xml`, for example `target/metro-1.1.5.jar`
 
-Choose the jar that matches your server version. Folia support is available only in the 1.20+ build.
+The repository is now a single-module Maven project targeting Java 17 and 1.18+ servers, with Paper/Folia compatibility logic included.
 

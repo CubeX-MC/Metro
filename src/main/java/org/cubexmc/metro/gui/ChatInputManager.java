@@ -1,6 +1,5 @@
 package org.cubexmc.metro.gui;
 
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -8,19 +7,25 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.cubexmc.metro.Metro;
+import org.cubexmc.metro.util.SchedulerUtil;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Consumer;
 
 public class ChatInputManager implements Listener {
 
     private final Metro plugin;
+    private final ChatCallbackScheduler callbackScheduler;
     private final Map<UUID, ChatInputCallback> pendingInputs = new HashMap<>();
 
     public ChatInputManager(Metro plugin) {
+        this(plugin, (metro, player, task) -> SchedulerUtil.entityRun(metro, player, task, 0L, -1L));
+    }
+
+    ChatInputManager(Metro plugin, ChatCallbackScheduler callbackScheduler) {
         this.plugin = plugin;
+        this.callbackScheduler = callbackScheduler;
     }
 
     public void requestInput(Player player, String prompt, ChatInputCallback callback) {
@@ -41,12 +46,11 @@ public class ChatInputManager implements Listener {
             
             if (input.equalsIgnoreCase("cancel") || input.equalsIgnoreCase("取消")) {
                 player.sendMessage(plugin.getLanguageManager().getMessage("chat.input_cancelled"));
-                // Execute a specific cancel block if needed, or simply return.
-                org.cubexmc.metro.util.SchedulerUtil.entityRun(plugin, player, () -> callback.onCancel(), 0L, -1L);
+                scheduleCallback(player, callback::onCancel);
                 return;
             }
             
-            org.cubexmc.metro.util.SchedulerUtil.entityRun(plugin, player, () -> callback.onInput(input), 0L, -1L);
+            scheduleCallback(player, () -> callback.onInput(input));
         }
     }
 
@@ -58,5 +62,14 @@ public class ChatInputManager implements Listener {
     public interface ChatInputCallback {
         void onInput(String input);
         default void onCancel() {}
+    }
+
+    @FunctionalInterface
+    interface ChatCallbackScheduler {
+        void run(Metro plugin, Player player, Runnable task);
+    }
+
+    private void scheduleCallback(Player player, Runnable task) {
+        callbackScheduler.run(plugin, player, task);
     }
 }

@@ -1,8 +1,8 @@
 package org.cubexmc.metro.manager;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -18,7 +18,9 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.model.Line;
+import org.cubexmc.metro.model.RoutePoint;
 import org.cubexmc.metro.model.Stop;
+import org.cubexmc.metro.update.DataFileUpdater;
 
 /**
  * 线路管理器，负责线路数据的加载、保存和操作
@@ -58,6 +60,9 @@ public class LineManager {
 
             if (linesSection != null) {
                 for (String lineId : linesSection.getKeys(false)) {
+                    if (DataFileUpdater.SCHEMA_VERSION_KEY.equals(lineId)) {
+                        continue;
+                    }
                     String name = config.getString(lineId + ".name");
                     if (name == null || name.isBlank()) {
                         plugin.getLogger().warning("Line " + lineId + " is missing name, using line id as fallback.");
@@ -70,6 +75,26 @@ public class LineManager {
                     for (String stopId : stopIds) {
                         line.addStop(stopId, -1);
                     }
+
+                    List<String> portalIds = config.getStringList(lineId + ".portal_ids");
+                    for (String portalId : portalIds) {
+                        line.addPortal(portalId);
+                    }
+
+                    List<String> routePointStrings = config.getStringList(lineId + ".route_points");
+                    if (routePointStrings != null && !routePointStrings.isEmpty()) {
+                        List<RoutePoint> routePoints = new ArrayList<>();
+                        for (String routePointString : routePointStrings) {
+                            RoutePoint routePoint = RoutePoint.fromConfigString(routePointString);
+                            if (routePoint != null) {
+                                routePoints.add(routePoint);
+                            }
+                        }
+                        line.setRoutePoints(routePoints);
+                    }
+                    line.setRouteRecordedAtEpochMillis(config.getLong(lineId + ".route_recorded_at", 0L));
+                    line.setRouteRecordedBy(readUuid(lineId, "route_recorded_by"));
+                    line.setRouteRecordedCartId(readUuid(lineId, "route_recorded_cart"));
 
                     // 加载颜色和终点站方向
                     String color = config.getString(lineId + ".color");
@@ -92,16 +117,9 @@ public class LineManager {
                     double ticketPrice = config.getDouble(lineId + ".ticket_price", 0.0);
                     line.setTicketPrice(ticketPrice);
 
-                    String ownerString = config.getString(lineId + ".owner");
-                    if (ownerString != null && !ownerString.isEmpty()) {
-                        try {
-                            line.setOwner(UUID.fromString(ownerString));
-                        } catch (IllegalArgumentException ignored) {
-                            plugin.getLogger()
-                                    .warning("Invalid owner UUID in lines.yml for line " + lineId + ": " + ownerString);
-                            line.setOwner(null);
-                        }
-                    }
+                    line.setRailProtected(config.getBoolean(lineId + ".rail_protected", false));
+
+                    line.setOwner(readUuid(lineId, "owner"));
 
                     List<String> adminStrings = config.getStringList(lineId + ".admins");
                     if (adminStrings != null && !adminStrings.isEmpty()) {
@@ -135,54 +153,20 @@ public class LineManager {
 
     public void saveConfig() {
         this.isDirty = true;
+        plugin.requestMapIntegrationRefresh();
     }
 
     public void processAsyncSave() {
         if (!isDirty) {
             return;
         }
-        isDirty = false;
 
         try {
-            String yamlDataFinal;
-            // 获取读锁，并在内存中生成配置快照，这样避免在耗时序列化操作中一直持有锁或者发生CME
-            lock.readLock().lock();
-            try {
-                // 将所有线路数据写入配置
-                for (Line line : lines.values()) {
-                    String lineId = line.getId();
-                    config.set(lineId + ".name", line.getName());
-                    config.set(lineId + ".ordered_stop_ids", line.getOrderedStopIds());
-                    config.set(lineId + ".color", line.getColor());
-                    config.set(lineId + ".terminus_name", line.getTerminusName());
-                    config.set(lineId + ".max_speed", line.getMaxSpeed() != null ? line.getMaxSpeed() : null);
-                    config.set(lineId + ".ticket_price", line.getTicketPrice() > 0 ? line.getTicketPrice() : null);
-                    config.set(lineId + ".owner", line.getOwner() != null ? line.getOwner().toString() : null);
-
-                    List<String> adminStrings = new ArrayList<>();
-                    for (UUID adminId : line.getAdmins()) {
-                        if (line.getOwner() != null && line.getOwner().equals(adminId)) {
-                            continue;
-                        }
-                        adminStrings.add(adminId.toString());
-                    }
-                    config.set(lineId + ".admins", adminStrings.isEmpty() ? null : adminStrings);
-                    config.set(lineId + ".world", line.getWorldName());
-                }
-
-                yamlDataFinal = config.saveToString();
-            } finally {
-                lock.readLock().unlock();
-            }
-
-            org.cubexmc.metro.util.SchedulerUtil.asyncRun(plugin, () -> {
-                try {
-                    java.nio.file.Files.writeString(configFile.toPath(), yamlDataFinal);
-                } catch (IOException e) {
-                    plugin.getLogger().log(Level.SEVERE, "无法异步保存线路配置", e);
-                }
-            }, 0L);
+            String yamlDataFinal = buildSnapshot();
+            isDirty = false;
+            plugin.getSaveCoordinator().submitSnapshot(configFile.toPath(), yamlDataFinal);
         } catch (Exception e) {
+            isDirty = true;
             plugin.getLogger().log(Level.SEVERE, "处理线路配置时出错", e);
         }
     }
@@ -191,37 +175,13 @@ public class LineManager {
         if (!isDirty) {
             return;
         }
-        isDirty = false;
 
         try {
-            lock.readLock().lock();
-            try {
-                for (Line line : lines.values()) {
-                    String lineId = line.getId();
-                    config.set(lineId + ".name", line.getName());
-                    config.set(lineId + ".ordered_stop_ids", line.getOrderedStopIds());
-                    config.set(lineId + ".color", line.getColor());
-                    config.set(lineId + ".terminus_name", line.getTerminusName());
-                    config.set(lineId + ".max_speed", line.getMaxSpeed() != null ? line.getMaxSpeed() : null);
-                    config.set(lineId + ".ticket_price", line.getTicketPrice() > 0 ? line.getTicketPrice() : null);
-                    config.set(lineId + ".owner", line.getOwner() != null ? line.getOwner().toString() : null);
-
-                    List<String> adminStrings = new ArrayList<>();
-                    for (UUID adminId : line.getAdmins()) {
-                        if (line.getOwner() != null && line.getOwner().equals(adminId)) {
-                            continue;
-                        }
-                        adminStrings.add(adminId.toString());
-                    }
-                    config.set(lineId + ".admins", adminStrings.isEmpty() ? null : adminStrings);
-                    config.set(lineId + ".world", line.getWorldName());
-                }
-            } finally {
-                lock.readLock().unlock();
-            }
-
-            config.save(configFile);
-        } catch (IOException e) {
+            String yamlDataFinal = buildSnapshot();
+            isDirty = false;
+            plugin.getSaveCoordinator().saveNow(configFile.toPath(), yamlDataFinal);
+        } catch (Exception e) {
+            isDirty = true;
             plugin.getLogger().log(Level.SEVERE, "无法同步保存线路配置", e);
         }
     }
@@ -249,6 +209,7 @@ public class LineManager {
             lock.writeLock().unlock();
         }
         saveConfig();
+        rebuildRailProtection(lineId);
         return true;
     }
 
@@ -268,6 +229,7 @@ public class LineManager {
             lock.writeLock().unlock();
         }
         saveConfig();
+        rebuildRailProtection(lineId);
         return true;
     }
 
@@ -405,6 +367,9 @@ public class LineManager {
      */
     public void reload() {
         loadConfig();
+        if (plugin.getRailProtectionManager() != null) {
+            plugin.getRailProtectionManager().rebuildAll();
+        }
     }
 
     /**
@@ -517,6 +482,115 @@ public class LineManager {
         return true;
     }
 
+    public boolean addPortalToLine(String lineId, String portalId) {
+        boolean changed;
+        lock.writeLock().lock();
+        try {
+            Line line = lines.get(lineId);
+            if (line == null) {
+                return false;
+            }
+            changed = line.addPortal(portalId);
+        } finally {
+            lock.writeLock().unlock();
+        }
+        if (changed) {
+            saveConfig();
+        }
+        return changed;
+    }
+
+    public boolean delPortalFromLine(String lineId, String portalId) {
+        boolean changed;
+        lock.writeLock().lock();
+        try {
+            Line line = lines.get(lineId);
+            if (line == null) {
+                return false;
+            }
+            changed = line.delPortal(portalId);
+        } finally {
+            lock.writeLock().unlock();
+        }
+        if (changed) {
+            saveConfig();
+        }
+        return changed;
+    }
+
+    public void delPortalFromAllLines(String portalId) {
+        boolean changed = false;
+        lock.writeLock().lock();
+        try {
+            for (Line line : lines.values()) {
+                if (line.delPortal(portalId)) {
+                    changed = true;
+                }
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+        if (changed) {
+            saveConfig();
+        }
+    }
+
+    public boolean setLineRoutePoints(String lineId, List<RoutePoint> routePoints) {
+        return setLineRoutePoints(lineId, routePoints, null, null, null);
+    }
+
+    public boolean setLineRoutePoints(String lineId, List<RoutePoint> routePoints,
+                                      Long recordedAtEpochMillis, UUID recordedBy, UUID recordedCartId) {
+        lock.writeLock().lock();
+        try {
+            Line line = lines.get(lineId);
+            if (line == null) {
+                return false;
+            }
+            line.setRoutePoints(routePoints);
+            if (recordedAtEpochMillis != null || recordedBy != null || recordedCartId != null) {
+                line.setRouteRecordingMetadata(recordedAtEpochMillis, recordedBy, recordedCartId);
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+        saveConfig();
+        rebuildRailProtection(lineId);
+        return true;
+    }
+
+    public boolean clearLineRoutePoints(String lineId) {
+        lock.writeLock().lock();
+        try {
+            Line line = lines.get(lineId);
+            if (line == null) {
+                return false;
+            }
+            line.clearRoutePoints();
+        } finally {
+            lock.writeLock().unlock();
+        }
+        saveConfig();
+        rebuildRailProtection(lineId);
+        return true;
+    }
+
+    public boolean setLineRailProtected(String lineId, boolean protectedRail) {
+        lock.writeLock().lock();
+        try {
+            Line line = lines.get(lineId);
+            if (line == null) {
+                return false;
+            }
+            line.setRailProtected(protectedRail);
+        } finally {
+            lock.writeLock().unlock();
+        }
+        saveConfig();
+        rebuildRailProtection(lineId);
+        return true;
+    }
+
     public boolean setLineOwner(String lineId, UUID ownerId) {
         lock.writeLock().lock();
         try {
@@ -590,6 +664,79 @@ public class LineManager {
             if (lineIds.isEmpty()) {
                 stopToLinesIndex.remove(stopId);
             }
+        }
+    }
+
+    private List<String> routePointsToConfig(Line line) {
+        List<RoutePoint> routePoints = line.getRoutePoints();
+        if (routePoints.isEmpty()) {
+            return null;
+        }
+        List<String> values = new ArrayList<>();
+        for (RoutePoint routePoint : routePoints) {
+            values.add(routePoint.toConfigString());
+        }
+        return values;
+    }
+
+    private UUID readUuid(String lineId, String key) {
+        String uuidString = config.getString(lineId + "." + key);
+        if (uuidString == null || uuidString.isEmpty()) {
+            return null;
+        }
+        try {
+            return UUID.fromString(uuidString);
+        } catch (IllegalArgumentException ignored) {
+            plugin.getLogger().warning("Invalid " + key + " UUID in lines.yml for line " + lineId + ": " + uuidString);
+            return null;
+        }
+    }
+
+    private String buildSnapshot() {
+        YamlConfiguration snapshot = new YamlConfiguration();
+        lock.readLock().lock();
+        try {
+            if (!lines.isEmpty() || config.getInt(DataFileUpdater.SCHEMA_VERSION_KEY, 0) > 0) {
+                snapshot.set(DataFileUpdater.SCHEMA_VERSION_KEY, DataFileUpdater.CURRENT_SCHEMA_VERSION);
+            }
+
+            List<String> lineIds = new ArrayList<>(lines.keySet());
+            Collections.sort(lineIds);
+            for (String lineId : lineIds) {
+                Line line = lines.get(lineId);
+                if (line == null) {
+                    continue;
+                }
+                snapshot.set(lineId + ".name", line.getName());
+                snapshot.set(lineId + ".ordered_stop_ids", line.getOrderedStopIds());
+                snapshot.set(lineId + ".portal_ids", line.getPortalIds().isEmpty() ? null : line.getPortalIds());
+                snapshot.set(lineId + ".route_points", routePointsToConfig(line));
+                snapshot.set(lineId + ".route_recorded_at", line.getRouteRecordedAtEpochMillis());
+                snapshot.set(lineId + ".route_recorded_by",
+                        line.getRouteRecordedBy() == null ? null : line.getRouteRecordedBy().toString());
+                snapshot.set(lineId + ".route_recorded_cart",
+                        line.getRouteRecordedCartId() == null ? null : line.getRouteRecordedCartId().toString());
+                snapshot.set(lineId + ".color", line.getColor());
+                snapshot.set(lineId + ".terminus_name", line.getTerminusName());
+                snapshot.set(lineId + ".max_speed", line.getMaxSpeed() != null ? line.getMaxSpeed() : null);
+                snapshot.set(lineId + ".ticket_price", line.getTicketPrice() > 0 ? line.getTicketPrice() : null);
+                snapshot.set(lineId + ".rail_protected", line.isRailProtected() ? true : null);
+                snapshot.set(lineId + ".owner", line.getOwner() != null ? line.getOwner().toString() : null);
+
+                List<String> adminStrings = new ArrayList<>();
+                for (UUID adminId : line.getAdmins()) {
+                    if (line.getOwner() != null && line.getOwner().equals(adminId)) {
+                        continue;
+                    }
+                    adminStrings.add(adminId.toString());
+                }
+                Collections.sort(adminStrings);
+                snapshot.set(lineId + ".admins", adminStrings.isEmpty() ? null : adminStrings);
+                snapshot.set(lineId + ".world", line.getWorldName());
+            }
+            return snapshot.saveToString();
+        } finally {
+            lock.readLock().unlock();
         }
     }
 
@@ -673,5 +820,11 @@ public class LineManager {
         
         saveConfig();
         return true;
+    }
+
+    private void rebuildRailProtection(String lineId) {
+        if (plugin.getRailProtectionManager() != null) {
+            plugin.getRailProtectionManager().rebuildLine(lineId);
+        }
     }
 }

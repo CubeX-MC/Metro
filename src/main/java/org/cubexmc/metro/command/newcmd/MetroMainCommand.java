@@ -1,6 +1,5 @@
 package org.cubexmc.metro.command.newcmd;
 
-import org.incendo.cloud.annotations.Argument;
 import org.incendo.cloud.annotations.CommandDescription;
 import org.incendo.cloud.annotations.Command;
 import org.incendo.cloud.annotations.Permission;
@@ -10,6 +9,7 @@ import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.update.ConfigUpdater;
+import org.cubexmc.metro.update.DataFileUpdater;
 import org.cubexmc.metro.util.OwnershipUtil;
 
 public class MetroMainCommand {
@@ -39,6 +39,7 @@ public class MetroMainCommand {
         sender.sendMessage(lang.getMessage("command.help_reload"));
         sender.sendMessage(lang.getMessage("command.help_line"));
         sender.sendMessage(lang.getMessage("command.help_stop"));
+        sender.sendMessage(lang.getMessage("command.help_portal"));
     }
 
     @Command("m|metro gui")
@@ -59,12 +60,20 @@ public class MetroMainCommand {
             }
         }
 
+        plugin.flushPersistentData();
         plugin.ensureDefaultConfigs();
         plugin.reloadConfig();
         ConfigUpdater.applyDefaults(plugin, "config.yml");
         plugin.getConfigFacade().reload();
+        DataFileUpdater.migrateAll(plugin);
         lineManager.reload();
         stopManager.reload();
+        if (plugin.getPortalManager() != null) {
+            plugin.getPortalManager().load();
+        }
+        if (plugin.getRailProtectionManager() != null) {
+            plugin.getRailProtectionManager().rebuildAll();
+        }
         plugin.getLanguageManager().loadLanguages();
 
         plugin.refreshMapIntegrations();

@@ -210,9 +210,9 @@ map_integration:
   # 是否启用网页地图集成（在BlueMap/Dynmap/Squaremap上显示地铁线路）
   # Enable web map integration (display metro lines on BlueMap/Dynmap/Squaremap)
   enabled: false
-  # 地图插件提供者: BLUEMAP, DYNMAP, SQUAREMAP
-  # Map plugin provider: BLUEMAP, DYNMAP, SQUAREMAP
-  provider: BLUEMAP
+  # 地图插件提供者: AUTO, BLUEMAP, DYNMAP, SQUAREMAP
+  # Map plugin provider: AUTO, BLUEMAP, DYNMAP, SQUAREMAP
+  provider: AUTO
   # MarkerSet 标签（在地图图层面板中显示的名称）
   # MarkerSet label (displayed in the map layer panel)
   marker_set_label: 'Metro Network'
@@ -228,6 +228,22 @@ map_integration:
   # 是否在站点 POI 标记上显示换乘信息
   # Whether to show transfer information on stop POI markers
   show_transfer_info: true
+  # 数据连续变化后的地图刷新合并延迟（单位 tick，20 tick = 1 秒）
+  # Delay used to merge repeated map refresh requests after data changes (in ticks, 20 ticks = 1 second)
+  refresh_delay_ticks: 20
+
+# 线路录制配置
+# Route Recording Settings
+route_recording:
+  # 录制线路时两个保存采样点之间的最小距离（单位：方块）
+  # Minimum distance between saved raw route samples while recording (in blocks)
+  min_sample_distance_blocks: 1.0
+  # 保存线路前是否删除同一直线上的中间采样点
+  # Whether to remove middle samples on the same straight segment before saving
+  simplify_collinear_points: true
+  # 共线压缩容差（单位：方块）；较大值会更积极地压缩轻微抖动
+  # Collinearity tolerance in blocks; larger values compress small jitter more aggressively
+  simplify_epsilon_blocks: 0.15
 
 # 矿车传送门设置
 # Minecart Portal Settings
@@ -269,6 +285,18 @@ settings:
     # 矿车伤害保护：阻止其他玩家攻击/破坏地铁矿车
     # Minecart damage protection: prevent other players from attacking/breaking the metro minecart
     damage_protection: true
+    # 行驶辅助：在普通铁轨上失速时，只对活动地铁矿车补充最小动量
+    # Movement assist: restore minimal momentum for active metro minecarts stalled on normal rails
+    movement_assist: true
+    # 乘客拆轨保护：玩家乘坐 Metro 矿车时禁止破坏铁轨
+    # Passenger rail break protection: prevent players riding Metro minecarts from breaking rails
+    passenger_rail_break_protection: true
+    # 判定为失速的水平速度阈值
+    # Horizontal speed threshold used to detect stalls
+    min_cruise_speed: 0.08
+    # 失速检测间隔，单位tick；只按活动矿车数量运行
+    # Stall recovery interval in ticks; runs only per active metro minecart
+    stall_recovery_ticks: 8
   # 矿车移动速度
   # Minecart movement speed
   cart_speed: 0.3

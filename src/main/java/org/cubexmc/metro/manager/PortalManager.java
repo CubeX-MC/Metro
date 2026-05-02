@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.logging.Level;
 
 /**
@@ -78,12 +79,41 @@ public class PortalManager {
 
     // =============== CRUD ===============
 
-    public Portal createPortal(String id, Location entrance) {
+    public Portal createPortal(String id, Location entrance, UUID ownerId) {
         Portal portal = new Portal(id);
         portal.setEntrance(entrance);
+        portal.setOwner(ownerId);
         portals.put(id, portal);
         save();
         return portal;
+    }
+
+    public boolean setPortalOwner(String id, UUID ownerId) {
+        Portal portal = portals.get(id);
+        if (portal == null) return false;
+        portal.setOwner(ownerId);
+        save();
+        return true;
+    }
+
+    public boolean addPortalAdmin(String id, UUID adminId) {
+        Portal portal = portals.get(id);
+        if (portal == null) return false;
+        boolean changed = portal.addAdmin(adminId);
+        if (changed) {
+            save();
+        }
+        return changed;
+    }
+
+    public boolean removePortalAdmin(String id, UUID adminId) {
+        Portal portal = portals.get(id);
+        if (portal == null) return false;
+        boolean changed = portal.removeAdmin(adminId);
+        if (changed) {
+            save();
+        }
+        return changed;
     }
 
     public boolean deletePortal(String id) {
@@ -95,6 +125,9 @@ public class PortalManager {
                 if (linked != null) {
                     linked.setLinkedPortalId(null);
                 }
+            }
+            if (plugin.getLineManager() != null) {
+                plugin.getLineManager().delPortalFromAllLines(id);
             }
             save();
             return true;
@@ -261,7 +294,14 @@ public class PortalManager {
 
         // 冻结乘客（如果有延迟且有乘客）
         if (finalPassenger != null && teleportDelay > 0) {
-            finalPassenger.sendTitle("§d✦ §b传送中... §d✦", "§7Teleporting...", 5, teleportDelay, 5);
+            Map<String, Object> args = org.cubexmc.metro.manager.LanguageManager.args();
+            org.cubexmc.metro.manager.LanguageManager.put(args, "portal_id", portal.getId());
+            finalPassenger.sendTitle(
+                    plugin.getLanguageManager().getMessage("portal.teleport_title", args),
+                    plugin.getLanguageManager().getMessage("portal.teleport_subtitle", args),
+                    5,
+                    teleportDelay,
+                    5);
         }
     }
 

@@ -1,4 +1,4 @@
-name: metro-modern-ci
+name: metro-ci
 
 on:
   push:
@@ -20,9 +20,12 @@ jobs:
           java-version: "17"
           cache: maven
 
-      - name: Verify with coverage gate
-        run: mvn -B -pl metro-modern -am verify
+      - name: Verify quality gates and build artifact
+        run: mvn -B clean verify package
 
-      - name: Package metro-modern
-        run: mvn -B -pl metro-modern -am package
+      - name: Upload metro jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: metro-jar
+          path: target/metro-*.jar
 

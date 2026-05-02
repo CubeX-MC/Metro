@@ -20,11 +20,11 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.manager.LanguageManager;
-import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.SelectionManager;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Stop;
+import org.cubexmc.metro.service.TicketService;
 import org.cubexmc.metro.train.TrainMovementTask;
 import org.cubexmc.metro.util.MetroConstants;
 import org.cubexmc.metro.util.OwnershipUtil;
@@ -51,8 +51,17 @@ public class PlayerInteractListener implements Listener {
     private final Object pendingMinecartCleanupTaskId;
 
     public PlayerInteractListener(Metro plugin) {
+        this(plugin, true);
+    }
+
+    PlayerInteractListener(Metro plugin, boolean scheduleCleanupTask) {
         this.plugin = plugin;
         this.selectionManager = plugin.getSelectionManager();
+
+        if (!scheduleCleanupTask) {
+            this.pendingMinecartCleanupTaskId = null;
+            return;
+        }
 
         // 定期清理过期的矿车等待记录
         this.pendingMinecartCleanupTaskId = SchedulerUtil.globalRun(plugin, () -> {
@@ -190,58 +199,65 @@ public class PlayerInteractListener implements Listener {
      * 处理停靠点交互
      */
     private void handleStopPoint(Player player, Stop stop) {
-        // 检查停靠区是否在任何线路上
-        LineManager lineManager = plugin.getLineManager();
-
-        Line line = null;
-        List<Line> candidateLines = lineManager.getLinesForStop(stop.getId());
-        if (!candidateLines.isEmpty()) {
-            line = candidateLines.get(0);
+        List<Line> boardableLines = plugin.getLineSelectionService().getBoardableLines(stop);
+        if (boardableLines.isEmpty()) {
+            sendNoBoardableLineMessage(player, stop);
+            return;
         }
 
+        if (boardableLines.size() > 1 && plugin.getLineSelectionService().requiresChoice(player, stop)) {
+            plugin.getGuiManager().openLineBoardingChoice(player, stop, 0);
+            return;
+        }
+
+        Line line = plugin.getLineSelectionService().resolveDefaultLine(player, stop, stop.getStopPointLocation());
         if (line == null) {
+            sendNoBoardableLineMessage(player, stop);
+            return;
+        }
+
+        beginBoarding(player, stop, line);
+    }
+
+    /**
+     * 从 GUI 选择线路后继续乘车流程。
+     */
+    public void boardSelectedLine(Player player, String stopId, String lineId) {
+        if (!player.hasPermission("metro.use")) {
+            return;
+        }
+
+        Stop stop = plugin.getStopManager().getStop(stopId);
+        Line line = plugin.getLineManager().getLine(lineId);
+        if (stop == null || line == null) {
             player.sendMessage(plugin.getLanguageManager().getMessage("interact.stop_no_line"));
-            plugin.debug("interaction_flow", "No line found for stop=" + stop.getId());
+            return;
+        }
+        if (stop.getStopPointLocation() == null) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("interact.stop_no_point"));
+            return;
+        }
+        if (plugin.getLineSelectionService().getBoardableLines(stop).stream()
+                .noneMatch(boardableLine -> boardableLine.getId().equals(line.getId()))) {
+            sendNoBoardableLineMessage(player, stop);
+            return;
+        }
+        if (hasActivePendingMinecart(player, stop)) {
             return;
         }
 
-        // 检查该站点是否为终点站
-        String nextStopId = line.getNextStopId(stop.getId());
-        if (nextStopId == null) {
-            // 是终点站，不生成列车
-            player.sendMessage(plugin.getLanguageManager().getMessage("interact.terminal_stop"));
+        beginBoarding(player, stop, line);
+    }
+
+    private void beginBoarding(Player player, Stop stop, Line line) {
+        plugin.getLineSelectionService().rememberChoice(player, stop.getId(), line.getId());
+
+        TicketService.TicketCheck ticketCheck = plugin.getTicketService().checkCanBoard(player, line);
+        if (!ticketCheck.canBoard()) {
+            sendTicketCheckFailure(player, ticketCheck);
             return;
         }
-
-        // --- 经济扣费逻辑 ---
-        if (plugin.getConfig().getBoolean("economy.enabled", true)) {
-            double price = line.getTicketPrice();
-            if (price > 0) {
-                org.cubexmc.metro.integration.VaultIntegration vault = plugin.getVaultIntegration();
-                if (vault != null && vault.isEnabled()) {
-                    if (!vault.has(player, price)) {
-                        String priceFormatted = vault.format(price);
-                        player.sendMessage(plugin.getLanguageManager().getMessage("economy.insufficient_funds",
-                                LanguageManager.put(LanguageManager.args(), "price", priceFormatted)));
-                        return;
-                    }
-                    if (vault.withdraw(player, price)) {
-                        String priceFormatted = vault.format(price);
-                        player.sendMessage(plugin.getLanguageManager().getMessage("economy.paid_boarding",
-                                LanguageManager.put(LanguageManager.args(), "price", priceFormatted)));
-                        // 费用打给线路所有者
-                        if (line.getOwner() != null) {
-                            vault.deposit(line.getOwner(), price);
-                        }
-                    } else {
-                        // 扣费失败
-                        player.sendMessage(org.bukkit.ChatColor.RED + "Transaction failed.");
-                        return;
-                    }
-                }
-            }
-        }
-        // ------------------
+        TicketService.TicketTransaction ticketTransaction = plugin.getTicketService().createTransaction(player, line);
 
         // 记录该站点有矿车正在处理中
         pendingMinecarts.put(stop.getId(), System.currentTimeMillis());
@@ -255,7 +271,34 @@ public class PlayerInteractListener implements Listener {
         playStationArrivalSound(player);
 
         // 生成矿车
-        spawnMinecart(player, stop, line);
+        spawnMinecart(player, stop, line, ticketTransaction);
+    }
+
+    private void sendNoBoardableLineMessage(Player player, Stop stop) {
+        List<Line> servingLines = plugin.getLineManager().getLinesForStop(stop.getId());
+        boolean onlyTerminalLines = !servingLines.isEmpty()
+                && servingLines.stream().allMatch(servingLine -> servingLine.getNextStopId(stop.getId()) == null);
+        if (onlyTerminalLines) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("interact.terminal_stop"));
+        } else {
+            player.sendMessage(plugin.getLanguageManager().getMessage("interact.stop_no_line"));
+        }
+        plugin.debug("interaction_flow", "No line found for stop=" + stop.getId());
+    }
+
+    private boolean hasActivePendingMinecart(Player player, Stop stop) {
+        long currentTime = System.currentTimeMillis();
+        Long pendingTime = pendingMinecarts.get(stop.getId());
+        if (pendingTime == null) {
+            return false;
+        }
+        long timeout = plugin.getConfigFacade().getMinecartPendingTimeout();
+        if (currentTime - pendingTime < timeout) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("interact.train_pending"));
+            return true;
+        }
+        pendingMinecarts.remove(stop.getId());
+        return false;
     }
 
     /**
@@ -294,7 +337,7 @@ public class PlayerInteractListener implements Listener {
     /**
      * 生成矿车
      */
-    private void spawnMinecart(Player player, Stop stop, Line line) {
+    private void spawnMinecart(Player player, Stop stop, Line line, TicketService.TicketTransaction ticketTransaction) {
         Location location = stop.getStopPointLocation();
         float yaw = stop.getLaunchYaw();
 
@@ -344,6 +387,19 @@ public class PlayerInteractListener implements Listener {
                         return;
                     }
 
+                    TicketService.TicketChargeStatus chargeStatus = plugin.getTicketService().charge(ticketTransaction);
+                    if (!isSuccessfulCharge(chargeStatus)) {
+                        minecart.remove();
+                        pendingMinecarts.remove(stopId);
+                        sendTicketChargeFailure(player, chargeStatus, ticketTransaction);
+                        return;
+                    }
+                    if (chargeStatus == TicketService.TicketChargeStatus.CHARGED) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("economy.paid_boarding",
+                                LanguageManager.put(LanguageManager.args(), "price",
+                                        plugin.getTicketService().format(ticketTransaction.getPrice()))));
+                    }
+
                     // 显示待乘车信息
                     player.sendMessage(plugin.getLanguageManager().getMessage("interact.train_spawned",
                             LanguageManager.put(LanguageManager.args(), "departure_seconds",
@@ -365,6 +421,40 @@ public class PlayerInteractListener implements Listener {
                 }
             }, spawnDelay, -1);
         }
+    }
+
+    private boolean isSuccessfulCharge(TicketService.TicketChargeStatus status) {
+        return status == TicketService.TicketChargeStatus.CHARGED
+                || status == TicketService.TicketChargeStatus.FREE
+                || status == TicketService.TicketChargeStatus.ECONOMY_DISABLED;
+    }
+
+    private void sendTicketCheckFailure(Player player, TicketService.TicketCheck ticketCheck) {
+        if (ticketCheck.getStatus() == TicketService.TicketCheckStatus.INSUFFICIENT_FUNDS) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("economy.insufficient_funds",
+                    LanguageManager.put(LanguageManager.args(), "price", ticketCheck.getFormattedPrice())));
+            return;
+        }
+        if (ticketCheck.getStatus() == TicketService.TicketCheckStatus.VAULT_UNAVAILABLE) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("economy.vault_unavailable"));
+            return;
+        }
+        player.sendMessage(plugin.getLanguageManager().getMessage("economy.transaction_failed"));
+    }
+
+    private void sendTicketChargeFailure(Player player, TicketService.TicketChargeStatus status,
+            TicketService.TicketTransaction transaction) {
+        if (status == TicketService.TicketChargeStatus.INSUFFICIENT_FUNDS) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("economy.insufficient_funds",
+                    LanguageManager.put(LanguageManager.args(), "price",
+                            plugin.getTicketService().format(transaction.getPrice()))));
+            return;
+        }
+        if (status == TicketService.TicketChargeStatus.VAULT_UNAVAILABLE) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("economy.vault_unavailable"));
+            return;
+        }
+        player.sendMessage(plugin.getLanguageManager().getMessage("economy.transaction_failed"));
     }
 
     /**
