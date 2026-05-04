@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 class LanguageResourceTest {
 
     private static final String[] LANGUAGES = {
-            "zh_CN", "zh_TW", "en_US", "de_DE", "es_ES", "nl_NL"
+            "zh_CN", "zh_TW", "en_US", "de_DE", "es_ES", "nl_NL", "tr_TR"
     };
 
     @Test

@@ -8,6 +8,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,7 +32,7 @@ class DataFileUpdaterTest {
                     - B
                 """);
 
-        DataFileUpdater.migrateLines(createPluginMock());
+        DataFileUpdater.migrateLines(createPluginMock(), Collections.emptyMap());
 
         YamlConfiguration config = YamlConfiguration.loadConfiguration(tempDir.resolve("lines.yml").toFile());
         assertEquals(DataFileUpdater.CURRENT_SCHEMA_VERSION, config.getInt("schema_version"));

@@ -271,7 +271,7 @@ portals:
 # General Settings
 settings:
   selection_tool: GOLDEN_SHOVEL
-  # Default language setting (Supported: zh_CN, zh_TW, en_US, de_DE, es_ES, nl_NL)
+  # Default language setting (Supported: zh_CN, zh_TW, en_US, de_DE, es_ES, nl_NL, tr_TR)
   default_language: en_US
   # 安全模式：开启后保护乘客免受三类干扰
   # Safe mode: when enabled, protects passengers from three types of interference

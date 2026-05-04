@@ -51,7 +51,7 @@ public class LanguageManager {
         }
 
         // 保存内置语言文件（首次运行时会复制到插件数据目录，之后会自动合并新增键）
-        String[] bundledLanguages = new String[] { "zh_CN", "zh_TW", "en_US", "de_DE", "es_ES", "nl_NL" };
+        String[] bundledLanguages = new String[] { "zh_CN", "zh_TW", "en_US", "de_DE", "es_ES", "nl_NL", "tr_TR" };
         for (String lang : bundledLanguages) {
             saveDefaultLanguageFile(lang);
         }

@@ -76,9 +76,9 @@ public class LineCommand {
         }
     }
 
-    @Command("m|metro line|l delete <id>")
+    @Command("m|metro line|l delete <lineId>")
     @CommandDescription("Delete a metro line")
-    public void delete(Player player, @Argument(value = "id", suggestions = "lineIds") String id) {
+    public void delete(Player player, @Argument(value = "lineId", suggestions = "lineIds") String id) {
         Line line = guard.requireManageableLine(player, id);
         if (line == null) {
             return;
@@ -92,9 +92,9 @@ public class LineCommand {
         }
     }
 
-    @Command("m|metro line|l rename <id> <name>")
+    @Command("m|metro line|l rename <lineId> <name>")
     @CommandDescription("Rename a metro line")
-    public void rename(Player player, @Argument(value = "id", suggestions = "lineIds") String id, @Greedy @Argument("name") String name) {
+    public void rename(Player player, @Argument(value = "lineId", suggestions = "lineIds") String id, @Greedy @Argument("name") String name) {
         Line line = guard.requireManageableLine(player, id);
         if (line == null) {
             return;
@@ -109,10 +109,10 @@ public class LineCommand {
         }
     }
 
-    @Command("m|metro line|l setcolor <id> <color>")
+    @Command("m|metro line|l setcolor <lineId> <color>")
     @CommandDescription("Set the color of a metro line")
     public void setColor(Player player,
-                         @Argument(value = "id", suggestions = "lineIds") String id,
+                         @Argument(value = "lineId", suggestions = "lineIds") String id,
                          @Argument(value = "color", suggestions = "lineColors") String color) {
         Line line = guard.requireManageableLine(player, id);
         if (line == null) {
@@ -134,9 +134,9 @@ public class LineCommand {
         }
     }
 
-    @Command("m|metro line|l setterminus <id> <terminus>")
+    @Command("m|metro line|l setterminus <lineId> <terminus>")
     @CommandDescription("Set terminus name for a line")
-    public void setTerminus(Player player, @Argument(value = "id", suggestions = "lineIds") String id, @Greedy @Argument("terminus") String terminus) {
+    public void setTerminus(Player player, @Argument(value = "lineId", suggestions = "lineIds") String id, @Greedy @Argument("terminus") String terminus) {
         Line line = guard.requireManageableLine(player, id);
         if (line == null) {
             return;
@@ -148,10 +148,10 @@ public class LineCommand {
         }
     }
 
-    @Command("m|metro line|l setmaxspeed <id> <speed>")
+    @Command("m|metro line|l setmaxspeed <lineId> <speed>")
     @CommandDescription("Set max speed for a line")
     public void setMaxSpeed(Player player,
-                            @Argument(value = "id", suggestions = "lineIds") String id,
+                            @Argument(value = "lineId", suggestions = "lineIds") String id,
                             @Argument(value = "speed", suggestions = "speedValues") double speed) {
         Line line = guard.requireManageableLine(player, id);
         if (line == null) {
@@ -267,9 +267,9 @@ public class LineCommand {
         }
     }
 
-    @Command("m|metro line|l portals <id> [page]")
+    @Command("m|metro line|l portals <lineId> [page]")
     @CommandDescription("List portals enabled for a line")
-    public void portals(Player player, @Argument(value = "id", suggestions = "lineIds") String id,
+    public void portals(Player player, @Argument(value = "lineId", suggestions = "lineIds") String id,
                         @Argument(value = "page", suggestions = "pageNumbers") Integer page) {
         Line line = guard.requireLine(player, id);
         if (line == null) {
@@ -279,9 +279,9 @@ public class LineCommand {
         view.sendPortals(player, line, page);
     }
 
-    @Command("m|metro line|l stops <id> [page]")
+    @Command("m|metro line|l stops <lineId> [page]")
     @CommandDescription("List all stops in line")
-    public void stops(Player player, @Argument(value = "id", suggestions = "lineIds") String id,
+    public void stops(Player player, @Argument(value = "lineId", suggestions = "lineIds") String id,
                       @Argument(value = "page", suggestions = "pageNumbers") Integer page) {
         Line line = guard.requireLine(player, id);
         if (line == null) {
@@ -291,9 +291,9 @@ public class LineCommand {
         view.sendStops(player, line, page);
     }
 
-    @Command("m|metro line|l info <id>")
+    @Command("m|metro line|l info <lineId>")
     @CommandDescription("Show line details")
-    public void info(Player player, @Argument(value = "id", suggestions = "lineIds") String id) {
+    public void info(Player player, @Argument(value = "lineId", suggestions = "lineIds") String id) {
         Line line = guard.requireLine(player, id);
         if (line == null) {
             return;
@@ -302,10 +302,10 @@ public class LineCommand {
         view.sendInfo(player, line);
     }
 
-    @Command("m|metro line|l protect <id> <mode>")
+    @Command("m|metro line|l protect <lineId> <mode>")
     @CommandDescription("Enable, disable, or inspect rail protection for a line")
     public void protectRoute(Player player,
-                             @Argument(value = "id", suggestions = "lineIds") String id,
+                             @Argument(value = "lineId", suggestions = "lineIds") String id,
                              @Argument(value = "mode", suggestions = "protectModes") String mode) {
         Line line = guard.requireManageableLine(player, id);
         if (line == null) {
@@ -337,9 +337,9 @@ public class LineCommand {
         }
     }
 
-    @Command("m|metro line|l recordroute <id>")
+    @Command("m|metro line|l recordroute <lineId>")
     @CommandDescription("Start or finish recording route points for a line")
-    public void recordRoute(Player player, @Argument(value = "id", suggestions = "lineIds") String id) {
+    public void recordRoute(Player player, @Argument(value = "lineId", suggestions = "lineIds") String id) {
         Line line = guard.requireManageableLine(player, id);
         if (line == null) {
             return;
@@ -367,9 +367,9 @@ public class LineCommand {
         }
     }
 
-    @Command("m|metro line|l clearroute <id>")
+    @Command("m|metro line|l clearroute <lineId>")
     @CommandDescription("Clear recorded route points for a line")
-    public void clearRoute(Player player, @Argument(value = "id", suggestions = "lineIds") String id) {
+    public void clearRoute(Player player, @Argument(value = "lineId", suggestions = "lineIds") String id) {
         Line line = guard.requireManageableLine(player, id);
         if (line == null) {
             return;
@@ -386,9 +386,9 @@ public class LineCommand {
         }
     }
 
-    @Command("m|metro line|l routeinfo <id>")
+    @Command("m|metro line|l routeinfo <lineId>")
     @CommandDescription("Show recorded route point status for a line")
-    public void routeInfo(Player player, @Argument(value = "id", suggestions = "lineIds") String id) {
+    public void routeInfo(Player player, @Argument(value = "lineId", suggestions = "lineIds") String id) {
         Line line = guard.requireLine(player, id);
         if (line == null) {
             return;
@@ -414,10 +414,10 @@ public class LineCommand {
         player.sendMessage(msg("line.record_too_few_hint"));
     }
 
-    @Command("m|metro line|l trust <id> <playerName>")
+    @Command("m|metro line|l trust <lineId> <playerName>")
     @CommandDescription("Grant line admin")
     public void trust(Player player,
-                      @Argument(value = "id", suggestions = "lineIds") String id,
+                      @Argument(value = "lineId", suggestions = "lineIds") String id,
                       @Argument(value = "playerName", suggestions = "playerNames") String playerName) {
         Line line = guard.requireManageableLine(player, id);
         if (line == null) {
@@ -439,10 +439,10 @@ public class LineCommand {
         }
     }
 
-    @Command("m|metro line|l untrust <id> <playerName>")
+    @Command("m|metro line|l untrust <lineId> <playerName>")
     @CommandDescription("Revoke line admin")
     public void untrust(Player player,
-                        @Argument(value = "id", suggestions = "lineIds") String id,
+                        @Argument(value = "lineId", suggestions = "lineIds") String id,
                         @Argument(value = "playerName", suggestions = "playerNames") String playerName) {
         Line line = guard.requireManageableLine(player, id);
         if (line == null) {
@@ -463,10 +463,10 @@ public class LineCommand {
         }
     }
 
-    @Command("m|metro line|l owner <id> <playerName>")
+    @Command("m|metro line|l owner <lineId> <playerName>")
     @CommandDescription("Transfer line ownership")
     public void owner(Player player,
-                      @Argument(value = "id", suggestions = "lineIds") String id,
+                      @Argument(value = "lineId", suggestions = "lineIds") String id,
                       @Argument(value = "playerName", suggestions = "playerNames") String playerName) {
         Line line = guard.requireLine(player, id);
         if (line == null) {
@@ -522,10 +522,10 @@ public class LineCommand {
         }
     }
 
-    @Command("m|metro line|l setprice <id> <price>")
+    @Command("m|metro line|l setprice <lineId> <price>")
     @CommandDescription("Set the ticket price for a metro line")
     public void setPrice(Player player,
-                         @Argument(value = "id", suggestions = "lineIds") String id,
+                         @Argument(value = "lineId", suggestions = "lineIds") String id,
                          @Argument(value = "price", suggestions = "priceValues") double price) {
         Line line = guard.requireManageableLine(player, id);
         if (line == null) {

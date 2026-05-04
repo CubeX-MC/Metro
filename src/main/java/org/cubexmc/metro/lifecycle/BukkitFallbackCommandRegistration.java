@@ -332,7 +332,7 @@ final class BukkitFallbackCommandRegistration {
                 case "lineIds", "lineId", "sourceId" -> plugin.getLineManager().getAllLines().stream()
                         .map(org.cubexmc.metro.model.Line::getId)
                         .toList();
-                case "stopIds", "stopId", "id" -> new ArrayList<>(plugin.getStopManager().getAllStopIds());
+                case "stopIds", "stopId" -> new ArrayList<>(plugin.getStopManager().getAllStopIds());
                 case "portalIds", "portalId", "id1", "id2" -> plugin.getPortalManager().getAllPortals().stream()
                         .map(org.cubexmc.metro.model.Portal::getId)
                         .sorted()
