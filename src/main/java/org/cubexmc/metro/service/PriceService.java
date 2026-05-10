@@ -1,6 +1,5 @@
 package org.cubexmc.metro.service;
 
-import org.bukkit.Location;
 import org.bukkit.World;
 import org.cubexmc.metro.model.PriceRule;
 import org.cubexmc.metro.model.Line;

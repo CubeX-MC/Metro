@@ -55,6 +55,8 @@ final class LineCommandView {
             "line.help_owner",
             "line.help_clonereverse",
             "line.help_setprice",
+            "line.help_priceinfo",
+            "line.help_setstatus",
             "line.help_recordroute",
             "line.help_clearroute",
             "line.help_routeinfo",

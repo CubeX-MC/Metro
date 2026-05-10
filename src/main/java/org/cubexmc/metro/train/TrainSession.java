@@ -23,9 +23,7 @@ public class TrainSession {
     private Vector lastTravelDirection;
 
     private String entryStopId;
-    private org.bukkit.Location entryLocation;
     private double distanceTraveled;
-    private double totalCharged;
 
     public TrainSession(Metro plugin, Minecart minecart, Player passenger, Line line, String currentStopId,
             TrainMovementTask.TrainState state) {
@@ -110,14 +108,6 @@ public class TrainSession {
         this.entryStopId = entryStopId;
     }
 
-    public org.bukkit.Location getEntryLocation() {
-        return entryLocation;
-    }
-
-    public void setEntryLocation(org.bukkit.Location entryLocation) {
-        this.entryLocation = entryLocation;
-    }
-
     public double getDistanceTraveled() {
         return distanceTraveled;
     }
@@ -125,14 +115,6 @@ public class TrainSession {
     public double addDistance(double blocks) {
         this.distanceTraveled += blocks;
         return this.distanceTraveled;
-    }
-
-    public double getTotalCharged() {
-        return totalCharged;
-    }
-
-    public void setTotalCharged(double totalCharged) {
-        this.totalCharged = totalCharged;
     }
 
     public void refreshTargetFromCurrentStop() {

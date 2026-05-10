@@ -133,31 +133,31 @@ public final class MetroAPI {
         Stop exitStop = getStop(exitStopId);
         if (line == null || entryStop == null || exitStop == null) return 0.0;
 
-        PriceService PriceService = plugin.getPriceService();
-        if (PriceService == null) {
+        PriceService priceService = plugin.getPriceService();
+        if (priceService == null) {
             return Math.max(0.0, line.getTicketPrice());
         }
 
-        return PriceService.calculatePrice(line, entryStop, exitStop, distanceBlocks, intervals,
+        return priceService.calculatePrice(line, entryStop, exitStop, distanceBlocks, intervals,
                 entryStop.getStopPointLocation() != null ? entryStop.getStopPointLocation().getWorld() : null);
     }
 
     public double getEstimatedPrice(String lineId) {
         Line line = getLine(lineId);
         if (line == null) return 0.0;
-        PriceService PriceService = plugin.getPriceService();
-        if (PriceService == null) {
+        PriceService priceService = plugin.getPriceService();
+        if (priceService == null) {
             return Math.max(0.0, line.getTicketPrice());
         }
-        return PriceService.getEstimatedPrice(line);
+        return priceService.getEstimatedPrice(line);
     }
 
     public String getPriceDescription(String lineId) {
         Line line = getLine(lineId);
         if (line == null) return "Free";
-        PriceService PriceService = plugin.getPriceService();
-        if (PriceService == null) return String.valueOf(Math.max(0.0, line.getTicketPrice()));
-        return PriceService.getPriceDescription(line);
+        PriceService priceService = plugin.getPriceService();
+        if (priceService == null) return String.valueOf(Math.max(0.0, line.getTicketPrice()));
+        return priceService.getPriceDescription(line);
     }
 
     // =============================================================

@@ -11,6 +11,8 @@ import org.cubexmc.metro.model.LineStatus;
 import org.cubexmc.metro.model.Portal;
 import org.cubexmc.metro.model.PriceRule;
 import org.cubexmc.metro.model.Stop;
+import org.cubexmc.metro.event.LineStatusChangeEvent;
+import org.bukkit.Bukkit;
 
 /**
  * Business operations used by line commands.
@@ -250,7 +252,13 @@ public class LineCommandService {
             return WriteStatus.NOT_FOUND;
         }
 
+        LineStatus oldStatus = line.getLineStatus();
+        if (oldStatus == lineStatus) {
+            return WriteStatus.SUCCESS;
+        }
+
         line.setLineStatus(lineStatus);
+        Bukkit.getPluginManager().callEvent(new LineStatusChangeEvent(line, oldStatus, lineStatus));
         lineManager.saveConfig();
         return WriteStatus.SUCCESS;
     }
