@@ -7,8 +7,12 @@ import java.util.regex.Pattern;
 
 import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.model.Line;
+import org.cubexmc.metro.model.LineStatus;
 import org.cubexmc.metro.model.Portal;
+import org.cubexmc.metro.model.PriceRule;
 import org.cubexmc.metro.model.Stop;
+import org.cubexmc.metro.event.LineStatusChangeEvent;
+import org.bukkit.Bukkit;
 
 /**
  * Business operations used by line commands.
@@ -194,6 +198,97 @@ public class LineCommandService {
             return WriteStatus.INVALID_VALUE;
         }
         return lineManager.setLineTicketPrice(id, price) ? WriteStatus.SUCCESS : WriteStatus.FAILED;
+    }
+
+    public WriteStatus setPriceRule(String id, String mode, double basePrice, Double perUnit, Double maxPrice) {
+        if (basePrice < 0.0 || (perUnit != null && perUnit < 0.0) || (maxPrice != null && maxPrice < 0.0)) {
+            return WriteStatus.INVALID_VALUE;
+        }
+
+        PriceRule.PricingMode pricingMode;
+        try {
+            pricingMode = PriceRule.PricingMode.valueOf(mode.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return WriteStatus.INVALID_VALUE;
+        }
+
+        Line line = lineManager.getLine(id);
+        if (line == null) {
+            return WriteStatus.NOT_FOUND;
+        }
+
+        PriceRule rule = new PriceRule(pricingMode, basePrice);
+        if (pricingMode == PriceRule.PricingMode.DISTANCE && perUnit != null) {
+            rule.setPerBlockRate(perUnit);
+        }
+        if (pricingMode == PriceRule.PricingMode.INTERVAL && perUnit != null) {
+            rule.setPerIntervalRate(perUnit);
+        }
+        if (maxPrice != null && maxPrice > 0.0) {
+            rule.setMaxPrice(maxPrice);
+        }
+
+        line.setPriceRule(rule);
+        lineManager.saveConfig();
+        return WriteStatus.SUCCESS;
+    }
+
+    public boolean resetPriceRule(String id) {
+        Line line = lineManager.getLine(id);
+        if (line == null) return false;
+        line.setPriceRule(null);
+        lineManager.saveConfig();
+        return true;
+    }
+
+    public WriteStatus setLineStatus(String id, String status) {
+        LineStatus lineStatus = LineStatus.fromConfig(status);
+        if (lineStatus == LineStatus.NORMAL && !status.equalsIgnoreCase("normal")) {
+            return WriteStatus.INVALID_VALUE;
+        }
+
+        Line line = lineManager.getLine(id);
+        if (line == null) {
+            return WriteStatus.NOT_FOUND;
+        }
+
+        LineStatus oldStatus = line.getLineStatus();
+        if (oldStatus == lineStatus) {
+            return WriteStatus.SUCCESS;
+        }
+
+        line.setLineStatus(lineStatus);
+        Bukkit.getPluginManager().callEvent(new LineStatusChangeEvent(line, oldStatus, lineStatus));
+        lineManager.saveConfig();
+        return WriteStatus.SUCCESS;
+    }
+
+    public boolean addAlternativeRoute(String id, String altLineId) {
+        Line line = lineManager.getLine(id);
+        if (line == null) return false;
+        boolean result = line.addAlternativeRoute(altLineId);
+        if (result) {
+            lineManager.saveConfig();
+        }
+        return result;
+    }
+
+    public boolean removeAlternativeRoute(String id, String altLineId) {
+        Line line = lineManager.getLine(id);
+        if (line == null) return false;
+        boolean result = line.removeAlternativeRoute(altLineId);
+        if (result) {
+            lineManager.saveConfig();
+        }
+        return result;
+    }
+
+    public boolean setSuspensionMessage(String id, String message) {
+        Line line = lineManager.getLine(id);
+        if (line == null) return false;
+        line.setSuspensionMessage(message);
+        lineManager.saveConfig();
+        return true;
     }
 
     public boolean isValidId(String id) {

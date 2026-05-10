@@ -22,6 +22,9 @@ public class TrainSession {
     private boolean teleporting;
     private Vector lastTravelDirection;
 
+    private String entryStopId;
+    private double distanceTraveled;
+
     public TrainSession(Metro plugin, Minecart minecart, Player passenger, Line line, String currentStopId,
             TrainMovementTask.TrainState state) {
         this.plugin = plugin;
@@ -29,6 +32,7 @@ public class TrainSession {
         this.passenger = passenger;
         this.line = line;
         this.currentStopId = currentStopId;
+        this.entryStopId = currentStopId;
         this.state = state;
         this.targetStopId = line == null ? null : line.getNextStopId(currentStopId);
         if (this.targetStopId == null) {
@@ -94,6 +98,23 @@ public class TrainSession {
 
     public void setLastTravelDirection(Vector lastTravelDirection) {
         this.lastTravelDirection = lastTravelDirection;
+    }
+
+    public String getEntryStopId() {
+        return entryStopId;
+    }
+
+    public void setEntryStopId(String entryStopId) {
+        this.entryStopId = entryStopId;
+    }
+
+    public double getDistanceTraveled() {
+        return distanceTraveled;
+    }
+
+    public double addDistance(double blocks) {
+        this.distanceTraveled += blocks;
+        return this.distanceTraveled;
     }
 
     public void refreshTargetFromCurrentStop() {

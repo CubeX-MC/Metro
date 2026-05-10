@@ -62,6 +62,8 @@ public final class Metro extends JavaPlugin {
     private org.cubexmc.metro.integration.VaultIntegration vaultIntegration;
     private org.cubexmc.metro.service.LineSelectionService lineSelectionService;
     private org.cubexmc.metro.service.TicketService ticketService;
+    private org.cubexmc.metro.service.PriceService priceService;
+    private org.cubexmc.metro.service.LineStatusService lineStatusService;
     private SaveCoordinator saveCoordinator;
     private MapIntegrationLifecycle mapIntegrationLifecycle;
     private ScheduledTaskLifecycle scheduledTaskLifecycle;
@@ -115,6 +117,9 @@ public final class Metro extends JavaPlugin {
         this.ticketService = new org.cubexmc.metro.service.TicketService(this::getVaultIntegration,
                 () -> getConfig().getBoolean("economy.enabled", true));
 
+        this.priceService = new org.cubexmc.metro.service.PriceService();
+        this.lineStatusService = new org.cubexmc.metro.service.LineStatusService(this, lineManager);
+
         // 初始化计分板库
         try {
             this.globalScoreboardLibrary = ScoreboardLibrary.loadScoreboardLibrary(this);
@@ -152,6 +157,8 @@ public final class Metro extends JavaPlugin {
 
         this.mapIntegrationLifecycle = new MapIntegrationLifecycle(this);
         this.mapIntegrationLifecycle.enable();
+
+        org.cubexmc.metro.api.MetroAPI.initialize(this);
 
         getLogger().info("Metro(Modern) has been enabled!");
     }
@@ -377,6 +384,14 @@ public final class Metro extends JavaPlugin {
 
     public org.cubexmc.metro.service.TicketService getTicketService() {
         return ticketService;
+    }
+
+    public org.cubexmc.metro.service.PriceService getPriceService() {
+        return priceService;
+    }
+
+    public org.cubexmc.metro.service.LineStatusService getLineStatusService() {
+        return lineStatusService;
     }
 
     public SaveCoordinator getSaveCoordinator() {

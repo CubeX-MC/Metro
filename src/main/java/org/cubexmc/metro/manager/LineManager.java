@@ -18,6 +18,8 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.model.Line;
+import org.cubexmc.metro.model.LineStatus;
+import org.cubexmc.metro.model.PriceRule;
 import org.cubexmc.metro.model.RoutePoint;
 import org.cubexmc.metro.model.Stop;
 import org.cubexmc.metro.update.DataFileUpdater;
@@ -116,6 +118,57 @@ public class LineManager {
                     // 加载乘车价格
                     double ticketPrice = config.getDouble(lineId + ".ticket_price", 0.0);
                     line.setTicketPrice(ticketPrice);
+
+                    // Load PriceRule
+                    if (config.contains(lineId + ".price_rule")) {
+                        ConfigurationSection priceSection = config.getConfigurationSection(lineId + ".price_rule");
+                        if (priceSection != null) {
+                            Map<String, Object> priceMap = priceSection.getValues(true);
+                            Map<String, Object> flattened = new HashMap<>();
+                            for (Map.Entry<String, Object> entry : priceMap.entrySet()) {
+                                String key = entry.getKey();
+                                Object value = entry.getValue();
+                                String topKey = key.contains(".") ? key.substring(0, key.indexOf('.')) : key;
+                                if (!flattened.containsKey(topKey)) {
+                                    if (value instanceof ConfigurationSection) {
+                                        flattened.put(topKey, ((ConfigurationSection) value).getValues(false));
+                                    } else {
+                                        flattened.put(topKey, value);
+                                    }
+                                }
+                            }
+                            if (priceMap.containsKey("time_discounts")) {
+                                List<?> rawList = config.getList(lineId + ".price_rule.time_discounts");
+                                if (rawList != null) {
+                                    List<Map<String, Object>> discountList = new ArrayList<>();
+                                    for (Object item : rawList) {
+                                        if (item instanceof Map) {
+                                            @SuppressWarnings("unchecked")
+                                            Map<String, Object> discountMap = (Map<String, Object>) item;
+                                            discountList.add(discountMap);
+                                        }
+                                    }
+                                    flattened.put("time_discounts", discountList);
+                                }
+                            }
+                            line.setPriceRule(PriceRule.deserialize(flattened));
+                        }
+                    }
+
+                    String statusStr = config.getString(lineId + ".line_status");
+                    if (statusStr != null) {
+                        line.setLineStatus(LineStatus.fromConfig(statusStr));
+                    }
+
+                    List<String> altRoutes = config.getStringList(lineId + ".alternative_routes");
+                    if (altRoutes != null && !altRoutes.isEmpty()) {
+                        line.setAlternativeRouteIds(altRoutes);
+                    }
+
+                    String suspensionMsg = config.getString(lineId + ".suspension_message");
+                    if (suspensionMsg != null && !suspensionMsg.isEmpty()) {
+                        line.setSuspensionMessage(suspensionMsg);
+                    }
 
                     line.setRailProtected(config.getBoolean(lineId + ".rail_protected", false));
 
@@ -720,6 +773,30 @@ public class LineManager {
                 snapshot.set(lineId + ".terminus_name", line.getTerminusName());
                 snapshot.set(lineId + ".max_speed", line.getMaxSpeed() != null ? line.getMaxSpeed() : null);
                 snapshot.set(lineId + ".ticket_price", line.getTicketPrice() > 0 ? line.getTicketPrice() : null);
+
+                // Save PriceRule
+                PriceRule priceRule = line.getPriceRule();
+                if (priceRule != null) {
+                    Map<String, Object> priceMap = priceRule.serialize();
+                    for (Map.Entry<String, Object> entry : priceMap.entrySet()) {
+                        snapshot.set(lineId + ".price_rule." + entry.getKey(), entry.getValue());
+                    }
+                }
+
+                if (line.getLineStatus() != LineStatus.NORMAL) {
+                    snapshot.set(lineId + ".line_status", line.getLineStatus().getConfigKey());
+                }
+
+                List<String> altRoutes = line.getAlternativeRouteIds();
+                if (!altRoutes.isEmpty()) {
+                    snapshot.set(lineId + ".alternative_routes", altRoutes);
+                }
+
+                String suspensionMsg = line.getSuspensionMessage();
+                if (suspensionMsg != null && !suspensionMsg.isEmpty()) {
+                    snapshot.set(lineId + ".suspension_message", suspensionMsg);
+                }
+
                 snapshot.set(lineId + ".rail_protected", line.isRailProtected() ? true : null);
                 snapshot.set(lineId + ".owner", line.getOwner() != null ? line.getOwner().toString() : null);
 

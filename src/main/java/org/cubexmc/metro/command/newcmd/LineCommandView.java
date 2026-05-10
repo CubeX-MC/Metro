@@ -18,6 +18,7 @@ import org.cubexmc.metro.manager.RouteRecorder;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Portal;
+import org.cubexmc.metro.model.PriceRule;
 import org.cubexmc.metro.model.Stop;
 import org.cubexmc.metro.service.CommandDisplayService;
 
@@ -54,6 +55,8 @@ final class LineCommandView {
             "line.help_owner",
             "line.help_clonereverse",
             "line.help_setprice",
+            "line.help_priceinfo",
+            "line.help_setstatus",
             "line.help_recordroute",
             "line.help_clearroute",
             "line.help_routeinfo",
@@ -316,5 +319,70 @@ final class LineCommandView {
             stopComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(hoverText)));
         }
         return stopComponent;
+    }
+
+    void sendPriceInfo(Player player, Line line) {
+        LanguageManager lang = plugin.getLanguageManager();
+        player.sendMessage(lang.getMessage("line.priceinfo_header",
+                LanguageManager.put(LanguageManager.args(), "line_name", line.getName())));
+
+        PriceRule rule = line.getPriceRule();
+
+        if (rule == null) {
+            player.sendMessage(lang.getMessage("line.priceinfo_mode",
+                    LanguageManager.put(LanguageManager.args(), "mode", "FLAT")));
+            player.sendMessage(lang.getMessage("line.priceinfo_base",
+                    LanguageManager.put(LanguageManager.args(), "base", String.valueOf(line.getTicketPrice()))));
+            return;
+        }
+
+        player.sendMessage(lang.getMessage("line.priceinfo_mode",
+                LanguageManager.put(LanguageManager.args(), "mode", rule.getMode().name())));
+
+        player.sendMessage(lang.getMessage("line.priceinfo_base",
+                LanguageManager.put(LanguageManager.args(), "base", String.valueOf(rule.getBasePrice()))));
+
+        if (rule.getMode() == PriceRule.PricingMode.DISTANCE) {
+            player.sendMessage(lang.getMessage("line.priceinfo_per_block",
+                    LanguageManager.put(LanguageManager.args(), "per_block", String.valueOf(rule.getPerBlockRate()))));
+        } else if (rule.getMode() == PriceRule.PricingMode.INTERVAL) {
+            player.sendMessage(lang.getMessage("line.priceinfo_per_interval",
+                    LanguageManager.put(LanguageManager.args(), "per_interval", String.valueOf(rule.getPerIntervalRate()))));
+        }
+
+        if (rule.getMaxPrice() > 0.0) {
+            player.sendMessage(lang.getMessage("line.priceinfo_max",
+                    LanguageManager.put(LanguageManager.args(), "max", String.valueOf(rule.getMaxPrice()))));
+        }
+
+        List<PriceRule.TimeDiscount> discounts = rule.getTimeDiscounts();
+        if (!discounts.isEmpty()) {
+            player.sendMessage(lang.getMessage("line.priceinfo_discounts"));
+            for (PriceRule.TimeDiscount discount : discounts) {
+                String startTime = formatTicksToTime(discount.getStartTick());
+                String endTime = formatTicksToTime(discount.getEndTick());
+                int percent = (int) Math.round((1.0 - discount.getDiscountMultiplier()) * 100);
+                player.sendMessage(lang.getMessage("line.priceinfo_discount_item",
+                        LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
+                                "start_time", startTime), "end_time", endTime), "percent", String.valueOf(percent))));
+            }
+
+            org.bukkit.World world = player.getWorld();
+            if (world != null) {
+                double activeMultiplier = rule.getActiveDiscountMultiplier(world.getTime());
+                if (activeMultiplier < 1.0) {
+                    int activePercent = (int) Math.round((1.0 - activeMultiplier) * 100);
+                    player.sendMessage(lang.getMessage("line.priceinfo_active_discount",
+                            LanguageManager.put(LanguageManager.args(), "percent", String.valueOf(activePercent))));
+                }
+            }
+        }
+    }
+
+    private String formatTicksToTime(int ticks) {
+        int totalMinutes = (int) Math.round((ticks / 24000.0) * 24 * 60);
+        int hours = (totalMinutes / 60) % 24;
+        int minutes = totalMinutes % 60;
+        return String.format("%02d:%02d", hours, minutes);
     }
 }
