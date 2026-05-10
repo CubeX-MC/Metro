@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -11,6 +12,8 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.UUID;
 
+import org.bukkit.Bukkit;
+import org.bukkit.plugin.PluginManager;
 import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Portal;
@@ -219,6 +222,120 @@ class LineCommandServiceTest {
         assertEquals(WriteStatus.SUCCESS, result.status());
         assertEquals(2, result.previousPointCount());
         verify(lineManager).clearLineRoutePoints("red");
+    }
+
+    @Test
+    void shouldRejectNegativeFareValues() {
+        when(lineManager.getLine("red")).thenReturn(line("red", "world", List.of()));
+        assertEquals(WriteStatus.INVALID_VALUE,
+                service.setPriceRule("red", "flat", -1.0, null, null));
+        assertEquals(WriteStatus.INVALID_VALUE,
+                service.setPriceRule("red", "distance", 0.0, -0.1, null));
+        assertEquals(WriteStatus.INVALID_VALUE,
+                service.setPriceRule("red", "interval", 0.0, null, -5.0));
+    }
+
+    @Test
+    void shouldSetFlatPriceRule() {
+        Line line = line("red", "world", List.of());
+        when(lineManager.getLine("red")).thenReturn(line);
+
+        assertEquals(WriteStatus.SUCCESS,
+                service.setPriceRule("red", "flat", 5.0, null, null));
+        assertEquals(5.0, line.getPriceRule().getBasePrice());
+    }
+
+    @Test
+    void shouldSetDistancePriceRule() {
+        Line line = line("red", "world", List.of());
+        when(lineManager.getLine("red")).thenReturn(line);
+
+        assertEquals(WriteStatus.SUCCESS,
+                service.setPriceRule("red", "distance", 2.0, 0.3, 20.0));
+        assertEquals(0.3, line.getPriceRule().getPerBlockRate());
+        assertEquals(20.0, line.getPriceRule().getMaxPrice());
+    }
+
+    @Test
+    void shouldSetIntervalPriceRule() {
+        Line line = line("red", "world", List.of());
+        when(lineManager.getLine("red")).thenReturn(line);
+
+        assertEquals(WriteStatus.SUCCESS,
+                service.setPriceRule("red", "interval", 3.0, 1.5, null));
+        assertEquals(1.5, line.getPriceRule().getPerIntervalRate());
+    }
+
+    @Test
+    void shouldRejectInvalidPricingMode() {
+        when(lineManager.getLine("red")).thenReturn(line("red", "world", List.of()));
+        assertEquals(WriteStatus.INVALID_VALUE,
+                service.setPriceRule("red", "invalid_mode", 5.0, null, null));
+    }
+
+    @Test
+    void shouldReturnNotFoundForMissingLineFare() {
+        when(lineManager.getLine("missing")).thenReturn(null);
+        assertEquals(WriteStatus.NOT_FOUND,
+                service.setPriceRule("missing", "flat", 5.0, null, null));
+    }
+
+    @Test
+    void shouldResetPriceRuleToNull() {
+        Line line = line("red", "world", List.of());
+        line.setPriceRule(new org.cubexmc.metro.model.PriceRule(
+                org.cubexmc.metro.model.PriceRule.PricingMode.FLAT, 5.0));
+        when(lineManager.getLine("red")).thenReturn(line);
+
+        assertTrue(service.resetPriceRule("red"));
+        assertEquals(null, line.getPriceRule());
+    }
+
+    @Test
+    void shouldResetPriceRuleReturnFalseForMissingLine() {
+        when(lineManager.getLine("missing")).thenReturn(null);
+        assertFalse(service.resetPriceRule("missing"));
+    }
+
+    @Test
+    void shouldSetLineStatus() {
+        try (var bukkitMock = mockStatic(Bukkit.class)) {
+            PluginManager pm = mock(PluginManager.class);
+            bukkitMock.when(Bukkit::getPluginManager).thenReturn(pm);
+
+            Line line = line("red", "world", List.of());
+            when(lineManager.getLine("red")).thenReturn(line);
+
+            assertEquals(WriteStatus.SUCCESS, service.setLineStatus("red", "suspended"));
+            assertEquals(org.cubexmc.metro.model.LineStatus.SUSPENDED, line.getLineStatus());
+        }
+    }
+
+    @Test
+    void shouldRejectInvalidStatus() {
+        when(lineManager.getLine("red")).thenReturn(line("red", "world", List.of()));
+        assertEquals(WriteStatus.INVALID_VALUE, service.setLineStatus("red", "broken"));
+    }
+
+    @Test
+    void shouldSetSuspensionMessage() {
+        Line line = line("red", "world", List.of());
+        when(lineManager.getLine("red")).thenReturn(line);
+
+        assertTrue(service.setSuspensionMessage("red", "Closed for repairs"));
+        assertEquals("Closed for repairs", line.getSuspensionMessage());
+    }
+
+    @Test
+    void shouldAddAndRemoveAlternativeRoute() {
+        Line line = line("red", "world", List.of());
+        when(lineManager.getLine("red")).thenReturn(line);
+
+        assertTrue(service.addAlternativeRoute("red", "blue"));
+        assertTrue(line.getAlternativeRouteIds().contains("blue"));
+
+        assertTrue(service.removeAlternativeRoute("red", "blue"));
+        assertFalse(line.getAlternativeRouteIds().contains("blue"));
     }
 
     private Line line(String id, String worldName, List<String> stopIds) {

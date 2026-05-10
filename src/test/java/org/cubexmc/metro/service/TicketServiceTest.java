@@ -13,6 +13,7 @@ import java.util.UUID;
 import org.bukkit.entity.Player;
 import org.cubexmc.metro.integration.VaultIntegration;
 import org.cubexmc.metro.model.Line;
+import org.cubexmc.metro.model.PriceRule;
 import org.cubexmc.metro.service.TicketService.TicketChargeStatus;
 import org.cubexmc.metro.service.TicketService.TicketCheckStatus;
 import org.junit.jupiter.api.Test;
@@ -87,6 +88,60 @@ class TicketServiceTest {
 
         assertEquals(TicketChargeStatus.TRANSACTION_FAILED, service.charge(transaction));
         assertFalse(transaction.isCharged());
+    }
+
+    @Test
+    void shouldEstimateMinimumPriceForDistanceMode() {
+        VaultIntegration vault = enabledVault();
+        Player player = player();
+        TicketService service = new TicketService(() -> vault, () -> true);
+
+        Line line = new Line("red", "Red");
+        PriceRule rule = new PriceRule(PriceRule.PricingMode.DISTANCE, 0.0);
+        rule.setPerBlockRate(0.5);
+        line.setPriceRule(rule);
+
+        when(vault.has(player, 0.5)).thenReturn(true);
+
+        assertTrue(service.checkCanBoard(player, line).canBoard());
+    }
+
+    @Test
+    void shouldBlockBoardingIfCantAffordEstimatedMinimum() {
+        VaultIntegration vault = enabledVault();
+        Player player = player();
+        TicketService service = new TicketService(() -> vault, () -> true);
+
+        Line line = new Line("red", "Red");
+        PriceRule rule = new PriceRule(PriceRule.PricingMode.INTERVAL, 2.0);
+        rule.setPerIntervalRate(5.0);
+        line.setPriceRule(rule);
+
+        when(vault.has(player, 7.0)).thenReturn(false);
+
+        assertFalse(service.checkCanBoard(player, line).canBoard());
+    }
+
+    @Test
+    void shouldOnlyChargeBasePriceForBoarding() {
+        VaultIntegration vault = enabledVault();
+        Player player = player();
+        when(vault.has(player, 3.0)).thenReturn(true);
+        when(vault.withdraw(player, 3.0)).thenReturn(true);
+        when(vault.format(3.0)).thenReturn("$3.00");
+
+        TicketService service = new TicketService(() -> vault, () -> true);
+
+        Line line = new Line("red", "Red");
+        PriceRule rule = new PriceRule(PriceRule.PricingMode.DISTANCE, 3.0);
+        rule.setPerBlockRate(0.5);
+        line.setPriceRule(rule);
+
+        TicketService.TicketTransaction txn = service.createTransaction(player, line);
+        assertEquals(3.0, txn.getPrice());
+
+        assertEquals(TicketChargeStatus.CHARGED, service.charge(txn));
+        verify(vault).withdraw(player, 3.0);
     }
 
     private VaultIntegration enabledVault() {
