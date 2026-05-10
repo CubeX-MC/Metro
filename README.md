@@ -30,13 +30,25 @@ Metro是一个受牛腩小镇启发的地铁交通系统插件，允许管理员
 | `/m line setcolor <line_id> <颜色代码>`  | 设置线路颜色             |
 | `/m line setterminus <line_id> <名称>`   | 设置终点方向描述         |
 | `/m line setmaxspeed <line_id> <速度>`   | 设置线路最大运行速度     |
-| `/m line addstop <line_id> <stop_id> [位置索引]` | 将停靠区添加到线路（可指定位置） |
+| `/m line setprice <line_id> <价格>`      | 设置单一定价             |
+| `/m line setprice <line_id> flat <基础价>` | 设置固定票价           |
+| `/m line setprice <line_id> distance <基础价> <每方块> [封顶]` | 按距离计价 |
+| `/m line setprice <line_id> interval <基础价> <每站> [封顶]` | 按站数计价 |
+| `/m line setprice reset <line_id>`       | 重置为默认单一票价       |
+| `/m line priceinfo <line_id>`            | 查看线路定价详情         |
+| `/m line setstatus <line_id> <normal|suspended|maintenance>` | 设置运营状态 |
+| `/m line addstop <line_id> <stop_id> [位置索引]` | 将停靠区添加到线路 |
 | `/m line delstop <line_id> <stop_id>`    | 从线路中移除停靠区       |
 | `/m line stops <line_id>`                | 查看线路的所有停靠区     |
 | `/m line addportal <line_id> <portal_id>` | 允许线路使用传送门       |
 | `/m line delportal <line_id> <portal_id>` | 从线路中移除传送门       |
 | `/m line portals <line_id>`              | 查看线路启用的传送门     |
 | `/m line info <line_id>`                 | 查看线路详细信息及权限   |
+| `/m line recordroute <line_id>`          | 录制或保存路线轨迹       |
+| `/m line clearroute <line_id>`           | 清除已录制的路线         |
+| `/m line routeinfo <line_id>`            | 查看路线录制状态         |
+| `/m line protect <line_id> <on|off>`     | 启停铁轨保护             |
+| `/m line clonereverse <源ID> <新ID> [后缀]` | 反向克隆线路           |
 | `/m line trust <line_id> <玩家>`         | 授予线路管理权限          |
 | `/m line untrust <line_id> <玩家>`       | 移除线路管理权限          |
 | `/m line owner <line_id> <玩家>`         | 转移线路所有权            |
