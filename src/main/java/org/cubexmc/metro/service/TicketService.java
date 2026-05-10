@@ -5,12 +5,10 @@ import java.util.UUID;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
-import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.cubexmc.metro.integration.VaultIntegration;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.PriceRule;
-import org.cubexmc.metro.model.Stop;
 
 /**
  * Coordinates ticket price checks and delayed economy charges.
@@ -106,7 +104,7 @@ public class TicketService {
     }
 
     public TicketCheck checkCanBoard(Player player, Line line) {
-        double price = getTicketPrice(line);
+        double price = getEstimatedMinimumPrice(line);
         String formattedPrice = format(price);
         if (!economyEnabledSupplier.getAsBoolean()) {
             return new TicketCheck(TicketCheckStatus.ECONOMY_DISABLED, price, formattedPrice);
@@ -179,19 +177,19 @@ public class TicketService {
         return Math.max(0.0, line.getTicketPrice());
     }
 
-    public double calculatePrice(Line line, Stop entryStop, Stop exitStop,
-                                  double distanceBlocks, int intervals, World world) {
+    private double getEstimatedMinimumPrice(Line line) {
         if (line == null) return 0.0;
         PriceRule rule = line.getPriceRule();
-        if (rule == null) {
-            return Math.max(0.0, line.getTicketPrice());
+        if (rule != null) {
+            double estimate = rule.getBasePrice();
+            if (rule.getMode() == PriceRule.PricingMode.DISTANCE) {
+                estimate += rule.getPerBlockRate();
+            } else if (rule.getMode() == PriceRule.PricingMode.INTERVAL) {
+                estimate += rule.getPerIntervalRate();
+            }
+            return Math.max(0.0, estimate);
         }
-        if (intervals <= 0 && entryStop != null && exitStop != null) {
-            intervals = countStopIntervals(line, entryStop.getId(), exitStop.getId());
-        }
-        if (intervals <= 0) intervals = 1;
-        long gameTime = world != null ? world.getTime() : 6000;
-        return rule.calculatePrice(distanceBlocks, intervals, gameTime);
+        return Math.max(0.0, line.getTicketPrice());
     }
 
     public TicketChargeStatus chargePrice(Player player, Line line, double priceToCharge) {
@@ -216,21 +214,6 @@ public class TicketService {
             vault.deposit(owner, priceToCharge);
         }
         return TicketChargeStatus.CHARGED;
-    }
-
-    private int countStopIntervals(Line line, String entryStopId, String exitStopId) {
-        if (line == null || entryStopId == null || exitStopId == null) return 0;
-        java.util.List<String> stopIds = line.getOrderedStopIds();
-        int entryIndex = stopIds.indexOf(entryStopId);
-        int exitIndex = stopIds.indexOf(exitStopId);
-        if (entryIndex == -1 || exitIndex == -1) return 0;
-        if (line.isCircular()) {
-            int forwardDist = (exitIndex - entryIndex + stopIds.size()) % stopIds.size();
-            int backwardDist = (entryIndex - exitIndex + stopIds.size()) % stopIds.size();
-            return Math.min(forwardDist, backwardDist);
-        }
-        if (exitIndex <= entryIndex) return 0;
-        return exitIndex - entryIndex;
     }
 
     private VaultIntegration getEnabledVault() {

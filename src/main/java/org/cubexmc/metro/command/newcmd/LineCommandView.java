@@ -330,7 +330,8 @@ final class LineCommandView {
 
         if (rule == null) {
             player.sendMessage(lang.getMessage("line.priceinfo_mode",
-                    LanguageManager.put(LanguageManager.args(), "mode", "FLAT")));
+                    LanguageManager.put(LanguageManager.args(), "mode",
+                            lang.getMessage("line.priceinfo_mode_flat"))));
             player.sendMessage(lang.getMessage("line.priceinfo_base",
                     LanguageManager.put(LanguageManager.args(), "base", String.valueOf(line.getTicketPrice()))));
             return;

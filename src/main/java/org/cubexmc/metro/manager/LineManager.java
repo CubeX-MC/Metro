@@ -151,7 +151,12 @@ public class LineManager {
                                     flattened.put("time_discounts", discountList);
                                 }
                             }
-                            line.setPriceRule(PriceRule.deserialize(flattened));
+                            try {
+                                line.setPriceRule(PriceRule.deserialize(flattened));
+                            } catch (Exception e) {
+                                plugin.getLogger().log(Level.WARNING,
+                                        "Failed to deserialize price_rule for line " + lineId, e);
+                            }
                         }
                     }
 

@@ -87,10 +87,11 @@ public final class MetroAPI {
     }
 
     public boolean setLineStatus(String lineId, LineStatus status) {
+        Line line = getLine(lineId);
+        if (line == null) return false;
         LineStatusService statusService = plugin.getLineStatusService();
         if (statusService == null) return false;
-        Line line = getLine(lineId);
-        return line != null && statusService.setStatus(line, status);
+        return statusService.setStatus(line, status);
     }
 
     public boolean isLineSuspended(String lineId) {

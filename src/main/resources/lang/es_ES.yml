@@ -191,6 +191,7 @@ line:
   routeinfo_unknown: "desconocido"
   priceinfo_header: "&a===== Información de Precios: {line_name} ====="
   priceinfo_mode: "&7Modo de precio: &f{mode}"
+  priceinfo_mode_flat: "FLAT"
   priceinfo_base: "&7Precio base: &f{base}"
   priceinfo_per_block: "&7Tarifa por bloque: &f{per_block}"
   priceinfo_per_interval: "&7Tarifa por parada: &f{per_interval}"
