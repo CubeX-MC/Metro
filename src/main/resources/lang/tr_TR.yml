@@ -191,6 +191,7 @@ line:
   routeinfo_unknown: "bilinmiyor"
   priceinfo_header: "&a===== Fiyat Bilgisi: {line_name} ====="
   priceinfo_mode: "&7Fiyat modu: &f{mode}"
+  priceinfo_mode_flat: "FLAT"
   priceinfo_base: "&7Temel fiyat: &f{base}"
   priceinfo_per_block: "&7Blok başına fiyat: &f{per_block}"
   priceinfo_per_interval: "&7Durak başına fiyat: &f{per_interval}"

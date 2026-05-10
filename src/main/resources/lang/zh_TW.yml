@@ -191,6 +191,7 @@ line:
   routeinfo_unknown: "未知"
   priceinfo_header: "&a===== 票價資訊: {line_name} ====="
   priceinfo_mode: "&7計價模式: &f{mode}"
+  priceinfo_mode_flat: "FLAT"
   priceinfo_base: "&7基礎票價: &f{base}"
   priceinfo_per_block: "&7每格費率: &f{per_block}"
   priceinfo_per_interval: "&7每站費率: &f{per_interval}"

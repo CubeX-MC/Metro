@@ -45,13 +45,7 @@ public class LineStatusService {
         if (oldStatus == newStatus) return false;
 
         line.setLineStatus(newStatus);
-
-        // Fire event
-        Bukkit.getPluginManager().callEvent(new LineStatusChangeEvent(line, oldStatus, newStatus));
-
-        // Save changes
         lineManager.saveConfig();
-
         return true;
     }
 
