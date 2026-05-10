@@ -19,9 +19,11 @@ public class RouteRecorder {
 
     private final Metro plugin;
     private final Map<String, RecordingSession> sessions = new ConcurrentHashMap<>();
+    private final RouteNormalizer routeNormalizer;
 
     public RouteRecorder(Metro plugin) {
         this.plugin = plugin;
+        this.routeNormalizer = new RouteNormalizer();
     }
 
     public boolean start(String lineId) {
@@ -97,7 +99,10 @@ public class RouteRecorder {
     }
 
     private FinishResult saveSession(RecordingSession session) {
-        List<RoutePoint> points = simplifyRoutePoints(session.snapshot());
+        List<RoutePoint> normalized = routeNormalizer.normalize(session.snapshot(), simplifyEpsilonBlocks());
+        List<RoutePoint> points = normalized.size() >= MIN_SAVE_POINTS
+                ? normalized
+                : simplifyRoutePoints(session.snapshot());
         if (points.size() < MIN_SAVE_POINTS) {
             return FinishResult.tooFewPoints(session.lineId, points.size(), session.recorderId, session.cartId);
         }
