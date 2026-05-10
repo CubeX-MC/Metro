@@ -72,7 +72,10 @@
 
 仍需补测：
 
-- `TrainMovementTask` — 56%，settleDistanceFare 新逻辑
+- `TrainMovementTask` — 39 tests (+3)，settleDistanceFare 新逻辑已覆盖
+
+仍需补测：
+
 - `LineStatus` 枚举 — fromConfig 边界
 
 ### P1：防止核心交互路径回归
