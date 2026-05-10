@@ -25,9 +25,16 @@ Metro is a subway transit system plugin that lets administrators create automate
 | `/m line delete <line_id>`                        | Delete an existing line                    |
 | `/m line list`                                    | List all lines                             |
 | `/m line rename <line_id> <new_name>`             | Rename a line                              |
-| `/m line setcolor <line_id> <color_code>`         | Set line color (e.g. `&9` for blue)         |
+| `/m line setcolor <line_id> <color_code>`         | Set line color (e.g. `&9` for blue)        |
 | `/m line setterminus <line_id> <terminus_name>`   | Set terminus description                   |
 | `/m line setmaxspeed <line_id> <speed>`           | Set maximum speed for the line             |
+| `/m line setprice <line_id> <price>`              | Set legacy flat ticket price               |
+| `/m line setprice <line_id> flat <base>`          | Set flat pricing                           |
+| `/m line setprice <line_id> distance <base> <perBlock> [max]` | Set distance-based pricing    |
+| `/m line setprice <line_id> interval <base> <perStop> [max]`  | Set interval-based pricing     |
+| `/m line setprice reset <line_id>`                | Reset to legacy flat pricing               |
+| `/m line priceinfo <line_id>`                     | View pricing details and active discounts  |
+| `/m line setstatus <line_id> <normal|suspended|maintenance>` | Set operational status    |
 | `/m line addstop <line_id> <stop_id> [index]`     | Add a stop to the line (optional position) |
 | `/m line delstop <line_id> <stop_id>`             | Remove a stop from the line                |
 | `/m line stops <line_id>`                         | Show all stops on the line                 |
@@ -35,6 +42,11 @@ Metro is a subway transit system plugin that lets administrators create automate
 | `/m line delportal <line_id> <portal_id>`         | Remove a portal from the line              |
 | `/m line portals <line_id>`                       | Show portals enabled for the line          |
 | `/m line info <line_id>`                          | Display detailed line info and members     |
+| `/m line recordroute <line_id>`                   | Record or save route points                |
+| `/m line clearroute <line_id>`                    | Clear recorded route points                |
+| `/m line routeinfo <line_id>`                     | Show route recording status                |
+| `/m line protect <line_id> <on|off>`              | Toggle rail protection                     |
+| `/m line clonereverse <source_id> <new_id> [suffix]` | Clone line in reverse direction         |
 | `/m line trust <line_id> <player>`                | Add a line administrator                   |
 | `/m line untrust <line_id> <player>`              | Remove a line administrator                |
 | `/m line owner <line_id> <player>`                | Transfer line ownership                    |
