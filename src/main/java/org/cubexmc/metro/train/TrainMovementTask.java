@@ -4,6 +4,7 @@ import java.util.Map;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Minecart;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -17,8 +18,10 @@ import org.cubexmc.metro.event.TrainEnterStopEvent;
 import org.cubexmc.metro.manager.LanguageManager;
 import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.StopManager;
+import org.cubexmc.metro.model.FareRule;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Stop;
+import org.cubexmc.metro.service.TicketService;
 import org.cubexmc.metro.util.SchedulerUtil;
 
 /**
@@ -152,6 +155,20 @@ public class TrainMovementTask implements Listener {
             session.getPlugin().getRouteRecorder().sample(line.getId(), minecart, event.getTo());
         }
         updateLastTravelDirection(event.getFrom(), event.getTo());
+
+        // Track distance traveled for per-block charging
+        if (session.getState() == TrainState.MOVING_BETWEEN_STATIONS) {
+            Location from = event.getFrom();
+            Location to = event.getTo();
+            if (from.getWorld() != null && to.getWorld() != null && from.getWorld().equals(to.getWorld())) {
+                double dx = to.getX() - from.getX();
+                double dz = to.getZ() - from.getZ();
+                double dist = Math.sqrt(dx * dx + dz * dz);
+                if (dist > 0.001) {
+                    session.addDistance(dist);
+                }
+            }
+        }
 
         if (session.getState() != TrainState.MOVING_IN_STATION) {
             return;
@@ -368,12 +385,24 @@ public class TrainMovementTask implements Listener {
         LanguageManager.put(args, "line_id", result.lineId());
         LanguageManager.put(args, "point_count", String.valueOf(result.pointCount()));
 
-        String key = switch (result.status()) {
-            case SAVED -> "line.record_saved";
-            case TOO_FEW_POINTS -> "line.record_too_few";
-            case FAILED -> "line.record_failed";
-            case NOT_RECORDING -> null;
-        };
+        String key;
+        switch (result.status()) {
+            case SAVED:
+                key = "line.record_saved";
+                break;
+            case TOO_FEW_POINTS:
+                key = "line.record_too_few";
+                break;
+            case FAILED:
+                key = "line.record_failed";
+                break;
+            case NOT_RECORDING:
+                key = null;
+                break;
+            default:
+                key = null;
+                break;
+        }
         if (key != null) {
             recorder.sendMessage(session.getPlugin().getLanguageManager().getMessage(key, args));
         }

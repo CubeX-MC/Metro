@@ -21,26 +21,31 @@ public final class LineBoardingChoiceController {
         int totalPages = holder.getData("totalPages", 1);
 
         switch (slot) {
-            case GuiSlots.SLOT_PREV_PAGE -> {
+            case GuiSlots.SLOT_PREV_PAGE:
+                {
                 Stop stop = plugin.getStopManager().getStop(stopId);
                 if (stop != null && page > 0) {
                     plugin.getGuiManager().openLineBoardingChoice(player, stop, page - 1, holder.getPreviousView());
                 }
                 return;
             }
-            case GuiSlots.SLOT_NEXT_PAGE -> {
+            case GuiSlots.SLOT_NEXT_PAGE:
+                {
                 Stop stop = plugin.getStopManager().getStop(stopId);
                 if (stop != null && page < totalPages - 1) {
                     plugin.getGuiManager().openLineBoardingChoice(player, stop, page + 1, holder.getPreviousView());
                 }
                 return;
             }
-            case GuiSlots.SLOT_BACK -> {
+            case GuiSlots.SLOT_BACK:
+                {
                 player.closeInventory();
                 return;
             }
-            default -> {
+            default:
+                {
             }
+                break;
         }
 
         if (slot >= GuiSlots.ITEMS_PER_PAGE) {

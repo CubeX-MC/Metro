@@ -55,19 +55,40 @@ public class GuiManager {
         }
         GuiHolder.GuiView previous = view.getPreviousView();
         switch (view.getType()) {
-            case MAIN_MENU -> openMainMenu(player);
-            case LINE_LIST -> openLineList(player, view.getData("page", 0), view.getData("showOnlyMine", false), previous);
-            case STOP_LIST -> openStopList(player, view.getData("page", 0), view.getData("showOnlyMine", false), previous);
-            case LINE_VARIANTS -> openLineVariants(player, view.getData("lineName"), view.getData("page", 0), previous);
-            case STOP_VARIANTS -> openStopVariants(player, view.getData("stopName"), view.getData("page", 0), previous);
-            case LINE_DETAIL -> openLineDetail(player, view.getData("lineId"), view.getData("page", 0), previous);
-            case ADD_STOP_LIST -> openAddStopList(player, view.getData("lineId"), view.getData("page", 0),
-                    view.getData("showOnlyMine", false), previous);
-            case ADD_STOP_VARIANTS -> openAddStopVariants(player, view.getData("lineId"), view.getData("stopName"),
-                    view.getData("page", 0), previous);
-            case LINE_SETTINGS -> openLineSettings(player, view.getData("lineId"), previous);
-            case STOP_SETTINGS -> openStopSettings(player, view.getData("stopId"), view.getData("fromLineId"), previous);
-            case LINE_BOARDING_CHOICE -> {
+            case MAIN_MENU:
+                openMainMenu(player);
+                break;
+            case LINE_LIST:
+                openLineList(player, view.getData("page", 0), view.getData("showOnlyMine", false), previous);
+                break;
+            case STOP_LIST:
+                openStopList(player, view.getData("page", 0), view.getData("showOnlyMine", false), previous);
+                break;
+            case LINE_VARIANTS:
+                openLineVariants(player, view.getData("lineName"), view.getData("page", 0), previous);
+                break;
+            case STOP_VARIANTS:
+                openStopVariants(player, view.getData("stopName"), view.getData("page", 0), previous);
+                break;
+            case LINE_DETAIL:
+                openLineDetail(player, view.getData("lineId"), view.getData("page", 0), previous);
+                break;
+            case ADD_STOP_LIST:
+                openAddStopList(player, view.getData("lineId"), view.getData("page", 0),
+                view.getData("showOnlyMine", false), previous);
+                break;
+            case ADD_STOP_VARIANTS:
+                openAddStopVariants(player, view.getData("lineId"), view.getData("stopName"),
+                view.getData("page", 0), previous);
+                break;
+            case LINE_SETTINGS:
+                openLineSettings(player, view.getData("lineId"), previous);
+                break;
+            case STOP_SETTINGS:
+                openStopSettings(player, view.getData("stopId"), view.getData("fromLineId"), previous);
+                break;
+            case LINE_BOARDING_CHOICE:
+                {
                 String stopId = view.getData("stopId");
                 Stop stop = stopId == null ? null : plugin.getStopManager().getStop(stopId);
                 if (stop == null) {
@@ -75,7 +96,9 @@ public class GuiManager {
                 }
                 openLineBoardingChoice(player, stop, view.getData("page", 0), previous);
             }
-            case CONFIRM_ACTION -> {
+                break;
+            case CONFIRM_ACTION:
+                {
                 return false;
             }
         }

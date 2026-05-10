@@ -55,9 +55,9 @@ public class StopCommand {
         view.listStops(player, stopService.listStops(), page);
     }
 
-    @Command("m|metro stop|s create <id> <name>")
+    @Command("m|metro stop|s create <stopId> <name>")
     @CommandDescription("Create a new metro stop")
-    public void create(Player player, @Argument("id") String id, @Greedy @Argument("name") String name) {
+    public void create(Player player, @Argument("stopId") String id, @Greedy @Argument("name") String name) {
         if (!OwnershipUtil.canCreateStop(player)) {
             player.sendMessage(plugin.getLanguageManager().getMessage("stop.permission_create"));
             return;
@@ -76,20 +76,28 @@ public class StopCommand {
 
         StopCommandService.CreateStopResult result = stopService.createStop(id, name, corner1, corner2, player.getUniqueId());
         switch (result.status()) {
-            case SUCCESS -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.create_success",
-                    LanguageManager.put(LanguageManager.args(), "stop_name", name)));
-            case INVALID_ID -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.id_invalid",
-                    LanguageManager.put(LanguageManager.args(), "stop_id", id)));
-            case EXISTS -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_exists",
-                    LanguageManager.put(LanguageManager.args(), "stop_id", id)));
-            default -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.create_fail",
-                    LanguageManager.put(LanguageManager.args(), "stop_id", id)));
+            case SUCCESS:
+                player.sendMessage(plugin.getLanguageManager().getMessage("stop.create_success",
+                LanguageManager.put(LanguageManager.args(), "stop_name", name)));
+                break;
+            case INVALID_ID:
+                player.sendMessage(plugin.getLanguageManager().getMessage("stop.id_invalid",
+                LanguageManager.put(LanguageManager.args(), "stop_id", id)));
+                break;
+            case EXISTS:
+                player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_exists",
+                LanguageManager.put(LanguageManager.args(), "stop_id", id)));
+                break;
+            default:
+                player.sendMessage(plugin.getLanguageManager().getMessage("stop.create_fail",
+                LanguageManager.put(LanguageManager.args(), "stop_id", id)));
+                break;
         }
     }
 
-    @Command("m|metro stop|s delete <id>")
+    @Command("m|metro stop|s delete <stopId>")
     @CommandDescription("Delete a metro stop")
-    public void delete(Player player, @Argument(value = "id", suggestions = "stopIds") String id) {
+    public void delete(Player player, @Argument(value = "stopId", suggestions = "stopIds") String id) {
         Stop stop = guard.requireManageableStop(player, id);
         if (stop == null) {
             return;
@@ -103,9 +111,9 @@ public class StopCommand {
         }
     }
 
-    @Command("m|metro stop|s tp <id>")
+    @Command("m|metro stop|s tp <stopId>")
     @CommandDescription("Teleport to a metro stop")
-    public void tp(Player player, @Argument(value = "id", suggestions = "stopIds") String id) {
+    public void tp(Player player, @Argument(value = "stopId", suggestions = "stopIds") String id) {
         Stop stop = guard.requireStop(player, id);
         if (stop == null) {
             return;
@@ -124,9 +132,9 @@ public class StopCommand {
         });
     }
 
-    @Command("m|metro stop|s setcorners <id>")
+    @Command("m|metro stop|s setcorners <stopId>")
     @CommandDescription("Set stop corners from current selection")
-    public void setCorners(Player player, @Argument(value = "id", suggestions = "stopIds") String id) {
+    public void setCorners(Player player, @Argument(value = "stopId", suggestions = "stopIds") String id) {
         Stop stop = guard.requireManageableStop(player, id);
         if (stop == null) {
             return;
@@ -143,10 +151,10 @@ public class StopCommand {
         }
     }
 
-    @Command("m|metro stop|s setpoint [id] [yaw]")
+    @Command("m|metro stop|s setpoint [stopId] [yaw]")
     @CommandDescription("Set stop point at player position")
     public void setPoint(Player player,
-                         @Argument(value = "id", suggestions = "stopIds") String id,
+                         @Argument(value = "stopId", suggestions = "stopIds") String id,
                          @Argument(value = "yaw", suggestions = "yawValues") Float yaw) {
         Stop stop;
         if (id == null) {
@@ -171,19 +179,27 @@ public class StopCommand {
 
         StopCommandService.SetPointResult result = stopService.setPoint(id, stop, player.getLocation(), yaw);
         switch (result.status()) {
-            case SUCCESS -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_success",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.args(), "stop_id", id), "yaw", String.format("%.1f", result.yaw()))));
-            case NOT_RAIL -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_not_rail"));
-            case NOT_IN_STOP -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_not_in_area",
-                    LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName())));
-            default -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_fail"));
+            case SUCCESS:
+                player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_success",
+                LanguageManager.put(LanguageManager.put(LanguageManager.args(), "stop_id", id), "yaw", String.format("%.1f", result.yaw()))));
+                break;
+            case NOT_RAIL:
+                player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_not_rail"));
+                break;
+            case NOT_IN_STOP:
+                player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_not_in_area",
+                LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName())));
+                break;
+            default:
+                player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_fail"));
+                break;
         }
     }
 
-    @Command("m|metro stop|s addtransfer <id> <lineId>")
+    @Command("m|metro stop|s addtransfer <stopId> <lineId>")
     @CommandDescription("Add transferable line to stop")
     public void addTransfer(Player player,
-                            @Argument(value = "id", suggestions = "stopIds") String id,
+                            @Argument(value = "stopId", suggestions = "stopIds") String id,
                             @Argument(value = "lineId", suggestions = "lineIds") String lineId) {
         Stop stop = guard.requireManageableStop(player, id);
         Line line = guard.requireLine(player, lineId);
@@ -202,10 +218,10 @@ public class StopCommand {
         }
     }
 
-    @Command("m|metro stop|s deltransfer <id> <lineId>")
+    @Command("m|metro stop|s deltransfer <stopId> <lineId>")
     @CommandDescription("Remove transferable line from stop")
     public void delTransfer(Player player,
-                            @Argument(value = "id", suggestions = "stopIds") String id,
+                            @Argument(value = "stopId", suggestions = "stopIds") String id,
                             @Argument(value = "lineId", suggestions = "lineIds") String lineId) {
         Stop stop = guard.requireManageableStop(player, id);
         Line line = guard.requireLine(player, lineId);
@@ -224,9 +240,9 @@ public class StopCommand {
         }
     }
 
-    @Command("m|metro stop|s listtransfers <id>")
+    @Command("m|metro stop|s listtransfers <stopId>")
     @CommandDescription("List transferable lines for stop")
-    public void listTransfers(Player player, @Argument(value = "id", suggestions = "stopIds") String id) {
+    public void listTransfers(Player player, @Argument(value = "stopId", suggestions = "stopIds") String id) {
         Stop stop = guard.requireStop(player, id);
         if (stop == null) {
             return;
@@ -234,10 +250,10 @@ public class StopCommand {
         view.listTransfers(player, stop);
     }
 
-    @Command("m|metro stop|s settitle <id> <titleType> <titleKey> <titleValue>")
+    @Command("m|metro stop|s settitle <stopId> <titleType> <titleKey> <titleValue>")
     @CommandDescription("Set custom title entry for stop")
     public void setTitle(Player player,
-                         @Argument(value = "id", suggestions = "stopIds") String id,
+                         @Argument(value = "stopId", suggestions = "stopIds") String id,
                          @Argument(value = "titleType", suggestions = "titleTypes") String titleType,
                          @Argument(value = "titleKey", suggestions = "titleKeys") String titleKey,
                          @Greedy @Argument("titleValue") String titleValue) {
@@ -265,10 +281,10 @@ public class StopCommand {
         }
     }
 
-    @Command("m|metro stop|s deltitle <id> <titleType> [titleKey]")
+    @Command("m|metro stop|s deltitle <stopId> <titleType> [titleKey]")
     @CommandDescription("Delete custom title entry for stop")
     public void delTitle(Player player,
-                         @Argument(value = "id", suggestions = "stopIds") String id,
+                         @Argument(value = "stopId", suggestions = "stopIds") String id,
                          @Argument(value = "titleType", suggestions = "titleTypes") String titleType,
                          @Argument(value = "titleKey", suggestions = "titleKeys") String titleKey) {
         Stop stop = guard.requireManageableStop(player, id);
@@ -314,9 +330,9 @@ public class StopCommand {
         }
     }
 
-    @Command("m|metro stop|s listtitles <id>")
+    @Command("m|metro stop|s listtitles <stopId>")
     @CommandDescription("List custom title config")
-    public void listTitles(Player player, @Argument(value = "id", suggestions = "stopIds") String id) {
+    public void listTitles(Player player, @Argument(value = "stopId", suggestions = "stopIds") String id) {
         Stop stop = guard.requireStop(player, id);
         if (stop == null) {
             return;
@@ -324,9 +340,9 @@ public class StopCommand {
         view.listTitles(player, stop);
     }
 
-    @Command("m|metro stop|s rename <id> <name>")
+    @Command("m|metro stop|s rename <stopId> <name>")
     @CommandDescription("Rename stop display name")
-    public void rename(Player player, @Argument(value = "id", suggestions = "stopIds") String id, @Greedy @Argument("name") String name) {
+    public void rename(Player player, @Argument(value = "stopId", suggestions = "stopIds") String id, @Greedy @Argument("name") String name) {
         Stop stop = guard.requireManageableStop(player, id);
         if (stop == null) {
             return;
@@ -340,9 +356,9 @@ public class StopCommand {
         }
     }
 
-    @Command("m|metro stop|s info <id>")
+    @Command("m|metro stop|s info <stopId>")
     @CommandDescription("Show stop details")
-    public void info(Player player, @Argument(value = "id", suggestions = "stopIds") String id) {
+    public void info(Player player, @Argument(value = "stopId", suggestions = "stopIds") String id) {
         Stop stop = guard.requireStop(player, id);
         if (stop == null) {
             return;
@@ -350,10 +366,10 @@ public class StopCommand {
         view.sendInfo(player, stop);
     }
 
-    @Command("m|metro stop|s trust <id> <playerName>")
+    @Command("m|metro stop|s trust <stopId> <playerName>")
     @CommandDescription("Grant stop admin")
     public void trust(Player player,
-                      @Argument(value = "id", suggestions = "stopIds") String id,
+                      @Argument(value = "stopId", suggestions = "stopIds") String id,
                       @Argument(value = "playerName", suggestions = "playerNames") String playerName) {
         Stop stop = guard.requireManageableStop(player, id);
         if (stop == null) {
@@ -375,10 +391,10 @@ public class StopCommand {
         }
     }
 
-    @Command("m|metro stop|s untrust <id> <playerName>")
+    @Command("m|metro stop|s untrust <stopId> <playerName>")
     @CommandDescription("Revoke stop admin")
     public void untrust(Player player,
-                        @Argument(value = "id", suggestions = "stopIds") String id,
+                        @Argument(value = "stopId", suggestions = "stopIds") String id,
                         @Argument(value = "playerName", suggestions = "playerNames") String playerName) {
         Stop stop = guard.requireManageableStop(player, id);
         if (stop == null) {
@@ -399,10 +415,10 @@ public class StopCommand {
         }
     }
 
-    @Command("m|metro stop|s owner <id> <playerName>")
+    @Command("m|metro stop|s owner <stopId> <playerName>")
     @CommandDescription("Transfer stop ownership")
     public void owner(Player player,
-                      @Argument(value = "id", suggestions = "stopIds") String id,
+                      @Argument(value = "stopId", suggestions = "stopIds") String id,
                       @Argument(value = "playerName", suggestions = "playerNames") String playerName) {
         Stop stop = guard.requireStop(player, id);
         if (stop == null) {

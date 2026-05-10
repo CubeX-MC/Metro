@@ -1,6 +1,7 @@
 package org.cubexmc.metro.service;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +32,7 @@ public class LineSelectionService {
 
     public List<Line> getBoardableLines(Stop stop) {
         if (stop == null) {
-            return List.of();
+            return Collections.emptyList();
         }
 
         List<Line> lines = new ArrayList<>();
@@ -46,7 +47,7 @@ public class LineSelectionService {
 
     public List<Line> getTerminalLines(Stop stop) {
         if (stop == null) {
-            return List.of();
+            return Collections.emptyList();
         }
 
         List<Line> lines = new ArrayList<>();

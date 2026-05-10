@@ -1,6 +1,7 @@
 package org.cubexmc.metro.persistence;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -125,7 +126,7 @@ public class SaveCoordinator {
 
         Path tempFile = targetFile.resolveSibling(targetFile.getFileName() + ".tmp-" + version);
         try {
-            Files.writeString(tempFile, snapshot);
+            Files.write(tempFile, snapshot.getBytes(StandardCharsets.UTF_8));
             if (!isCurrent(targetFile, version)) {
                 Files.deleteIfExists(tempFile);
                 logger.fine("Discarded stale save for " + targetFile + " at version " + version);

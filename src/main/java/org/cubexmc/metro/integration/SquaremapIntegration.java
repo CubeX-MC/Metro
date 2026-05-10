@@ -23,10 +23,8 @@ import java.util.Map;
 import java.util.logging.Level;
 
 /**
- * 可选的 Squaremap 集成模块。
- * 当服务器安装了 Squaremap 插件且配置中 provider 设为 SQUAREMAP 时，
- * 自动在网页地图上绘制地铁网络的线路和站点。
- */
+ * 鍙€夌殑 Squaremap 闆嗘垚妯″潡銆? * 褰撴湇鍔″櫒瀹夎浜?Squaremap 鎻掍欢涓旈厤缃腑 provider 璁句负 SQUAREMAP 鏃讹紝
+ * 鑷姩鍦ㄧ綉椤靛湴鍥句笂缁樺埗鍦伴搧缃戠粶鐨勭嚎璺拰绔欑偣銆? */
 public class SquaremapIntegration implements MapIntegration {
 
     private static final String LAYER_ID = "metro_network";
@@ -122,7 +120,7 @@ public class SquaremapIntegration implements MapIntegration {
             LineManager lineManager = plugin.getLineManager();
             StopManager stopManager = plugin.getStopManager();
 
-            // 先清理旧标记
+            // 鍏堟竻鐞嗘棫鏍囪
             for (SimpleLayerProvider provider : layerProviders.values()) {
                 provider.clearMarkers();
             }
@@ -184,7 +182,7 @@ public class SquaremapIntegration implements MapIntegration {
         }
 
         String worldName = routePoints.get(0).worldName();
-        if (worldName == null || worldName.isBlank()) {
+        if (worldName == null || worldName.trim().isEmpty()) {
             return;
         }
         org.bukkit.World bukkitWorld = Bukkit.getWorld(worldName);

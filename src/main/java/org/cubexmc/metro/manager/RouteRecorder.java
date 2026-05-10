@@ -111,7 +111,10 @@ public class RouteRecorder {
 
     private List<RoutePoint> simplifyRoutePoints(List<RoutePoint> points) {
         if (points == null || points.size() < 3 || !shouldSimplifyCollinearPoints()) {
-            return points == null ? List.of() : points;
+            if (points == null) {
+                return new ArrayList<>();
+            }
+            return points;
         }
 
         List<RoutePoint> simplified = new ArrayList<>();
@@ -235,12 +238,46 @@ public class RouteRecorder {
         }
     }
 
-    public record FinishResult(Status status, String lineId, int pointCount, UUID recorderId, UUID cartId) {
+    public static final class FinishResult {
+        private final Status status;
+        private final String lineId;
+        private final int pointCount;
+        private final UUID recorderId;
+        private final UUID cartId;
+
+        public FinishResult(Status status, String lineId, int pointCount, UUID recorderId, UUID cartId) {
+            this.status = status;
+            this.lineId = lineId;
+            this.pointCount = pointCount;
+            this.recorderId = recorderId;
+            this.cartId = cartId;
+        }
+
         public enum Status {
             SAVED,
             NOT_RECORDING,
             TOO_FEW_POINTS,
             FAILED
+        }
+
+        public Status status() {
+            return status;
+        }
+
+        public String lineId() {
+            return lineId;
+        }
+
+        public int pointCount() {
+            return pointCount;
+        }
+
+        public UUID recorderId() {
+            return recorderId;
+        }
+
+        public UUID cartId() {
+            return cartId;
         }
 
         private static FinishResult saved(String lineId, int pointCount, UUID recorderId, UUID cartId) {

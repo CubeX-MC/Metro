@@ -7,11 +7,15 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * Migrates persistent Metro data files across schema changes.
@@ -21,16 +25,18 @@ public final class DataFileUpdater {
     public static final String SCHEMA_VERSION_KEY = "schema_version";
     public static final int CURRENT_SCHEMA_VERSION = 1;
 
+    private static final Pattern ID_PATTERN = Pattern.compile("[A-Za-z0-9_-]+");
+
     private DataFileUpdater() {
     }
 
     public static void migrateAll(JavaPlugin plugin) {
-        migrateLines(plugin);
-        migrateStops(plugin);
+        Map<String, String> stopIdMappings = migrateStops(plugin);
+        migrateLines(plugin, stopIdMappings);
         migratePortals(plugin);
     }
 
-    public static void migrateLines(JavaPlugin plugin) {
+    public static void migrateLines(JavaPlugin plugin, Map<String, String> stopIdMappings) {
         File file = new File(plugin.getDataFolder(), "lines.yml");
         if (!file.exists()) {
             return;
@@ -63,6 +69,26 @@ public final class DataFileUpdater {
                 section.set("rail_protected", false);
                 changed = true;
             }
+
+            // Update stop ID references if any were migrated
+            if (!stopIdMappings.isEmpty() && section.contains("ordered_stop_ids")) {
+                List<String> stopIds = section.getStringList("ordered_stop_ids");
+                List<String> updated = new ArrayList<>();
+                boolean stopIdsChanged = false;
+                for (String stopId : stopIds) {
+                    String mapped = stopIdMappings.get(stopId);
+                    if (mapped != null) {
+                        updated.add(mapped);
+                        stopIdsChanged = true;
+                    } else {
+                        updated.add(stopId);
+                    }
+                }
+                if (stopIdsChanged) {
+                    section.set("ordered_stop_ids", updated);
+                    changed = true;
+                }
+            }
         }
 
         if (hasDataSections && config.getInt(SCHEMA_VERSION_KEY, 0) < CURRENT_SCHEMA_VERSION) {
@@ -72,16 +98,18 @@ public final class DataFileUpdater {
         saveIfChanged(plugin, file, config, changed, "lines.yml");
     }
 
-    public static void migrateStops(JavaPlugin plugin) {
+    public static Map<String, String> migrateStops(JavaPlugin plugin) {
         File file = new File(plugin.getDataFolder(), "stops.yml");
         if (!file.exists()) {
-            return;
+            return Collections.emptyMap();
         }
 
         YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
         boolean changed = false;
         boolean hasDataSections = false;
+        Map<String, String> idMappings = new HashMap<>();
 
+        // Phase 1: field migrations
         for (String stopId : config.getKeys(false)) {
             if (SCHEMA_VERSION_KEY.equals(stopId)) {
                 continue;
@@ -104,11 +132,47 @@ public final class DataFileUpdater {
             }
         }
 
+        // Phase 2: sanitize illegal stop IDs
+        Set<String> existingIds = new HashSet<>();
+        for (String stopId : config.getKeys(false)) {
+            if (!SCHEMA_VERSION_KEY.equals(stopId) && config.isConfigurationSection(stopId)) {
+                existingIds.add(stopId);
+            }
+        }
+        for (String stopId : new HashSet<>(existingIds)) {
+            if (ID_PATTERN.matcher(stopId).matches()) {
+                continue;
+            }
+            String sanitized = stopId.replaceAll("[^A-Za-z0-9_-]", "-");
+            String newId = sanitized;
+            int suffix = 2;
+            while (existingIds.contains(newId)) {
+                newId = sanitized + "-" + suffix;
+                suffix++;
+            }
+
+            // Move section data to new key
+            ConfigurationSection oldSection = config.getConfigurationSection(stopId);
+            ConfigurationSection newSection = config.createSection(newId);
+            if (oldSection != null) {
+                for (Map.Entry<String, Object> entry : oldSection.getValues(false).entrySet()) {
+                    newSection.set(entry.getKey(), entry.getValue());
+                }
+            }
+            config.set(stopId, null);
+            existingIds.remove(stopId);
+            existingIds.add(newId);
+            idMappings.put(stopId, newId);
+            changed = true;
+            plugin.getLogger().warning("Stop ID '" + stopId + "' contains illegal characters, migrated to '" + newId + "'");
+        }
+
         if (hasDataSections && config.getInt(SCHEMA_VERSION_KEY, 0) < CURRENT_SCHEMA_VERSION) {
             config.set(SCHEMA_VERSION_KEY, CURRENT_SCHEMA_VERSION);
             changed = true;
         }
         saveIfChanged(plugin, file, config, changed, "stops.yml");
+        return idMappings;
     }
 
     public static void migratePortals(JavaPlugin plugin) {
@@ -177,10 +241,13 @@ public final class DataFileUpdater {
 
     private static boolean migratePortalLocation(ConfigurationSection section, String key, boolean destination) {
         String value = section.getString(key);
-        if (value == null || value.isBlank()) {
+        if (value == null || value.trim().isEmpty()) {
             return false;
         }
-        List<String> parts = List.of(value.split(","));
+        List<String> parts = new ArrayList<String>();
+        for (String part : value.split(",")) {
+            parts.add(part);
+        }
         if ((!destination && parts.size() != 4) || (destination && parts.size() < 4)) {
             return false;
         }

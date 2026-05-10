@@ -54,8 +54,15 @@ line:
   help_clearroute: "&6/m line clearroute <line_id> &f- 清除线路已记录的轨迹点"
   help_routeinfo: "&6/m line routeinfo <line_id> &f- 查看线路轨迹记录与轨道保护状态"
   help_protect: "&6/m line protect <line_id> <on|off|status> &f- 开启、关闭或查看线路轨道保护"
+  help_setfare: "&6/m line setfare <line_id> <mode> <baseFare> [perUnit] [maxFare] &f- 配置线路高级票价（flat/distance/interval）"
+  help_setstatus: "&6/m line setstatus <line_id> <status> &f- 设置线路运营状态（normal/suspended/maintenance）"
+  help_setaltroute: "&6/m line setaltroute <line_id> <altLineId> &f- 为暂停线路添加替代路线建议"
+  help_delaltroute: "&6/m line delaltroute <line_id> <altLineId> &f- 移除替代路线建议"
+  help_setsuspensionmsg: "&6/m line setsuspensionmsg <line_id> <message> &f- 设置暂停运营时显示的提示信息"
+  help_fareinfo: "&6/m line fareinfo <line_id> &f- 查看线路票价详情和当前折扣"
   
   usage_create: "&c用法: /m line create <line_id> <\"显示名称\">"
+
   usage_delete: "&c用法: /m line delete <line_id>"
   usage_setcolor: "&c用法: /m line setcolor <line_id> <颜色>\n&e颜色示例: &a&a, &b&b, &c&c, &9&9 等Minecraft颜色代码"
   usage_setterminus: "&c用法: /m line setterminus <line_id> <终点方向名称>"
@@ -186,8 +193,46 @@ line:
   routeinfo_waiting_cart: "等待首班列车"
   routeinfo_never_recorded: "从未录制"
   routeinfo_unknown: "未知"
+  
+  # 票价规则相关
+  setfare_success: "&a成功为线路 {line_name} 配置票价规则。"
+  setfare_fail: "&c配置票价规则失败。"
+  setfare_invalid: "&c无效的票价参数。票价和费率必须为非负数。"
+  setfare_reset: "&a已重置线路 {line_name} 为默认固定票价。"
+  
+  fareinfo_header: "&a===== 票价详情: {line_name} ====="
+  fareinfo_mode: "&6计价模式: &f{mode}"
+  fareinfo_base_fare: "&6基础票价: &f{base_fare}"
+  fareinfo_per_block: "&6每格块费用: &f{per_block}"
+  fareinfo_per_interval: "&6每站间费用: &f{per_interval}"
+  fareinfo_max_fare: "&6最高票价: &f{max_fare}"
+  fareinfo_discounts: "&6时段优惠:"
+  fareinfo_discount_item: "&a  {start_time}-{end_time}: &e{percent}% 折扣"
+  fareinfo_active_discount: "&a当前时段优惠: {percent}% 折扣正在进行中！"
+  
+  # 线路状态相关
+  setstatus_success: "&a成功设置线路 {line_name} 的状态为: {status}"
+  setstatus_fail: "&c设置线路状态失败。"
+  setstatus_invalid: "&c无效的线路状态: {status}。有效值为: normal, suspended, maintenance。"
+  
+  # 替代路线相关
+  setaltroute_success: "&a已为线路 {line_name} 添加替代路线: {alt_line_name}"
+  setaltroute_exists: "&e替代路线 {alt_line_name} 已存在。"
+  delaltroute_success: "&a已移除线路 {line_name} 的替代路线。"
+  delaltroute_fail: "&c移除替代路线失败。"
+  
+  # 暂停运营消息
+  setsuspensionmsg_success: "&a成功设置线路 {line_name} 的暂停运营提示消息。"
+  setsuspensionmsg_fail: "&c设置暂停运营提示消息失败。"
+  
+  # 玩家提示消息
+  line_suspended: "&c线路 {line_name} 已暂停运营。"
+  line_suspended_msg: "&e{message}"
+  suggest_alternatives: "&a推荐替代路线:"
+  alternative_format: "&e- {line_name} &f({line_id})"
 
 # 传送门命令相关
+
 portal:
   help_header: "&a===== Metro传送门管理命令 ====="
   help_create: "&6/m portal create <portal_id> &f- 在当前位置或视线中的铁轨上创建传送门入口"

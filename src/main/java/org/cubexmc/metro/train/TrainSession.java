@@ -22,6 +22,12 @@ public class TrainSession {
     private boolean teleporting;
     private Vector lastTravelDirection;
 
+    // --- Per-block / deferred charging tracking ---
+    private String entryStopId;
+    private org.bukkit.Location entryLocation;
+    private double distanceTraveled;
+    private double totalCharged;
+
     public TrainSession(Metro plugin, Minecart minecart, Player passenger, Line line, String currentStopId,
             TrainMovementTask.TrainState state) {
         this.plugin = plugin;
@@ -29,6 +35,7 @@ public class TrainSession {
         this.passenger = passenger;
         this.line = line;
         this.currentStopId = currentStopId;
+        this.entryStopId = currentStopId;
         this.state = state;
         this.targetStopId = line == null ? null : line.getNextStopId(currentStopId);
         if (this.targetStopId == null) {
@@ -94,6 +101,55 @@ public class TrainSession {
 
     public void setLastTravelDirection(Vector lastTravelDirection) {
         this.lastTravelDirection = lastTravelDirection;
+    }
+
+    // =============================================================
+    // Per-block / deferred charging
+    // =============================================================
+
+    public String getEntryStopId() {
+        return entryStopId;
+    }
+
+    public void setEntryStopId(String entryStopId) {
+        this.entryStopId = entryStopId;
+    }
+
+    public org.bukkit.Location getEntryLocation() {
+        return entryLocation;
+    }
+
+    public void setEntryLocation(org.bukkit.Location entryLocation) {
+        this.entryLocation = entryLocation;
+    }
+
+    /**
+     * Get the total distance traveled so far in blocks.
+     */
+    public double getDistanceTraveled() {
+        return distanceTraveled;
+    }
+
+    /**
+     * Add traveled distance and return the new total.
+     */
+    public double addDistance(double blocks) {
+        this.distanceTraveled += blocks;
+        return this.distanceTraveled;
+    }
+
+    /**
+     * Get the total amount already charged.
+     */
+    public double getTotalCharged() {
+        return totalCharged;
+    }
+
+    /**
+     * Set the total amount already charged.
+     */
+    public void setTotalCharged(double totalCharged) {
+        this.totalCharged = totalCharged;
     }
 
     public void refreshTargetFromCurrentStop() {

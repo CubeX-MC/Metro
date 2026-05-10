@@ -30,8 +30,11 @@ public class TrainPhysicsController {
         Block block = location.getBlock();
         BlockData blockData = block.getBlockData();
 
-        if (block.getType() != Material.POWERED_RAIL || !(blockData instanceof Powerable powerable)
-                || !powerable.isPowered()) {
+        if (block.getType() != Material.POWERED_RAIL || !(blockData instanceof Powerable)) {
+            return null;
+        }
+        Powerable powerable = (Powerable) blockData;
+        if (!powerable.isPowered()) {
             return null;
         }
 

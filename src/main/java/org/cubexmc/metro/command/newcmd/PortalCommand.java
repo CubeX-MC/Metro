@@ -18,6 +18,7 @@ import org.cubexmc.metro.service.PortalCommandService;
 import org.cubexmc.metro.update.DataFileUpdater;
 import org.cubexmc.metro.util.OwnershipUtil;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -25,7 +26,7 @@ import java.util.List;
  */
 public class PortalCommand {
 
-    private static final List<String> HELP_KEYS = List.of(
+    private static final List<String> HELP_KEYS = Arrays.asList(
             "portal.help_create",
             "portal.help_setdest",
             "portal.help_link",
@@ -73,9 +74,9 @@ public class PortalCommand {
         }
     }
 
-    @Command("m|metro portal create <id>")
-    @CommandDescription("在当前位置创建一个传送门入口")
-    public void createPortal(Player sender, @Argument("id") String id) {
+    @Command("m|metro portal create <portalId>")
+    @CommandDescription("Create a portal entrance at the current position")
+    public void createPortal(Player sender, @Argument("portalId") String id) {
         if (!OwnershipUtil.canCreatePortal(sender)) {
             sender.sendMessage(plugin.getLanguageManager().getMessage("portal.permission_create"));
             return;
@@ -85,7 +86,8 @@ public class PortalCommand {
                 portalService.createPortal(id, sender.getLocation(), sender.getTargetBlockExact(5),
                         sender.getUniqueId());
         switch (result.status()) {
-            case SUCCESS -> {
+            case SUCCESS:
+                {
                 Location loc = result.location();
                 sender.sendMessage(plugin.getLanguageManager().getMessage("portal.create_success",
                         LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.put(
@@ -95,18 +97,25 @@ public class PortalCommand {
                 sender.sendMessage(plugin.getLanguageManager().getMessage("portal.create_setdest_hint",
                         LanguageManager.put(LanguageManager.args(), "portal_id", id)));
             }
-            case INVALID_ID -> sender.sendMessage(plugin.getLanguageManager().getMessage("portal.id_invalid",
-                    LanguageManager.put(LanguageManager.args(), "portal_id", id)));
-            case EXISTS -> sender.sendMessage(plugin.getLanguageManager().getMessage("portal.create_exists",
-                    LanguageManager.put(LanguageManager.args(), "portal_id", id)));
-            default -> sender.sendMessage(plugin.getLanguageManager().getMessage("portal.create_fail",
-                    LanguageManager.put(LanguageManager.args(), "portal_id", id)));
+                break;
+            case INVALID_ID:
+                sender.sendMessage(plugin.getLanguageManager().getMessage("portal.id_invalid",
+                LanguageManager.put(LanguageManager.args(), "portal_id", id)));
+                break;
+            case EXISTS:
+                sender.sendMessage(plugin.getLanguageManager().getMessage("portal.create_exists",
+                LanguageManager.put(LanguageManager.args(), "portal_id", id)));
+                break;
+            default:
+                sender.sendMessage(plugin.getLanguageManager().getMessage("portal.create_fail",
+                LanguageManager.put(LanguageManager.args(), "portal_id", id)));
+                break;
         }
     }
 
-    @Command("m|metro portal setdest <id>")
-    @CommandDescription("将当前位置设置为传送门的目标位置")
-    public void setDestination(Player sender, @Argument(value = "id", suggestions = "portalIds") String id) {
+    @Command("m|metro portal setdest <portalId>")
+    @CommandDescription("Set the current position as the portal destination")
+    public void setDestination(Player sender, @Argument(value = "portalId", suggestions = "portalIds") String id) {
         Portal portal = guard.requireManageablePortal(sender, id);
         if (portal == null) {
             return;
@@ -154,9 +163,9 @@ public class PortalCommand {
                 LanguageManager.put(LanguageManager.put(LanguageManager.args(), "portal_id_1", id1), "portal_id_2", id2)));
     }
 
-    @Command("m|metro portal delete <id>")
-    @CommandDescription("删除一个传送门")
-    public void deletePortal(Player sender, @Argument(value = "id", suggestions = "portalIds") String id) {
+    @Command("m|metro portal delete <portalId>")
+    @CommandDescription("Delete a portal")
+    public void deletePortal(Player sender, @Argument(value = "portalId", suggestions = "portalIds") String id) {
         Portal portal = guard.requireManageablePortal(sender, id);
         if (portal == null) {
             return;
@@ -201,10 +210,10 @@ public class PortalCommand {
         }
     }
 
-    @Command("m|metro portal trust <id> <playerName>")
-    @CommandDescription("授予传送门管理权限")
+    @Command("m|metro portal trust <portalId> <playerName>")
+    @CommandDescription("Grant portal admin permissions")
     public void trust(Player player,
-                      @Argument(value = "id", suggestions = "portalIds") String id,
+                      @Argument(value = "portalId", suggestions = "portalIds") String id,
                       @Argument(value = "playerName", suggestions = "playerNames") String playerName) {
         Portal portal = guard.requireManageablePortal(player, id);
         if (portal == null) {
@@ -229,10 +238,10 @@ public class PortalCommand {
         }
     }
 
-    @Command("m|metro portal untrust <id> <playerName>")
-    @CommandDescription("移除传送门管理权限")
+    @Command("m|metro portal untrust <portalId> <playerName>")
+    @CommandDescription("Remove portal admin permissions")
     public void untrust(Player player,
-                        @Argument(value = "id", suggestions = "portalIds") String id,
+                        @Argument(value = "portalId", suggestions = "portalIds") String id,
                         @Argument(value = "playerName", suggestions = "playerNames") String playerName) {
         Portal portal = guard.requireManageablePortal(player, id);
         if (portal == null) {
@@ -254,10 +263,10 @@ public class PortalCommand {
         }
     }
 
-    @Command("m|metro portal owner <id> <playerName>")
+    @Command("m|metro portal owner <portalId> <playerName>")
     @CommandDescription("转移传送门所有权")
     public void owner(Player player,
-                      @Argument(value = "id", suggestions = "portalIds") String id,
+                      @Argument(value = "portalId", suggestions = "portalIds") String id,
                       @Argument(value = "playerName", suggestions = "playerNames") String playerName) {
         Portal portal = guard.requireManageablePortal(player, id);
         if (portal == null || !guard.requirePortalOwner(player, portal)) {

@@ -235,9 +235,10 @@ public class RailProtectionManager implements Listener {
             return false;
         }
         Entity vehicle = player.getVehicle();
-        if (!(vehicle instanceof Minecart minecart)) {
+        if (!(vehicle instanceof Minecart)) {
             return false;
         }
+        Minecart minecart = (Minecart) vehicle;
         return minecart.getPersistentDataContainer().has(MetroConstants.getMinecartKey(), PersistentDataType.BYTE);
     }
 
@@ -266,10 +267,44 @@ public class RailProtectionManager implements Listener {
         return block != null && RAIL_MATERIALS.contains(block.getType());
     }
 
-    public record ProtectionIndexStats(int sampledPoints, int indexedBlocks, int skippedWorldMismatch,
-                                       int skippedMissingWorld, int skippedNoRail) {
+    public static final class ProtectionIndexStats {
+        private final int sampledPoints;
+        private final int indexedBlocks;
+        private final int skippedWorldMismatch;
+        private final int skippedMissingWorld;
+        private final int skippedNoRail;
+
+        public ProtectionIndexStats(int sampledPoints, int indexedBlocks, int skippedWorldMismatch,
+                                    int skippedMissingWorld, int skippedNoRail) {
+            this.sampledPoints = sampledPoints;
+            this.indexedBlocks = indexedBlocks;
+            this.skippedWorldMismatch = skippedWorldMismatch;
+            this.skippedMissingWorld = skippedMissingWorld;
+            this.skippedNoRail = skippedNoRail;
+        }
+
         public static ProtectionIndexStats empty() {
             return new ProtectionIndexStats(0, 0, 0, 0, 0);
+        }
+
+        public int sampledPoints() {
+            return sampledPoints;
+        }
+
+        public int indexedBlocks() {
+            return indexedBlocks;
+        }
+
+        public int skippedWorldMismatch() {
+            return skippedWorldMismatch;
+        }
+
+        public int skippedMissingWorld() {
+            return skippedMissingWorld;
+        }
+
+        public int skippedNoRail() {
+            return skippedNoRail;
         }
 
         public int skippedTotal() {
@@ -301,7 +336,7 @@ public class RailProtectionManager implements Listener {
         private boolean isWorldMismatch(RoutePoint point) {
             return point != null
                     && lineWorldName != null
-                    && !lineWorldName.isBlank()
+                    && !lineWorldName.trim().isEmpty()
                     && !lineWorldName.equals(point.worldName());
         }
 
@@ -323,9 +358,54 @@ public class RailProtectionManager implements Listener {
         }
     }
 
-    private record BlockKey(String worldName, int x, int y, int z) {
+    private static final class BlockKey {
+        private final String worldName;
+        private final int x;
+        private final int y;
+        private final int z;
+
+        private BlockKey(String worldName, int x, int y, int z) {
+            this.worldName = worldName;
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+
         private static BlockKey fromBlock(Block block) {
             return new BlockKey(block.getWorld().getName(), block.getX(), block.getY(), block.getZ());
+        }
+
+        public String worldName() {
+            return worldName;
+        }
+
+        public int x() {
+            return x;
+        }
+
+        public int y() {
+            return y;
+        }
+
+        public int z() {
+            return z;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof BlockKey)) return false;
+            BlockKey blockKey = (BlockKey) o;
+            return x == blockKey.x && y == blockKey.y && z == blockKey.z && worldName.equals(blockKey.worldName);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = worldName.hashCode();
+            result = 31 * result + x;
+            result = 31 * result + y;
+            result = 31 * result + z;
+            return result;
         }
     }
 }

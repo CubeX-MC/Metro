@@ -103,8 +103,13 @@ sounds:
     # 对于NOTE，乐器可以是：PIANO, BASS, SNARE, CLICKS, BASS_DRUM, BELL, FLUTE, CHIME, GUITAR, XYLOPHONE, IRON_XYLOPHONE, COW_BELL, DIDGERIDOO, BIT, BANJO, PLING
     # For NOTE, INSTRUMENT can be: PIANO, BASS, SNARE, CLICKS, BASS_DRUM, BELL, FLUTE, CHIME, GUITAR, XYLOPHONE, IRON_XYLOPHONE, COW_BELL, DIDGERIDOO, BIT, BANJO, PLING
     notes:
-    - NOTE,18,1.0,PLING,0
-    - NOTE,18,1.0,PLING,4
+    - NOTE,10,0.5,BELL,0
+    - NOTE,12,0.6,BELL,4
+    - NOTE,15,0.7,BELL,8
+    - NOTE,18,0.9,BELL,12
+    - NOTE,22,1.0,BELL,16
+    - NOTE,22,0.8,PIANO,18
+    - NOTE,18,0.7,PIANO,22
   
   # 到站时播放的音乐（模拟车内到站提示音）
   # Sound played on arrival (simulates in-train arrival announcement)
@@ -114,9 +119,12 @@ sounds:
     # Initial delay before playing (in ticks, 20 ticks = 1 second)
     initial_delay: 20
     notes:
-    - NOTE,6,0.8,CHIME,0
-    - NOTE,10,0.9,CHIME,4
-    - NOTE,13,1.0,CHIME,8
+    - NOTE,20,0.7,CHIME,0
+    - NOTE,17,0.8,CHIME,5
+    - NOTE,13,0.9,CHIME,10
+    - NOTE,10,1.0,CHIME,15
+    - NOTE,8,0.9,PIANO,20
+    - NOTE,6,0.7,PIANO,25
   
   # 车辆到站时播放的音乐（模拟站台列车进站声音）
   # Sound played when train arrives at station (simulates platform arrival sound)
@@ -126,8 +134,15 @@ sounds:
     # Initial delay before playing (in ticks, 20 ticks = 1 second)
     initial_delay: 0
     notes:
-    - NOTE,1,0.5,BASS_DRUM,0
-    - NOTE,5,0.3,SNARE,5
+    - NOTE,1,0.3,BASS_DRUM,0
+    - NOTE,3,0.4,BASS_DRUM,4
+    - NOTE,1,0.5,BASS_DRUM,8
+    - NOTE,4,0.4,SNARE,6
+    - NOTE,3,0.6,BASS_DRUM,12
+    - NOTE,6,0.3,IRON_XYLOPHONE,14
+    - NOTE,1,0.4,BASS_DRUM,16
+    - NOTE,0,0.3,BASS_DRUM,20
+    - NOTE,0,0.2,BASS_DRUM,24
   
   # 等待发车时循环播放的提示音乐
   # Looping sound played while waiting for departure
@@ -138,9 +153,11 @@ sounds:
     initial_delay: 0
     # 循环间隔（单位tick，20tick=1秒）多长时间播放一次
     # Loop interval (in ticks, 20 ticks = 1 second), how often to play
-    interval: 20
+    interval: 40
     notes:
-    - NOTE,18,0.3,CLICKS,0
+    - NOTE,12,0.25,XYLOPHONE,0
+    - NOTE,15,0.2,BELL,5
+    - NOTE,12,0.15,XYLOPHONE,10
 
 # 经济系统配置
 # Economy Settings
@@ -271,7 +288,7 @@ portals:
 # General Settings
 settings:
   selection_tool: GOLDEN_SHOVEL
-  # Default language setting (Supported: zh_CN, zh_TW, en_US, de_DE, es_ES, nl_NL)
+  # Default language setting (Supported: zh_CN, zh_TW, en_US, de_DE, es_ES, nl_NL, tr_TR)
   default_language: en_US
   # 安全模式：开启后保护乘客免受三类干扰
   # Safe mode: when enabled, protects passengers from three types of interference

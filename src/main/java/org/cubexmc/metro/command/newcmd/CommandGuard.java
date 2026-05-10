@@ -150,6 +150,6 @@ final class CommandGuard {
             return plugin.getLanguageManager().getMessage("ownership.none");
         }
         String text = adminIds.stream().map(this::formatOwner).collect(Collectors.joining(", "));
-        return text.isBlank() ? plugin.getLanguageManager().getMessage("ownership.none") : text;
+        return text.trim().isEmpty() ? plugin.getLanguageManager().getMessage("ownership.none") : text;
     }
 }
