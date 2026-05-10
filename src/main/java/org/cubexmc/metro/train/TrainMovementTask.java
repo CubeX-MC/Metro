@@ -153,6 +153,19 @@ public class TrainMovementTask implements Listener {
         }
         updateLastTravelDirection(event.getFrom(), event.getTo());
 
+        if (session.getState() == TrainState.MOVING_BETWEEN_STATIONS) {
+            Location from = event.getFrom();
+            Location to = event.getTo();
+            if (from.getWorld() != null && to.getWorld() != null && from.getWorld().equals(to.getWorld())) {
+                double dx = to.getX() - from.getX();
+                double dz = to.getZ() - from.getZ();
+                double dist = Math.sqrt(dx * dx + dz * dz);
+                if (dist > 0.001) {
+                    session.addDistance(dist);
+                }
+            }
+        }
+
         if (session.getState() != TrainState.MOVING_IN_STATION) {
             return;
         }

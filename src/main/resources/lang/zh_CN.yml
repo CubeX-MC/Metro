@@ -201,6 +201,10 @@ line:
   setstatus_success: "&a线路 {line_name} 状态已设置为: {status}"
   setstatus_invalid: "&c无效状态。请使用: normal, suspended, 或 maintenance。"
   setstatus_fail: "&c设置线路状态失败。"
+  line_suspended: "&c线路 {line_name} 目前暂停运营。"
+  line_suspended_msg: "&c{message}"
+  suggest_alternatives: "&e替代线路："
+  alternative_format: "&7- &a{alt_line_name}"
 
 # 传送门命令相关
 portal:

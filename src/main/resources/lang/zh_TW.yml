@@ -201,6 +201,10 @@ line:
   setstatus_success: "&a路線 {line_name} 狀態已設定為: {status}"
   setstatus_invalid: "&c無效狀態。請使用: normal, suspended, 或 maintenance。"
   setstatus_fail: "&c設定路線狀態失敗。"
+  line_suspended: "&c路線 {line_name} 目前暫停營運。"
+  line_suspended_msg: "&c{message}"
+  suggest_alternatives: "&e替代路線："
+  alternative_format: "&7- &a{alt_line_name}"
 
 # 傳送門指令相關
 portal:

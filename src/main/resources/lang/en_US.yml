@@ -201,6 +201,10 @@ line:
   setstatus_success: "&aLine {line_name} status set to: {status}"
   setstatus_invalid: "&cInvalid status. Use: normal, suspended, or maintenance."
   setstatus_fail: "&cFailed to set line status."
+  line_suspended: "&cLine {line_name} is currently suspended."
+  line_suspended_msg: "&c{message}"
+  suggest_alternatives: "&eAlternative routes:"
+  alternative_format: "&7- &a{alt_line_name}"
 
 # Portal Command Related
 portal:

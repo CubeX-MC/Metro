@@ -201,6 +201,10 @@ line:
   setstatus_success: "&aEstado de la línea {line_name} cambiado a: {status}"
   setstatus_invalid: "&cEstado inválido. Usa: normal, suspended, o maintenance."
   setstatus_fail: "&cNo se pudo establecer el estado de la línea."
+  line_suspended: "&cLa línea {line_name} está actualmente suspendida."
+  line_suspended_msg: "&c{message}"
+  suggest_alternatives: "&eRutas alternativas:"
+  alternative_format: "&7- &a{alt_line_name}"
 
 # Relacionado con comandos de portal
 portal:

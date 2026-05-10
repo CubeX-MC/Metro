@@ -201,6 +201,10 @@ line:
   setstatus_success: "&aStatus van lijn {line_name} ingesteld op: {status}"
   setstatus_invalid: "&cOngeldige status. Gebruik: normal, suspended of maintenance."
   setstatus_fail: "&cStatus van de lijn kon niet worden ingesteld."
+  line_suspended: "&cLijn {line_name} is momenteel buiten dienst."
+  line_suspended_msg: "&c{message}"
+  suggest_alternatives: "&eAlternatieve routes:"
+  alternative_format: "&7- &a{alt_line_name}"
 
 # Portaal commando gerelateerd
 portal:

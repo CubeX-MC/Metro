@@ -201,6 +201,10 @@ line:
   setstatus_success: "&aStatus der Linie {line_name} auf {status} gesetzt."
   setstatus_invalid: "&cUngültiger Status. Verwende: normal, suspended oder maintenance."
   setstatus_fail: "&cStatus der Linie konnte nicht gesetzt werden."
+  line_suspended: "&cLinie {line_name} ist derzeit außer Betrieb."
+  line_suspended_msg: "&c{message}"
+  suggest_alternatives: "&eAlternative Routen:"
+  alternative_format: "&7- &a{alt_line_name}"
 
 # Portal-Befehle
 portal:

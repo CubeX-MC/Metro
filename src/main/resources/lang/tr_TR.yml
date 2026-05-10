@@ -201,6 +201,10 @@ line:
   setstatus_success: "&a{line_name} hattının durumu {status} olarak ayarlandı."
   setstatus_invalid: "&cGeçersiz durum. Şunları kullanın: normal, suspended veya maintenance."
   setstatus_fail: "&cHat durumu ayarlanamadı."
+  line_suspended: "&c{line_name} hattı şu anda askıya alınmış durumda."
+  line_suspended_msg: "&c{message}"
+  suggest_alternatives: "&eAlternatif rotalar:"
+  alternative_format: "&7- &a{alt_line_name}"
 
 # Portal Komutları
 portal:
