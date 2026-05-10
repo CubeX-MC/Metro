@@ -40,7 +40,7 @@ public class TicketService {
         private final double price;
         private final String formattedPrice;
 
-        private TicketCheck(TicketCheckStatus status, double price, String formattedPrice) {
+        public TicketCheck(TicketCheckStatus status, double price, String formattedPrice) {
             this.status = status;
             this.price = price;
             this.formattedPrice = formattedPrice;

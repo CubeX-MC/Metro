@@ -158,6 +158,8 @@ public final class Metro extends JavaPlugin {
         this.mapIntegrationLifecycle = new MapIntegrationLifecycle(this);
         this.mapIntegrationLifecycle.enable();
 
+        org.cubexmc.metro.api.MetroAPI.initialize(this);
+
         getLogger().info("Metro(Modern) has been enabled!");
     }
 
