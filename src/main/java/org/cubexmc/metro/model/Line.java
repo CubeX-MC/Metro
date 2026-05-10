@@ -27,7 +27,7 @@ public class Line {
     private UUID owner; // 线路所有者 UUID，null 表示服务器所有
     private final Set<UUID> admins; // 线路管理员 UUID 集合
     private String worldName; // 线路所在世界名称，null 表示还未添加任何站点
-    private FareRule fareRule;
+    private PriceRule priceRule;
     private LineStatus lineStatus = LineStatus.NORMAL;
     private final List<String> alternativeRouteIds;
     private String suspensionMessage;
@@ -418,12 +418,12 @@ public class Line {
         return orderedStopIds.get(index - 1);
     }
 
-    public FareRule getFareRule() {
-        return fareRule;
+    public PriceRule getPriceRule() {
+        return priceRule;
     }
 
-    public void setFareRule(FareRule fareRule) {
-        this.fareRule = fareRule;
+    public void setPriceRule(PriceRule priceRule) {
+        this.priceRule = priceRule;
     }
 
     public LineStatus getLineStatus() {

@@ -18,17 +18,17 @@ Workflow:
 
 | Feature | Status in CYY | Merge Action |
 |---------|--------------|--------------|
-| FareRule model | Complete | Cherry-pick as-is |
+| PriceRule model | Complete | Cherry-pick as-is |
 | LineStatus enum | Complete | Cherry-pick as-is |
-| FareService | Complete | Cherry-pick as-is |
+| PriceService | Complete | Cherry-pick as-is |
 | LineStatusService | Complete | Cherry-pick with minor wiring |
 | LineStatusChangeEvent | Complete | Cherry-pick as-is |
 | MetroAPI | Complete but exposes managers | Rewrite to route through services |
-| Line new fields (fareRule, status, etc.) | Complete | Cherry-pick fields only, skip Javadoc removal |
+| Line new fields (PriceRule, status, etc.) | Complete | Cherry-pick fields only, skip Javadoc removal |
 | LineManager save/load | Complete | Cherry-pick new field persistence |
-| CYY setfare logic (FareRule + FareService) | Complete | Fold into existing setprice command |
+| CYY setfare logic (PriceRule + PriceService) | Complete | Fold into existing setprice command |
 | Distance tracking (TrainSession/TrainMovementTask) | Infrastructure only | Cherry-pick, then wire end-to-end |
-| TicketService fare integration | Partial | Rewrite to fully wire fare calculation |
+| TicketService price integration | Partial | Rewrite to fully wire price calculation |
 | GUI status/pricing integration | Complete | Cherry-pick with command alignment |
 | Stop status commands | Complete | Cherry-pick |
 | Language files | Complete | Merge with command name adjustments |
@@ -38,13 +38,13 @@ Workflow:
 ## Phase 1: Foundation Models (can cherry-pick)
 
 **Files:**
-- `model/FareRule.java` — new file, pure model
+- `model/PriceRule.java` — new file, pure model
 - `model/LineStatus.java` — new file, pure enum
 - `model/RoutePoint.java` — cherry-pick utility additions only
 - `train/TrainSession.java` — cherry-pick distanceTraveled field + methods only
 
 **Line.java additions** (cherry-pick only new fields, skip Javadoc/style changes):
-- `fareRule` field + getter/setter
+- `PriceRule` field + getter/setter
 - `lineStatus` field + getter/setter
 - `alternativeRouteIds` field + getter/setter/add/remove
 - `suspensionMessage` field + getter/setter
@@ -54,27 +54,27 @@ Workflow:
 ## Phase 2: Service Layer (minimal adjustments)
 
 **New files (cherry-pick as-is):**
-- `service/FareService.java`
+- `service/PriceService.java`
 - `service/LineStatusService.java`
 - `event/LineStatusChangeEvent.java`
 
 **Modified files (partial cherry-pick):**
 - `service/LineCommandService.java` — add `setPriceRule()` / `resetPriceRule()` /
-  `setLineStatus()` methods (integrate CYY's FareRule logic under setprice)
-- `service/TicketService.java` — integrate FareRule into boarding price check;
-  wire `calculateFare()` with actual distance traveled
+  `setLineStatus()` methods (integrate CYY's PriceRule logic under setprice)
+- `service/TicketService.java` — integrate PriceRule into boarding price check;
+  wire `calculatePrice()` with actual distance traveled
 - `manager/LineManager.java` — add save/load for:
-  - `fare_rule` section (mode, base_fare, per_block_rate, per_interval_rate,
-    max_fare, time_discounts)
+  - `price_rule` section (mode, base_price, per_block_rate, per_interval_rate,
+    max_price, time_discounts)
   - `status` field (NORMAL / SUSPENDED / MAINTENANCE)
   - `suspension_message` field
   - `alternative_routes` list
 
-**Verification**: save/load round-trip test; boarding check works with FareRule.
+**Verification**: save/load round-trip test; boarding check works with PriceRule.
 
 ## Phase 3: Command Rework (requires rewriting)
 
-**Rewrite `setprice` to absorb FareRule modes:**
+**Rewrite `setprice` to absorb PriceRule modes:**
 ```
 /m line setprice <line> <price>                    # legacy flat, kept unchanged
 /m line setprice <line> flat <base>                # explicit flat
@@ -83,17 +83,17 @@ Workflow:
 /m line setprice reset <line>                      # revert to legacy ticketPrice
 ```
 
-**Drop `setfare` command entirely.** It duplicates `setprice` conceptually.
-Keep the `fareinfo` subcommand under `setprice` or as a top-level info command.
+**Drop the CYY `setfare` command entirely.** It duplicates `setprice` conceptually.
+Keep the `priceinfo` subcommand under `setprice` or as a top-level info command.
 
 **Files to modify:**
-- `command/newcmd/LineCommand.java` — replace setfare methods with extended
-  setprice; add fareinfo subcommand
-- `command/newcmd/LineCommandView.java` — add fare info display methods
+- `command/newcmd/LineCommand.java` — replace setprice methods with extended
+  setprice; add priceinfo subcommand
+- `command/newcmd/LineCommandView.java` — add price info display methods
 - `command/newcmd/StopCommand.java` — cherry-pick status commands
 - `command/newcmd/CommandGuard.java` — cherry-pick permission updates
 - `command/newcmd/MetroMainCommand.java` — cherry-pick registration changes
-- `lifecycle/CommandRegistration.java` — add fare mode + status suggestions
+- `lifecycle/CommandRegistration.java` — add price mode + status suggestions
 - `lifecycle/BukkitFallbackCommandRegistration.java` — same
 
 **Verification**: all command forms work; tab completion correct; permissions
@@ -106,18 +106,18 @@ managers directly:
 - All mutations go through `LineCommandService`, `StopCommandService`,
   `PortalCommandService`
 - Read-only queries return DTOs or snapshots, never mutable internal objects
-- Fare calculations go through `FareService`
+- price calculations go through `PriceService`
 - Status checks go through `LineStatusService`
 
-**`Metro.java`** — add `getFareService()`, `getLineStatusService()` getters.
+**`Metro.java`** — add `getPriceService()`, `getLineStatusService()` getters.
 
 ## Phase 5: Integration Wiring (end-to-end)
 
-**Distance-based fare — complete the circuit:**
+**Distance-based price — complete the circuit:**
 - `train/TrainMovementTask.java` — already tracks distance (cherry-pick confirm)
 - `train/TrainSession.java` — already stores distanceTraveled (Phase 1)
-- Wire `getDistanceTraveled()` → `FareService.calculateDistanceFare()` at
-  VehicleExitEvent / arrival, then charge the delta via `TicketService.chargeFare()`
+- Wire `getDistanceTraveled()` → `PriceService.calculateDistancePrice()` at
+  VehicleExitEvent / arrival, then charge the delta via `TicketService.chargePrice()`
 
 **Status checks during boarding:**
 - `listener/PlayerInteractListener.java` — add `LineStatusService` check before
@@ -132,7 +132,7 @@ managers directly:
 - `integration/MapGeometry.java` — cherry-pick
 - `integration/MapLineColor.java` — cherry-pick
 
-**Verification**: board a line with distance fare → charged correctly based on
+**Verification**: board a line with distance price → charged correctly based on
 actual blocks traveled; suspended line → boarding blocked; maintenance line →
 warning shown.
 
@@ -153,12 +153,12 @@ Cherry-pick GUI changes, verifying they align with renamed commands:
 - `gui/controller/StopSettingsController.java`
 - `gui/view/*` (all modified views)
 
-**Verification**: GUI menus reflect line status, fare info, and route all
+**Verification**: GUI menus reflect line status, price info, and route all
 actions through services.
 
 ## Phase 7: Language & Config
 
-- `resources/lang/*.yml` — merge CYY's fare/status language keys; rename
+- `resources/lang/*.yml` — merge CYY's price/status language keys; rename
   `setfare_*` → `setprice_*`; keep existing setprice keys for backward compat
 - `resources/config.yml` — add new config sections; keep existing keys unchanged
 - `resources/plugin.yml` — only update if adding new permissions; do NOT change
@@ -179,9 +179,9 @@ actions through services.
 
 1. `mvn compile` passes
 2. Existing unit tests pass
-3. New tests added for FareRule calculation, LineStatusService, API methods
+3. New tests added for PriceRule calculation, LineStatusService, API methods
 4. Manual smoke test on a local server:
-   - Create line, add stops, set distance/interval fare
-   - Ride the line, verify fare charged matches distance traveled
+   - Create line, add stops, set distance/interval price
+   - Ride the line, verify price charged matches distance traveled
    - Suspend line, verify boarding blocked
    - Check GUI and map display reflect status

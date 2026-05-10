@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Fare configuration for a metro line.
+ * Price configuration for a metro line.
  * Supports multiple pricing modes:
  * - FLAT: Fixed price per ride (legacy mode, uses ticketPrice)
  * - DISTANCE: Price calculated per block traveled
@@ -14,7 +14,7 @@ import java.util.Map;
  *
  * Also supports time-based discounts.
  */
-public class FareRule {
+public class PriceRule {
 
     /** Pricing mode */
     public enum PricingMode {
@@ -24,20 +24,20 @@ public class FareRule {
     }
 
     private PricingMode mode = PricingMode.FLAT;
-    private double baseFare = 0.0;
+    private double basePrice = 0.0;
     private double perBlockRate = 0.0;       // For DISTANCE mode: cost per block
     private double perIntervalRate = 0.0;    // For INTERVAL mode: cost per stop interval
-    private double maxFare = 0.0;            // Maximum fare cap (0 = no cap)
+    private double maxPrice = 0.0;            // Maximum price cap (0 = no cap)
 
     // Time-based discounts: key = "HH:mm-HH:mm" (open-closed range), value = discount multiplier (0.0-1.0)
     private final List<TimeDiscount> timeDiscounts = new ArrayList<>();
 
-    public FareRule() {
+    public PriceRule() {
     }
 
-    public FareRule(PricingMode mode, double baseFare) {
+    public PriceRule(PricingMode mode, double basePrice) {
         this.mode = mode;
-        this.baseFare = Math.max(0.0, baseFare);
+        this.basePrice = Math.max(0.0, basePrice);
     }
 
     // --- Getters and Setters ---
@@ -50,12 +50,12 @@ public class FareRule {
         this.mode = mode != null ? mode : PricingMode.FLAT;
     }
 
-    public double getBaseFare() {
-        return baseFare;
+    public double getBasePrice() {
+        return basePrice;
     }
 
-    public void setBaseFare(double baseFare) {
-        this.baseFare = Math.max(0.0, baseFare);
+    public void setBasePrice(double basePrice) {
+        this.basePrice = Math.max(0.0, basePrice);
     }
 
     public double getPerBlockRate() {
@@ -74,12 +74,12 @@ public class FareRule {
         this.perIntervalRate = Math.max(0.0, perIntervalRate);
     }
 
-    public double getMaxFare() {
-        return maxFare;
+    public double getMaxPrice() {
+        return maxPrice;
     }
 
-    public void setMaxFare(double maxFare) {
-        this.maxFare = Math.max(0.0, maxFare);
+    public void setMaxPrice(double maxPrice) {
+        this.maxPrice = Math.max(0.0, maxPrice);
     }
 
     public List<TimeDiscount> getTimeDiscounts() {
@@ -129,20 +129,20 @@ public class FareRule {
         double price;
         switch (mode) {
             case DISTANCE:
-                price = baseFare + (distanceBlocks * perBlockRate);
+                price = basePrice + (distanceBlocks * perBlockRate);
                 break;
             case INTERVAL:
-                price = baseFare + (intervals * perIntervalRate);
+                price = basePrice + (intervals * perIntervalRate);
                 break;
             case FLAT:
             default:
-                price = baseFare;
+                price = basePrice;
                 break;
         }
 
         // Apply cap
-        if (maxFare > 0.0 && price > maxFare) {
-            price = maxFare;
+        if (maxPrice > 0.0 && price > maxPrice) {
+            price = maxPrice;
         }
 
         // Apply time discount
@@ -161,15 +161,15 @@ public class FareRule {
         StringBuilder sb = new StringBuilder();
         switch (mode) {
             case FLAT:
-                sb.append("Flat fare: ").append(baseFare);
+                sb.append("Flat price: ").append(basePrice);
                 break;
             case DISTANCE:
-                sb.append("Distance-based: ").append(baseFare).append(" + ").append(perBlockRate).append("/block");
-                if (maxFare > 0) sb.append(" (max ").append(maxFare).append(")");
+                sb.append("Distance-based: ").append(basePrice).append(" + ").append(perBlockRate).append("/block");
+                if (maxPrice > 0) sb.append(" (max ").append(maxPrice).append(")");
                 break;
             case INTERVAL:
-                sb.append("Interval-based: ").append(baseFare).append(" + ").append(perIntervalRate).append("/stop");
-                if (maxFare > 0) sb.append(" (max ").append(maxFare).append(")");
+                sb.append("Interval-based: ").append(basePrice).append(" + ").append(perIntervalRate).append("/stop");
+                if (maxPrice > 0) sb.append(" (max ").append(maxPrice).append(")");
                 break;
         }
         if (!timeDiscounts.isEmpty()) {
@@ -232,20 +232,20 @@ public class FareRule {
     }
 
     /**
-     * Serialize this FareRule to a config-friendly map.
+     * Serialize this PriceRule to a config-friendly map.
      */
     public Map<String, Object> serialize() {
         Map<String, Object> map = new HashMap<>();
         map.put("mode", mode.name().toLowerCase());
-        map.put("base_fare", baseFare);
+        map.put("base_price", basePrice);
         if (mode == PricingMode.DISTANCE) {
             map.put("per_block_rate", perBlockRate);
         }
         if (mode == PricingMode.INTERVAL) {
             map.put("per_interval_rate", perIntervalRate);
         }
-        if (maxFare > 0.0) {
-            map.put("max_fare", maxFare);
+        if (maxPrice > 0.0) {
+            map.put("max_price", maxPrice);
         }
         if (!timeDiscounts.isEmpty()) {
             List<Map<String, Object>> discounts = new ArrayList<>();
@@ -258,11 +258,11 @@ public class FareRule {
     }
 
     /**
-     * Deserialize a FareRule from a config map.
+     * Deserialize a PriceRule from a config map.
      */
     @SuppressWarnings("unchecked")
-    public static FareRule deserialize(Map<String, Object> map) {
-        FareRule rule = new FareRule();
+    public static PriceRule deserialize(Map<String, Object> map) {
+        PriceRule rule = new PriceRule();
         if (map.containsKey("mode")) {
             try {
                 rule.setMode(PricingMode.valueOf(((String) map.get("mode")).toUpperCase()));
@@ -270,8 +270,8 @@ public class FareRule {
                 rule.setMode(PricingMode.FLAT);
             }
         }
-        if (map.containsKey("base_fare")) {
-            rule.setBaseFare(((Number) map.get("base_fare")).doubleValue());
+        if (map.containsKey("base_price")) {
+            rule.setBasePrice(((Number) map.get("base_price")).doubleValue());
         }
         if (map.containsKey("per_block_rate")) {
             rule.setPerBlockRate(((Number) map.get("per_block_rate")).doubleValue());
@@ -279,8 +279,8 @@ public class FareRule {
         if (map.containsKey("per_interval_rate")) {
             rule.setPerIntervalRate(((Number) map.get("per_interval_rate")).doubleValue());
         }
-        if (map.containsKey("max_fare")) {
-            rule.setMaxFare(((Number) map.get("max_fare")).doubleValue());
+        if (map.containsKey("max_price")) {
+            rule.setMaxPrice(((Number) map.get("max_price")).doubleValue());
         }
         if (map.containsKey("time_discounts")) {
             List<Map<String, Object>> discountList = (List<Map<String, Object>>) map.get("time_discounts");
