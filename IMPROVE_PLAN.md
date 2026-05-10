@@ -57,6 +57,7 @@
 - PriceRule (25)、PriceService (11)、LineStatusService (18)、LineCommandService (12)、TicketService (3) 已补单元测试，总计 481 测试。
 - README / README_en 已更新所有命令说明。
 - Minecraft 26.1.2 兼容已实现：`VersionUtil` 正则支持 26.1.2 格式，`LegacyPaperCommandManager` fallback 已就绪，`docs/compatibility.md` 有完整策略。
+- `RouteNormalizer` 已实现：路线点吸附到铁轨方块中心 + 共线冗余删除，集成到 `RouteRecorder.saveSession()`。
 
 ## 4. 当前剩余重点
 
@@ -99,7 +100,7 @@
 5. 对交叉轨、并行轨、传送门前后和站台内低速抖动补单元测试。
 6. 让地图渲染、routeinfo 和 rail protection 共用规范化后的 route points，避免各自猜测拐点。
 
-### P2：保持服务边界清晰
+### P2：保持服务边界清晰（已完成）
 
 未来新增功能时遵守现有边界：
 
