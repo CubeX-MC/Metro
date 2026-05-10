@@ -523,7 +523,7 @@ public class LineCommand {
     }
 
     @Command("m|metro line|l setprice <lineId> <price>")
-    @CommandDescription("Set the ticket price for a metro line")
+    @CommandDescription("Set the ticket price for a metro line (legacy flat)")
     public void setPrice(Player player,
                          @Argument(value = "lineId", suggestions = "lineIds") String id,
                          @Argument(value = "price", suggestions = "priceValues") double price) {
@@ -544,6 +544,109 @@ public class LineCommand {
                             "line_name", line.getName()), "price", String.valueOf(price))));
         } else {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.setprice_fail"));
+        }
+    }
+
+    @Command("m|metro line|l setprice <lineId> flat <base>")
+    @CommandDescription("Set flat pricing for a line")
+    public void setPriceFlat(Player player,
+                             @Argument(value = "lineId", suggestions = "lineIds") String id,
+                             @Argument(value = "base", suggestions = "priceValues") double basePrice) {
+        setPriceRule(player, id, "flat", basePrice, null, null);
+    }
+
+    @Command("m|metro line|l setprice <lineId> distance <base> <perBlock> [max]")
+    @CommandDescription("Set distance-based pricing for a line")
+    public void setPriceDistance(Player player,
+                                 @Argument(value = "lineId", suggestions = "lineIds") String id,
+                                 @Argument(value = "base", suggestions = "priceValues") double basePrice,
+                                 @Argument(value = "perBlock", suggestions = "priceValues") double perBlock,
+                                 @Argument(value = "max", suggestions = "priceValues") Double maxPrice) {
+        setPriceRule(player, id, "distance", basePrice, perBlock, maxPrice);
+    }
+
+    @Command("m|metro line|l setprice <lineId> interval <base> <perStop> [max]")
+    @CommandDescription("Set interval-based pricing for a line")
+    public void setPriceInterval(Player player,
+                                 @Argument(value = "lineId", suggestions = "lineIds") String id,
+                                 @Argument(value = "base", suggestions = "priceValues") double basePrice,
+                                 @Argument(value = "perStop", suggestions = "priceValues") double perStop,
+                                 @Argument(value = "max", suggestions = "priceValues") Double maxPrice) {
+        setPriceRule(player, id, "interval", basePrice, perStop, maxPrice);
+    }
+
+    private void setPriceRule(Player player, String id, String mode, double basePrice, Double perUnit, Double maxPrice) {
+        Line line = guard.requireManageableLine(player, id);
+        if (line == null) {
+            return;
+        }
+
+        LineCommandService.WriteStatus status = lineService.setPriceRule(id, mode, basePrice, perUnit, maxPrice);
+        switch (status) {
+            case SUCCESS:
+                player.sendMessage(plugin.getLanguageManager().getMessage("line.setprice_success",
+                        LanguageManager.put(LanguageManager.args(), "line_name", line.getName())));
+                break;
+            case INVALID_VALUE:
+                player.sendMessage(plugin.getLanguageManager().getMessage("line.setprice_invalid"));
+                break;
+            default:
+                player.sendMessage(plugin.getLanguageManager().getMessage("line.setprice_fail"));
+                break;
+        }
+    }
+
+    @Command("m|metro line|l setprice reset <lineId>")
+    @CommandDescription("Reset pricing rule to use legacy flat ticket price")
+    public void resetPrice(Player player,
+                           @Argument(value = "lineId", suggestions = "lineIds") String id) {
+        Line line = guard.requireManageableLine(player, id);
+        if (line == null) {
+            return;
+        }
+
+        if (lineService.resetPriceRule(id)) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.setprice_reset",
+                    LanguageManager.put(LanguageManager.args(), "line_name", line.getName())));
+        } else {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.setprice_fail"));
+        }
+    }
+
+    @Command("m|metro line|l priceinfo <lineId>")
+    @CommandDescription("View pricing details and active discounts for a line")
+    public void priceInfo(Player player,
+                          @Argument(value = "lineId", suggestions = "lineIds") String id) {
+        Line line = guard.requireLine(player, id);
+        if (line == null) {
+            return;
+        }
+
+        view.sendPriceInfo(player, line);
+    }
+
+    @Command("m|metro line|l setstatus <lineId> <status>")
+    @CommandDescription("Set line operational status (normal/suspended/maintenance)")
+    public void setStatus(Player player,
+                          @Argument(value = "lineId", suggestions = "lineIds") String id,
+                          @Argument(value = "status", suggestions = "lineStatusValues") String status) {
+        Line line = guard.requireManageableLine(player, id);
+        if (line == null) {
+            return;
+        }
+
+        LineCommandService.WriteStatus writeStatus = lineService.setLineStatus(id, status);
+        switch (writeStatus) {
+            case SUCCESS:
+                player.sendMessage(plugin.getLanguageManager().getMessage("line.setstatus_success",
+                        LanguageManager.put(LanguageManager.args(), "line_name", line.getName())));
+                break;
+            case INVALID_VALUE:
+                player.sendMessage(plugin.getLanguageManager().getMessage("line.setstatus_invalid"));
+                break;
+            default:
+                player.sendMessage(plugin.getLanguageManager().getMessage("line.setstatus_fail"));
+                break;
         }
     }
 

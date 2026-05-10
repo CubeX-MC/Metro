@@ -218,6 +218,10 @@ public class CommandRegistration {
                 (context, input) -> toSuggestionsFuture(List.of("0.4", "0.8", "1.0", "1.2")));
         commandManager.parserRegistry().registerSuggestionProvider("priceValues",
                 (context, input) -> toSuggestionsFuture(List.of("0", "1", "2", "5", "10")));
+        commandManager.parserRegistry().registerSuggestionProvider("priceModes",
+                (context, input) -> toSuggestionsFuture(List.of("flat", "distance", "interval")));
+        commandManager.parserRegistry().registerSuggestionProvider("lineStatusValues",
+                (context, input) -> toSuggestionsFuture(List.of("normal", "suspended", "maintenance")));
     }
 
     private Iterable<String> lineIdSuggestions(CommandContext<CommandSender> context, CommandInput input) {

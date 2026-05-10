@@ -348,6 +348,8 @@ final class BukkitFallbackCommandRegistration {
                 case "yaw" -> List.of("0", "90", "180", "-90");
                 case "speed" -> List.of("0.4", "0.8", "1.0", "1.2");
                 case "price" -> List.of("0", "1", "2", "5", "10");
+                case "priceModes" -> List.of("flat", "distance", "interval");
+                case "lineStatusValues" -> List.of("normal", "suspended", "maintenance");
                 default -> List.of();
             };
         }
