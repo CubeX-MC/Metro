@@ -37,7 +37,10 @@ import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.RouteRecorder;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
+import org.cubexmc.metro.model.PriceRule;
 import org.cubexmc.metro.model.Stop;
+import org.cubexmc.metro.service.PriceService;
+import org.cubexmc.metro.service.TicketService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,6 +59,9 @@ class TrainMovementTaskExtendedTest {
     private ConfigFacade configFacade;
     private RouteRecorder routeRecorder;
     private ScoreboardManager scoreboardManager;
+    private PriceService priceService;
+    private TicketService ticketService;
+    private LanguageManager languageManager;
 
     @BeforeEach
     void setUp() {
@@ -65,11 +71,17 @@ class TrainMovementTaskExtendedTest {
         configFacade = mock(ConfigFacade.class);
         routeRecorder = mock(RouteRecorder.class);
         scoreboardManager = mock(ScoreboardManager.class);
+        priceService = mock(PriceService.class);
+        ticketService = mock(TicketService.class);
+        languageManager = mock(LanguageManager.class);
         when(plugin.getLineManager()).thenReturn(lineManager);
         when(plugin.getStopManager()).thenReturn(stopManager);
         when(plugin.getConfigFacade()).thenReturn(configFacade);
         when(plugin.getRouteRecorder()).thenReturn(routeRecorder);
         when(plugin.getScoreboardManager()).thenReturn(scoreboardManager);
+        when(plugin.getPriceService()).thenReturn(priceService);
+        when(plugin.getTicketService()).thenReturn(ticketService);
+        when(plugin.getLanguageManager()).thenReturn(languageManager);
         when(configFacade.getCartSpeed()).thenReturn(0.4);
         when(configFacade.getCartDepartureDelay()).thenReturn(60L);
     }
@@ -875,5 +887,76 @@ class TrainMovementTaskExtendedTest {
         task.onVehicleMove(event);
 
         verify(cart, never()).setVelocity(any());
+    }
+
+    @Test
+    void shouldChargeDistanceFareOnStationArrival() throws Exception {
+        Line line = createLineWithStops("l1", "A", "B");
+        PriceRule rule = new PriceRule(PriceRule.PricingMode.DISTANCE, 2.0);
+        rule.setPerBlockRate(0.5);
+        line.setPriceRule(rule);
+
+        Minecart cart = createMinecart();
+        Player passenger = createOnlinePlayer("Alice");
+        when(passenger.getVehicle()).thenReturn(cart);
+
+        TrainMovementTask task = new TrainMovementTask(plugin, cart, passenger, "l1", "A",
+                TrainMovementTask.TrainState.MOVING_BETWEEN_STATIONS);
+        task.getSession().addDistance(100.0);
+
+        when(ticketService.chargePrice(eq(passenger), eq(line), eq(50.0)))
+                .thenReturn(TicketService.TicketChargeStatus.CHARGED);
+        when(ticketService.format(50.0)).thenReturn("$50.00");
+        when(languageManager.getMessage(eq("economy.paid_distance"), (Map<String, Object>) any()))
+                .thenReturn("Paid $50.00");
+
+        Stop stopB = new Stop("B", "Bravo");
+        java.lang.reflect.Method method = TrainMovementTask.class.getDeclaredMethod("settleDistanceFare", Stop.class);
+        method.setAccessible(true);
+        method.invoke(task, stopB);
+
+        verify(ticketService).chargePrice(passenger, line, 50.0);
+        assertEquals(0.0, task.getSession().getDistanceTraveled());
+    }
+
+    @Test
+    void shouldNotChargeFareForFlatMode() throws Exception {
+        Line line = createLineWithStops("l1", "A", "B");
+        line.setPriceRule(new PriceRule(PriceRule.PricingMode.FLAT, 5.0));
+
+        Minecart cart = createMinecart();
+        Player passenger = createOnlinePlayer("Alice");
+        when(passenger.getVehicle()).thenReturn(cart);
+
+        TrainMovementTask task = new TrainMovementTask(plugin, cart, passenger, "l1", "A",
+                TrainMovementTask.TrainState.MOVING_BETWEEN_STATIONS);
+        task.getSession().addDistance(100.0);
+
+        Stop stopB = new Stop("B", "Bravo");
+        java.lang.reflect.Method method = TrainMovementTask.class.getDeclaredMethod("settleDistanceFare", Stop.class);
+        method.setAccessible(true);
+        method.invoke(task, stopB);
+
+        verify(ticketService, never()).chargePrice(any(), any(), anyDouble());
+    }
+
+    @Test
+    void shouldNotChargeFareWithoutPriceRule() throws Exception {
+        Line line = createLineWithStops("l1", "A", "B");
+
+        Minecart cart = createMinecart();
+        Player passenger = createOnlinePlayer("Alice");
+        when(passenger.getVehicle()).thenReturn(cart);
+
+        TrainMovementTask task = new TrainMovementTask(plugin, cart, passenger, "l1", "A",
+                TrainMovementTask.TrainState.MOVING_BETWEEN_STATIONS);
+        task.getSession().addDistance(100.0);
+
+        Stop stopB = new Stop("B", "Bravo");
+        java.lang.reflect.Method method = TrainMovementTask.class.getDeclaredMethod("settleDistanceFare", Stop.class);
+        method.setAccessible(true);
+        method.invoke(task, stopB);
+
+        verify(ticketService, never()).chargePrice(any(), any(), anyDouble());
     }
 }

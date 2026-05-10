@@ -54,31 +54,11 @@
 - CYY 分支功能已整合：PriceRule 三种定价模式、LineStatus 状态系统、暂停线路拦截乘车、距离扣费、MetroAPI。
 - `setprice` 命令已扩展支持 flat/distance/interval/reset 模式，新增 `priceinfo` 和 `setstatus` 命令。
 - MetroAPI 已提供线路查询、票价计算、状态管理和 Vault 集成接口。
-- PriceRule (25)、PriceService (11)、LineStatusService (18) 已补单元测试，总计 466 测试。
+- PriceRule (25)、PriceService (11)、LineStatusService (18)、LineCommandService (12)、TicketService (3) 已补单元测试，总计 481 测试。
 - README / README_en 已更新所有命令说明。
+- Minecraft 26.1.2 兼容已实现：`VersionUtil` 正则支持 26.1.2 格式，`LegacyPaperCommandManager` fallback 已就绪，`docs/compatibility.md` 有完整策略。
 
 ## 4. 当前剩余重点
-
-### P0：Minecraft 26.1.2 兼容升级
-
-目标：发布一个继续向前兼容到 Minecraft 1.18 的 Metro jar，同时确认它能在 Minecraft/Paper 26.1.2 上加载并完成核心流程。
-
-决策：
-
-- 主构建继续使用 Java 17 bytecode 和 Spigot API 1.18.2 编译，避免把 1.18 支持切断。
-- `plugin.yml` 继续声明 `api-version: 1.18`，除非后续明确放弃 1.18。
-- 不直接引入 26.1.2 专属 API；必须使用时放进反射/适配层，并提供旧版本 fallback。
-- Paper 26.1.2 作为运行时验证目标处理，不作为主编译 API 基线。
-- 26.1.2 服务端需要 Java 25 运行；Metro jar 本身仍以 Java 17 产物发布。
-
-实施顺序：
-
-1. 补强版本解析，确保 `1.18.2-R0.1-SNAPSHOT`、`1.21.11-R0.1-SNAPSHOT`、`26.1.2-R0.1-SNAPSHOT` 等格式都有测试覆盖。
-2. 检查命令注册适配层，重点关注 `PaperCommandManager` / `LegacyPaperCommandManager` 在 Paper 26.1.2 的加载表现。
-3. 保持 Bukkit/Spigot/Paper 公共 API 优先；禁止新增 NMS、CraftBukkit 或版本包依赖。
-4. 建立运行矩阵：`1.18.2 + Java 17`、当前 LTS Paper（如 1.21.x + Java 21）、`26.1.2 + Java 25`。
-5. 在真服 smoke test 覆盖插件加载、命令注册、GUI 打开、站点/线路管理、矿车发车、乘车扣费和地图软依赖禁用场景。
-6. 如果 26.1.2 真服暴露 cloud 命令框架问题，再升级 `cloud-paper` / `cloud-minecraft-extras`，并回跑旧版本 smoke test。
 
 ### P1：新模块测试覆盖
 
