@@ -6,16 +6,17 @@
 
 - `docs/archive/improve-plan-2026-04-29.md`
 
-最近整理时间：2026-05-01
+最近整理时间：2026-05-10
 
 ## 1. 当前状态
 
-- Maven 单模块项目，主插件版本 `1.1.5`。
+- Maven 单模块项目，主插件版本 `1.1.6`。
 - 最近记录的验证结果：`mvn verify` 已通过。
-- 最近记录的测试状态：401 个单元测试，通过率 100%。
+- 最近记录的测试状态：412 个单元测试，通过率 100%。
 - 最近记录的静态检查：SpotBugs 0 个问题。
-- 最近记录的覆盖率：JaCoCo 行覆盖率约 42%，指令覆盖率约 41%，质量门最低行覆盖率 25%。
+- 最近记录的覆盖率：JaCoCo 行覆盖率约 42%，质量门最低行覆盖率 25%。
 - 核心能力已覆盖线路、站点、矿车运行、站台提示、计分板、音效、GUI、Vault、BlueMap/Dynmap/Squaremap、Folia 调度适配和数据迁移。
+- 已集成 PriceRule 定价系统（flat/distance/interval）、LineStatus 线路状态（NORMAL/SUSPENDED/MAINTENANCE）和 MetroAPI。
 
 如果准备发布、调整质量门或做跨模块重构，应先重新运行本地验证，不要只依赖上述历史记录。
 
@@ -28,6 +29,7 @@
 - 发布验证：`docs/release-checklist.md`
 - 兼容性说明：`docs/compatibility.md`
 - 已完成改进细节：`docs/archive/improve-plan-2026-04-29.md`
+- CYY 分支合并计划：`MERGING_PLAN.md`
 
 只有在需要追溯历史实现理由时才打开归档文件。日常改进应以本文件为准。
 
@@ -49,6 +51,9 @@
 - Folia 调度策略已写入架构文档，当前 Paper/Bukkit 可接受，Folia 风险边界已有记录。
 - 硬编码玩家消息已清理，语言 key 已做跨语言对齐测试。
 - CI、发布清单、发布说明模板、兼容性文档和 release workflow 已建立。
+- CYY 分支功能已整合：PriceRule 三种定价模式、LineStatus 状态系统、暂停线路拦截乘车、距离扣费、MetroAPI。
+- `setprice` 命令已扩展支持 flat/distance/interval/reset 模式，新增 `priceinfo` 和 `setstatus` 命令。
+- MetroAPI 已提供线路查询、票价计算、状态管理和 Vault 集成接口。
 
 ## 4. 当前剩余重点
 
@@ -72,36 +77,16 @@
 4. 建立运行矩阵：`1.18.2 + Java 17`、当前 LTS Paper（如 1.21.x + Java 21）、`26.1.2 + Java 25`。
 5. 在真服 smoke test 覆盖插件加载、命令注册、GUI 打开、站点/线路管理、矿车发车、乘车扣费和地图软依赖禁用场景。
 6. 如果 26.1.2 真服暴露 cloud 命令框架问题，再升级 `cloud-paper` / `cloud-minecraft-extras`，并回跑旧版本 smoke test。
-7. 后续为世界标识增加 `world_key` 持久化字段，旧数据继续按 world name fallback。
 
-### P1：推进核心服务与列车类覆盖率
+### P1：新模块测试覆盖
 
-目标：把关键 service/train 类逐步推到 70% 以上覆盖率，并在稳定后考虑提高 JaCoCo 质量门。
+当前零覆盖的新模块需优先补测：
 
-已知进度（2026-05-01 更新）：
-
-- `ConfigFacade` 约 78% 行覆盖率。
-- `LineManager` 约 74% 行覆盖率。
-- `StopManager` 约 83% 行覆盖率。
-- `TrainMovementAssistController` 约 95% 行覆盖率。
-- `TrainTaskRegistry` 100% 行覆盖率。
-- `TrainSession` 约 95% 行覆盖率。
-- `TrainEventPublisher` 100% 行覆盖率。
-- `TrainStateMachine` 100% 行覆盖率。
-- `ScoreboardManager` 约 86% 行覆盖率。
-- `TrainDisplayController` 约 83% 行覆盖率。
-- `TrainMovementTask` 约 56% 行覆盖率。
-- `TrainPhysicsController` 100% 行覆盖率。
-- `PlayerInteractListener` 约 67% 行覆盖率。
-- `VehicleListener` 约 85% 行覆盖率。
-
-下一步：
-
-1. 重新生成最新 JaCoCo 报告，确认当前低覆盖核心类。（✓ 已完成 2026-04-30）
-2. 优先补纯服务、状态机、边界条件和失败路径测试。（进行中：已覆盖 TrainDisplayController 0→83%、ScoreboardManager 0→86%、TrainMovementTask 36→56%、TrainPhysicsController 54→100%、PlayerInteractListener 19→67%、VehicleListener 37→85%）
-3. 对 Bukkit/Folia 事件流使用现有 Mockito 测试风格扩展，不引入重型测试框架，除非收益明确。
-4. 覆盖率稳定后，再把 JaCoCo 行覆盖率门槛从 25% 提到下一个安全档位。
-5. 当前仍需重点提高的低覆盖核心类：`TrainMovementTask`（56%）。
+- `PriceRule` — 0%，模型类，calculatePrice() / deserialize() / getActiveDiscountMultiplier()
+- `PriceService` — 0%，服务类，countStopIntervals() / calculatePrice() / getEstimatedPrice()
+- `LineStatusService` — 0%，服务类，setStatus() / isBoardable() / getAlternativeLines()
+- `LineStatus` — 枚举，fromConfig() 边界测试
+- `TrainMovementTask` — 56%，距离追踪和 settleDistanceFare() 新逻辑
 
 ### P1：防止核心交互路径回归
 
@@ -115,7 +100,7 @@
 
 ### P2：Route Normalizer 后续改进
 
-当前路线录制已支持更密采样，并在保存前删除同一直线上的冗余采样点。后续若继续提升在线地图和 rail protection 精度，应把“浮点矿车轨迹”规范化为“铁轨方块路径”：
+当前路线录制已支持更密采样，并在保存前删除同一直线上的冗余采样点。后续若继续提升在线地图和 rail protection 精度，应把"浮点矿车轨迹"规范化为"铁轨方块路径"：
 
 1. 新增 `RouteNormalizer`，输入录制得到的 `RoutePoint` 列表，输出经过清洗的 `RoutePoint` 列表。
 2. 对每个采样点复用 rail protection 的附近铁轨查找思路，吸附到最近铁轨方块中心；找不到铁轨时保留原点并记录警告统计。
@@ -146,6 +131,7 @@
 每次面向用户的功能变化都应同步：
 
 - README / README_en 中的命令、权限、配置说明。
+- 新增的 `setprice` 扩展语法、`priceinfo`、`setstatus` 命令需加入文档。
 - `docs/release-checklist.md` 中的发布前检查。
 - `docs/release-notes-template.md` 或实际发布说明。
 - `docs/compatibility.md` 中的 Java、Minecraft、服务端和软依赖兼容信息。
@@ -160,6 +146,7 @@
 - 不让旧异步保存结果覆盖新状态。
 - 不让 GUI 点击处理直接吞进大量业务逻辑。
 - 不让命令层重新承担权限、查找、校验、写入和展示的全部职责。
+- 不重新引入 CYY 分支的 1.16 兼容降级（switch 表达式→语句、record→class、isBlank→trim、instanceof 模式→显式转换）。
 - 不在没有测试或回归清单更新的情况下修改核心乘车、保存、迁移、权限或调度路径。
 
 ## 6. 建议工作顺序
