@@ -12,7 +12,7 @@
 
 - Maven 单模块项目，主插件版本 `1.1.6`。
 - 最近记录的验证结果：`mvn verify` 已通过。
-- 最近记录的测试状态：466 个单元测试，通过率 100%。
+- 最近记录的测试状态：481 个单元测试，通过率 100%。
 - 最近记录的静态检查：SpotBugs 0 个问题。
 - 最近记录的覆盖率：JaCoCo 行覆盖率约 42%，质量门最低行覆盖率 25%。
 - 核心能力已覆盖线路、站点、矿车运行、站台提示、计分板、音效、GUI、Vault、BlueMap/Dynmap/Squaremap、Folia 调度适配和数据迁移。
@@ -87,12 +87,13 @@
 - `PriceRule` — 25 tests，calculatePrice / deserialize / 折扣 / 封顶 / 边界
 - `PriceService` — 11 tests，countStopIntervals / getEstimatedPrice
 - `LineStatusService` — 18 tests，setStatus / isBoardable / 替代线路
+- `LineCommandService` — 26 tests (+12)，setPriceRule / setLineStatus / resetPriceRule / 新方法
+- `TicketService` — 7 tests (+3)，estimatedMinimumPrice / distance boarding check
 
 仍需补测：
 
 - `TrainMovementTask` — 56%，settleDistanceFare 新逻辑
 - `LineStatus` 枚举 — fromConfig 边界
-- `LineCommandService` — setPriceRule / setLineStatus 新增方法
 
 ### P1：防止核心交互路径回归
 
