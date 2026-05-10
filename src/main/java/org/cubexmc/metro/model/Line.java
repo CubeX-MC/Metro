@@ -27,6 +27,10 @@ public class Line {
     private UUID owner; // 线路所有者 UUID，null 表示服务器所有
     private final Set<UUID> admins; // 线路管理员 UUID 集合
     private String worldName; // 线路所在世界名称，null 表示还未添加任何站点
+    private FareRule fareRule;
+    private LineStatus lineStatus = LineStatus.NORMAL;
+    private final List<String> alternativeRouteIds;
+    private String suspensionMessage;
     
     /**
      * 创建新线路
@@ -46,6 +50,7 @@ public class Line {
         this.ticketPrice = 0.0; // 默认免费
         this.railProtected = false;
         this.admins = new HashSet<>();
+        this.alternativeRouteIds = new ArrayList<>();
     }
     
     /**
@@ -411,5 +416,55 @@ public class Line {
             return null;
         }
         return orderedStopIds.get(index - 1);
+    }
+
+    public FareRule getFareRule() {
+        return fareRule;
+    }
+
+    public void setFareRule(FareRule fareRule) {
+        this.fareRule = fareRule;
+    }
+
+    public LineStatus getLineStatus() {
+        return lineStatus != null ? lineStatus : LineStatus.NORMAL;
+    }
+
+    public void setLineStatus(LineStatus lineStatus) {
+        this.lineStatus = lineStatus != null ? lineStatus : LineStatus.NORMAL;
+    }
+
+    public List<String> getAlternativeRouteIds() {
+        return new ArrayList<>(alternativeRouteIds);
+    }
+
+    public void setAlternativeRouteIds(Collection<String> alternativeRouteIds) {
+        this.alternativeRouteIds.clear();
+        if (alternativeRouteIds != null) {
+            for (String id : alternativeRouteIds) {
+                if (id != null && !id.trim().isEmpty()) {
+                    this.alternativeRouteIds.add(id.trim());
+                }
+            }
+        }
+    }
+
+    public boolean addAlternativeRoute(String lineId) {
+        if (lineId == null || lineId.trim().isEmpty() || alternativeRouteIds.contains(lineId.trim())) {
+            return false;
+        }
+        return alternativeRouteIds.add(lineId.trim());
+    }
+
+    public boolean removeAlternativeRoute(String lineId) {
+        return alternativeRouteIds.remove(lineId);
+    }
+
+    public String getSuspensionMessage() {
+        return suspensionMessage;
+    }
+
+    public void setSuspensionMessage(String suspensionMessage) {
+        this.suspensionMessage = suspensionMessage;
     }
 } 
