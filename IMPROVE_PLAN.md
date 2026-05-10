@@ -12,7 +12,7 @@
 
 - Maven 单模块项目，主插件版本 `1.1.6`。
 - 最近记录的验证结果：`mvn verify` 已通过。
-- 最近记录的测试状态：412 个单元测试，通过率 100%。
+- 最近记录的测试状态：466 个单元测试，通过率 100%。
 - 最近记录的静态检查：SpotBugs 0 个问题。
 - 最近记录的覆盖率：JaCoCo 行覆盖率约 42%，质量门最低行覆盖率 25%。
 - 核心能力已覆盖线路、站点、矿车运行、站台提示、计分板、音效、GUI、Vault、BlueMap/Dynmap/Squaremap、Folia 调度适配和数据迁移。
@@ -54,6 +54,8 @@
 - CYY 分支功能已整合：PriceRule 三种定价模式、LineStatus 状态系统、暂停线路拦截乘车、距离扣费、MetroAPI。
 - `setprice` 命令已扩展支持 flat/distance/interval/reset 模式，新增 `priceinfo` 和 `setstatus` 命令。
 - MetroAPI 已提供线路查询、票价计算、状态管理和 Vault 集成接口。
+- PriceRule (25)、PriceService (11)、LineStatusService (18) 已补单元测试，总计 466 测试。
+- README / README_en 已更新所有命令说明。
 
 ## 4. 当前剩余重点
 
@@ -80,13 +82,17 @@
 
 ### P1：新模块测试覆盖
 
-当前零覆盖的新模块需优先补测：
+已覆盖（2026-05-10）：
 
-- `PriceRule` — 0%，模型类，calculatePrice() / deserialize() / getActiveDiscountMultiplier()
-- `PriceService` — 0%，服务类，countStopIntervals() / calculatePrice() / getEstimatedPrice()
-- `LineStatusService` — 0%，服务类，setStatus() / isBoardable() / getAlternativeLines()
-- `LineStatus` — 枚举，fromConfig() 边界测试
-- `TrainMovementTask` — 56%，距离追踪和 settleDistanceFare() 新逻辑
+- `PriceRule` — 25 tests，calculatePrice / deserialize / 折扣 / 封顶 / 边界
+- `PriceService` — 11 tests，countStopIntervals / getEstimatedPrice
+- `LineStatusService` — 18 tests，setStatus / isBoardable / 替代线路
+
+仍需补测：
+
+- `TrainMovementTask` — 56%，settleDistanceFare 新逻辑
+- `LineStatus` 枚举 — fromConfig 边界
+- `LineCommandService` — setPriceRule / setLineStatus 新增方法
 
 ### P1：防止核心交互路径回归
 
@@ -130,8 +136,6 @@
 
 每次面向用户的功能变化都应同步：
 
-- README / README_en 中的命令、权限、配置说明。
-- 新增的 `setprice` 扩展语法、`priceinfo`、`setstatus` 命令需加入文档。
 - `docs/release-checklist.md` 中的发布前检查。
 - `docs/release-notes-template.md` 或实际发布说明。
 - `docs/compatibility.md` 中的 Java、Minecraft、服务端和软依赖兼容信息。
