@@ -18,6 +18,7 @@ import org.cubexmc.metro.service.PortalCommandService;
 import org.cubexmc.metro.update.DataFileUpdater;
 import org.cubexmc.metro.util.OwnershipUtil;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -25,7 +26,7 @@ import java.util.List;
  */
 public class PortalCommand {
 
-    private static final List<String> HELP_KEYS = List.of(
+    private static final List<String> HELP_KEYS = Arrays.asList(
             "portal.help_create",
             "portal.help_setdest",
             "portal.help_link",
@@ -85,7 +86,8 @@ public class PortalCommand {
                 portalService.createPortal(id, sender.getLocation(), sender.getTargetBlockExact(5),
                         sender.getUniqueId());
         switch (result.status()) {
-            case SUCCESS -> {
+            case SUCCESS:
+                {
                 Location loc = result.location();
                 sender.sendMessage(plugin.getLanguageManager().getMessage("portal.create_success",
                         LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.put(
@@ -95,12 +97,19 @@ public class PortalCommand {
                 sender.sendMessage(plugin.getLanguageManager().getMessage("portal.create_setdest_hint",
                         LanguageManager.put(LanguageManager.args(), "portal_id", id)));
             }
-            case INVALID_ID -> sender.sendMessage(plugin.getLanguageManager().getMessage("portal.id_invalid",
-                    LanguageManager.put(LanguageManager.args(), "portal_id", id)));
-            case EXISTS -> sender.sendMessage(plugin.getLanguageManager().getMessage("portal.create_exists",
-                    LanguageManager.put(LanguageManager.args(), "portal_id", id)));
-            default -> sender.sendMessage(plugin.getLanguageManager().getMessage("portal.create_fail",
-                    LanguageManager.put(LanguageManager.args(), "portal_id", id)));
+                break;
+            case INVALID_ID:
+                sender.sendMessage(plugin.getLanguageManager().getMessage("portal.id_invalid",
+                LanguageManager.put(LanguageManager.args(), "portal_id", id)));
+                break;
+            case EXISTS:
+                sender.sendMessage(plugin.getLanguageManager().getMessage("portal.create_exists",
+                LanguageManager.put(LanguageManager.args(), "portal_id", id)));
+                break;
+            default:
+                sender.sendMessage(plugin.getLanguageManager().getMessage("portal.create_fail",
+                LanguageManager.put(LanguageManager.args(), "portal_id", id)));
+                break;
         }
     }
 

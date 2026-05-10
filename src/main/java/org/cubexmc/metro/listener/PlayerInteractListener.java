@@ -24,6 +24,8 @@ import org.cubexmc.metro.manager.SelectionManager;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Stop;
+import org.cubexmc.metro.model.LineStatus;
+import org.cubexmc.metro.service.LineStatusService;
 import org.cubexmc.metro.service.TicketService;
 import org.cubexmc.metro.train.TrainMovementTask;
 import org.cubexmc.metro.util.MetroConstants;
@@ -213,6 +215,32 @@ public class PlayerInteractListener implements Listener {
         Line line = plugin.getLineSelectionService().resolveDefaultLine(player, stop, stop.getStopPointLocation());
         if (line == null) {
             sendNoBoardableLineMessage(player, stop);
+            return;
+        }
+
+        // Check if the line is suspended
+        if (line.getLineStatus() == LineStatus.SUSPENDED) {
+            String suspensionMsg = line.getSuspensionMessage();
+            if (suspensionMsg != null && !suspensionMsg.isEmpty()) {
+                player.sendMessage(plugin.getLanguageManager().getMessage("line.line_suspended_msg",
+                        LanguageManager.put(LanguageManager.args(), "message", suspensionMsg)));
+            } else {
+                player.sendMessage(plugin.getLanguageManager().getMessage("line.line_suspended",
+                        LanguageManager.put(LanguageManager.args(), "line_name", line.getName())));
+            }
+
+            // Suggest alternative routes
+            List<String> altRouteIds = line.getAlternativeRouteIds();
+            if (!altRouteIds.isEmpty()) {
+                player.sendMessage(plugin.getLanguageManager().getMessage("line.suggest_alternatives"));
+                for (String altId : altRouteIds) {
+                    Line altLine = plugin.getLineManager().getLine(altId);
+                    if (altLine != null) {
+                        player.sendMessage(plugin.getLanguageManager().getMessage("line.alternative_format",
+                                LanguageManager.put(LanguageManager.args(), "alt_line_name", altLine.getName())));
+                    }
+                }
+            }
             return;
         }
 

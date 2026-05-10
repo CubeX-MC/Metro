@@ -240,10 +240,13 @@ public final class DataFileUpdater {
 
     private static boolean migratePortalLocation(ConfigurationSection section, String key, boolean destination) {
         String value = section.getString(key);
-        if (value == null || value.isBlank()) {
+        if (value == null || value.trim().isEmpty()) {
             return false;
         }
-        List<String> parts = List.of(value.split(","));
+        List<String> parts = new ArrayList<String>();
+        for (String part : value.split(",")) {
+            parts.add(part);
+        }
         if ((!destination && parts.size() != 4) || (destination && parts.size() < 4)) {
             return false;
         }

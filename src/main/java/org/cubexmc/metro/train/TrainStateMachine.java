@@ -18,7 +18,7 @@ public class TrainStateMachine {
                 + " for passenger=" + session.safePassengerName()
                 + ", currentStop=" + session.getCurrentStopId()
                 + ", targetStop=" + session.getTargetStopId()
-                + (detail == null || detail.isBlank() ? "" : ", " + detail));
+                + (detail == null || detail.trim().isEmpty() ? "" : ", " + detail));
         return previousState;
     }
 }

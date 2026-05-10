@@ -1,5 +1,6 @@
 package org.cubexmc.metro.command.newcmd;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -16,6 +17,7 @@ import org.cubexmc.metro.manager.LanguageManager;
 import org.cubexmc.metro.manager.RailProtectionManager;
 import org.cubexmc.metro.manager.RouteRecorder;
 import org.cubexmc.metro.manager.StopManager;
+import org.cubexmc.metro.model.FareRule;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Portal;
 import org.cubexmc.metro.model.Stop;
@@ -34,13 +36,19 @@ final class LineCommandView {
     private static final DateTimeFormatter ROUTE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z").withZone(ZoneId.systemDefault());
 
-    private static final List<String> HELP_KEYS = List.of(
+    private static final List<String> HELP_KEYS = Arrays.asList(
             "line.help_create",
             "line.help_delete",
             "line.help_list",
             "line.help_setcolor",
             "line.help_setterminus",
             "line.help_setmaxspeed",
+            "line.help_setprice",
+            "line.help_setfare",
+            "line.help_setstatus",
+            "line.help_setaltroute",
+            "line.help_setsuspensionmsg",
+            "line.help_fareinfo",
             "line.help_addstop",
             "line.help_delstop",
             "line.help_stops",
@@ -53,12 +61,12 @@ final class LineCommandView {
             "line.help_untrust",
             "line.help_owner",
             "line.help_clonereverse",
-            "line.help_setprice",
             "line.help_recordroute",
             "line.help_clearroute",
             "line.help_routeinfo",
             "line.help_protect"
     );
+
 
     private final Metro plugin;
     private final StopManager stopManager;
@@ -178,7 +186,7 @@ final class LineCommandView {
                 LanguageManager.put(LanguageManager.args(), "color", line.getColor())));
         player.sendMessage(plugin.getLanguageManager().getMessage("line.info_terminus",
                 LanguageManager.put(LanguageManager.args(), "terminus_name",
-                        line.getTerminusName().isBlank()
+                        line.getTerminusName().trim().isEmpty()
                                 ? plugin.getLanguageManager().getMessage("line.info_default")
                                 : line.getTerminusName())));
         player.sendMessage(plugin.getLanguageManager().getMessage("line.info_max_speed",
@@ -299,7 +307,7 @@ final class LineCommandView {
         }
         OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(playerId);
         String name = offlinePlayer.getName();
-        return name == null || name.isBlank() ? playerId.toString() : name;
+        return name == null || name.trim().isEmpty() ? playerId.toString() : name;
     }
 
     private String formatUuid(UUID value) {
@@ -316,5 +324,91 @@ final class LineCommandView {
             stopComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(hoverText)));
         }
         return stopComponent;
+    }
+
+    // =============================================================
+    // Fare Info Display
+    // =============================================================
+
+    /**
+     * Display pricing details for a line, including fare mode, rates, and active discounts.
+     *
+     * @param player the player
+     * @param line   the line
+     */
+    void sendFareInfo(Player player, Line line) {
+        LanguageManager lang = plugin.getLanguageManager();
+        player.sendMessage(lang.getMessage("line.fareinfo_header",
+                LanguageManager.put(LanguageManager.args(), "line_name", line.getName())));
+
+        FareRule rule = line.getFareRule();
+
+        if (rule == null) {
+            // Legacy flat pricing
+            player.sendMessage(lang.getMessage("line.fareinfo_mode",
+                    LanguageManager.put(LanguageManager.args(), "mode", "FLAT")));
+            player.sendMessage(lang.getMessage("line.fareinfo_base_fare",
+                    LanguageManager.put(LanguageManager.args(), "base_fare", String.valueOf(line.getTicketPrice()))));
+            return;
+        }
+
+        // Pricing mode
+        player.sendMessage(lang.getMessage("line.fareinfo_mode",
+                LanguageManager.put(LanguageManager.args(), "mode", rule.getMode().name())));
+
+        // Base fare
+        player.sendMessage(lang.getMessage("line.fareinfo_base_fare",
+                LanguageManager.put(LanguageManager.args(), "base_fare", String.valueOf(rule.getBaseFare()))));
+
+        // Per-unit rate
+        if (rule.getMode() == FareRule.PricingMode.DISTANCE) {
+            player.sendMessage(lang.getMessage("line.fareinfo_per_block",
+                    LanguageManager.put(LanguageManager.args(), "per_block", String.valueOf(rule.getPerBlockRate()))));
+        } else if (rule.getMode() == FareRule.PricingMode.INTERVAL) {
+            player.sendMessage(lang.getMessage("line.fareinfo_per_interval",
+                    LanguageManager.put(LanguageManager.args(), "per_interval", String.valueOf(rule.getPerIntervalRate()))));
+        }
+
+        // Max fare
+        if (rule.getMaxFare() > 0.0) {
+            player.sendMessage(lang.getMessage("line.fareinfo_max_fare",
+                    LanguageManager.put(LanguageManager.args(), "max_fare", String.valueOf(rule.getMaxFare()))));
+        }
+
+        // Time discounts
+        List<FareRule.TimeDiscount> discounts = rule.getTimeDiscounts();
+        if (!discounts.isEmpty()) {
+            player.sendMessage(lang.getMessage("line.fareinfo_discounts"));
+            for (FareRule.TimeDiscount discount : discounts) {
+                String startTime = formatTicksToTime(discount.getStartTick());
+                String endTime = formatTicksToTime(discount.getEndTick());
+                int percent = (int) Math.round((1.0 - discount.getDiscountMultiplier()) * 100);
+                player.sendMessage(lang.getMessage("line.fareinfo_discount_item",
+                        LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
+                                "start_time", startTime), "end_time", endTime), "percent", String.valueOf(percent))));
+            }
+
+            // Check if a discount is currently active
+            org.bukkit.World world = player.getWorld();
+            if (world != null) {
+                double activeMultiplier = rule.getActiveDiscountMultiplier(world.getTime());
+                if (activeMultiplier < 1.0) {
+                    int activePercent = (int) Math.round((1.0 - activeMultiplier) * 100);
+                    player.sendMessage(lang.getMessage("line.fareinfo_active_discount",
+                            LanguageManager.put(LanguageManager.args(), "percent", String.valueOf(activePercent))));
+                }
+            }
+        }
+    }
+
+    /**
+     * Convert Minecraft ticks (0-24000) to a human-readable time string.
+     * Tick 0 = 6:00 AM, tick 6000 = 12:00 PM (noon), tick 12000 = 6:00 PM, tick 18000 = 12:00 AM (midnight)
+     */
+    private String formatTicksToTime(int ticks) {
+        int totalMinutes = (int) Math.round((ticks / 24000.0) * 24 * 60);
+        int hours = (totalMinutes / 60) % 24;
+        int minutes = totalMinutes % 60;
+        return String.format("%02d:%02d", hours, minutes);
     }
 }

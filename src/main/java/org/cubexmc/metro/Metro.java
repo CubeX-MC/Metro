@@ -37,6 +37,7 @@ import org.cubexmc.metro.update.ConfigUpdater;
 import org.cubexmc.metro.update.DataFileUpdater;
 import org.cubexmc.metro.util.MetroConstants;
 import org.cubexmc.metro.util.VersionUtil;
+import org.cubexmc.metro.api.MetroAPI;
 
 public final class Metro extends JavaPlugin {
 
@@ -62,6 +63,8 @@ public final class Metro extends JavaPlugin {
     private org.cubexmc.metro.integration.VaultIntegration vaultIntegration;
     private org.cubexmc.metro.service.LineSelectionService lineSelectionService;
     private org.cubexmc.metro.service.TicketService ticketService;
+    private org.cubexmc.metro.service.FareService fareService;
+    private org.cubexmc.metro.service.LineStatusService lineStatusService;
     private SaveCoordinator saveCoordinator;
     private MapIntegrationLifecycle mapIntegrationLifecycle;
     private ScheduledTaskLifecycle scheduledTaskLifecycle;
@@ -115,6 +118,10 @@ public final class Metro extends JavaPlugin {
         this.ticketService = new org.cubexmc.metro.service.TicketService(this::getVaultIntegration,
                 () -> getConfig().getBoolean("economy.enabled", true));
 
+        // 初始化票价服务和线路状态服务
+        this.fareService = new org.cubexmc.metro.service.FareService();
+        this.lineStatusService = new org.cubexmc.metro.service.LineStatusService(this, lineManager);
+
         // 初始化计分板库
         try {
             this.globalScoreboardLibrary = ScoreboardLibrary.loadScoreboardLibrary(this);
@@ -152,6 +159,8 @@ public final class Metro extends JavaPlugin {
 
         this.mapIntegrationLifecycle = new MapIntegrationLifecycle(this);
         this.mapIntegrationLifecycle.enable();
+
+        MetroAPI.initialize(this);
 
         getLogger().info("Metro(Modern) has been enabled!");
     }
@@ -191,12 +200,14 @@ public final class Metro extends JavaPlugin {
         if (!VersionUtil.isFolia()) {
             for (org.bukkit.World world : Bukkit.getWorlds()) {
                 for (Entity entity : world.getEntities()) {
-                    if (entity instanceof Minecart minecart
-                            && minecart.getPersistentDataContainer().has(
-                                    org.cubexmc.metro.util.MetroConstants.getMinecartKey(),
-                                    org.bukkit.persistence.PersistentDataType.BYTE)) {
-                        minecart.eject();
-                        minecart.remove();
+                    if (entity instanceof Minecart) {
+                        Minecart minecart = (Minecart) entity;
+                        if (minecart.getPersistentDataContainer().has(
+                                org.cubexmc.metro.util.MetroConstants.getMinecartKey(),
+                                org.bukkit.persistence.PersistentDataType.BYTE)) {
+                            minecart.eject();
+                            minecart.remove();
+                        }
                     }
                 }
             }
@@ -379,7 +390,16 @@ public final class Metro extends JavaPlugin {
         return ticketService;
     }
 
+    public org.cubexmc.metro.service.FareService getFareService() {
+        return fareService;
+    }
+
+    public org.cubexmc.metro.service.LineStatusService getLineStatusService() {
+        return lineStatusService;
+    }
+
     public SaveCoordinator getSaveCoordinator() {
+
         return saveCoordinator;
     }
 

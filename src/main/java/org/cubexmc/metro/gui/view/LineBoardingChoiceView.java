@@ -72,7 +72,7 @@ public final class LineBoardingChoiceView {
     private ItemStack createLineItem(Player player, Stop stop, Line line) {
         Stop nextStop = getNextStop(line, stop);
         String nextStopName = nextStop != null ? nextStop.getName() : msg("gui.line_boarding.unknown_stop");
-        String terminusName = line.getTerminusName() == null || line.getTerminusName().isBlank()
+        String terminusName = line.getTerminusName() == null || line.getTerminusName().trim().isEmpty()
                 ? msg("line.info_default")
                 : line.getTerminusName();
         String blockedReason = getBoardingBlockReason(player, line);

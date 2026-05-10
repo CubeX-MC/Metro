@@ -1,5 +1,7 @@
 package org.cubexmc.metro.lifecycle;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
@@ -16,7 +18,7 @@ import org.cubexmc.metro.util.SchedulerUtil;
 public class MapIntegrationLifecycle {
 
     private static final String AUTO_PROVIDER = "AUTO";
-    private static final List<String> AUTO_PROVIDER_ORDER = List.of("BLUEMAP", "DYNMAP", "SQUAREMAP");
+    private static final List<String> AUTO_PROVIDER_ORDER = Arrays.asList("BLUEMAP", "DYNMAP", "SQUAREMAP");
 
     private final Metro plugin;
     private final IntegrationFactory integrationFactory;
@@ -89,7 +91,7 @@ public class MapIntegrationLifecycle {
         }
 
         String provider = normalizeProvider(plugin.getConfigFacade().getMapProvider());
-        if (provider == null || provider.isBlank()) {
+        if (provider == null || provider.trim().isEmpty()) {
             plugin.getLogger().warning("[Map] map_integration.provider is empty. Skipping map integration.");
             disable();
             return false;
@@ -157,12 +159,16 @@ public class MapIntegrationLifecycle {
     }
 
     private static MapIntegration createDefaultIntegration(Metro plugin, String provider) {
-        return switch (provider) {
-            case "BLUEMAP" -> new BlueMapIntegration(plugin);
-            case "DYNMAP" -> new DynmapIntegration(plugin);
-            case "SQUAREMAP" -> new SquaremapIntegration(plugin);
-            default -> null;
-        };
+        switch (provider) {
+            case "BLUEMAP":
+                return new BlueMapIntegration(plugin);
+            case "DYNMAP":
+                return new DynmapIntegration(plugin);
+            case "SQUAREMAP":
+                return new SquaremapIntegration(plugin);
+            default:
+                return null;
+        }
     }
 
     @FunctionalInterface

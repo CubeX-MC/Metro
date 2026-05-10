@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * 代表一个矿车传送门。
@@ -99,7 +100,7 @@ public class Portal {
             List<String> adminStrings = admins.stream()
                     .filter(adminId -> owner == null || !owner.equals(adminId))
                     .map(UUID::toString)
-                    .toList();
+                    .collect(Collectors.toList());
             section.set("admins", adminStrings);
         }
     }

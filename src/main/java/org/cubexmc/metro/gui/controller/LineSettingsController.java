@@ -32,32 +32,58 @@ public final class LineSettingsController {
 
         GuiHolder.GuiView previousView = holder.getPreviousView();
         switch (slot) {
-            case GuiSlots.LINE_SETTINGS_ROUTE_RECORDING -> {
+            case GuiSlots.LINE_SETTINGS_ROUTE_RECORDING:
+                {
                 handleRouteRecordingToggle(player, line);
                 plugin.getGuiManager().openLineSettings(player, lineId, previousView);
             }
-            case GuiSlots.LINE_SETTINGS_ROUTE_INFO -> {
+                break;
+            case GuiSlots.LINE_SETTINGS_ROUTE_INFO:
+                {
                 sendRouteInfo(player, line);
                 plugin.getGuiManager().openLineSettings(player, lineId, previousView);
             }
-            case GuiSlots.LINE_SETTINGS_CLEAR_ROUTE -> plugin.getGuiManager().openConfirmAction(player, "CLEAR_ROUTE",
-                    lineId, line.getName(), null, 0, holder.snapshot());
-            case GuiSlots.LINE_SETTINGS_RAIL_PROTECTION -> {
+                break;
+            case GuiSlots.LINE_SETTINGS_CLEAR_ROUTE:
+                plugin.getGuiManager().openConfirmAction(player, "CLEAR_ROUTE",
+                lineId, line.getName(), null, 0, holder.snapshot());
+                break;
+            case GuiSlots.LINE_SETTINGS_RAIL_PROTECTION:
+                {
                 toggleRailProtection(player, line);
                 plugin.getGuiManager().openLineSettings(player, lineId, previousView);
             }
-            case GuiSlots.LINE_SETTINGS_RENAME -> requestLineRename(player, line, previousView);
-            case GuiSlots.LINE_SETTINGS_MAX_SPEED -> requestLineSpeed(player, line, previousView);
-            case GuiSlots.LINE_SETTINGS_TICKET_PRICE -> requestLinePrice(player, line, previousView);
-            case GuiSlots.LINE_SETTINGS_CLONE_REVERSE -> requestCloneReverse(player, line, previousView);
-            case GuiSlots.LINE_SETTINGS_DELETE -> plugin.getGuiManager().openConfirmAction(player, "DELETE_LINE",
-                    lineId, line.getName(), null, 0, holder.snapshot());
-            case GuiSlots.LINE_SETTINGS_COLOR -> requestLineColor(player, line, previousView);
-            case GuiSlots.LINE_SETTINGS_TERMINUS -> requestLineTerminus(player, line, previousView);
-            case GuiSlots.LINE_SETTINGS_BACK -> plugin.getGuiManager().openPreviousView(player, holder,
-                    () -> plugin.getGuiManager().openLineList(player, 0, false));
-            default -> {
+                break;
+            case GuiSlots.LINE_SETTINGS_RENAME:
+                requestLineRename(player, line, previousView);
+                break;
+            case GuiSlots.LINE_SETTINGS_MAX_SPEED:
+                requestLineSpeed(player, line, previousView);
+                break;
+            case GuiSlots.LINE_SETTINGS_TICKET_PRICE:
+                requestLinePrice(player, line, previousView);
+                break;
+            case GuiSlots.LINE_SETTINGS_CLONE_REVERSE:
+                requestCloneReverse(player, line, previousView);
+                break;
+            case GuiSlots.LINE_SETTINGS_DELETE:
+                plugin.getGuiManager().openConfirmAction(player, "DELETE_LINE",
+                lineId, line.getName(), null, 0, holder.snapshot());
+                break;
+            case GuiSlots.LINE_SETTINGS_COLOR:
+                requestLineColor(player, line, previousView);
+                break;
+            case GuiSlots.LINE_SETTINGS_TERMINUS:
+                requestLineTerminus(player, line, previousView);
+                break;
+            case GuiSlots.LINE_SETTINGS_BACK:
+                plugin.getGuiManager().openPreviousView(player, holder,
+                () -> plugin.getGuiManager().openLineList(player, 0, false));
+                break;
+            default:
+                {
             }
+                break;
         }
     }
 
@@ -244,13 +270,21 @@ public final class LineSettingsController {
         if (recorder.isRecording(lineId)) {
             RouteRecorder.FinishResult result = recorder.stopAndSave(lineId);
             switch (result.status()) {
-                case SAVED -> player.sendMessage(plugin.getLanguageManager().getMessage("line.record_saved",
-                        args("line_id", lineId, "point_count", String.valueOf(result.pointCount()))));
-                case TOO_FEW_POINTS -> sendRecordTooFew(player, result);
-                case FAILED -> player.sendMessage(plugin.getLanguageManager().getMessage("line.record_failed",
-                        LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
-                case NOT_RECORDING -> player.sendMessage(plugin.getLanguageManager().getMessage("line.record_not_recording",
-                        LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
+                case SAVED:
+                    player.sendMessage(plugin.getLanguageManager().getMessage("line.record_saved",
+                    args("line_id", lineId, "point_count", String.valueOf(result.pointCount()))));
+                    break;
+                case TOO_FEW_POINTS:
+                    sendRecordTooFew(player, result);
+                    break;
+                case FAILED:
+                    player.sendMessage(plugin.getLanguageManager().getMessage("line.record_failed",
+                    LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
+                    break;
+                case NOT_RECORDING:
+                    player.sendMessage(plugin.getLanguageManager().getMessage("line.record_not_recording",
+                    LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
+                    break;
             }
             return;
         }

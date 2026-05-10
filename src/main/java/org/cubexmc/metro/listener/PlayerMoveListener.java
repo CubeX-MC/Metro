@@ -1,6 +1,7 @@
 package org.cubexmc.metro.listener;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -364,14 +365,14 @@ public class PlayerMoveListener implements Listener {
 
         final String translatedTitle = ChatColor.translateAlternateColorCodes('&',
                 plugin.getLanguageManager().getMessage("interact.multi_line_title",
-                        Map.of("stop_name", stop.getName())));
+                        Collections.singletonMap("stop_name", stop.getName())));
         final String translatedSubtitle = ChatColor.translateAlternateColorCodes('&',
                 plugin.getLanguageManager().getMessage("interact.multi_line_subtitle",
-                        Map.of("count", String.valueOf(boardableLines.size()))));
+                        Collections.singletonMap("count", String.valueOf(boardableLines.size()))));
         final net.md_5.bungee.api.chat.BaseComponent[] actionbarComponent = TextComponent.fromLegacyText(
                 ChatColor.translateAlternateColorCodes('&',
                         plugin.getLanguageManager().getMessage("interact.multi_line_actionbar",
-                                Map.of("routes", buildBoardableRouteSummary(stop, boardableLines)))));
+                                Collections.singletonMap("routes", buildBoardableRouteSummary(stop, boardableLines)))));
 
         final int effectiveContinuousFadeIn = continuousFadeIn;
         final int effectiveContinuousStay = continuousStay;
@@ -448,14 +449,17 @@ public class PlayerMoveListener implements Listener {
             Stop nextStop = plugin.getStopManager().getStop(line.getNextStopId(stop.getId()));
             String nextStopName = nextStop != null ? nextStop.getName() : line.getNextStopId(stop.getId());
             String lineName = (line.getColor() != null ? line.getColor() : "&f") + line.getName();
-            routes.add(plugin.getLanguageManager().getMessage("interact.multi_line_route",
-                    Map.of("line_name", lineName, "next_stop_name", nextStopName)));
+            Map<String, Object> params = new java.util.HashMap<String, Object>();
+            params.put("line_name", lineName);
+            params.put("next_stop_name", nextStopName);
+            routes.add(plugin.getLanguageManager().getMessage("interact.multi_line_route", params));
         }
         return String.join("&7 | ", routes);
     }
 
     private boolean isInMetroMinecart(Player player) {
-        if (player.isInsideVehicle() && player.getVehicle() instanceof org.bukkit.entity.Minecart minecart) {
+        if (player.isInsideVehicle() && player.getVehicle() instanceof org.bukkit.entity.Minecart) {
+            org.bukkit.entity.Minecart minecart = (org.bukkit.entity.Minecart) player.getVehicle();
             return minecart.getPersistentDataContainer().has(MetroConstants.getMinecartKey(),
                     org.bukkit.persistence.PersistentDataType.BYTE);
         }

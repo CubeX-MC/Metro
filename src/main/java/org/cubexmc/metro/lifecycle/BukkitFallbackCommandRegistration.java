@@ -4,6 +4,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,6 +31,7 @@ import org.incendo.cloud.annotation.specifier.Greedy;
 import org.incendo.cloud.annotations.Argument;
 import org.incendo.cloud.annotations.CommandDescription;
 import org.incendo.cloud.annotations.Permission;
+import java.util.stream.Collectors;
 
 /**
  * Minimal Bukkit command bridge used when cloud-bukkit is incompatible with a
@@ -42,7 +44,7 @@ final class BukkitFallbackCommandRegistration {
 
     BukkitFallbackCommandRegistration(Metro plugin, LineManager lineManager, StopManager stopManager, PortalManager portalManager) {
         this.plugin = plugin;
-        this.entries = discoverEntries(List.of(
+        this.entries = discoverEntries(Arrays.asList(
                 new MetroMainCommand(plugin, lineManager, stopManager),
                 new LineCommand(plugin, lineManager, stopManager),
                 new StopCommand(plugin, stopManager, lineManager),
@@ -96,7 +98,20 @@ final class BukkitFallbackCommandRegistration {
         return tokens;
     }
 
-    private record Token(TokenType type, String name, Set<String> aliases) {
+    private static final class Token {
+        private final TokenType type;
+        private final String name;
+        private final Set<String> aliases;
+
+        Token(TokenType type, String name, Set<String> aliases) {
+            this.type = type;
+            this.name = name;
+            this.aliases = aliases;
+        }
+
+        TokenType type() { return type; }
+        String name() { return name; }
+        Set<String> aliases() { return aliases; }
 
         static Token literal(String raw) {
             Set<String> aliases = new HashSet<>();
@@ -107,11 +122,11 @@ final class BukkitFallbackCommandRegistration {
         }
 
         static Token required(String name) {
-            return new Token(TokenType.REQUIRED, name, Set.of());
+            return new Token(TokenType.REQUIRED, name, Collections.emptySet());
         }
 
         static Token optional(String name) {
-            return new Token(TokenType.OPTIONAL, name, Set.of());
+            return new Token(TokenType.OPTIONAL, name, Collections.emptySet());
         }
     }
 
@@ -121,7 +136,23 @@ final class BukkitFallbackCommandRegistration {
         OPTIONAL
     }
 
-    private record Entry(Object handler, Method method, List<Token> pattern, Permission permission) {
+    private static final class Entry {
+        private final Object handler;
+        private final Method method;
+        private final List<Token> pattern;
+        private final Permission permission;
+
+        Entry(Object handler, Method method, List<Token> pattern, Permission permission) {
+            this.handler = handler;
+            this.method = method;
+            this.pattern = pattern;
+            this.permission = permission;
+        }
+
+        Object handler() { return handler; }
+        Method method() { return method; }
+        List<Token> pattern() { return pattern; }
+        Permission permission() { return permission; }
 
         int literalCount() {
             int count = 0;
@@ -150,7 +181,7 @@ final class BukkitFallbackCommandRegistration {
         private final List<Entry> entries;
 
         private MetroFallbackCommand(Metro plugin, List<Entry> entries) {
-            super("metro", "Metro command", "/metro help", List.of("m"));
+            super("metro", "Metro command", "/metro help", Arrays.asList("m"));
             this.plugin = plugin;
             this.entries = entries;
             setPermission(null);
@@ -168,7 +199,7 @@ final class BukkitFallbackCommandRegistration {
             }
 
             String permission = firstPermission(match.entry.permission());
-            if (permission != null && !permission.isBlank() && !sender.hasPermission(permission)) {
+            if (permission != null && !permission.trim().isEmpty() && !sender.hasPermission(permission)) {
                 sender.sendMessage(plugin.getLanguageManager().getMessage("plugin.no_permission"));
                 return true;
             }
@@ -188,7 +219,7 @@ final class BukkitFallbackCommandRegistration {
             for (Entry entry : entries) {
                 addTabSuggestions(entry, args, suggestions);
             }
-            return suggestions.stream().distinct().sorted().toList();
+            return suggestions.stream().distinct().sorted().collect(Collectors.toList());
         }
 
         private Match findMatch(String[] args) {
@@ -252,10 +283,10 @@ final class BukkitFallbackCommandRegistration {
                     continue;
                 }
                 if (Player.class.isAssignableFrom(type)) {
-                    if (!(sender instanceof Player player)) {
+                    if (!(sender instanceof Player)) {
                         throw new IllegalArgumentException("Player sender is required");
                     }
-                    values[index] = player;
+                    values[index] = (Player) sender;
                     continue;
                 }
 
@@ -348,6 +379,11 @@ final class BukkitFallbackCommandRegistration {
                 case "yaw" -> List.of("0", "90", "180", "-90");
                 case "speed" -> List.of("0.4", "0.8", "1.0", "1.2");
                 case "price" -> List.of("0", "1", "2", "5", "10");
+                case "fareModes" -> List.of("flat", "distance", "interval");
+                case "lineStatusValues" -> List.of("normal", "suspended", "maintenance");
+                case "altLineId" -> plugin.getLineManager().getAllLines().stream()
+                        .map(org.cubexmc.metro.model.Line::getId)
+                        .toList();
                 default -> List.of();
             };
         }
@@ -355,8 +391,8 @@ final class BukkitFallbackCommandRegistration {
 
     private static final class StopCommandServiceValues {
         private static final List<String> TITLE_TYPES =
-                org.cubexmc.metro.service.StopCommandService.TITLE_TYPES.stream().sorted().toList();
+                org.cubexmc.metro.service.StopCommandService.TITLE_TYPES.stream().sorted().collect(Collectors.toList());
         private static final List<String> TITLE_KEYS =
-                org.cubexmc.metro.service.StopCommandService.TITLE_KEYS.stream().sorted().toList();
+                org.cubexmc.metro.service.StopCommandService.TITLE_KEYS.stream().sorted().collect(Collectors.toList());
     }
 }

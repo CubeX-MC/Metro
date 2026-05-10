@@ -65,14 +65,22 @@ public class LineCommand {
 
         LineCommandService.WriteStatus status = lineService.createLine(id, name, player.getUniqueId());
         switch (status) {
-            case SUCCESS -> player.sendMessage(plugin.getLanguageManager().getMessage("line.create_success",
-                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
-            case INVALID_ID -> player.sendMessage(plugin.getLanguageManager().getMessage("line.id_invalid",
-                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
-            case EXISTS -> player.sendMessage(plugin.getLanguageManager().getMessage("line.create_exists",
-                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
-            default -> player.sendMessage(plugin.getLanguageManager().getMessage("line.create_fail",
-                    LanguageManager.put(LanguageManager.args(), "line_id", id)));
+            case SUCCESS:
+                player.sendMessage(plugin.getLanguageManager().getMessage("line.create_success",
+                LanguageManager.put(LanguageManager.args(), "line_id", id)));
+                break;
+            case INVALID_ID:
+                player.sendMessage(plugin.getLanguageManager().getMessage("line.id_invalid",
+                LanguageManager.put(LanguageManager.args(), "line_id", id)));
+                break;
+            case EXISTS:
+                player.sendMessage(plugin.getLanguageManager().getMessage("line.create_exists",
+                LanguageManager.put(LanguageManager.args(), "line_id", id)));
+                break;
+            default:
+                player.sendMessage(plugin.getLanguageManager().getMessage("line.create_fail",
+                LanguageManager.put(LanguageManager.args(), "line_id", id)));
+                break;
         }
     }
 
@@ -190,16 +198,26 @@ public class LineCommand {
 
         LineCommandService.AddStopResult result = lineService.addStopToLine(line, stop, index);
         switch (result.status()) {
-            case SUCCESS -> player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_success",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "stop_id", stopId), "line_id", line.getId())));
-            case STOP_NO_WORLD -> player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_stop_no_world",
-                    LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
-            case WORLD_MISMATCH -> player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_world_mismatch",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
-                            "line_id", lineId), "line_world", result.lineWorld()), "stop_world", result.stopWorld())));
-            case CIRCULAR_INVALID_INDEX -> player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_circular_invalid_index"));
-            default -> player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_fail"));
+            case SUCCESS:
+                player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_success",
+                LanguageManager.put(LanguageManager.put(LanguageManager.args(),
+                "stop_id", stopId), "line_id", line.getId())));
+                break;
+            case STOP_NO_WORLD:
+                player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_stop_no_world",
+                LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
+                break;
+            case WORLD_MISMATCH:
+                player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_world_mismatch",
+                LanguageManager.put(LanguageManager.put(LanguageManager.put(LanguageManager.args(),
+                "line_id", lineId), "line_world", result.lineWorld()), "stop_world", result.stopWorld())));
+                break;
+            case CIRCULAR_INVALID_INDEX:
+                player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_circular_invalid_index"));
+                break;
+            default:
+                player.sendMessage(plugin.getLanguageManager().getMessage("line.addstop_fail"));
+                break;
         }
     }
 
@@ -349,12 +367,20 @@ public class LineCommand {
         if (recorder.isRecording(id)) {
             RouteRecorder.FinishResult result = recorder.stopAndSave(id);
             switch (result.status()) {
-                case SAVED -> player.sendMessage(msg("line.record_saved",
-                        "line_id", id,
-                        "point_count", result.pointCount()));
-                case TOO_FEW_POINTS -> sendRecordTooFew(player, result);
-                case FAILED -> player.sendMessage(msg("line.record_failed", "line_id", id));
-                case NOT_RECORDING -> player.sendMessage(msg("line.record_not_recording", "line_id", id));
+                case SAVED:
+                    player.sendMessage(msg("line.record_saved",
+                    "line_id", id,
+                    "point_count", result.pointCount()));
+                    break;
+                case TOO_FEW_POINTS:
+                    sendRecordTooFew(player, result);
+                    break;
+                case FAILED:
+                    player.sendMessage(msg("line.record_failed", "line_id", id));
+                    break;
+                case NOT_RECORDING:
+                    player.sendMessage(msg("line.record_not_recording", "line_id", id));
+                    break;
             }
             return;
         }
@@ -398,11 +424,20 @@ public class LineCommand {
     }
 
     private Boolean parseToggle(String mode) {
-        return switch (mode) {
-            case "on", "true", "enable", "enabled" -> true;
-            case "off", "false", "disable", "disabled" -> false;
-            default -> null;
-        };
+        switch (mode) {
+            case "on":
+            case "true":
+            case "enable":
+            case "enabled":
+                return true;
+            case "off":
+            case "false":
+            case "disable":
+            case "disabled":
+                return false;
+            default:
+                return null;
+        }
     }
 
     private String msg(String key, Object... replacements) {
@@ -544,6 +579,161 @@ public class LineCommand {
                             "line_name", line.getName()), "price", String.valueOf(price))));
         } else {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.setprice_fail"));
+        }
+    }
+
+    // =============================================================
+    // Fare Rule Commands
+    // =============================================================
+
+    @Command("m|metro line|l setfare <lineId> <mode> <baseFare> [perUnit] [maxFare]")
+    @CommandDescription("Configure advanced pricing for a line (flat/distance/interval)")
+    public void setFare(Player player,
+                        @Argument(value = "lineId", suggestions = "lineIds") String id,
+                        @Argument(value = "mode", suggestions = "fareModes") String mode,
+                        @Argument(value = "baseFare", suggestions = "priceValues") double baseFare,
+                        @Argument(value = "perUnit", suggestions = "priceValues") Double perUnit,
+                        @Argument(value = "maxFare", suggestions = "priceValues") Double maxFare) {
+        Line line = guard.requireManageableLine(player, id);
+        if (line == null) {
+            return;
+        }
+
+        LineCommandService.WriteStatus status = lineService.setFareRule(id, mode, baseFare, perUnit, maxFare);
+        switch (status) {
+            case SUCCESS:
+                player.sendMessage(plugin.getLanguageManager().getMessage("line.setfare_success",
+                        LanguageManager.put(LanguageManager.args(), "line_name", line.getName())));
+                break;
+            case INVALID_VALUE:
+                player.sendMessage(plugin.getLanguageManager().getMessage("line.setfare_invalid"));
+                break;
+            default:
+                player.sendMessage(plugin.getLanguageManager().getMessage("line.setfare_fail"));
+                break;
+        }
+    }
+
+    @Command("m|metro line|l setfare reset <lineId>")
+    @CommandDescription("Reset fare rule to use legacy flat pricing")
+    public void resetFare(Player player,
+                          @Argument(value = "lineId", suggestions = "lineIds") String id) {
+        Line line = guard.requireManageableLine(player, id);
+        if (line == null) {
+            return;
+        }
+
+        if (lineService.resetFareRule(id)) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.setfare_reset",
+                    LanguageManager.put(LanguageManager.args(), "line_name", line.getName())));
+        } else {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.setfare_fail"));
+        }
+    }
+
+    @Command("m|metro line|l fareinfo <lineId>")
+    @CommandDescription("View pricing details and active discounts for a line")
+    public void fareInfo(Player player,
+                         @Argument(value = "lineId", suggestions = "lineIds") String id) {
+        Line line = guard.requireLine(player, id);
+        if (line == null) {
+            return;
+        }
+
+        view.sendFareInfo(player, line);
+    }
+
+    // =============================================================
+    // Line Status Commands
+    // =============================================================
+
+    @Command("m|metro line|l setstatus <lineId> <status>")
+    @CommandDescription("Set line operational status (normal/suspended/maintenance)")
+    public void setStatus(Player player,
+                          @Argument(value = "lineId", suggestions = "lineIds") String id,
+                          @Argument(value = "status", suggestions = "lineStatusValues") String status) {
+        Line line = guard.requireManageableLine(player, id);
+        if (line == null) {
+            return;
+        }
+
+        LineCommandService.WriteStatus writeStatus = lineService.setLineStatus(id, status);
+        switch (writeStatus) {
+            case SUCCESS:
+                player.sendMessage(plugin.getLanguageManager().getMessage("line.setstatus_success",
+                        LanguageManager.put(LanguageManager.put(LanguageManager.args(),
+                                "line_name", line.getName()), "status", status)));
+                break;
+            case INVALID_VALUE:
+                player.sendMessage(plugin.getLanguageManager().getMessage("line.setstatus_invalid",
+                        LanguageManager.put(LanguageManager.args(), "status", status)));
+                break;
+            default:
+                player.sendMessage(plugin.getLanguageManager().getMessage("line.setstatus_fail"));
+                break;
+        }
+    }
+
+    @Command("m|metro line|l setaltroute <lineId> <altLineId>")
+    @CommandDescription("Add an alternative route suggestion for a suspended line")
+    public void setAltRoute(Player player,
+                            @Argument(value = "lineId", suggestions = "lineIds") String id,
+                            @Argument(value = "altLineId", suggestions = "lineIds") String altLineId) {
+        Line line = guard.requireManageableLine(player, id);
+        if (line == null) {
+            return;
+        }
+
+        Line altLine = plugin.getLineManager().getLine(altLineId);
+        if (altLine == null) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.line_not_found",
+                    LanguageManager.put(LanguageManager.args(), "line_id", altLineId)));
+            return;
+        }
+
+        if (lineService.addAlternativeRoute(id, altLineId)) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.setaltroute_success",
+                    LanguageManager.put(LanguageManager.put(LanguageManager.args(),
+                            "line_name", line.getName()), "alt_line_name", altLine.getName())));
+        } else {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.setaltroute_exists",
+                    LanguageManager.put(LanguageManager.args(), "alt_line_name", altLine.getName())));
+        }
+    }
+
+    @Command("m|metro line|l delaltroute <lineId> <altLineId>")
+    @CommandDescription("Remove an alternative route suggestion from a line")
+    public void delAltRoute(Player player,
+                            @Argument(value = "lineId", suggestions = "lineIds") String id,
+                            @Argument(value = "altLineId", suggestions = "lineIds") String altLineId) {
+        Line line = guard.requireManageableLine(player, id);
+        if (line == null) {
+            return;
+        }
+
+        if (lineService.removeAlternativeRoute(id, altLineId)) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.delaltroute_success",
+                    LanguageManager.put(LanguageManager.args(), "line_name", line.getName())));
+        } else {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.delaltroute_fail"));
+        }
+    }
+
+    @Command("m|metro line|l setsuspensionmsg <lineId> <message>")
+    @CommandDescription("Set the message shown when boarding a suspended line")
+    public void setSuspensionMsg(Player player,
+                                 @Argument(value = "lineId", suggestions = "lineIds") String id,
+                                 @Greedy @Argument("message") String message) {
+        Line line = guard.requireManageableLine(player, id);
+        if (line == null) {
+            return;
+        }
+
+        if (lineService.setSuspensionMessage(id, message)) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.setsuspensionmsg_success",
+                    LanguageManager.put(LanguageManager.args(), "line_name", line.getName())));
+        } else {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.setsuspensionmsg_fail"));
         }
     }
 

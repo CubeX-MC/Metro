@@ -40,10 +40,43 @@ public class ListenerRegistration {
                 guiListener, trainDisplayController);
     }
 
-    public record Result(PlayerInteractListener playerInteractListener,
-                         VehicleListener vehicleListener,
-                         PlayerMoveListener playerMoveListener,
-                         GuiListener guiListener,
-                         TrainDisplayController trainDisplayController) {
+    public static final class Result {
+        private final PlayerInteractListener playerInteractListener;
+        private final VehicleListener vehicleListener;
+        private final PlayerMoveListener playerMoveListener;
+        private final GuiListener guiListener;
+        private final TrainDisplayController trainDisplayController;
+
+        public Result(PlayerInteractListener playerInteractListener,
+                      VehicleListener vehicleListener,
+                      PlayerMoveListener playerMoveListener,
+                      GuiListener guiListener,
+                      TrainDisplayController trainDisplayController) {
+            this.playerInteractListener = playerInteractListener;
+            this.vehicleListener = vehicleListener;
+            this.playerMoveListener = playerMoveListener;
+            this.guiListener = guiListener;
+            this.trainDisplayController = trainDisplayController;
+        }
+
+        public PlayerInteractListener playerInteractListener() {
+            return playerInteractListener;
+        }
+
+        public VehicleListener vehicleListener() {
+            return vehicleListener;
+        }
+
+        public PlayerMoveListener playerMoveListener() {
+            return playerMoveListener;
+        }
+
+        public GuiListener guiListener() {
+            return guiListener;
+        }
+
+        public TrainDisplayController trainDisplayController() {
+            return trainDisplayController;
+        }
     }
 }

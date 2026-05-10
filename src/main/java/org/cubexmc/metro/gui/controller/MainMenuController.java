@@ -16,10 +16,16 @@ public final class MainMenuController {
 
     public void handleClick(Player player, GuiHolder holder, int slot) {
         switch (slot) {
-            case SLOT_LINE_MANAGE -> plugin.getGuiManager().openLineList(player, 0, false, holder.snapshot());
-            case SLOT_STOP_MANAGE -> plugin.getGuiManager().openStopList(player, 0, false, holder.snapshot());
-            default -> {
+            case SLOT_LINE_MANAGE:
+                plugin.getGuiManager().openLineList(player, 0, false, holder.snapshot());
+                break;
+            case SLOT_STOP_MANAGE:
+                plugin.getGuiManager().openStopList(player, 0, false, holder.snapshot());
+                break;
+            default:
+                {
             }
+                break;
         }
     }
 }
