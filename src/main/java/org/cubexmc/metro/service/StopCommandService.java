@@ -1,7 +1,10 @@
 package org.cubexmc.metro.service;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -13,6 +16,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Stop;
+import java.util.stream.Collectors;
 
 /**
  * Business operations used by stop commands.
@@ -22,8 +26,8 @@ public class StopCommandService {
     private static final int MAX_ID_LENGTH = 64;
     private static final Pattern ID_PATTERN = Pattern.compile("[A-Za-z0-9_-]+");
 
-    public static final Set<String> TITLE_TYPES = Set.of("stop_continuous", "arrive_stop", "terminal_stop", "departure");
-    public static final Set<String> TITLE_KEYS = Set.of("title", "subtitle", "actionbar");
+    public static final Set<String> TITLE_TYPES = Collections.unmodifiableSet(new HashSet<String>(Arrays.asList("stop_continuous", "arrive_stop", "terminal_stop", "departure")));
+    public static final Set<String> TITLE_KEYS = Collections.unmodifiableSet(new HashSet<String>(Arrays.asList("title", "subtitle", "actionbar")));
 
     private final StopManager stopManager;
 
@@ -44,10 +48,40 @@ public class StopCommandService {
         NOT_IN_STOP
     }
 
-    public record CreateStopResult(WriteStatus status, Stop stop) {
+    public static final class CreateStopResult {
+        private final WriteStatus status;
+        private final Stop stop;
+
+        public CreateStopResult(WriteStatus status, Stop stop) {
+            this.status = status;
+            this.stop = stop;
+        }
+
+        public WriteStatus status() {
+            return status;
+        }
+
+        public Stop stop() {
+            return stop;
+        }
     }
 
-    public record SetPointResult(WriteStatus status, float yaw) {
+    public static final class SetPointResult {
+        private final WriteStatus status;
+        private final float yaw;
+
+        public SetPointResult(WriteStatus status, float yaw) {
+            this.status = status;
+            this.yaw = yaw;
+        }
+
+        public WriteStatus status() {
+            return status;
+        }
+
+        public float yaw() {
+            return yaw;
+        }
     }
 
     public CreateStopResult createStop(String id, String name, Location corner1, Location corner2, UUID ownerId) {
@@ -69,7 +103,7 @@ public class StopCommandService {
                 .map(stopManager::getStop)
                 .filter(Objects::nonNull)
                 .sorted(Comparator.comparing(Stop::getId))
-                .toList();
+                .collect(Collectors.toList());
     }
 
     public WriteStatus setCorners(String id, Location corner1, Location corner2) {
@@ -184,7 +218,7 @@ public class StopCommandService {
 
     public boolean isValidId(String id) {
         return id != null
-                && !id.isBlank()
+                && !id.trim().isEmpty()
                 && id.length() <= MAX_ID_LENGTH
                 && ID_PATTERN.matcher(id).matches();
     }

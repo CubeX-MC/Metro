@@ -53,7 +53,7 @@ public final class LineSettingsView {
                         msg("gui.line_settings.set_color_lore"))
                 .build());
 
-        String terminusName = line.getTerminusName() == null || line.getTerminusName().isBlank()
+        String terminusName = line.getTerminusName() == null || line.getTerminusName().trim().isEmpty()
                 ? msg("line.info_default")
                 : line.getTerminusName();
         inv.setItem(GuiSlots.LINE_SETTINGS_TERMINUS, new ItemBuilder(Material.OAK_SIGN)

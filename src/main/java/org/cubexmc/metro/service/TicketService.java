@@ -5,13 +5,17 @@ import java.util.UUID;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
+import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.cubexmc.metro.integration.VaultIntegration;
+import org.cubexmc.metro.model.FareRule;
 import org.cubexmc.metro.model.Line;
-import org.cubexmc.metro.model.PriceRule;
+import org.cubexmc.metro.model.Stop;
 
 /**
  * Coordinates ticket price checks and delayed economy charges.
+ * Supports flat-rate, distance-based, and interval-based pricing via FareRule.
  */
 public class TicketService {
 
@@ -104,7 +108,7 @@ public class TicketService {
     }
 
     public TicketCheck checkCanBoard(Player player, Line line) {
-        double price = getEstimatedMinimumPrice(line);
+        double price = getTicketPrice(line);
         String formattedPrice = format(price);
         if (!economyEnabledSupplier.getAsBoolean()) {
             return new TicketCheck(TicketCheckStatus.ECONOMY_DISABLED, price, formattedPrice);
@@ -168,32 +172,59 @@ public class TicketService {
         return String.valueOf(amount);
     }
 
+    /**
+     * Get the estimated boarding price for a line, considering FareRule if set.
+     * If the line has a FareRule, returns the base fare (minimum possible).
+     */
     private double getTicketPrice(Line line) {
         if (line == null) return 0.0;
-        PriceRule rule = line.getPriceRule();
+        FareRule rule = line.getFareRule();
         if (rule != null) {
-            return Math.max(0.0, rule.getBasePrice());
+            // For display: use baseFare as the minimum price
+            return Math.max(0.0, rule.getBaseFare());
         }
         return Math.max(0.0, line.getTicketPrice());
     }
 
-    private double getEstimatedMinimumPrice(Line line) {
+    /**
+     * Calculate the actual fare based on FareRule, distance, intervals, and world time.
+     * Falls back to legacy flat ticket price if no FareRule is set.
+     *
+     * @param line       the line
+     * @param entryStop  the boarding stop
+     * @param exitStop   the alighting stop
+     * @param distanceBlocks distance traveled in blocks
+     * @param intervals  number of stop intervals passed
+     * @param world      the world (for game time)
+     * @return the calculated fare
+     */
+    public double calculateFare(Line line, Stop entryStop, Stop exitStop,
+                                 double distanceBlocks, int intervals, World world) {
         if (line == null) return 0.0;
-        PriceRule rule = line.getPriceRule();
-        if (rule != null) {
-            double estimate = rule.getBasePrice();
-            if (rule.getMode() == PriceRule.PricingMode.DISTANCE) {
-                estimate += rule.getPerBlockRate();
-            } else if (rule.getMode() == PriceRule.PricingMode.INTERVAL) {
-                estimate += rule.getPerIntervalRate();
-            }
-            return Math.max(0.0, estimate);
+        FareRule rule = line.getFareRule();
+        if (rule == null) {
+            return Math.max(0.0, line.getTicketPrice());
         }
-        return Math.max(0.0, line.getTicketPrice());
+        // Count intervals if not provided
+        if (intervals <= 0 && entryStop != null && exitStop != null) {
+            intervals = countStopIntervals(line, entryStop.getId(), exitStop.getId());
+        }
+        if (intervals <= 0) intervals = 1;
+        long gameTime = world != null ? world.getTime() : 6000;
+        return rule.calculatePrice(distanceBlocks, intervals, gameTime);
     }
 
-    public TicketChargeStatus chargePrice(Player player, Line line, double priceToCharge) {
-        if (player == null || line == null || priceToCharge <= 0.0) {
+    /**
+     * Charge a fare based on actual distance traveled (deferred per-block charging).
+     * Used when a player arrives at a stop (not the initial boarding charge).
+     *
+     * @param player       the player
+     * @param line         the line
+     * @param fareToCharge the fare to charge
+     * @return the charge status
+     */
+    public TicketChargeStatus chargeFare(Player player, Line line, double fareToCharge) {
+        if (player == null || line == null || fareToCharge <= 0.0) {
             return TicketChargeStatus.FREE;
         }
         if (!economyEnabledSupplier.getAsBoolean()) {
@@ -203,17 +234,32 @@ public class TicketService {
         if (vault == null) {
             return TicketChargeStatus.VAULT_UNAVAILABLE;
         }
-        if (!vault.has(player, priceToCharge)) {
+        if (!vault.has(player, fareToCharge)) {
             return TicketChargeStatus.INSUFFICIENT_FUNDS;
         }
-        if (!vault.withdraw(player, priceToCharge)) {
+        if (!vault.withdraw(player, fareToCharge)) {
             return TicketChargeStatus.TRANSACTION_FAILED;
         }
         UUID owner = line.getOwner();
         if (owner != null) {
-            vault.deposit(owner, priceToCharge);
+            vault.deposit(owner, fareToCharge);
         }
         return TicketChargeStatus.CHARGED;
+    }
+
+    private int countStopIntervals(Line line, String entryStopId, String exitStopId) {
+        if (line == null || entryStopId == null || exitStopId == null) return 0;
+        java.util.List<String> stopIds = line.getOrderedStopIds();
+        int entryIndex = stopIds.indexOf(entryStopId);
+        int exitIndex = stopIds.indexOf(exitStopId);
+        if (entryIndex == -1 || exitIndex == -1) return 0;
+        if (line.isCircular()) {
+            int forwardDist = (exitIndex - entryIndex + stopIds.size()) % stopIds.size();
+            int backwardDist = (entryIndex - exitIndex + stopIds.size()) % stopIds.size();
+            return Math.min(forwardDist, backwardDist);
+        }
+        if (exitIndex <= entryIndex) return 0;
+        return exitIndex - entryIndex;
     }
 
     private VaultIntegration getEnabledVault() {

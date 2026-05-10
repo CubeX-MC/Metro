@@ -225,9 +225,10 @@ public class VehicleListener implements Listener {
             return;
         }
         Vehicle vehicle = event.getVehicle();
-        if (!(vehicle instanceof Minecart minecart)) {
+        if (!(vehicle instanceof Minecart)) {
             return;
         }
+        Minecart minecart = (Minecart) vehicle;
         if (!isMetroMinecart(minecart)) {
             return;
         }
@@ -245,9 +246,10 @@ public class VehicleListener implements Listener {
             return;
         }
         Vehicle vehicle = event.getVehicle();
-        if (!(vehicle instanceof Minecart minecart)) {
+        if (!(vehicle instanceof Minecart)) {
             return;
         }
+        Minecart minecart = (Minecart) vehicle;
         if (!isMetroMinecart(minecart)) {
             return;
         }
@@ -263,9 +265,10 @@ public class VehicleListener implements Listener {
             return;
         }
         Vehicle vehicle = event.getVehicle();
-        if (!(vehicle instanceof Minecart minecart)) {
+        if (!(vehicle instanceof Minecart)) {
             return;
         }
+        Minecart minecart = (Minecart) vehicle;
         if (!isMetroMinecart(minecart)) {
             return;
         }
@@ -287,9 +290,10 @@ public class VehicleListener implements Listener {
             return;
         }
         Entity damaged = event.getEntity();
-        if (!(damaged instanceof Minecart minecart)) {
+        if (!(damaged instanceof Minecart)) {
             return;
         }
+        Minecart minecart = (Minecart) damaged;
         if (!isMetroMinecart(minecart)) {
             return;
         }

@@ -79,7 +79,11 @@ public final class OwnershipUtil {
         if (hasAdminBypass(sender)) {
             return true;
         }
-        if (!(sender instanceof Player player) || line == null) {
+        if (!(sender instanceof Player)) {
+            return false;
+        }
+        Player player = (Player) sender;
+        if (line == null) {
             return false;
         }
         if (isServerOwned(line)) {
@@ -92,7 +96,11 @@ public final class OwnershipUtil {
         if (hasAdminBypass(sender)) {
             return true;
         }
-        if (!(sender instanceof Player player) || stop == null) {
+        if (!(sender instanceof Player)) {
+            return false;
+        }
+        Player player = (Player) sender;
+        if (stop == null) {
             return false;
         }
         if (isServerOwned(stop)) {
@@ -105,7 +113,11 @@ public final class OwnershipUtil {
         if (hasAdminBypass(sender)) {
             return true;
         }
-        if (!(sender instanceof Player player) || portal == null) {
+        if (!(sender instanceof Player)) {
+            return false;
+        }
+        Player player = (Player) sender;
+        if (portal == null) {
             return false;
         }
         if (isServerOwned(portal)) {
@@ -121,9 +133,10 @@ public final class OwnershipUtil {
         if (hasAdminBypass(sender)) {
             return true;
         }
-        if (!(sender instanceof Player player)) {
+        if (!(sender instanceof Player)) {
             return false;
         }
+        Player player = (Player) sender;
         UUID playerId = player.getUniqueId();
         if (isStopAdmin(playerId, stop)) {
             return true;
@@ -138,9 +151,10 @@ public final class OwnershipUtil {
         if (hasAdminBypass(sender)) {
             return true;
         }
-        if (!(sender instanceof Player player) || line == null || stop == null) {
+        if (!(sender instanceof Player) || line == null || stop == null) {
             return false;
         }
+        Player player = (Player) sender;
         UUID playerId = player.getUniqueId();
 
         if (isServerOwned(line) && !player.isOp()) {

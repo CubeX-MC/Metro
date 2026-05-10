@@ -17,15 +17,16 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.cubexmc.metro.Metro;
+import org.cubexmc.metro.model.FareRule;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.LineStatus;
-import org.cubexmc.metro.model.PriceRule;
 import org.cubexmc.metro.model.RoutePoint;
 import org.cubexmc.metro.model.Stop;
+
 import org.cubexmc.metro.update.DataFileUpdater;
 
 /**
- * 线路管理器，负责线路数据的加载、保存和操作
+ * Line manager, responsible for loading, saving and operating line data.
  */
 public class LineManager {
     private final Metro plugin;
@@ -39,8 +40,8 @@ public class LineManager {
     public LineManager(Metro plugin) {
         this.plugin = plugin;
         this.configFile = new File(plugin.getDataFolder(), "lines.yml");
-        this.lines = new HashMap<>();
-        this.stopToLinesIndex = new HashMap<>();
+        this.lines = new HashMap<String, Line>();
+        this.stopToLinesIndex = new HashMap<String, Set<String>>();
         loadConfig();
     }
 
@@ -66,13 +67,12 @@ public class LineManager {
                         continue;
                     }
                     String name = config.getString(lineId + ".name");
-                    if (name == null || name.isBlank()) {
+                    if (name == null || name.trim().isEmpty()) {
                         plugin.getLogger().warning("Line " + lineId + " is missing name, using line id as fallback.");
                         name = lineId;
                     }
                     Line line = new Line(lineId, name);
 
-                    // 加载有序停靠区列表
                     List<String> stopIds = config.getStringList(lineId + ".ordered_stop_ids");
                     for (String stopId : stopIds) {
                         line.addStop(stopId, -1);
@@ -85,7 +85,7 @@ public class LineManager {
 
                     List<String> routePointStrings = config.getStringList(lineId + ".route_points");
                     if (routePointStrings != null && !routePointStrings.isEmpty()) {
-                        List<RoutePoint> routePoints = new ArrayList<>();
+                        List<RoutePoint> routePoints = new ArrayList<RoutePoint>();
                         for (String routePointString : routePointStrings) {
                             RoutePoint routePoint = RoutePoint.fromConfigString(routePointString);
                             if (routePoint != null) {
@@ -98,7 +98,6 @@ public class LineManager {
                     line.setRouteRecordedBy(readUuid(lineId, "route_recorded_by"));
                     line.setRouteRecordedCartId(readUuid(lineId, "route_recorded_cart"));
 
-                    // 加载颜色和终点站方向
                     String color = config.getString(lineId + ".color");
                     if (color != null) {
                         line.setColor(color);
@@ -109,36 +108,36 @@ public class LineManager {
                         line.setTerminusName(terminusName);
                     }
 
-                    // 加载最大速度
                     Double maxSpeed = config.getDouble(lineId + ".max_speed", -1);
                     if (maxSpeed >= 0) {
                         line.setMaxSpeed(maxSpeed);
                     }
 
-                    // 加载乘车价格
                     double ticketPrice = config.getDouble(lineId + ".ticket_price", 0.0);
                     line.setTicketPrice(ticketPrice);
 
-                    // Load PriceRule
-                    if (config.contains(lineId + ".price_rule")) {
-                        ConfigurationSection priceSection = config.getConfigurationSection(lineId + ".price_rule");
-                        if (priceSection != null) {
-                            Map<String, Object> priceMap = priceSection.getValues(true);
-                            Map<String, Object> flattened = new HashMap<>();
-                            for (Map.Entry<String, Object> entry : priceMap.entrySet()) {
+                    // Load FareRule
+                    if (config.contains(lineId + ".fare_rule")) {
+                        ConfigurationSection fareSection = config.getConfigurationSection(lineId + ".fare_rule");
+                        if (fareSection != null) {
+                            Map<String, Object> fareMap = fareSection.getValues(true);
+                            // Flatten nested maps for proper deserialization
+                            java.util.Map<String, Object> flattened = new java.util.HashMap<>();
+                            for (java.util.Map.Entry<String, Object> entry : fareMap.entrySet()) {
                                 String key = entry.getKey();
                                 Object value = entry.getValue();
                                 String topKey = key.contains(".") ? key.substring(0, key.indexOf('.')) : key;
                                 if (!flattened.containsKey(topKey)) {
-                                    if (value instanceof ConfigurationSection) {
-                                        flattened.put(topKey, ((ConfigurationSection) value).getValues(false));
+                                    if (value instanceof org.bukkit.configuration.MemorySection) {
+                                        flattened.put(topKey, ((org.bukkit.configuration.MemorySection) value).getValues(false));
                                     } else {
                                         flattened.put(topKey, value);
                                     }
                                 }
                             }
-                            if (priceMap.containsKey("time_discounts")) {
-                                List<?> rawList = config.getList(lineId + ".price_rule.time_discounts");
+                            // Special handling for time_discounts list
+                            if (fareMap.containsKey("time_discounts")) {
+                                List<?> rawList = config.getList(lineId + ".fare_rule.time_discounts");
                                 if (rawList != null) {
                                     List<Map<String, Object>> discountList = new ArrayList<>();
                                     for (Object item : rawList) {
@@ -151,25 +150,23 @@ public class LineManager {
                                     flattened.put("time_discounts", discountList);
                                 }
                             }
-                            try {
-                                line.setPriceRule(PriceRule.deserialize(flattened));
-                            } catch (Exception e) {
-                                plugin.getLogger().log(Level.WARNING,
-                                        "Failed to deserialize price_rule for line " + lineId, e);
-                            }
+                            line.setFareRule(FareRule.deserialize(flattened));
                         }
                     }
 
+                    // Load LineStatus
                     String statusStr = config.getString(lineId + ".line_status");
                     if (statusStr != null) {
                         line.setLineStatus(LineStatus.fromConfig(statusStr));
                     }
 
+                    // Load alternative routes
                     List<String> altRoutes = config.getStringList(lineId + ".alternative_routes");
                     if (altRoutes != null && !altRoutes.isEmpty()) {
                         line.setAlternativeRouteIds(altRoutes);
                     }
 
+                    // Load suspension message
                     String suspensionMsg = config.getString(lineId + ".suspension_message");
                     if (suspensionMsg != null && !suspensionMsg.isEmpty()) {
                         line.setSuspensionMessage(suspensionMsg);
@@ -177,11 +174,12 @@ public class LineManager {
 
                     line.setRailProtected(config.getBoolean(lineId + ".rail_protected", false));
 
+
                     line.setOwner(readUuid(lineId, "owner"));
 
                     List<String> adminStrings = config.getStringList(lineId + ".admins");
                     if (adminStrings != null && !adminStrings.isEmpty()) {
-                        Set<UUID> adminIds = new HashSet<>();
+                        Set<UUID> adminIds = new HashSet<UUID>();
                         for (String adminString : adminStrings) {
                             try {
                                 adminIds.add(UUID.fromString(adminString));
@@ -194,7 +192,6 @@ public class LineManager {
                         line.setAdmins(adminIds);
                     }
 
-                    // 加载世界名称
                     String worldName = config.getString(lineId + ".world");
                     if (worldName != null && !worldName.isEmpty()) {
                         line.setWorldName(worldName);
@@ -225,7 +222,7 @@ public class LineManager {
             plugin.getSaveCoordinator().submitSnapshot(configFile.toPath(), yamlDataFinal);
         } catch (Exception e) {
             isDirty = true;
-            plugin.getLogger().log(Level.SEVERE, "处理线路配置时出错", e);
+            plugin.getLogger().log(Level.SEVERE, "Error processing line configuration", e);
         }
     }
 
@@ -240,7 +237,7 @@ public class LineManager {
             plugin.getSaveCoordinator().saveNow(configFile.toPath(), yamlDataFinal);
         } catch (Exception e) {
             isDirty = true;
-            plugin.getLogger().log(Level.SEVERE, "无法同步保存线路配置", e);
+            plugin.getLogger().log(Level.SEVERE, "Unable to sync save line configuration", e);
         }
     }
 
@@ -252,7 +249,6 @@ public class LineManager {
             lock.readLock().unlock();
         }
     }
-
 
     public boolean createLine(String lineId, String name, UUID ownerId) {
         lock.writeLock().lock();
@@ -281,7 +277,6 @@ public class LineManager {
             if (removed != null) {
                 deindexLineStops(removed);
             }
-            // 从配置中移除该线路
             config.set(lineId, null);
         } finally {
             lock.writeLock().unlock();
@@ -291,14 +286,6 @@ public class LineManager {
         return true;
     }
 
-    /**
-     * 向线路添加停靠区
-     * 
-     * @param lineId 线路ID
-     * @param stopId 停靠区ID
-     * @param index  添加位置，-1表示添加到末尾
-     * @return 是否成功添加
-     */
     public boolean addStopToLine(String lineId, String stopId, int index) {
         lock.writeLock().lock();
         try {
@@ -316,13 +303,6 @@ public class LineManager {
         return true;
     }
 
-    /**
-     * 设置线路世界名称
-     * 
-     * @param lineId    线路ID
-     * @param worldName 世界名称
-     * @return 是否成功设置
-     */
     public boolean setLineWorldName(String lineId, String worldName) {
         lock.writeLock().lock();
         try {
@@ -338,13 +318,6 @@ public class LineManager {
         return true;
     }
 
-    /**
-     * 从线路中移除停靠区
-     * 
-     * @param lineId 线路ID
-     * @param stopId 停靠区ID
-     * @return 是否成功移除
-     */
     public boolean delStopFromLine(String lineId, String stopId) {
         lock.writeLock().lock();
         try {
@@ -362,11 +335,6 @@ public class LineManager {
         return true;
     }
 
-    /**
-     * 从所有线路中移除指定停靠区
-     * 
-     * @param stopId 要移除的停靠区ID
-     */
     public void delStopFromAllLines(String stopId) {
         lock.writeLock().lock();
         try {
@@ -383,31 +351,23 @@ public class LineManager {
         saveConfig();
     }
 
-    /**
-     * 获取所有线路
-     * 
-     * @return 所有线路列表
-     */
     public List<Line> getAllLines() {
         lock.readLock().lock();
         try {
-            return new ArrayList<>(lines.values());
+            return new ArrayList<Line>(lines.values());
         } finally {
             lock.readLock().unlock();
         }
     }
 
-    /**
-     * 通过停靠区ID反向获取包含该站点的线路列表。
-     */
     public List<Line> getLinesForStop(String stopId) {
         lock.readLock().lock();
         try {
             Set<String> lineIds = stopToLinesIndex.get(stopId);
             if (lineIds == null || lineIds.isEmpty()) {
-                return new ArrayList<>();
+                return new ArrayList<Line>();
             }
-            List<Line> result = new ArrayList<>();
+            List<Line> result = new ArrayList<Line>();
             for (String lineId : lineIds) {
                 Line line = lines.get(lineId);
                 if (line != null) {
@@ -420,9 +380,6 @@ public class LineManager {
         }
     }
 
-    /**
-     * 重新加载配置
-     */
     public void reload() {
         loadConfig();
         if (plugin.getRailProtectionManager() != null) {
@@ -430,13 +387,6 @@ public class LineManager {
         }
     }
 
-    /**
-     * 设置线路颜色
-     * 
-     * @param lineId 线路ID
-     * @param color  颜色
-     * @return 是否成功
-     */
     public boolean setLineColor(String lineId, String color) {
         lock.writeLock().lock();
         try {
@@ -452,13 +402,6 @@ public class LineManager {
         return true;
     }
 
-    /**
-     * 设置线路终点站方向
-     * 
-     * @param lineId       线路ID
-     * @param terminusName 终点站方向名称
-     * @return 是否成功
-     */
     public boolean setLineTerminusName(String lineId, String terminusName) {
         lock.writeLock().lock();
         try {
@@ -474,13 +417,6 @@ public class LineManager {
         return true;
     }
 
-    /**
-     * 设置线路名称
-     * 
-     * @param lineId 线路ID
-     * @param name   新名称
-     * @return 是否成功
-     */
     public boolean setLineName(String lineId, String name) {
         lock.writeLock().lock();
         try {
@@ -496,13 +432,6 @@ public class LineManager {
         return true;
     }
 
-    /**
-     * 设置线路最大速度
-     * 
-     * @param lineId   线路ID
-     * @param maxSpeed 最大速度
-     * @return 是否成功
-     */
     public boolean setLineMaxSpeed(String lineId, Double maxSpeed) {
         lock.writeLock().lock();
         try {
@@ -518,13 +447,6 @@ public class LineManager {
         return true;
     }
 
-    /**
-     * 设置线路乘车价格
-     * 
-     * @param lineId 线路ID
-     * @param ticketPrice 新价格
-     * @return 是否成功
-     */
     public boolean setLineTicketPrice(String lineId, double ticketPrice) {
         lock.writeLock().lock();
         try {
@@ -705,7 +627,7 @@ public class LineManager {
             return;
         }
         for (String stopId : line.getOrderedStopIds()) {
-            stopToLinesIndex.computeIfAbsent(stopId, key -> new HashSet<>()).add(line.getId());
+            stopToLinesIndex.computeIfAbsent(stopId, key -> new HashSet<String>()).add(line.getId());
         }
     }
 
@@ -730,7 +652,7 @@ public class LineManager {
         if (routePoints.isEmpty()) {
             return null;
         }
-        List<String> values = new ArrayList<>();
+        List<String> values = new ArrayList<String>();
         for (RoutePoint routePoint : routePoints) {
             values.add(routePoint.toConfigString());
         }
@@ -758,7 +680,7 @@ public class LineManager {
                 snapshot.set(DataFileUpdater.SCHEMA_VERSION_KEY, DataFileUpdater.CURRENT_SCHEMA_VERSION);
             }
 
-            List<String> lineIds = new ArrayList<>(lines.keySet());
+            List<String> lineIds = new ArrayList<String>(lines.keySet());
             Collections.sort(lineIds);
             for (String lineId : lineIds) {
                 Line line = lines.get(lineId);
@@ -779,33 +701,37 @@ public class LineManager {
                 snapshot.set(lineId + ".max_speed", line.getMaxSpeed() != null ? line.getMaxSpeed() : null);
                 snapshot.set(lineId + ".ticket_price", line.getTicketPrice() > 0 ? line.getTicketPrice() : null);
 
-                // Save PriceRule
-                PriceRule priceRule = line.getPriceRule();
-                if (priceRule != null) {
-                    Map<String, Object> priceMap = priceRule.serialize();
-                    for (Map.Entry<String, Object> entry : priceMap.entrySet()) {
-                        snapshot.set(lineId + ".price_rule." + entry.getKey(), entry.getValue());
+                // Save FareRule
+                FareRule fareRule = line.getFareRule();
+                if (fareRule != null) {
+                    Map<String, Object> fareMap = fareRule.serialize();
+                    for (java.util.Map.Entry<String, Object> entry : fareMap.entrySet()) {
+                        snapshot.set(lineId + ".fare_rule." + entry.getKey(), entry.getValue());
                     }
                 }
 
+                // Save LineStatus
                 if (line.getLineStatus() != LineStatus.NORMAL) {
                     snapshot.set(lineId + ".line_status", line.getLineStatus().getConfigKey());
                 }
 
+                // Save alternative routes
                 List<String> altRoutes = line.getAlternativeRouteIds();
                 if (!altRoutes.isEmpty()) {
                     snapshot.set(lineId + ".alternative_routes", altRoutes);
                 }
 
+                // Save suspension message
                 String suspensionMsg = line.getSuspensionMessage();
                 if (suspensionMsg != null && !suspensionMsg.isEmpty()) {
                     snapshot.set(lineId + ".suspension_message", suspensionMsg);
                 }
 
                 snapshot.set(lineId + ".rail_protected", line.isRailProtected() ? true : null);
+
                 snapshot.set(lineId + ".owner", line.getOwner() != null ? line.getOwner().toString() : null);
 
-                List<String> adminStrings = new ArrayList<>();
+                List<String> adminStrings = new ArrayList<String>();
                 for (UUID adminId : line.getAdmins()) {
                     if (line.getOwner() != null && line.getOwner().equals(adminId)) {
                         continue;
@@ -822,15 +748,6 @@ public class LineManager {
         }
     }
 
-    /**
-     * 反向克隆线路和站点
-     * 
-     * @param sourceLineId 要克隆的源线路ID
-     * @param newLineId 新的对向线路ID
-     * @param stopIdSuffix 站点ID后缀
-     * @param ownerId 新线路及站点的所有者
-     * @return 是否成功
-     */
     public boolean cloneReverseLine(String sourceLineId, String newLineId, String stopIdSuffix, UUID ownerId) {
         lock.writeLock().lock();
         try {
@@ -842,16 +759,14 @@ public class LineManager {
                 return false;
             }
 
-            // 1. 创建新线路
             Line newLine = new Line(newLineId, sourceLine.getName());
             newLine.setOwner(ownerId);
             newLine.setColor(sourceLine.getColor());
             newLine.setMaxSpeed(sourceLine.getMaxSpeed());
             newLine.setWorldName(sourceLine.getWorldName());
-            
-            // 复制管理员
+
             if (sourceLine.getAdmins() != null) {
-                Set<UUID> newAdmins = new HashSet<>(sourceLine.getAdmins());
+                Set<UUID> newAdmins = new HashSet<UUID>(sourceLine.getAdmins());
                 if (ownerId != null) {
                     newAdmins.add(ownerId);
                 }
@@ -860,29 +775,31 @@ public class LineManager {
 
             lines.put(newLineId, newLine);
 
-            // 2. 倒序克隆站点
             StopManager stopManager = plugin.getStopManager();
             List<String> sourceStops = sourceLine.getOrderedStopIds();
             for (int i = sourceStops.size() - 1; i >= 0; i--) {
                 String oldStopId = sourceStops.get(i);
                 Stop oldStop = stopManager.getStop(oldStopId);
-                if (oldStop == null) continue;
+                if (oldStop == null) {
+                    continue;
+                }
 
                 String newStopId = oldStopId + stopIdSuffix;
                 Stop newStop = stopManager.getStop(newStopId);
-                
+
                 if (newStop == null) {
-                    // 创建新站点
                     newStop = stopManager.createStop(newStopId, oldStop.getName(), oldStop.getCorner1(), oldStop.getCorner2(), ownerId);
                     if (newStop != null) {
-                        // 旋转发车朝向 180 度
                         float newYaw = (oldStop.getLaunchYaw() + 180.0f) % 360.0f;
-                        if (newYaw > 180.0f) newYaw -= 360.0f;
-                        if (newYaw < -180.0f) newYaw += 360.0f;
-                        
+                        if (newYaw > 180.0f) {
+                            newYaw -= 360.0f;
+                        }
+                        if (newYaw < -180.0f) {
+                            newYaw += 360.0f;
+                        }
+
                         stopManager.setStopPoint(newStopId, oldStop.getStopPointLocation(), newYaw);
-                        
-                        // 复制站点管理员
+
                         for (UUID adminId : oldStop.getAdmins()) {
                             if (adminId != null) {
                                 stopManager.addStopAdmin(newStopId, adminId);
@@ -890,16 +807,15 @@ public class LineManager {
                         }
                     }
                 }
-                
-                // 将站点添加到新线路
+
                 newLine.addStop(newStopId, -1);
             }
-            
+
             indexLineStops(newLine);
         } finally {
             lock.writeLock().unlock();
         }
-        
+
         saveConfig();
         return true;
     }

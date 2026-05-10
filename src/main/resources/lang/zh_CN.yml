@@ -49,15 +49,20 @@ line:
   help_untrust: "&6/m line untrust <line_id> <玩家> &f- 移除线路管理权限"
   help_owner: "&6/m line owner <line_id> <玩家> &f- 转移线路所有权"
   help_clonereverse: "&6/m line clonereverse <source_id> <new_id> [suffix] &f- 反向克隆线路"
-  help_setprice: "&6/m line setprice <line_id> <价格> &f- 设置传统固定票价\n&6/m line setprice <line_id> flat|distance|interval <基础> [每单位] [最大值] &f- 设置高级计价\n&6/m line setprice reset <line_id> &f- 重置为传统计价"
+  help_setprice: "&6/m line setprice <line_id> <价格> &f- 设置线路票价"
   help_recordroute: "&6/m line recordroute <line_id> &f- 记录或保存线路轨迹点，用于在线地图和轨道保护"
   help_clearroute: "&6/m line clearroute <line_id> &f- 清除线路已记录的轨迹点"
   help_routeinfo: "&6/m line routeinfo <line_id> &f- 查看线路轨迹记录与轨道保护状态"
   help_protect: "&6/m line protect <line_id> <on|off|status> &f- 开启、关闭或查看线路轨道保护"
-  help_setstatus: "&6/m line setstatus <line_id> <normal|suspended|maintenance> &f- 设置线路运营状态"
-  help_priceinfo: "&6/m line priceinfo <line_id> &f- 查看票价详情与活跃折扣"
-   
+  help_setfare: "&6/m line setfare <line_id> <mode> <baseFare> [perUnit] [maxFare] &f- 配置线路高级票价（flat/distance/interval）"
+  help_setstatus: "&6/m line setstatus <line_id> <status> &f- 设置线路运营状态（normal/suspended/maintenance）"
+  help_setaltroute: "&6/m line setaltroute <line_id> <altLineId> &f- 为暂停线路添加替代路线建议"
+  help_delaltroute: "&6/m line delaltroute <line_id> <altLineId> &f- 移除替代路线建议"
+  help_setsuspensionmsg: "&6/m line setsuspensionmsg <line_id> <message> &f- 设置暂停运营时显示的提示信息"
+  help_fareinfo: "&6/m line fareinfo <line_id> &f- 查看线路票价详情和当前折扣"
+  
   usage_create: "&c用法: /m line create <line_id> <\"显示名称\">"
+
   usage_delete: "&c用法: /m line delete <line_id>"
   usage_setcolor: "&c用法: /m line setcolor <line_id> <颜色>\n&e颜色示例: &a&a, &b&b, &c&c, &9&9 等Minecraft颜色代码"
   usage_setterminus: "&c用法: /m line setterminus <line_id> <终点方向名称>"
@@ -70,7 +75,7 @@ line:
   usage_trust: "&c用法: /m line trust <line_id> <玩家>"
   usage_untrust: "&c用法: /m line untrust <line_id> <玩家>"
   usage_owner: "&c用法: /m line owner <line_id> <玩家>"
-  usage_setprice: "&c用法: /m line setprice <line_id> <价格>\n&c/m line setprice <line_id> flat|distance|interval <基础> [每单位] [最大值]\n&c/m line setprice reset <line_id>"
+  usage_setprice: "&c用法: /m line setprice <line_id> <价格>"
   usage_recordroute: "&c用法: /m line recordroute <line_id>"
   usage_clearroute: "&c用法: /m line clearroute <line_id>"
   usage_routeinfo: "&c用法: /m line routeinfo <line_id>"
@@ -96,10 +101,9 @@ line:
   rename_fail: "&c重命名线路失败, 请检查线路ID是否存在。"
   clone_success: "&a成功生成对向线路: {new_line_id}"
   clone_fail: "&c生成对向线路失败，请检查线路ID是否已存在。"
-  setprice_success: "&a已成功配置线路 {line_name} 的计价。"
-  setprice_fail: "&c配置线路票价失败。"
-  setprice_invalid: "&c无效的票价参数。所有值必须为零或正数。"
-  setprice_reset: "&a已将线路 {line_name} 重置为默认固定票价。"
+  setprice_success: "&a已将线路 {line_name} 的票价设置为 {price}。"
+  setprice_fail: "&c设置线路票价失败。"
+  setprice_invalid: "&c无效的票价。票价必须为 0 或正数。"
   setmaxspeed_success: "&a成功设置线路 {line_id} 的最大速度为: {max_speed}"
   setmaxspeed_invalid: "&c无效的速度值。速度必须为正数。"
   addstop_success: "&a成功将停靠区 {stop_id} 添加到线路 {line_id}"
@@ -189,25 +193,46 @@ line:
   routeinfo_waiting_cart: "等待首班列车"
   routeinfo_never_recorded: "从未录制"
   routeinfo_unknown: "未知"
-  priceinfo_header: "&a===== 计价信息: {line_name} ====="
-  priceinfo_mode: "&7计价模式: &f{mode}"
-  priceinfo_mode_flat: "FLAT"
-  priceinfo_base: "&7基础票价: &f{base}"
-  priceinfo_per_block: "&7每格费率: &f{per_block}"
-  priceinfo_per_interval: "&7每站费率: &f{per_interval}"
-  priceinfo_max: "&7最高票价: &f{max}"
-  priceinfo_discounts: "&7时段折扣:"
-  priceinfo_discount_item: "&7  {start_time}-{end_time}: &f{percent}% 折扣"
-  priceinfo_active_discount: "&a当前折扣: {percent}% 折扣!"
-  setstatus_success: "&a线路 {line_name} 状态已设置为: {status}"
-  setstatus_invalid: "&c无效状态。请使用: normal, suspended, 或 maintenance。"
+  
+  # 票价规则相关
+  setfare_success: "&a成功为线路 {line_name} 配置票价规则。"
+  setfare_fail: "&c配置票价规则失败。"
+  setfare_invalid: "&c无效的票价参数。票价和费率必须为非负数。"
+  setfare_reset: "&a已重置线路 {line_name} 为默认固定票价。"
+  
+  fareinfo_header: "&a===== 票价详情: {line_name} ====="
+  fareinfo_mode: "&6计价模式: &f{mode}"
+  fareinfo_base_fare: "&6基础票价: &f{base_fare}"
+  fareinfo_per_block: "&6每格块费用: &f{per_block}"
+  fareinfo_per_interval: "&6每站间费用: &f{per_interval}"
+  fareinfo_max_fare: "&6最高票价: &f{max_fare}"
+  fareinfo_discounts: "&6时段优惠:"
+  fareinfo_discount_item: "&a  {start_time}-{end_time}: &e{percent}% 折扣"
+  fareinfo_active_discount: "&a当前时段优惠: {percent}% 折扣正在进行中！"
+  
+  # 线路状态相关
+  setstatus_success: "&a成功设置线路 {line_name} 的状态为: {status}"
   setstatus_fail: "&c设置线路状态失败。"
-  line_suspended: "&c线路 {line_name} 目前暂停运营。"
-  line_suspended_msg: "&c{message}"
-  suggest_alternatives: "&e替代线路："
-  alternative_format: "&7- &a{alt_line_name}"
+  setstatus_invalid: "&c无效的线路状态: {status}。有效值为: normal, suspended, maintenance。"
+  
+  # 替代路线相关
+  setaltroute_success: "&a已为线路 {line_name} 添加替代路线: {alt_line_name}"
+  setaltroute_exists: "&e替代路线 {alt_line_name} 已存在。"
+  delaltroute_success: "&a已移除线路 {line_name} 的替代路线。"
+  delaltroute_fail: "&c移除替代路线失败。"
+  
+  # 暂停运营消息
+  setsuspensionmsg_success: "&a成功设置线路 {line_name} 的暂停运营提示消息。"
+  setsuspensionmsg_fail: "&c设置暂停运营提示消息失败。"
+  
+  # 玩家提示消息
+  line_suspended: "&c线路 {line_name} 已暂停运营。"
+  line_suspended_msg: "&e{message}"
+  suggest_alternatives: "&a推荐替代路线:"
+  alternative_format: "&e- {line_name} &f({line_id})"
 
 # 传送门命令相关
+
 portal:
   help_header: "&a===== Metro传送门管理命令 ====="
   help_create: "&6/m portal create <portal_id> &f- 在当前位置或视线中的铁轨上创建传送门入口"
@@ -585,7 +610,6 @@ chat:
 economy:
   insufficient_funds: "&c余额不足。此次乘车需要: {price}"
   paid_boarding: "&a乘车扣费成功，已扣除 {price}。"
-  paid_distance: "&a里程扣费，已扣除 {price}。"
   transaction_failed: "&c乘车扣费失败，请稍后再试。"
   vault_unavailable: "&c经济服务不可用，请联系管理员。"
   refunded: "&e已退回你的乘车费用。"

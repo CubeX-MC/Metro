@@ -53,7 +53,8 @@ public class MetroMainCommand {
     @CommandDescription("Reload Metro configuration")
     @Permission("metro.admin")
     public void reload(CommandSender sender) {
-        if (sender instanceof Player player) {
+        if (sender instanceof Player) {
+            Player player = (Player) sender;
             if (!OwnershipUtil.hasAdminBypass(player)) {
                 sender.sendMessage(plugin.getLanguageManager().getMessage("plugin.no_permission"));
                 return;

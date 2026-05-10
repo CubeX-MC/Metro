@@ -1,17 +1,18 @@
 package org.cubexmc.metro.service;
 
+import org.bukkit.Location;
 import org.bukkit.World;
-import org.cubexmc.metro.model.PriceRule;
+import org.cubexmc.metro.model.FareRule;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Stop;
 
 import java.util.List;
 
 /**
- * Calculates prices based on line pricing rules, distance traveled, and time discounts.
+ * Calculates fares based on line pricing rules, distance traveled, and time discounts.
  * Replaces the simple getTicketPrice() logic with multi-mode pricing.
  */
-public class PriceService {
+public class FareService {
 
     /**
      * Calculate the estimated price to board a line from a given stop.
@@ -23,18 +24,18 @@ public class PriceService {
     public double getEstimatedPrice(Line line) {
         if (line == null) return 0.0;
 
-        PriceRule rule = line.getPriceRule();
+        FareRule rule = line.getFareRule();
         if (rule == null) {
             // Fallback to legacy ticket price
             return Math.max(0.0, line.getTicketPrice());
         }
 
-        // For display: estimate minimum price
+        // For display: estimate minimum fare
         return rule.calculatePrice(0, 1, 6000); // assume 1 interval, daytime
     }
 
     /**
-     * Calculate the actual price for a completed ride segment.
+     * Calculate the actual fare for a completed ride segment.
      *
      * @param line     the line being ridden
      * @param entryStop the stop where the player boarded
@@ -44,11 +45,11 @@ public class PriceService {
      * @param world     the world (for game time)
      * @return the calculated fare
      */
-    public double calculatePrice(Line line, Stop entryStop, Stop exitStop,
+    public double calculateFare(Line line, Stop entryStop, Stop exitStop,
                                  double distanceTraveledBlocks, int intervals, World world) {
         if (line == null) return 0.0;
 
-        PriceRule rule = line.getPriceRule();
+        FareRule rule = line.getFareRule();
         if (rule == null) {
             // Fallback to legacy flat ticket price
             return Math.max(0.0, line.getTicketPrice());
@@ -73,10 +74,10 @@ public class PriceService {
      * @param world    the world (for game time)
      * @return calculated price
      */
-    public double calculateDistancePrice(Line line, double distanceTraveledBlocks, World world) {
+    public double calculateDistanceFare(Line line, double distanceTraveledBlocks, World world) {
         if (line == null) return 0.0;
 
-        PriceRule rule = line.getPriceRule();
+        FareRule rule = line.getFareRule();
         if (rule == null) {
             return Math.max(0.0, line.getTicketPrice());
         }
@@ -115,7 +116,7 @@ public class PriceService {
     public String getPriceDescription(Line line) {
         if (line == null) return "Free";
 
-        PriceRule rule = line.getPriceRule();
+        FareRule rule = line.getFareRule();
         if (rule != null) {
             return rule.getDescription();
         }
@@ -127,7 +128,7 @@ public class PriceService {
      */
     public boolean hasActiveDiscount(Line line, World world) {
         if (line == null || world == null) return false;
-        PriceRule rule = line.getPriceRule();
+        FareRule rule = line.getFareRule();
         if (rule == null) return false;
         return rule.getActiveDiscountMultiplier(world.getTime()) < 1.0;
     }

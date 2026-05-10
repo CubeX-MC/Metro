@@ -76,14 +76,22 @@ public class StopCommand {
 
         StopCommandService.CreateStopResult result = stopService.createStop(id, name, corner1, corner2, player.getUniqueId());
         switch (result.status()) {
-            case SUCCESS -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.create_success",
-                    LanguageManager.put(LanguageManager.args(), "stop_name", name)));
-            case INVALID_ID -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.id_invalid",
-                    LanguageManager.put(LanguageManager.args(), "stop_id", id)));
-            case EXISTS -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_exists",
-                    LanguageManager.put(LanguageManager.args(), "stop_id", id)));
-            default -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.create_fail",
-                    LanguageManager.put(LanguageManager.args(), "stop_id", id)));
+            case SUCCESS:
+                player.sendMessage(plugin.getLanguageManager().getMessage("stop.create_success",
+                LanguageManager.put(LanguageManager.args(), "stop_name", name)));
+                break;
+            case INVALID_ID:
+                player.sendMessage(plugin.getLanguageManager().getMessage("stop.id_invalid",
+                LanguageManager.put(LanguageManager.args(), "stop_id", id)));
+                break;
+            case EXISTS:
+                player.sendMessage(plugin.getLanguageManager().getMessage("stop.stop_exists",
+                LanguageManager.put(LanguageManager.args(), "stop_id", id)));
+                break;
+            default:
+                player.sendMessage(plugin.getLanguageManager().getMessage("stop.create_fail",
+                LanguageManager.put(LanguageManager.args(), "stop_id", id)));
+                break;
         }
     }
 
@@ -171,12 +179,20 @@ public class StopCommand {
 
         StopCommandService.SetPointResult result = stopService.setPoint(id, stop, player.getLocation(), yaw);
         switch (result.status()) {
-            case SUCCESS -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_success",
-                    LanguageManager.put(LanguageManager.put(LanguageManager.args(), "stop_id", id), "yaw", String.format("%.1f", result.yaw()))));
-            case NOT_RAIL -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_not_rail"));
-            case NOT_IN_STOP -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_not_in_area",
-                    LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName())));
-            default -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_fail"));
+            case SUCCESS:
+                player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_success",
+                LanguageManager.put(LanguageManager.put(LanguageManager.args(), "stop_id", id), "yaw", String.format("%.1f", result.yaw()))));
+                break;
+            case NOT_RAIL:
+                player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_not_rail"));
+                break;
+            case NOT_IN_STOP:
+                player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_not_in_area",
+                LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName())));
+                break;
+            default:
+                player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_fail"));
+                break;
         }
     }
 

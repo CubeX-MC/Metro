@@ -49,17 +49,19 @@ public class GuiListener implements Listener {
         Inventory inv = event.getInventory();
         
         // 检查是否是我们的 GUI
-        if (!(inv.getHolder() instanceof GuiHolder holder)) {
+        if (!(inv.getHolder() instanceof GuiHolder)) {
             return;
         }
+        GuiHolder holder = (GuiHolder) inv.getHolder();
         
         // 取消事件，防止物品被拿走
         event.setCancelled(true);
         
         // 忽略非玩家点击
-        if (!(event.getWhoClicked() instanceof Player player)) {
+        if (!(event.getWhoClicked() instanceof Player)) {
             return;
         }
+        Player player = (Player) event.getWhoClicked();
         
         int slot = event.getRawSlot();
         
@@ -70,25 +72,51 @@ public class GuiListener implements Listener {
         
         // 根据 GUI 类型处理
         switch (holder.getType()) {
-            case MAIN_MENU -> mainMenuController.handleClick(player, holder, slot);
-            case LINE_LIST -> lineListController.handleLineListClick(player, holder, slot, event.isRightClick());
-            case STOP_LIST -> stopListController.handleStopListClick(player, holder, slot, event.isRightClick());
-            case LINE_VARIANTS -> lineListController.handleLineVariantsClick(player, holder, slot,
-                    event.isRightClick());
-            case STOP_VARIANTS -> stopListController.handleStopVariantsClick(player, holder, slot,
-                    event.isRightClick());
-            case LINE_DETAIL -> lineDetailController.handleClick(player, holder, slot, event.isRightClick(),
-                    event.isShiftClick());
-            case ADD_STOP_LIST -> addStopController.handleAddStopListClick(player, holder, slot);
-            case ADD_STOP_VARIANTS -> addStopController.handleAddStopVariantsClick(player, holder, slot);
-            case LINE_BOARDING_CHOICE -> lineBoardingChoiceController.handleClick(player, holder, slot,
-                    event.isRightClick());
-            case LINE_SETTINGS -> lineSettingsController.handleClick(player, holder, slot);
-            case STOP_SETTINGS -> stopSettingsController.handleClick(player, holder, slot);
-            case CONFIRM_ACTION -> confirmActionController.handleClick(player, holder, slot);
-            case STOP_DETAIL -> {
+            case MAIN_MENU:
+                mainMenuController.handleClick(player, holder, slot);
+                break;
+            case LINE_LIST:
+                lineListController.handleLineListClick(player, holder, slot, event.isRightClick());
+                break;
+            case STOP_LIST:
+                stopListController.handleStopListClick(player, holder, slot, event.isRightClick());
+                break;
+            case LINE_VARIANTS:
+                lineListController.handleLineVariantsClick(player, holder, slot,
+                event.isRightClick());
+                break;
+            case STOP_VARIANTS:
+                stopListController.handleStopVariantsClick(player, holder, slot,
+                event.isRightClick());
+                break;
+            case LINE_DETAIL:
+                lineDetailController.handleClick(player, holder, slot, event.isRightClick(),
+                event.isShiftClick());
+                break;
+            case ADD_STOP_LIST:
+                addStopController.handleAddStopListClick(player, holder, slot);
+                break;
+            case ADD_STOP_VARIANTS:
+                addStopController.handleAddStopVariantsClick(player, holder, slot);
+                break;
+            case LINE_BOARDING_CHOICE:
+                lineBoardingChoiceController.handleClick(player, holder, slot,
+                event.isRightClick());
+                break;
+            case LINE_SETTINGS:
+                lineSettingsController.handleClick(player, holder, slot);
+                break;
+            case STOP_SETTINGS:
+                stopSettingsController.handleClick(player, holder, slot);
+                break;
+            case CONFIRM_ACTION:
+                confirmActionController.handleClick(player, holder, slot);
+                break;
+            case STOP_DETAIL:
+                {
                 // STOP_DETAIL is reserved for future expansion.
             }
+                break;
         }
     }
     

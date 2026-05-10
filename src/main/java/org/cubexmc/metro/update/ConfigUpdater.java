@@ -60,7 +60,8 @@ public final class ConfigUpdater {
     private static void copySection(ConfigurationSection source, ConfigurationSection target) {
         for (String key : source.getKeys(false)) {
             Object value = source.get(key);
-            if (value instanceof ConfigurationSection childSource) {
+            if (value instanceof ConfigurationSection) {
+                ConfigurationSection childSource = (ConfigurationSection) value;
                 ConfigurationSection childTarget = target.createSection(key);
                 copySection(childSource, childTarget);
             } else {

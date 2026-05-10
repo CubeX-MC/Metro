@@ -25,29 +25,35 @@ public final class StopListController {
         int totalPages = holder.getData("totalPages", 1);
 
         switch (slot) {
-            case GuiSlots.SLOT_PREV_PAGE -> {
+            case GuiSlots.SLOT_PREV_PAGE:
+                {
                 if (page > 0) {
                     plugin.getGuiManager().openStopList(player, page - 1, showOnlyMine, holder.getPreviousView());
                 }
                 return;
             }
-            case GuiSlots.SLOT_NEXT_PAGE -> {
+            case GuiSlots.SLOT_NEXT_PAGE:
+                {
                 if (page < totalPages - 1) {
                     plugin.getGuiManager().openStopList(player, page + 1, showOnlyMine, holder.getPreviousView());
                 }
                 return;
             }
-            case GuiSlots.SLOT_FILTER -> {
+            case GuiSlots.SLOT_FILTER:
+                {
                 plugin.getGuiManager().openStopList(player, 0, !showOnlyMine, holder.getPreviousView());
                 return;
             }
-            case GuiSlots.SLOT_BACK -> {
+            case GuiSlots.SLOT_BACK:
+                {
                 plugin.getGuiManager().openPreviousView(player, holder,
                         () -> plugin.getGuiManager().openMainMenu(player));
                 return;
             }
-            default -> {
+            default:
+                {
             }
+                break;
         }
 
         if (slot >= GuiSlots.ITEMS_PER_PAGE) {
@@ -89,25 +95,30 @@ public final class StopListController {
         int totalPages = holder.getData("totalPages", 1);
 
         switch (slot) {
-            case GuiSlots.SLOT_PREV_PAGE -> {
+            case GuiSlots.SLOT_PREV_PAGE:
+                {
                 if (page > 0) {
                     plugin.getGuiManager().openStopVariants(player, stopName, page - 1, holder.getPreviousView());
                 }
                 return;
             }
-            case GuiSlots.SLOT_NEXT_PAGE -> {
+            case GuiSlots.SLOT_NEXT_PAGE:
+                {
                 if (page < totalPages - 1) {
                     plugin.getGuiManager().openStopVariants(player, stopName, page + 1, holder.getPreviousView());
                 }
                 return;
             }
-            case GuiSlots.SLOT_BACK -> {
+            case GuiSlots.SLOT_BACK:
+                {
                 plugin.getGuiManager().openPreviousView(player, holder,
                         () -> plugin.getGuiManager().openStopList(player, 0, false));
                 return;
             }
-            default -> {
+            default:
+                {
             }
+                break;
         }
 
         if (slot >= GuiSlots.ITEMS_PER_PAGE) {
