@@ -587,6 +587,7 @@ chat:
 economy:
   insufficient_funds: "&cYetersiz bakiye. Bu yolculuğun ücreti: {price}"
   paid_boarding: "&aBaşarıyla binildi. {price} bakiyenizden düşüldü."
+  paid_distance: "&aMesafe ücreti: {price} bakiyenizden düşüldü."
   transaction_failed: "&cBilet işlemi başarısız oldu. Lütfen daha sonra tekrar deneyin."
   vault_unavailable: "&cEkonomi servisi kullanılamıyor. Lütfen bir yöneticiyle iletişime geçin."
   refunded: "&eBilet ödemeniz iade edildi."
