@@ -152,7 +152,7 @@ public final class Metro extends JavaPlugin {
         int pluginId = 25825; // <-- Replace with the id of your plugin!
         new Metrics(this, pluginId);
 
-        this.scheduledTaskLifecycle = new ScheduledTaskLifecycle(this, lineManager, stopManager);
+        this.scheduledTaskLifecycle = new ScheduledTaskLifecycle(this, lineManager, stopManager, portalManager);
         this.scheduledTaskLifecycle.start();
 
         this.mapIntegrationLifecycle = new MapIntegrationLifecycle(this);
@@ -404,6 +404,9 @@ public final class Metro extends JavaPlugin {
         }
         if (stopManager != null) {
             stopManager.forceSaveSync();
+        }
+        if (portalManager != null) {
+            portalManager.forceSaveSync();
         }
         if (saveCoordinator != null) {
             saveCoordinator.flushAll();

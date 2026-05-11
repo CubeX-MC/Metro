@@ -146,7 +146,7 @@ Players right-click the powered rail inside a Stop to summon and board a minecar
 
 - **Build the plugin**: `mvn clean package`
   - Produces `target/metro-<version>.jar`
-  - The current version comes from `pom.xml`, for example `target/metro-1.1.5.jar`
+  - The current version comes from `pom.xml`, for example `target/metro-1.1.6.jar`
 
 The repository is now a single-module Maven project targeting Java 17 and 1.18+ servers, with Paper/Folia compatibility logic included.
 

@@ -12,9 +12,9 @@
 
 - Maven 单模块项目，主插件版本 `1.1.6`。
 - 最近记录的验证结果：`mvn verify` 已通过。
-- 最近记录的测试状态：493 个单元测试，通过率 100%。
+- 最近记录的测试状态：509 个单元测试，通过率 100%。
 - 最近记录的静态检查：SpotBugs 0 个问题。
-- 最近记录的覆盖率：JaCoCo 行覆盖率约 42%，质量门最低行覆盖率 25%。
+- 最近记录的覆盖率：JaCoCo 行覆盖率约 42.08%，质量门最低行覆盖率 25%。
 - 核心能力已覆盖线路、站点、矿车运行、站台提示、计分板、音效、GUI、Vault、BlueMap/Dynmap/Squaremap、Folia 调度适配和数据迁移。
 - 已集成 PriceRule 定价系统（flat/distance/interval）、LineStatus 线路状态（NORMAL/SUSPENDED/MAINTENANCE）和 MetroAPI。
 
@@ -54,12 +54,36 @@
 - CYY 分支功能已整合：PriceRule 三种定价模式、LineStatus 状态系统、暂停线路拦截乘车、距离扣费、MetroAPI。
 - `setprice` 命令已扩展支持 flat/distance/interval/reset 模式，新增 `priceinfo` 和 `setstatus` 命令。
 - MetroAPI 已提供线路查询、票价计算、状态管理和 Vault 集成接口。
-- PriceRule (25)、PriceService (11)、LineStatusService (18)、LineCommandService (+12)、TicketService (+3)、RouteNormalizer (9) 已补单元测试，总计 493 测试。
+- PriceRule (25)、PriceService (11)、LineStatusService (18)、LineStatus (5)、LineCommandService (+12)、TicketService (+3)、RouteNormalizer (9) 已补单元测试；本轮新增 PortalManager (7) 与 ScheduledTaskLifecycle (4)，总计 509 测试。
 - README / README_en 已更新所有命令说明。
 - Minecraft 26.1.2 兼容已实现：`VersionUtil` 正则支持 26.1.2 格式，`LegacyPaperCommandManager` fallback 已就绪，`docs/compatibility.md` 有完整策略。
 - `RouteNormalizer` 已实现：路线点吸附到铁轨方块中心 + 共线冗余删除，集成到 `RouteRecorder.saveSession()`。
+- 2026-05-10 推进：`ScheduledTaskLifecycle` 已在 Folia 下跳过 legacy minecart 全世界扫描，并把 `PortalManager` 纳入自动保存任务。
+- 2026-05-10 推进：`PortalManager` 已迁移到读写锁 + 快照构建 + `SaveCoordinator` 保存模型，`Metro.flushPersistentData()` 会同步 flush `portals.yml`。
+- 2026-05-10 推进：`PortalManager.teleportMinecart()` 的 passenger restore 回调已先回到区域调度器，再访问 Bukkit 实体。
+- 2026-05-10 推进：README 构建产物示例已同步到 `metro-1.1.6.jar`。
+- 2026-05-10 推进：`LineStatus.fromConfig()` 已补空值、空白、大小写与非法值边界测试，并使用 `Locale.ROOT` 做稳定大小写归一化。
+- 2026-05-10 推进：`PortalManager` 已补保存失败重试和并发修改/保存测试，确认 dirty 状态不会在协调器失败后丢失。
+- 2026-05-10 推进：`PortalManager.teleportMinecart()` 已补目标世界不可用早退测试，确认不会触碰源矿车或进入调度流程。
 
 ## 4. 当前剩余重点
+
+### P1：Folia 支持声明与线程边界
+
+当前 `plugin.yml` 标记 `folia-supported: true`，但仍有少数路径需要进一步核对，避免声明强于实际线程安全程度：
+
+- `Metro.onDisable()` 已在 Folia 下跳过 fallback world scan，但 active train cleanup 仍应继续核对是否全部落在实体调度边界内。
+- `PortalManager.teleportMinecart()` 的 passenger restore 已转入区域调度器；后续若继续加固 Folia，应补真实 Folia/Paper smoke test 覆盖跨世界传送、玩家离线和目标区块未加载场景。
+- 如果短期内无法完全加固 Folia，应在兼容性文档中把 Folia 标为“实验/部分支持”，不要让发布说明承诺过满。
+
+### P1：PortalManager 持久化与并发模型
+
+`PortalManager` 已迁移到与 `LineManager` / `StopManager` 接近的保存模型，后续重点从“保存架构”转向“传送行为验证”：
+
+- 已完成：读写锁、dirty 标记、快照构建、`processAsyncSave()`、`forceSaveSync()`、自动保存任务和 shutdown flush。
+- 已覆盖：Portal create/persist/reload/location lookup、async save、link/delete、线路引用清理和 ScheduledTaskLifecycle 自动保存调度。
+- 仍需覆盖：传送失败、跨世界 passenger restore、玩家离线、目标世界/目标区块不可用、传送过程中旧矿车/新矿车失效。
+- 传送门数据迁移已存在于 `DataFileUpdater`，改保存模型时必须验证旧 `portals.yml` 兼容。
 
 ### P1：新模块测试覆盖
 
@@ -70,14 +94,14 @@
 - `LineStatusService` — 18 tests，setStatus / isBoardable / 替代线路
 - `LineCommandService` — 26 tests (+12)，setPriceRule / setLineStatus / resetPriceRule / 新方法
 - `TicketService` — 7 tests (+3)，estimatedMinimumPrice / distance boarding check
-
-仍需补测：
-
 - `TrainMovementTask` — 39 tests (+3)，settleDistanceFare 新逻辑已覆盖
+- `LineStatus` — 5 tests，fromConfig 空值 / 空白 / 大小写 / 非法值、config key、boardable
+- `PortalManager` — 7 tests，保存、重载、查询、link/delete、线路引用清理、保存失败重试、并发修改与保存、目标世界不可用早退
+- `ScheduledTaskLifecycle` — 4 tests，Folia 跳过 legacy 扫描、非 Folia 调度、自动保存、shutdown cancel
 
 仍需补测：
 
-- `LineStatus` 枚举 — fromConfig 边界
+- `PortalManager` — 传送回调、跨世界 passenger restore、玩家离线、目标区块不可用、传送过程中旧矿车/新矿车失效
 
 ### P1：防止核心交互路径回归
 
@@ -88,6 +112,16 @@
 - 乘车扣费必须和实际发车绑定，失败、取消、中途下车不能产生异常扣费。
 - reload、disable、高频保存和保存失败不能造成旧数据覆盖新数据。
 - GUI 删除、票价、颜色、终点方向、route 和 protection 操作必须继续经过确认或权限边界。
+
+### P2：依赖收敛与 Shade 治理
+
+`mvn verify` 当前通过，但 shade 阶段存在 `module-info.class` 与资源重叠警告；依赖树中 Adventure 版本同时出现 4.13、4.15、4.25 系列。
+
+后续建议：
+
+- 用 `dependencyManagement` 明确统一 Kyori Adventure 版本，确认 scoreboard-library 与 cloud 依赖兼容。
+- 评估是否需要为 `module-info.class`、重复 manifest 或无用 transitive 依赖增加 shade filter。
+- 保持 Spigot API 1.18.2 与 Java 17 作为编译基线，不为了消除警告引入更高 API 绑定。
 
 ### P2：Route Normalizer 后续改进
 
@@ -116,6 +150,7 @@
 - 涉及实体、世界、玩家、矿车和区块的操作必须先看 `docs/architecture.md` 的 Scheduler Policy。
 - 不直接新增裸 Bukkit scheduler 调用，优先使用现有调度封装。
 - 如果需要扩大 Folia 支持范围，先补最小可验证场景，再改实现。
+- 新增或修改传送门、地图刷新、legacy 数据迁移、shutdown cleanup 时，默认按 Folia 风险路径审查。
 
 ### P3：发布与文档持续维护
 
@@ -124,6 +159,8 @@
 - `docs/release-checklist.md` 中的发布前检查。
 - `docs/release-notes-template.md` 或实际发布说明。
 - `docs/compatibility.md` 中的 Java、Minecraft、服务端和软依赖兼容信息。
+- README 构建产物版本示例必须与 `pom.xml` / `plugin.yml` 当前版本一致，避免发布页出现旧 jar 名。
+- 若 `folia-supported` 声明、质量门或兼容矩阵变化，必须同步 `docs/compatibility.md`、README 和 release notes。
 
 ## 5. 修改时的硬边界
 
@@ -133,10 +170,12 @@
 - 不绕过 `ConfigFacade` 读取已有配置域，除非该配置确实只属于局部实现。
 - 不把玩家可见消息硬编码在 Java 里，统一走语言文件和语言管理器。
 - 不让旧异步保存结果覆盖新状态。
+- 涉及 `portals.yml` 的改动必须继续走快照保存、锁和迁移兼容，不回退到同步裸保存。
 - 不让 GUI 点击处理直接吞进大量业务逻辑。
 - 不让命令层重新承担权限、查找、校验、写入和展示的全部职责。
 - 不重新引入 CYY 分支的 1.16 兼容降级（switch 表达式→语句、record→class、isBlank→trim、instanceof 模式→显式转换）。
 - 不在没有测试或回归清单更新的情况下修改核心乘车、保存、迁移、权限或调度路径。
+- 不新增或保留 Folia 下未确认安全的全世界实体扫描、异步实体访问或跨 region 实体操作。
 
 ## 6. 建议工作顺序
 

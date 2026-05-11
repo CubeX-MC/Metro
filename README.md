@@ -148,7 +148,7 @@ Metro是一个受牛腩小镇启发的地铁交通系统插件，允许管理员
 
 - **构建插件**: `mvn clean package`
   - 生成 `target/metro-<version>.jar`
-  - 当前版本号来自 `pom.xml`，例如 `target/metro-1.1.5.jar`
+  - 当前版本号来自 `pom.xml`，例如 `target/metro-1.1.6.jar`
 
 当前仓库是单模块 Maven 项目，面向 Java 17 与 1.18+ 服务器，包含 Paper/Folia 兼容逻辑。
 
