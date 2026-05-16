@@ -9,7 +9,7 @@ import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.LineStatus;
 import org.cubexmc.metro.model.Portal;
-import org.cubexmc.metro.model.PriceRule;
+import org.cubexmc.metro.model.FareRule;
 import org.cubexmc.metro.model.Stop;
 import org.cubexmc.metro.event.LineStatusChangeEvent;
 import org.bukkit.Bukkit;
@@ -205,9 +205,9 @@ public class LineCommandService {
             return WriteStatus.INVALID_VALUE;
         }
 
-        PriceRule.PricingMode pricingMode;
+        FareRule.PricingMode pricingMode;
         try {
-            pricingMode = PriceRule.PricingMode.valueOf(mode.toUpperCase());
+            pricingMode = FareRule.PricingMode.valueOf(mode.toUpperCase());
         } catch (IllegalArgumentException e) {
             return WriteStatus.INVALID_VALUE;
         }
@@ -217,18 +217,18 @@ public class LineCommandService {
             return WriteStatus.NOT_FOUND;
         }
 
-        PriceRule rule = new PriceRule(pricingMode, basePrice);
-        if (pricingMode == PriceRule.PricingMode.DISTANCE && perUnit != null) {
+        FareRule rule = new FareRule(pricingMode, basePrice);
+        if (pricingMode == FareRule.PricingMode.DISTANCE && perUnit != null) {
             rule.setPerBlockRate(perUnit);
         }
-        if (pricingMode == PriceRule.PricingMode.INTERVAL && perUnit != null) {
+        if (pricingMode == FareRule.PricingMode.INTERVAL && perUnit != null) {
             rule.setPerIntervalRate(perUnit);
         }
         if (maxPrice != null && maxPrice > 0.0) {
             rule.setMaxPrice(maxPrice);
         }
 
-        line.setPriceRule(rule);
+        line.setFareRule(rule);
         lineManager.saveConfig();
         return WriteStatus.SUCCESS;
     }
@@ -236,7 +236,7 @@ public class LineCommandService {
     public boolean resetPriceRule(String id) {
         Line line = lineManager.getLine(id);
         if (line == null) return false;
-        line.setPriceRule(null);
+        line.setFareRule(null);
         lineManager.saveConfig();
         return true;
     }

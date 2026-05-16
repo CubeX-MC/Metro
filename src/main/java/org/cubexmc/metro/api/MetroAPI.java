@@ -6,7 +6,7 @@ import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.LineStatus;
-import org.cubexmc.metro.model.PriceRule;
+import org.cubexmc.metro.model.FareRule;
 import org.cubexmc.metro.model.Stop;
 import org.cubexmc.metro.service.PriceService;
 import org.cubexmc.metro.service.LineStatusService;
@@ -114,15 +114,15 @@ public final class MetroAPI {
     // Pricing
     // =============================================================
 
-    public PriceRule getPriceRule(String lineId) {
+    public FareRule getPriceRule(String lineId) {
         Line line = getLine(lineId);
-        return line != null ? line.getPriceRule() : null;
+        return line != null ? line.getFareRule() : null;
     }
 
-    public void setPriceRule(String lineId, PriceRule rule) {
+    public void setPriceRule(String lineId, FareRule rule) {
         Line line = getLine(lineId);
         if (line != null) {
-            line.setPriceRule(rule);
+            line.setFareRule(rule);
             plugin.getLineManager().saveConfig();
         }
     }

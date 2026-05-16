@@ -426,24 +426,6 @@ public class Line {
         this.priceRule = priceRule;
     }
 
-    /**
-     * Get the fare rule for this line (alias for getPriceRule for backward compatibility).
-     *
-     * @return the price rule
-     */
-    public PriceRule getFareRule() {
-        return priceRule;
-    }
-
-    /**
-     * Set the fare rule for this line (alias for setPriceRule for backward compatibility).
-     *
-     * @param priceRule the price rule to set
-     */
-    public void setFareRule(PriceRule priceRule) {
-        this.priceRule = priceRule;
-    }
-
     public LineStatus getLineStatus() {
         return lineStatus != null ? lineStatus : LineStatus.NORMAL;
     }

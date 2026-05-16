@@ -17,9 +17,9 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.cubexmc.metro.Metro;
+import org.cubexmc.metro.model.FareRule;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.LineStatus;
-import org.cubexmc.metro.model.PriceRule;
 import org.cubexmc.metro.model.RoutePoint;
 import org.cubexmc.metro.model.Stop;
 import org.cubexmc.metro.update.DataFileUpdater;
@@ -152,7 +152,7 @@ public class LineManager {
                                 }
                             }
                             try {
-                                line.setPriceRule(PriceRule.deserialize(flattened));
+                                line.setFareRule(FareRule.deserialize(flattened));
                             } catch (Exception e) {
                                 plugin.getLogger().log(Level.WARNING,
                                         "Failed to deserialize price_rule for line " + lineId, e);
@@ -780,7 +780,7 @@ public class LineManager {
                 snapshot.set(lineId + ".ticket_price", line.getTicketPrice() > 0 ? line.getTicketPrice() : null);
 
                 // Save PriceRule
-                PriceRule priceRule = line.getPriceRule();
+                FareRule priceRule = line.getFareRule();
                 if (priceRule != null) {
                     Map<String, Object> priceMap = priceRule.serialize();
                     for (Map.Entry<String, Object> entry : priceMap.entrySet()) {

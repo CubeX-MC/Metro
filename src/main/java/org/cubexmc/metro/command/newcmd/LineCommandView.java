@@ -18,7 +18,7 @@ import org.cubexmc.metro.manager.RouteRecorder;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Portal;
-import org.cubexmc.metro.model.PriceRule;
+import org.cubexmc.metro.model.FareRule;
 import org.cubexmc.metro.model.Stop;
 import org.cubexmc.metro.service.CommandDisplayService;
 
@@ -326,7 +326,7 @@ final class LineCommandView {
         player.sendMessage(lang.getMessage("line.priceinfo_header",
                 LanguageManager.put(LanguageManager.args(), "line_name", line.getName())));
 
-        PriceRule rule = line.getPriceRule();
+        FareRule rule = line.getFareRule();
 
         if (rule == null) {
             player.sendMessage(lang.getMessage("line.priceinfo_mode",
@@ -343,10 +343,10 @@ final class LineCommandView {
         player.sendMessage(lang.getMessage("line.priceinfo_base",
                 LanguageManager.put(LanguageManager.args(), "base", String.valueOf(rule.getBasePrice()))));
 
-        if (rule.getMode() == PriceRule.PricingMode.DISTANCE) {
+        if (rule.getMode() == FareRule.PricingMode.DISTANCE) {
             player.sendMessage(lang.getMessage("line.priceinfo_per_block",
                     LanguageManager.put(LanguageManager.args(), "per_block", String.valueOf(rule.getPerBlockRate()))));
-        } else if (rule.getMode() == PriceRule.PricingMode.INTERVAL) {
+        } else if (rule.getMode() == FareRule.PricingMode.INTERVAL) {
             player.sendMessage(lang.getMessage("line.priceinfo_per_interval",
                     LanguageManager.put(LanguageManager.args(), "per_interval", String.valueOf(rule.getPerIntervalRate()))));
         }
@@ -356,10 +356,10 @@ final class LineCommandView {
                     LanguageManager.put(LanguageManager.args(), "max", String.valueOf(rule.getMaxPrice()))));
         }
 
-        List<PriceRule.TimeDiscount> discounts = rule.getTimeDiscounts();
+        List<FareRule.TimeDiscount> discounts = rule.getTimeDiscounts();
         if (!discounts.isEmpty()) {
             player.sendMessage(lang.getMessage("line.priceinfo_discounts"));
-            for (PriceRule.TimeDiscount discount : discounts) {
+            for (FareRule.TimeDiscount discount : discounts) {
                 String startTime = formatTicksToTime(discount.getStartTick());
                 String endTime = formatTicksToTime(discount.getEndTick());
                 int percent = (int) Math.round((1.0 - discount.getDiscountMultiplier()) * 100);

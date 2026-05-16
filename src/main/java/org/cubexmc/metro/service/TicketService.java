@@ -8,7 +8,7 @@ import java.util.function.Supplier;
 import org.bukkit.entity.Player;
 import org.cubexmc.metro.integration.VaultIntegration;
 import org.cubexmc.metro.model.Line;
-import org.cubexmc.metro.model.PriceRule;
+import org.cubexmc.metro.model.FareRule;
 
 /**
  * Coordinates ticket price checks and delayed economy charges.
@@ -170,7 +170,7 @@ public class TicketService {
 
     private double getTicketPrice(Line line) {
         if (line == null) return 0.0;
-        PriceRule rule = line.getPriceRule();
+        FareRule rule = line.getFareRule();
         if (rule != null) {
             return Math.max(0.0, rule.getBasePrice());
         }
@@ -179,12 +179,12 @@ public class TicketService {
 
     private double getEstimatedMinimumPrice(Line line) {
         if (line == null) return 0.0;
-        PriceRule rule = line.getPriceRule();
+        FareRule rule = line.getFareRule();
         if (rule != null) {
             double estimate = rule.getBasePrice();
-            if (rule.getMode() == PriceRule.PricingMode.DISTANCE) {
+            if (rule.getMode() == FareRule.PricingMode.DISTANCE) {
                 estimate += rule.getPerBlockRate();
-            } else if (rule.getMode() == PriceRule.PricingMode.INTERVAL) {
+            } else if (rule.getMode() == FareRule.PricingMode.INTERVAL) {
                 estimate += rule.getPerIntervalRate();
             }
             return Math.max(0.0, estimate);

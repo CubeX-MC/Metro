@@ -18,7 +18,7 @@ import org.cubexmc.metro.manager.LanguageManager;
 import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.StopManager;
 import org.cubexmc.metro.model.Line;
-import org.cubexmc.metro.model.PriceRule;
+import org.cubexmc.metro.model.FareRule;
 import org.cubexmc.metro.model.Stop;
 import org.cubexmc.metro.service.TicketService;
 import org.cubexmc.metro.util.SchedulerUtil;
@@ -221,20 +221,20 @@ public class TrainMovementTask implements Listener {
         Line line = session.getLine();
         if (line == null) return;
 
-        PriceRule rule = line.getPriceRule();
+        FareRule rule = line.getFareRule();
         if (rule == null) return;
 
         double distance = session.getDistanceTraveled();
-        if (distance <= 0 && rule.getMode() != PriceRule.PricingMode.INTERVAL) return;
+        if (distance <= 0 && rule.getMode() != FareRule.PricingMode.INTERVAL) return;
 
         Player passenger = session.getPassenger();
         if (passenger == null || !passenger.isOnline()) return;
 
         double variablePrice = 0;
 
-        if (rule.getMode() == PriceRule.PricingMode.DISTANCE) {
+        if (rule.getMode() == FareRule.PricingMode.DISTANCE) {
             variablePrice = distance * rule.getPerBlockRate();
-        } else if (rule.getMode() == PriceRule.PricingMode.INTERVAL) {
+        } else if (rule.getMode() == FareRule.PricingMode.INTERVAL) {
             int intervals = session.getPlugin().getPriceService()
                     .countStopIntervals(line, session.getEntryStopId(), stop.getId());
             variablePrice = intervals * rule.getPerIntervalRate();

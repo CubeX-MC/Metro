@@ -1,7 +1,7 @@
 package org.cubexmc.metro.service;
 
 import org.bukkit.World;
-import org.cubexmc.metro.model.PriceRule;
+import org.cubexmc.metro.model.FareRule;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Stop;
 
@@ -23,7 +23,7 @@ public class PriceService {
     public double getEstimatedPrice(Line line) {
         if (line == null) return 0.0;
 
-        PriceRule rule = line.getPriceRule();
+        FareRule rule = line.getFareRule();
         if (rule == null) {
             // Fallback to legacy ticket price
             return Math.max(0.0, line.getTicketPrice());
@@ -48,7 +48,7 @@ public class PriceService {
                                  double distanceTraveledBlocks, int intervals, World world) {
         if (line == null) return 0.0;
 
-        PriceRule rule = line.getPriceRule();
+        FareRule rule = line.getFareRule();
         if (rule == null) {
             // Fallback to legacy flat ticket price
             return Math.max(0.0, line.getTicketPrice());
@@ -76,7 +76,7 @@ public class PriceService {
     public double calculateDistancePrice(Line line, double distanceTraveledBlocks, World world) {
         if (line == null) return 0.0;
 
-        PriceRule rule = line.getPriceRule();
+        FareRule rule = line.getFareRule();
         if (rule == null) {
             return Math.max(0.0, line.getTicketPrice());
         }
@@ -115,7 +115,7 @@ public class PriceService {
     public String getPriceDescription(Line line) {
         if (line == null) return "Free";
 
-        PriceRule rule = line.getPriceRule();
+        FareRule rule = line.getFareRule();
         if (rule != null) {
             return rule.getDescription();
         }
@@ -127,7 +127,7 @@ public class PriceService {
      */
     public boolean hasActiveDiscount(Line line, World world) {
         if (line == null || world == null) return false;
-        PriceRule rule = line.getPriceRule();
+        FareRule rule = line.getFareRule();
         if (rule == null) return false;
         return rule.getActiveDiscountMultiplier(world.getTime()) < 1.0;
     }
