@@ -8,8 +8,6 @@ English | [简体中文](README.md)
 
 Metro is a transit system plugin inspired by the Niú nǎn xiǎo zhèn server, allowing administrators to create automated metro line networks and provide players with a convenient riding experience.
 
-![Imgurl](https://i.imgur.com/K335iWj.gif)
-
 This fork (Metro-Forked) Developed and maintained by A-Qing and others adds significant enhancements to the original [CubeX-MC/Metro](https://github.com/CubeX-MC/Metro) while maintaining compatibility with MC 1.16.5+ and Java 8+ servers.
 
 ### New Features
