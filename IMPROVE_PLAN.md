@@ -12,9 +12,9 @@
 
 - Maven 单模块项目，主插件版本 `1.1.6`。
 - 最近记录的验证结果：`mvn verify` 已通过。
-- 最近记录的测试状态：518 个单元测试，通过率 100%。
+- 最近记录的测试状态：524 个单元测试，通过率 100%。
 - 最近记录的静态检查：SpotBugs 0 个问题。
-- 最近记录的覆盖率：JaCoCo 行覆盖率约 43.21%，质量门最低行覆盖率 25%。
+- 最近记录的覆盖率：JaCoCo 行覆盖率约 44.33%，质量门最低行覆盖率 25%。
 - 核心能力已覆盖线路、站点、矿车运行、站台提示、计分板、音效、GUI、Vault、BlueMap/Dynmap/Squaremap、Folia 调度适配和数据迁移。
 - 已集成 PriceRule 定价系统（flat/distance/interval）、LineStatus 线路状态（NORMAL/SUSPENDED/MAINTENANCE）和 MetroAPI。
 
@@ -53,7 +53,7 @@
 - CI、发布清单、发布说明模板、兼容性文档和 release workflow 已建立。
 - CYY 分支功能已整合：PriceRule 三种定价模式、LineStatus 状态系统、暂停线路拦截乘车、距离扣费、MetroAPI。
 - `setprice` 命令已扩展支持 flat/distance/interval/reset 模式，新增 `priceinfo` 和 `setstatus` 命令。
-- MetroAPI 已提供线路查询、票价计算、状态管理和 Vault 集成接口。
+- MetroAPI 已提供线路/站点/传送门查询、只读配置、票价计算、状态管理、乘车检查、owner/admin、权限判断、传送门写操作和只读 snapshot 接口。
 - PriceRule (25)、PriceService (11)、LineStatusService (18)、LineStatus (5)、LineCommandService (+12)、TicketService (+3)、RouteNormalizer (11)、PortalManager (13)、ScheduledTaskLifecycle (4) 已补单元测试；总计 518 测试。
 - README / README_en 已更新所有命令说明。
 - Minecraft 26.1.2 兼容已实现：`VersionUtil` 正则支持 26.1.2 格式，`LegacyPaperCommandManager` fallback 已就绪，`docs/compatibility.md` 有完整策略。
@@ -70,6 +70,7 @@
 - 2026-05-16 推进：`PortalManager.teleportMinecart()` 已处理 `SchedulerUtil.teleportEntity()` 返回失败的回调，失败时清理已生成的新矿车并复位旧任务 teleporting 标记，避免传送失败后留下孤立矿车。
 - 2026-05-16 推进：Kyori Adventure 已通过 BOM 收敛到 4.25.0，shade 已过滤 manifest 与 module-info 元数据，`dependency-reduced-pom.xml` 不再生成到仓库根目录。
 - 2026-05-16 推进：`RouteNormalizer` 已补真实 mock 世界/铁轨方块吸附测试，覆盖成功吸附与找不到铁轨保留原点。
+- 2026-05-16 推进：`MetroAPI` 已补齐 `docs/api.md` 中的 API backlog：只读配置、Portal 查询/写入、owner/admin 查询与修改、权限判断和只读 snapshot；新增 `MetroAPITest` 6 个用例。
 
 ## 4. 当前剩余重点
 
