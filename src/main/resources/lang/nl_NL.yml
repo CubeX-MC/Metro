@@ -22,6 +22,8 @@ command:
   unknown: "&cOnbekend commando. Gebruik /m voor hulp."
   teleport_to: "&aKlik om te teleporteren naar {stop_name}"
   player_not_found: "&cSpeler {player} niet gevonden."
+  confirm_required: "&eThis action is destructive. Add &6confirm &eto run it."
+  confirm_hint: "&eRun: &6{command}"
 
 # Selectie gerelateerde berichten
 selection:
@@ -32,7 +34,7 @@ selection:
 line:
   help_header: "&a===== Metro Lijnbeheer Commando's ====="
   help_create: "&6/m line create <line_id> <weergavenaam> &f- Maak nieuwe lijn"
-  help_delete: "&6/m line delete <line_id> &f- Verwijder lijn"
+  help_delete: "&6/m line delete <line_id> confirm &f- Verwijder lijn"
   help_list: "&6/m line list [page] &f- Lijst alle lijnen"
   help_setcolor: "&6/m line setcolor <line_id> <kleur> &f- Stel lijnkleur in"
   help_setterminus: "&6/m line setterminus <line_id> <richtingnaam> &f- Stel lijn eindstation richtingnaam in"
@@ -51,14 +53,14 @@ line:
   help_clonereverse: "&6/m line clonereverse <source_id> <new_id> [suffix] &f- Lijn omgekeerd klonen"
   help_setprice: "&6/m line setprice <line_id> <prijs> &f- Traditionele vaste ticketprijs instellen\n&6/m line setprice <line_id> flat|distance|interval <basis> [perEenheid] [max] &f- Geavanceerde prijsstelling\n&6/m line setprice reset <line_id> &f- Terugzetten naar traditionele prijsstelling"
   help_recordroute: "&6/m line recordroute <line_id> &f- Neem routepunten op of sla ze op voor online kaarten en spoorbescherming"
-  help_clearroute: "&6/m line clearroute <line_id> &f- Wis opgenomen routepunten"
+  help_clearroute: "&6/m line clearroute <line_id> confirm &f- Wis opgenomen routepunten"
   help_routeinfo: "&6/m line routeinfo <line_id> &f- Toon status van routeopname en spoorbescherming"
   help_protect: "&6/m line protect <line_id> <on|off|status> &f- Schakel spoorbescherming in, uit of bekijk de status"
   help_setstatus: "&6/m line setstatus <line_id> <normal|suspended|maintenance> &f- Operationele status van de lijn instellen"
   help_priceinfo: "&6/m line priceinfo <line_id> &f- Prijsdetails en actieve kortingen bekijken"
    
   usage_create: "&cGebruik: /m line create <line_id> <\"weergavenaam\">"
-  usage_delete: "&cGebruik: /m line delete <line_id>"
+  usage_delete: "&cGebruik: /m line delete <line_id> confirm"
   usage_setcolor: "&cGebruik: /m line setcolor <line_id> <kleur>\n&eKleurvoorbeelden: &a&a, &b&b, &c&c, &9&9 etc. Minecraft kleurcodes"
   usage_setterminus: "&cGebruik: /m line setterminus <line_id> <eindstation_richtingnaam>"
   usage_setmaxspeed: "&cGebruik: /m line setmaxspeed <line_id> <snelheid>\n&eSnelheid moet een positief getal zijn"
@@ -72,7 +74,7 @@ line:
   usage_owner: "&cGebruik: /m line owner <line_id> <speler>"
   usage_setprice: "&cGebruik: /m line setprice <line_id> <prijs>\n&c/m line setprice <line_id> flat|distance|interval <basis> [perEenheid] [max]\n&c/m line setprice reset <line_id>"
   usage_recordroute: "&cGebruik: /m line recordroute <line_id>"
-  usage_clearroute: "&cGebruik: /m line clearroute <line_id>"
+  usage_clearroute: "&cGebruik: /m line clearroute <line_id> confirm"
   usage_routeinfo: "&cGebruik: /m line routeinfo <line_id>"
   usage_protect: "&cGebruik: /m line protect <line_id> <on|off|status>"
 
@@ -213,7 +215,7 @@ portal:
   help_create: "&6/m portal create <portal_id> &f- Maak een portaalingang op je positie of op de aangewezen rail"
   help_setdest: "&6/m portal setdest <portal_id> &f- Stel de portalbestemming in op je huidige positie en richting"
   help_link: "&6/m portal link <portal_id_1> <portal_id_2> &f- Koppel twee portalen in beide richtingen"
-  help_delete: "&6/m portal delete <portal_id> &f- Verwijder een portaal"
+  help_delete: "&6/m portal delete <portal_id> confirm &f- Verwijder een portaal"
   help_list: "&6/m portal list [page] &f- Lijst alle portalen en bestemmingen"
   help_trust: "&6/m portal trust <portal_id> <speler> &f- Voeg een portaalbeheerder toe"
   help_untrust: "&6/m portal untrust <portal_id> <speler> &f- Verwijder een portaalbeheerder"
@@ -222,7 +224,7 @@ portal:
   usage_create: "&cGebruik: /m portal create <portal_id>"
   usage_setdest: "&cGebruik: /m portal setdest <portal_id>"
   usage_link: "&cGebruik: /m portal link <portal_id_1> <portal_id_2>"
-  usage_delete: "&cGebruik: /m portal delete <portal_id>"
+  usage_delete: "&cGebruik: /m portal delete <portal_id> confirm"
   usage_trust: "&cGebruik: /m portal trust <portal_id> <speler>"
   usage_untrust: "&cGebruik: /m portal untrust <portal_id> <speler>"
   usage_owner: "&cGebruik: /m portal owner <portal_id> <speler>"
@@ -259,7 +261,7 @@ portal:
 stop:
   help_header: "&a===== Metro Stopgebiedbeheer Commando's ====="
   help_create: "&6/m stop create <stop_id> <weergavenaam> &f- Maak nieuw stopgebied"
-  help_delete: "&6/m stop delete <stop_id> &f- Verwijder stopgebied"
+  help_delete: "&6/m stop delete <stop_id> confirm &f- Verwijder stopgebied"
   help_list: "&6/m stop list [page] &f- Lijst alle stopgebieden"
   help_setcorners: "&6/m stop setcorners <stop_id> &f- Update de hoekpunten van een stop"
   help_setpoint: "&6/m stop setpoint [stop_id] [yaw] &f- Stel stoppuntlocatie en vertrekrichting in"
@@ -278,7 +280,7 @@ stop:
   help_link: "&6/m stop link <allow|deny> <stop_id> <line_id> &f- Beheer lijnkoppelingen"
   
   usage_create: "&cGebruik: /m stop create <stop_id> <\"weergavenaam\">"
-  usage_delete: "&cGebruik: /m stop delete <stop_id>"
+  usage_delete: "&cGebruik: /m stop delete <stop_id> confirm"
   usage_setcorners: "&cGebruik: /m stop setcorners <stop_id>"
   usage_setpoint: "&cGebruik: /m stop setpoint [stop_id] [yaw]"
   usage_tp: "&cGebruik: /m stop tp <stop_id>"
@@ -569,6 +571,7 @@ interact:
   stop_no_line: "&cDit stopgebied behoort tot geen enkele lijn."
   stop_no_point: "&cDit stopgebied heeft nog geen stoppunt ingesteld, kan niet instappen."
   terminal_stop: "&cEindstation kan niet vertrekken, ga naar startstation om in te stappen."
+  no_permission: "&cYou don't have permission to ride Metro trains."
   
 # Voertuig gerelateerd
 vehicle:

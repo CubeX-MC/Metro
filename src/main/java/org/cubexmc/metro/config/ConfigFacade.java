@@ -136,6 +136,7 @@ public class ConfigFacade {
     private boolean safeModePassengerRailBreakProtection;
     private double safeModeMinCruiseSpeed;
     private long safeModeStallRecoveryTicks;
+    private boolean economyEnabled;
 
     private Material selectionTool;
     private String selectionToolName;
@@ -292,6 +293,7 @@ public class ConfigFacade {
         safeModePassengerRailBreakProtection = plugin.getConfig().getBoolean("settings.safe_mode.passenger_rail_break_protection", true);
         safeModeMinCruiseSpeed = plugin.getConfig().getDouble("settings.safe_mode.min_cruise_speed", 0.08);
         safeModeStallRecoveryTicks = plugin.getConfig().getLong("settings.safe_mode.stall_recovery_ticks", 8L);
+        economyEnabled = plugin.getConfig().getBoolean("economy.enabled", true);
 
         String toolName = plugin.getConfig().getString("settings.selection_tool", "GOLDEN_SHOVEL");
         try {
@@ -612,6 +614,10 @@ public class ConfigFacade {
 
     public long getSafeModeStallRecoveryTicks() {
         return safeModeStallRecoveryTicks;
+    }
+
+    public boolean isEconomyEnabled() {
+        return economyEnabled;
     }
 
     public boolean isDebugCategoryEnabled(String category) {

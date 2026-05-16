@@ -9,8 +9,10 @@ import org.bukkit.entity.Player;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.gui.GuiHolder;
 import org.cubexmc.metro.gui.GuiManager;
+import org.cubexmc.metro.manager.LanguageManager;
 import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.StopManager;
+import org.cubexmc.metro.model.Line;
 import org.junit.jupiter.api.Test;
 
 class ConfirmActionControllerTest {
@@ -51,6 +53,36 @@ class ConfirmActionControllerTest {
 
         verify(guiManager, never()).openPreviousView(org.mockito.ArgumentMatchers.any(),
                 org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+        verify(lineManager, never()).deleteLine("red");
+    }
+
+    @Test
+    void shouldRecheckLineOwnershipBeforeConfirmedDelete() {
+        Metro plugin = mock(Metro.class);
+        GuiManager guiManager = mock(GuiManager.class);
+        LanguageManager languageManager = mock(LanguageManager.class);
+        LineManager lineManager = mock(LineManager.class);
+        StopManager stopManager = mock(StopManager.class);
+        Player player = mock(Player.class);
+        Line line = new Line("red", "Red");
+        GuiHolder holder = confirmHolder("DELETE_LINE", "red");
+
+        when(plugin.getGuiManager()).thenReturn(guiManager);
+        when(plugin.getLanguageManager()).thenReturn(languageManager);
+        when(plugin.getLineManager()).thenReturn(lineManager);
+        when(plugin.getStopManager()).thenReturn(stopManager);
+        when(lineManager.getLine("red")).thenReturn(line);
+        when(player.hasPermission("metro.admin")).thenReturn(false);
+        when(player.isOp()).thenReturn(false);
+        when(languageManager.getMessage("ownership.server")).thenReturn("Server");
+        when(languageManager.getMessage("ownership.none")).thenReturn("None");
+        when(languageManager.getMessage(org.mockito.ArgumentMatchers.eq("line.permission_manage"),
+                org.mockito.ArgumentMatchers.anyMap())).thenReturn("no line access");
+
+        new ConfirmActionController(plugin).handleClick(player, holder, 11);
+
+        verify(player).sendMessage("no line access");
+        verify(player).closeInventory();
         verify(lineManager, never()).deleteLine("red");
     }
 

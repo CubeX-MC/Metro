@@ -76,11 +76,16 @@ public class LineCommand {
         }
     }
 
-    @Command("m|metro line|l delete <lineId>")
+    @Command("m|metro line|l delete <lineId> [confirm]")
     @CommandDescription("Delete a metro line")
-    public void delete(Player player, @Argument(value = "lineId", suggestions = "lineIds") String id) {
+    public void delete(Player player,
+                       @Argument(value = "lineId", suggestions = "lineIds") String id,
+                       @Argument("confirm") String confirm) {
         Line line = guard.requireManageableLine(player, id);
         if (line == null) {
+            return;
+        }
+        if (!guard.requireConfirmation(player, confirm, "/m line delete " + id + " confirm")) {
             return;
         }
 
@@ -367,11 +372,16 @@ public class LineCommand {
         }
     }
 
-    @Command("m|metro line|l clearroute <lineId>")
+    @Command("m|metro line|l clearroute <lineId> [confirm]")
     @CommandDescription("Clear recorded route points for a line")
-    public void clearRoute(Player player, @Argument(value = "lineId", suggestions = "lineIds") String id) {
+    public void clearRoute(Player player,
+                           @Argument(value = "lineId", suggestions = "lineIds") String id,
+                           @Argument("confirm") String confirm) {
         Line line = guard.requireManageableLine(player, id);
         if (line == null) {
+            return;
+        }
+        if (!guard.requireConfirmation(player, confirm, "/m line clearroute " + id + " confirm")) {
             return;
         }
 

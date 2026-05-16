@@ -22,6 +22,8 @@ command:
   unknown: "&cBilinmeyen komut. Yardım için /m kullanın."
   teleport_to: "&a{stop_name} durağına ışınlanmak için tıklayın"
   player_not_found: "&cOyuncu {player} bulunamadı."
+  confirm_required: "&eThis action is destructive. Add &6confirm &eto run it."
+  confirm_hint: "&eRun: &6{command}"
 
 # Seçim Mesajları
 selection:
@@ -32,7 +34,7 @@ selection:
 line:
   help_header: "&a===== Metro Hat Yönetim Komutları ====="
   help_create: "&6/m line create <hat_id> <görünen_ad> &f- Yeni hat oluştur"
-  help_delete: "&6/m line delete <hat_id> &f- Hattı sil"
+  help_delete: "&6/m line delete <hat_id> confirm &f- Hattı sil"
   help_list: "&6/m line list &f- Tüm hatları listele"
   help_setcolor: "&6/m line setcolor <hat_id> <renk> &f- Hat rengini ayarla"
   help_setterminus: "&6/m line setterminus <hat_id> <yön_adı> &f- Hattın son durak yönü adını ayarla"
@@ -51,14 +53,14 @@ line:
   help_clonereverse: "&6/m line clonereverse <kaynak_id> <yeni_id> [sonek] &f- Hattı tersine klonla"
   help_setprice: "&6/m line setprice <hat_id> <fiyat> &f- Geleneksel sabit bilet fiyatını ayarla\n&6/m line setprice <hat_id> flat|distance|interval <temel> [birimBaşına] [maks] &f- Gelişmiş fiyatlandırma\n&6/m line setprice reset <hat_id> &f- Geleneksel fiyatlandırmaya sıfırla"
   help_recordroute: "&6/m line recordroute <hat_id> &f- Çevrimiçi haritalar ve ray koruma için rota noktalarını kaydet veya kaydet"
-  help_clearroute: "&6/m line clearroute <hat_id> &f- Kaydedilmiş rota noktalarını temizle"
+  help_clearroute: "&6/m line clearroute <hat_id> confirm &f- Kaydedilmiş rota noktalarını temizle"
   help_routeinfo: "&6/m line routeinfo <hat_id> &f- Rota kaydı ve ray koruma durumunu göster"
   help_protect: "&6/m line protect <hat_id> <on|off|status> &f- Ray korumasını etkinleştir, devre dışı bırak veya incele"
   help_setstatus: "&6/m line setstatus <hat_id> <normal|suspended|maintenance> &f- Hat operasyonel durumunu ayarla"
   help_priceinfo: "&6/m line priceinfo <hat_id> &f- Fiyatlandırma detaylarını ve aktif indirimleri görüntüle"
  
   usage_create: '&cKullanım: /m line create <hat_id> <"görünen_ad">'
-  usage_delete: "&cKullanım: /m line delete <hat_id>"
+  usage_delete: "&cKullanım: /m line delete <hat_id> confirm"
   usage_setcolor: "&cKullanım: /m line setcolor <hat_id> <renk>\n&eRenk örnekleri: Minecraft renk kodları &a&a, &b&b, &c&c, &9&9 vb."
   usage_setterminus: "&cKullanım: /m line setterminus <hat_id> <son_durak_yön_adı>"
   usage_setmaxspeed: "&cKullanım: /m line setmaxspeed <hat_id> <hız>\n&eHız pozitif bir sayı olmalıdır"
@@ -72,7 +74,7 @@ line:
   usage_owner: "&cKullanım: /m line owner <hat_id> <oyuncu>"
   usage_setprice: "&cKullanım: /m line setprice <hat_id> <fiyat>\n&c/m line setprice <hat_id> flat|distance|interval <temel> [birimBaşına] [maks]\n&c/m line setprice reset <hat_id>"
   usage_recordroute: "&cKullanım: /m line recordroute <hat_id>"
-  usage_clearroute: "&cKullanım: /m line clearroute <hat_id>"
+  usage_clearroute: "&cKullanım: /m line clearroute <hat_id> confirm"
   usage_routeinfo: "&cKullanım: /m line routeinfo <hat_id>"
   usage_protect: "&cKullanım: /m line protect <hat_id> <on|off|status>"
 
@@ -213,7 +215,7 @@ portal:
   help_create: "&6/m portal create <portal_id> &f- Bulunduğunuz konumda veya hedeflenen rayda bir portal girişi oluşturun"
   help_setdest: "&6/m portal setdest <portal_id> &f- Portal hedefini mevcut konumunuza ve yönünüze ayarlayın"
   help_link: "&6/m portal link <portal_id_1> <portal_id_2> &f- İki portalı çift yönlü bağlayın"
-  help_delete: "&6/m portal delete <portal_id> &f- Portalı silin"
+  help_delete: "&6/m portal delete <portal_id> confirm &f- Portalı silin"
   help_list: "&6/m portal list [sayfa] &f- Tüm portalları ve hedef konumları listele"
   help_trust: "&6/m portal trust <portal_id> <oyuncu> &f- Portal yöneticisi ekle"
   help_untrust: "&6/m portal untrust <portal_id> <oyuncu> &f- Portal yöneticisini kaldır"
@@ -222,7 +224,7 @@ portal:
   usage_create: "&cKullanım: /m portal create <portal_id>"
   usage_setdest: "&cKullanım: /m portal setdest <portal_id>"
   usage_link: "&cKullanım: /m portal link <portal_id_1> <portal_id_2>"
-  usage_delete: "&cKullanım: /m portal delete <portal_id>"
+  usage_delete: "&cKullanım: /m portal delete <portal_id> confirm"
   usage_trust: "&cKullanım: /m portal trust <portal_id> <oyuncu>"
   usage_untrust: "&cKullanım: /m portal untrust <portal_id> <oyuncu>"
   usage_owner: "&cKullanım: /m portal owner <portal_id> <oyuncu>"
@@ -259,7 +261,7 @@ portal:
 stop:
   help_header: "&a===== Metro Durak Yönetim Komutları ====="
   help_create: "&6/m stop create <durak_id> <görünen_ad> &f- Yeni durak oluştur"
-  help_delete: "&6/m stop delete <durak_id> &f- Durağı sil"
+  help_delete: "&6/m stop delete <durak_id> confirm &f- Durağı sil"
   help_list: "&6/m stop list &f- Tüm durakları listele"
   help_setcorners: "&6/m stop setcorners <durak_id> &f- Durağın köşe noktalarını güncelle"
   help_setpoint: "&6/m stop setpoint [stop_id] [yaw] &f- Durma noktasını ve kalkış yönünü ayarla"
@@ -278,7 +280,7 @@ stop:
   help_link: "&6/m stop link <allow|deny> <durak_id> <hat_id> &f- Hat bağlantı izinlerini yönet"
 
   usage_create: '&cKullanım: /m stop create <durak_id> <"görünen_ad">'
-  usage_delete: "&cKullanım: /m stop delete <durak_id>"
+  usage_delete: "&cKullanım: /m stop delete <durak_id> confirm"
   usage_setcorners: "&cKullanım: /m stop setcorners <durak_id>"
   usage_setpoint: "&cKullanım: /m stop setpoint [stop_id] [yaw]"
   usage_tp: "&cKullanım: /m stop tp <durak_id>"
@@ -569,6 +571,7 @@ interact:
   stop_no_line: "&cBu durak hiçbir hatta ait değil."
   stop_no_point: "&cBu durağın bir durma noktası ayarlanmamış, binilemez."
   terminal_stop: "&cSon duraktan hareket edilemez, lütfen binmek için başlangıç durağına gidin."
+  no_permission: "&cYou don't have permission to ride Metro trains."
 
 # Araç Mesajları
 vehicle:

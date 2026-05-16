@@ -64,6 +64,24 @@ final class CommandGuard {
         return stop;
     }
 
+    boolean requirePermission(Player player, String permission) {
+        if (player.hasPermission(permission)) {
+            return true;
+        }
+        player.sendMessage(plugin.getLanguageManager().getMessage("plugin.no_permission"));
+        return false;
+    }
+
+    boolean requireConfirmation(Player player, String confirmation, String commandToConfirm) {
+        if ("confirm".equalsIgnoreCase(confirmation)) {
+            return true;
+        }
+        player.sendMessage(plugin.getLanguageManager().getMessage("command.confirm_required"));
+        player.sendMessage(plugin.getLanguageManager().getMessage("command.confirm_hint",
+                LanguageManager.put(LanguageManager.args(), "command", commandToConfirm)));
+        return false;
+    }
+
     Stop requireManageableStop(Player player, String stopId) {
         Stop stop = requireStop(player, stopId);
         if (stop == null) {

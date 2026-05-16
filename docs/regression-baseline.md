@@ -69,7 +69,10 @@ Build or keep a small regression world with these named scenarios. The IDs below
 6. Verify exiting minecart mid-route clears title/actionbar/scoreboard.
 7. Verify `/m stop tp <stop_id>` works with `metro.tp` and fails without it.
 8. Verify GUI teleport behavior matches command permission semantics.
-9. Run `/m reload`; verify new config defaults are present and plugin remains functional.
+9. Verify `/m line delete <line_id>`, `/m stop delete <stop_id>`,
+   `/m portal delete <portal_id>`, and `/m line clearroute <line_id>` warn
+   without `confirm` and only mutate when rerun with `confirm`.
+10. Run `/m reload`; verify new config defaults are present and plugin remains functional.
 
 ## Scenario Checks
 
@@ -80,6 +83,9 @@ Build or keep a small regression world with these named scenarios. The IDs below
 3. Choose `northbound`; verify the train departs toward `north`.
 4. Return to `center`, right-click again, and verify `northbound` is sorted first due to recent choice.
 5. Choose `southbound`; verify the train departs toward `south`.
+6. Remove `metro.use`, open the line choice GUI as an administrator, and verify
+   lines show a no-permission blocked state and clicking a line sends a localized
+   denial message without boarding.
 
 ### Transfer Hub Display
 
@@ -96,6 +102,9 @@ Build or keep a small regression world with these named scenarios. The IDs below
 3. Run `/m line protect <line_id> on`, then try breaking protected rails as an ordinary player; verify the break is blocked.
 4. Try breaking the same rails as the line owner or a user with `metro.admin`; verify allowed behavior matches the configured permission model.
 5. Run `/m line clearroute <line_id>` through the confirmation GUI and verify route points and protection index are cleared.
+6. Open a line or stop settings GUI, revoke the player's ownership/admin rights,
+   then click a mutating action. Verify the action is denied and no stale GUI
+   action mutates line or stop data.
 
 ### Portal Ride
 

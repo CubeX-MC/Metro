@@ -22,6 +22,8 @@ command:
   unknown: "&c未知指令。請使用 /m 查看幫助。"
   teleport_to: "&a點擊傳送至 {stop_name}"
   player_not_found: "&c找不到玩家 {player}。"
+  confirm_required: "&e這是破壞性操作。請追加 &6confirm &e後再次執行。"
+  confirm_hint: "&e執行: &6{command}"
 
 # 選取範圍相關訊息
 selection:
@@ -32,7 +34,7 @@ selection:
 line:
   help_header: "&a===== Metro 路線管理指令 ====="
   help_create: "&6/m line create <路線ID> <顯示名稱> &f- 建立新路線"
-  help_delete: "&6/m line delete <路線ID> &f- 刪除路線"
+  help_delete: "&6/m line delete <路線ID> confirm &f- 刪除路線"
   help_list: "&6/m line list [page] &f- 列出所有路線"
   help_setcolor: "&6/m line setcolor <路線ID> <顏色> &f- 設定路線顏色"
   help_setterminus: "&6/m line setterminus <路線ID> <方向名稱> &f- 設定路線終點方向名稱"
@@ -51,14 +53,14 @@ line:
   help_clonereverse: "&6/m line clonereverse <source_id> <new_id> [suffix] &f- 反向克隆路線"
   help_setprice: "&6/m line setprice <路線ID> <價格> &f- 設定傳統固定票價\n&6/m line setprice <路線ID> flat|distance|interval <基礎> [每單位] [最大值] &f- 設定進階計價\n&6/m line setprice reset <路線ID> &f- 重置為傳統計價"
   help_recordroute: "&6/m line recordroute <路線ID> &f- 記錄或儲存路線軌跡點，用於線上地圖與鐵軌保護"
-  help_clearroute: "&6/m line clearroute <路線ID> &f- 清除路線已記錄的軌跡點"
+  help_clearroute: "&6/m line clearroute <路線ID> confirm &f- 清除路線已記錄的軌跡點"
   help_routeinfo: "&6/m line routeinfo <路線ID> &f- 查看路線軌跡記錄與鐵軌保護狀態"
   help_protect: "&6/m line protect <路線ID> <on|off|status> &f- 開啟、關閉或查看路線鐵軌保護"
   help_setstatus: "&6/m line setstatus <路線ID> <normal|suspended|maintenance> &f- 設定路線營運狀態"
   help_priceinfo: "&6/m line priceinfo <路線ID> &f- 查看票價詳情與活躍折扣"
    
   usage_create: "&c用法: /m line create <路線ID> <\"顯示名稱\">"
-  usage_delete: "&c用法: /m line delete <路線ID>"
+  usage_delete: "&c用法: /m line delete <路線ID> confirm"
   usage_setcolor: "&c用法: /m line setcolor <路線ID> <顏色>\n&e顏色範例: &a&a, &b&b, &c&c, &9&9 等 Minecraft 顏色代碼"
   usage_setterminus: "&c用法: /m line setterminus <路線ID> <終點方向名稱>"
   usage_setmaxspeed: "&c用法: /m line setmaxspeed <路線ID> <速度>\n&e速度必須為正數"
@@ -72,7 +74,7 @@ line:
   usage_owner: "&c用法: /m line owner <路線ID> <玩家>"
   usage_setprice: "&c用法: /m line setprice <路線ID> <價格>\n&c/m line setprice <路線ID> flat|distance|interval <基礎> [每單位] [最大值]\n&c/m line setprice reset <路線ID>"
   usage_recordroute: "&c用法: /m line recordroute <路線ID>"
-  usage_clearroute: "&c用法: /m line clearroute <路線ID>"
+  usage_clearroute: "&c用法: /m line clearroute <路線ID> confirm"
   usage_routeinfo: "&c用法: /m line routeinfo <路線ID>"
   usage_protect: "&c用法: /m line protect <路線ID> <on|off|status>"
   
@@ -213,7 +215,7 @@ portal:
   help_create: "&6/m portal create <portal_id> &f- 在目前位置或視線中的鐵軌上建立傳送門入口"
   help_setdest: "&6/m portal setdest <portal_id> &f- 將目前位置與朝向設定為傳送門目標"
   help_link: "&6/m portal link <portal_id_1> <portal_id_2> &f- 雙向配對兩個傳送門"
-  help_delete: "&6/m portal delete <portal_id> &f- 刪除傳送門"
+  help_delete: "&6/m portal delete <portal_id> confirm &f- 刪除傳送門"
   help_list: "&6/m portal list [page] &f- 列出所有傳送門與目標位置"
   help_trust: "&6/m portal trust <portal_id> <玩家> &f- 授予傳送門管理權限"
   help_untrust: "&6/m portal untrust <portal_id> <玩家> &f- 移除傳送門管理權限"
@@ -222,7 +224,7 @@ portal:
   usage_create: "&c用法: /m portal create <portal_id>"
   usage_setdest: "&c用法: /m portal setdest <portal_id>"
   usage_link: "&c用法: /m portal link <portal_id_1> <portal_id_2>"
-  usage_delete: "&c用法: /m portal delete <portal_id>"
+  usage_delete: "&c用法: /m portal delete <portal_id> confirm"
   usage_trust: "&c用法: /m portal trust <portal_id> <玩家>"
   usage_untrust: "&c用法: /m portal untrust <portal_id> <玩家>"
   usage_owner: "&c用法: /m portal owner <portal_id> <玩家>"
@@ -259,7 +261,7 @@ portal:
 stop:
   help_header: "&a===== Metro 停靠區管理指令 ====="
   help_create: "&6/m stop create <停靠區ID> <顯示名稱> &f- 建立新停靠區"
-  help_delete: "&6/m stop delete <停靠區ID> &f- 刪除停靠區"
+  help_delete: "&6/m stop delete <停靠區ID> confirm &f- 刪除停靠區"
   help_list: "&6/m stop list [page] &f- 列出所有停靠區"
   help_setcorners: "&6/m stop setcorners <停靠區ID> &f- 更新停靠區的角落點"
   help_setpoint: "&6/m stop setpoint [停靠區ID] [yaw] &f- 設定停靠點位置和發車朝向"
@@ -278,7 +280,7 @@ stop:
   help_link: "&6/m stop link <allow|deny> <停靠區ID> <路線ID> &f- 管理路線連結權限"
   
   usage_create: "&c用法: /m stop create <停靠區ID> <\"顯示名稱\">"
-  usage_delete: "&c用法: /m stop delete <停靠區ID>"
+  usage_delete: "&c用法: /m stop delete <停靠區ID> confirm"
   usage_setcorners: "&c用法: /m stop setcorners <停靠區ID>"
   usage_setpoint: "&c用法: /m stop setpoint [停靠區ID] [yaw]"
   usage_tp: "&c用法: /m stop tp <停靠區ID>"
@@ -436,6 +438,7 @@ interact:
   stop_no_line: "&c該停靠區不屬於任何路線。"
   stop_no_point: "&c該停靠區尚未設定停靠點，無法上車。"
   terminal_stop: "&c終點站無法發車，請前往起點站乘車。"
+  no_permission: "&c你沒有權限搭乘 Metro 列車。"
   
 # 車輛相關
 vehicle:

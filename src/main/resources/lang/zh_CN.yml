@@ -22,6 +22,8 @@ command:
   unknown: "&c未知命令。请使用 /m 查看帮助。"
   teleport_to: "&a点击传送至 {stop_name}"
   player_not_found: "&c未找到玩家: {player}"
+  confirm_required: "&e这是破坏性操作。请追加 &6confirm &e后再次执行。"
+  confirm_hint: "&e执行: &6{command}"
 
 # 选区相关消息
 selection:
@@ -32,7 +34,7 @@ selection:
 line:
   help_header: "&a===== Metro线路管理命令 ====="
   help_create: "&6/m line create <line_id> <显示名称> &f- 创建新线路"
-  help_delete: "&6/m line delete <line_id> &f- 删除线路"
+  help_delete: "&6/m line delete <line_id> confirm &f- 删除线路"
   help_list: "&6/m line list [page] &f- 列出所有线路"
   help_setcolor: "&6/m line setcolor <line_id> <颜色> &f- 设置线路颜色"
   help_setterminus: "&6/m line setterminus <line_id> <方向名称> &f- 设置线路终点方向名称"
@@ -51,14 +53,14 @@ line:
   help_clonereverse: "&6/m line clonereverse <source_id> <new_id> [suffix] &f- 反向克隆线路"
   help_setprice: "&6/m line setprice <line_id> <价格> &f- 设置传统固定票价\n&6/m line setprice <line_id> flat|distance|interval <基础> [每单位] [最大值] &f- 设置高级计价\n&6/m line setprice reset <line_id> &f- 重置为传统计价"
   help_recordroute: "&6/m line recordroute <line_id> &f- 记录或保存线路轨迹点，用于在线地图和轨道保护"
-  help_clearroute: "&6/m line clearroute <line_id> &f- 清除线路已记录的轨迹点"
+  help_clearroute: "&6/m line clearroute <line_id> confirm &f- 清除线路已记录的轨迹点"
   help_routeinfo: "&6/m line routeinfo <line_id> &f- 查看线路轨迹记录与轨道保护状态"
   help_protect: "&6/m line protect <line_id> <on|off|status> &f- 开启、关闭或查看线路轨道保护"
   help_setstatus: "&6/m line setstatus <line_id> <normal|suspended|maintenance> &f- 设置线路运营状态"
   help_priceinfo: "&6/m line priceinfo <line_id> &f- 查看票价详情与活跃折扣"
    
   usage_create: "&c用法: /m line create <line_id> <\"显示名称\">"
-  usage_delete: "&c用法: /m line delete <line_id>"
+  usage_delete: "&c用法: /m line delete <line_id> confirm"
   usage_setcolor: "&c用法: /m line setcolor <line_id> <颜色>\n&e颜色示例: &a&a, &b&b, &c&c, &9&9 等Minecraft颜色代码"
   usage_setterminus: "&c用法: /m line setterminus <line_id> <终点方向名称>"
   usage_setmaxspeed: "&c用法: /m line setmaxspeed <line_id> <速度>\n&e速度必须为正数"
@@ -72,7 +74,7 @@ line:
   usage_owner: "&c用法: /m line owner <line_id> <玩家>"
   usage_setprice: "&c用法: /m line setprice <line_id> <价格>\n&c/m line setprice <line_id> flat|distance|interval <基础> [每单位] [最大值]\n&c/m line setprice reset <line_id>"
   usage_recordroute: "&c用法: /m line recordroute <line_id>"
-  usage_clearroute: "&c用法: /m line clearroute <line_id>"
+  usage_clearroute: "&c用法: /m line clearroute <line_id> confirm"
   usage_routeinfo: "&c用法: /m line routeinfo <line_id>"
   usage_protect: "&c用法: /m line protect <line_id> <on|off|status>"
 
@@ -213,7 +215,7 @@ portal:
   help_create: "&6/m portal create <portal_id> &f- 在当前位置或视线中的铁轨上创建传送门入口"
   help_setdest: "&6/m portal setdest <portal_id> &f- 将当前位置和朝向设置为传送门目标"
   help_link: "&6/m portal link <portal_id_1> <portal_id_2> &f- 双向配对两个传送门"
-  help_delete: "&6/m portal delete <portal_id> &f- 删除传送门"
+  help_delete: "&6/m portal delete <portal_id> confirm &f- 删除传送门"
   help_list: "&6/m portal list [page] &f- 列出所有传送门和目标位置"
   help_trust: "&6/m portal trust <portal_id> <玩家> &f- 授予传送门管理权限"
   help_untrust: "&6/m portal untrust <portal_id> <玩家> &f- 移除传送门管理权限"
@@ -222,7 +224,7 @@ portal:
   usage_create: "&c用法: /m portal create <portal_id>"
   usage_setdest: "&c用法: /m portal setdest <portal_id>"
   usage_link: "&c用法: /m portal link <portal_id_1> <portal_id_2>"
-  usage_delete: "&c用法: /m portal delete <portal_id>"
+  usage_delete: "&c用法: /m portal delete <portal_id> confirm"
   usage_trust: "&c用法: /m portal trust <portal_id> <玩家>"
   usage_untrust: "&c用法: /m portal untrust <portal_id> <玩家>"
   usage_owner: "&c用法: /m portal owner <portal_id> <玩家>"
@@ -259,7 +261,7 @@ portal:
 stop:
   help_header: "&a===== Metro停靠区管理命令 ====="
   help_create: "&6/m stop create <stop_id> <显示名称> &f- 创建新停靠区"
-  help_delete: "&6/m stop delete <stop_id> &f- 删除停靠区"
+  help_delete: "&6/m stop delete <stop_id> confirm &f- 删除停靠区"
   help_list: "&6/m stop list [page] &f- 列出所有停靠区"
   help_setcorners: "&6/m stop setcorners <stop_id> &f- 更新停靠区的角点"
   help_setpoint: "&6/m stop setpoint [stop_id] [yaw] &f- 设置停靠点位置和发车朝向"
@@ -278,7 +280,7 @@ stop:
   help_link: "&6/m stop link <allow|deny> <stop_id> <line_id> &f- 管理线路链接权限"
   
   usage_create: "&c用法: /m stop create <stop_id> <\"显示名称\">"
-  usage_delete: "&c用法: /m stop delete <stop_id>"
+  usage_delete: "&c用法: /m stop delete <stop_id> confirm"
   usage_setcorners: "&c用法: /m stop setcorners <stop_id>"
   usage_setpoint: "&c用法: /m stop setpoint [stop_id] [yaw]"
   usage_tp: "&c用法: /m stop tp <stop_id>"
@@ -436,6 +438,7 @@ interact:
   stop_no_line: "&c该停靠区不属于任何线路。"
   stop_no_point: "&c该停靠区还未设置停靠点，无法上车。"
   terminal_stop: "&c终点站无法发车，请前往始发站乘车。"
+  no_permission: "&c你没有权限乘坐 Metro 列车。"
   
 # 车辆相关
 vehicle:

@@ -137,6 +137,9 @@ public final class LineBoardingChoiceView {
     }
 
     private String getBoardingBlockReason(Player player, Line line) {
+        if (!player.hasPermission("metro.use")) {
+            return msg("gui.line_boarding.no_permission");
+        }
         TicketCheck check = plugin.getTicketService().checkCanBoard(player, line);
         if (check.canBoard()) {
             return null;

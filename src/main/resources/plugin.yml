@@ -27,7 +27,7 @@ permissions:
     description: Allow players to open the Metro GUI
     default: true
   metro.tp:
-    description: Allow players to teleport to stops via GUI
+    description: Allow players to teleport to stops via command and GUI
     default: false
   metro.line.create:
     description: Allow players to create new metro lines

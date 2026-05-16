@@ -24,7 +24,7 @@ Metro是一个受牛腩小镇启发的地铁交通系统插件，允许管理员
 | 命令                                    | 描述                     |
 | :-------------------------------------- | :----------------------- |
 | `/m line create <line_id> <显示名称>`    | 创建新线路               |
-| `/m line delete <line_id>`               | 删除指定线路             |
+| `/m line delete <line_id> confirm`       | 删除指定线路             |
 | `/m line list`                           | 列出所有线路             |
 | `/m line rename <line_id> <新名称>`      | 重命名线路               |
 | `/m line setcolor <line_id> <颜色代码>`  | 设置线路颜色             |
@@ -45,7 +45,7 @@ Metro是一个受牛腩小镇启发的地铁交通系统插件，允许管理员
 | `/m line portals <line_id>`              | 查看线路启用的传送门     |
 | `/m line info <line_id>`                 | 查看线路详细信息及权限   |
 | `/m line recordroute <line_id>`          | 录制或保存路线轨迹       |
-| `/m line clearroute <line_id>`           | 清除已录制的路线         |
+| `/m line clearroute <line_id> confirm`   | 清除已录制的路线         |
 | `/m line routeinfo <line_id>`            | 查看路线录制状态         |
 | `/m line protect <line_id> <on|off>`     | 启停铁轨保护             |
 | `/m line clonereverse <源ID> <新ID> [后缀]` | 反向克隆线路           |
@@ -58,7 +58,7 @@ Metro是一个受牛腩小镇启发的地铁交通系统插件，允许管理员
 | 命令                                                     | 描述                          |
 | :------------------------------------------------------- | :---------------------------- |
 | `/m stop create <stop_id> <显示名称>`                   | 选区后创建新停靠区                  |
-| `/m stop delete <stop_id>`                              | 删除停靠区及其所有配置        |
+| `/m stop delete <stop_id> confirm`                      | 删除停靠区及其所有配置        |
 | `/m stop list`                                          | 列出所有停靠区                |
 | `/m stop rename <stop_id> <新名称>`                     | 重命名停靠区                  |
 | `/m stop info <stop_id>`                                | 查看停靠区详细信息            |
@@ -83,7 +83,7 @@ Metro是一个受牛腩小镇启发的地铁交通系统插件，允许管理员
 | `/m portal create <portal_id>`            | 创建新的矿车传送门入口       |
 | `/m portal setdest <portal_id>`           | 设置传送门目标位置           |
 | `/m portal link <portal_id_1> <portal_id_2>` | 双向配对两个传送门        |
-| `/m portal delete <portal_id>`            | 删除传送门                   |
+| `/m portal delete <portal_id> confirm`    | 删除传送门                   |
 | `/m portal list`                          | 列出所有传送门               |
 | `/m portal trust <portal_id> <玩家>`      | 授予传送门管理权限           |
 | `/m portal untrust <portal_id> <玩家>`    | 移除传送门管理权限           |
@@ -104,7 +104,7 @@ Metro是一个受牛腩小镇启发的地铁交通系统插件，允许管理员
 | `metro.admin`        | OP     | 允许使用所有管理员命令，并继承传送权限        |
 | `metro.use`          | 所有人 | 允许玩家使用地铁系统（右键乘车等）        |
 | `metro.gui`          | 所有人 | 允许打开 `/m gui` 图形管理界面，界面内容会按权限自动裁剪 |
-| `metro.tp`           | 否     | 允许在 GUI 中传送到停靠区                 |
+| `metro.tp`           | 否     | 允许通过命令和 GUI 传送到停靠区           |
 | `metro.line.create`  | 否     | 允许玩家创建新的线路                      |
 | `metro.stop.create`  | 否     | 允许玩家创建新的停靠区                    |
 | `metro.portal.create`| 否     | 允许玩家创建新的矿车传送门                |

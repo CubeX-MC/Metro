@@ -4,8 +4,18 @@
 
 - Use Java 17.
 - Use Maven 3.9+.
-- Run `mvn -pl metro-modern -am test` before opening a PR.
-- Run `mvn -pl metro-modern -am verify` to include coverage and SpotBugs gates.
+- Run `mvn test` before opening a PR.
+- Run `mvn verify` to include coverage and SpotBugs gates.
+
+## Agent Workflow
+
+- Start from `AGENTS.md`.
+- Use `docs/agent-pipeline.md` for the reusable development workflow.
+- Use `docs/agent-project-profile.md` for Metro-specific architecture, runtime,
+  and verification rules.
+- Use `docs/agent-verification-matrix.md` to scale testing to risk.
+- For high-risk changes, record evidence using
+  `docs/agent-evidence-template.md`.
 
 ## Branch and PR Rules
 

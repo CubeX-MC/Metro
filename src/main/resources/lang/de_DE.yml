@@ -22,6 +22,8 @@ command:
   unknown: "&cUnbekannter Befehl. Verwende /m für Hilfe."
   teleport_to: "&aKlicken um zu {stop_name} zu teleportieren"
   player_not_found: "&cSpieler {player} wurde nicht gefunden."
+  confirm_required: "&eThis action is destructive. Add &6confirm &eto run it."
+  confirm_hint: "&eRun: &6{command}"
 
 # Auswahlbezogene Nachrichten
 selection:
@@ -32,7 +34,7 @@ selection:
 line:
   help_header: "&a===== Metro Linienverwaltung Befehle ====="
   help_create: "&6/m line create <line_id> <anzeigename> &f- Neue Linie erstellen"
-  help_delete: "&6/m line delete <line_id> &f- Linie löschen"
+  help_delete: "&6/m line delete <line_id> confirm &f- Linie löschen"
   help_list: "&6/m line list [page] &f- Alle Linien auflisten"
   help_setcolor: "&6/m line setcolor <line_id> <farbe> &f- Linienfarbe festlegen"
   help_setterminus: "&6/m line setterminus <line_id> <richtungsname> &f- Endstation-Richtungsname festlegen"
@@ -51,14 +53,14 @@ line:
   help_clonereverse: "&6/m line clonereverse <source_id> <new_id> [suffix] &f- Linie rückwärts klonen"
   help_setprice: "&6/m line setprice <line_id> <preis> &f- Traditionellen Pauschalpreis festlegen\n&6/m line setprice <line_id> flat|distance|interval <basis> [proEinheit] [max] &f- Erweiterte Preisgestaltung\n&6/m line setprice reset <line_id> &f- Zur traditionellen Preisgestaltung zurücksetzen"
   help_recordroute: "&6/m line recordroute <line_id> &f- Routenpunkte für Online-Karten und Gleisschutz aufzeichnen oder speichern"
-  help_clearroute: "&6/m line clearroute <line_id> &f- Aufgezeichnete Routenpunkte löschen"
+  help_clearroute: "&6/m line clearroute <line_id> confirm &f- Aufgezeichnete Routenpunkte löschen"
   help_routeinfo: "&6/m line routeinfo <line_id> &f- Status von Routenaufzeichnung und Gleisschutz anzeigen"
   help_protect: "&6/m line protect <line_id> <on|off|status> &f- Gleisschutz aktivieren, deaktivieren oder prüfen"
   help_setstatus: "&6/m line setstatus <line_id> <normal|suspended|maintenance> &f- Betriebsstatus der Linie festlegen"
   help_priceinfo: "&6/m line priceinfo <line_id> &f- Preisdetails und aktive Rabatte anzeigen"
    
   usage_create: "&cVerwendung: /m line create <line_id> <\"anzeigename\">"
-  usage_delete: "&cVerwendung: /m line delete <line_id>"
+  usage_delete: "&cVerwendung: /m line delete <line_id> confirm"
   usage_setcolor: "&cVerwendung: /m line setcolor <line_id> <farbe>\n&eFarbbeispiele: &a&a, &b&b, &c&c, &9&9 usw. Minecraft Farbcodes"
   usage_setterminus: "&cVerwendung: /m line setterminus <line_id> <endstation_richtungsname>"
   usage_setmaxspeed: "&cVerwendung: /m line setmaxspeed <line_id> <geschwindigkeit>\n&eGeschwindigkeit muss eine positive Zahl sein"
@@ -72,7 +74,7 @@ line:
   usage_owner: "&cVerwendung: /m line owner <line_id> <spieler>"
   usage_setprice: "&cVerwendung: /m line setprice <line_id> <preis>\n&c/m line setprice <line_id> flat|distance|interval <basis> [proEinheit] [max]\n&c/m line setprice reset <line_id>"
   usage_recordroute: "&cVerwendung: /m line recordroute <line_id>"
-  usage_clearroute: "&cVerwendung: /m line clearroute <line_id>"
+  usage_clearroute: "&cVerwendung: /m line clearroute <line_id> confirm"
   usage_routeinfo: "&cVerwendung: /m line routeinfo <line_id>"
   usage_protect: "&cVerwendung: /m line protect <line_id> <on|off|status>"
 
@@ -213,7 +215,7 @@ portal:
   help_create: "&6/m portal create <portal_id> &f- Erstellt einen Portaleingang an deiner Position oder am anvisierten Gleis"
   help_setdest: "&6/m portal setdest <portal_id> &f- Setzt das Portalziel auf deine aktuelle Position und Blickrichtung"
   help_link: "&6/m portal link <portal_id_1> <portal_id_2> &f- Verknüpft zwei Portale in beide Richtungen"
-  help_delete: "&6/m portal delete <portal_id> &f- Löscht ein Portal"
+  help_delete: "&6/m portal delete <portal_id> confirm &f- Löscht ein Portal"
   help_list: "&6/m portal list [page] &f- Listet alle Portale und Zielpositionen auf"
   help_trust: "&6/m portal trust <portal_id> <spieler> &f- Portaladministrator hinzufügen"
   help_untrust: "&6/m portal untrust <portal_id> <spieler> &f- Portaladministrator entfernen"
@@ -222,7 +224,7 @@ portal:
   usage_create: "&cVerwendung: /m portal create <portal_id>"
   usage_setdest: "&cVerwendung: /m portal setdest <portal_id>"
   usage_link: "&cVerwendung: /m portal link <portal_id_1> <portal_id_2>"
-  usage_delete: "&cVerwendung: /m portal delete <portal_id>"
+  usage_delete: "&cVerwendung: /m portal delete <portal_id> confirm"
   usage_trust: "&cVerwendung: /m portal trust <portal_id> <spieler>"
   usage_untrust: "&cVerwendung: /m portal untrust <portal_id> <spieler>"
   usage_owner: "&cVerwendung: /m portal owner <portal_id> <spieler>"
@@ -259,7 +261,7 @@ portal:
 stop:
   help_header: "&a===== Metro Haltebereichsverwaltung Befehle ====="
   help_create: "&6/m stop create <stop_id> <anzeigename> &f- Neuen Haltebereich erstellen"
-  help_delete: "&6/m stop delete <stop_id> &f- Haltebereich löschen"
+  help_delete: "&6/m stop delete <stop_id> confirm &f- Haltebereich löschen"
   help_list: "&6/m stop list [page] &f- Alle Haltebereiche auflisten"
   help_setcorners: "&6/m stop setcorners <stop_id> &f- Eckpunkte des Haltebereichs aktualisieren"
   help_setpoint: "&6/m stop setpoint [stop_id] [yaw] &f- Haltepunkt-Position und Abfahrtsrichtung festlegen"
@@ -278,7 +280,7 @@ stop:
   help_link: "&6/m stop link <allow|deny> <stop_id> <line_id> &f- Linienverknüpfungen verwalten"
   
   usage_create: "&cVerwendung: /m stop create <stop_id> <\"anzeigename\">"
-  usage_delete: "&cVerwendung: /m stop delete <stop_id>"
+  usage_delete: "&cVerwendung: /m stop delete <stop_id> confirm"
   usage_setcorners: "&cVerwendung: /m stop setcorners <stop_id>"
   usage_setpoint: "&cVerwendung: /m stop setpoint [stop_id] [yaw]"
   usage_tp: "&cVerwendung: /m stop tp <stop_id>"
@@ -568,6 +570,7 @@ interact:
   stop_no_line: "&cDieser Haltebereich gehört zu keiner Linie."
   stop_no_point: "&cDieser Haltebereich hat noch keinen Haltepunkt festgelegt, kann nicht einsteigen."
   terminal_stop: "&cEndstation kann nicht abfahren, gehe zur Startstation um einzusteigen."
+  no_permission: "&cYou don't have permission to ride Metro trains."
   
 # Fahrzeug bezogen
 vehicle:

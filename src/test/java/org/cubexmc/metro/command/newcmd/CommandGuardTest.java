@@ -79,6 +79,30 @@ class CommandGuardTest {
     }
 
     @Test
+    void shouldSendNoPermissionWhenPermissionIsMissing() {
+        Fixtures fixtures = new Fixtures();
+        when(fixtures.player.hasPermission("metro.tp")).thenReturn(false);
+        when(fixtures.languageManager.getMessage("plugin.no_permission")).thenReturn("no permission");
+
+        assertFalse(fixtures.guard.requirePermission(fixtures.player, "metro.tp"));
+
+        verify(fixtures.player).sendMessage("no permission");
+    }
+
+    @Test
+    void shouldRequireExplicitConfirmationForDestructiveCommands() {
+        Fixtures fixtures = new Fixtures();
+        when(fixtures.languageManager.getMessage("command.confirm_required")).thenReturn("confirm required");
+        when(fixtures.languageManager.getMessage(eq("command.confirm_hint"), anyMap())).thenReturn("run command");
+
+        assertFalse(fixtures.guard.requireConfirmation(fixtures.player, null, "/m line delete red confirm"));
+        assertTrue(fixtures.guard.requireConfirmation(fixtures.player, "confirm", "/m line delete red confirm"));
+
+        verify(fixtures.player).sendMessage("confirm required");
+        verify(fixtures.player).sendMessage("run command");
+    }
+
+    @Test
     void shouldReturnManageableStopForStopAdmin() {
         Fixtures fixtures = new Fixtures();
         UUID playerId = UUID.randomUUID();

@@ -18,10 +18,12 @@ public final class StopSettingsController {
 
     private final Metro plugin;
     private final StopCommandService stopService;
+    private final GuiPermissionGuard permissionGuard;
 
     public StopSettingsController(Metro plugin) {
         this.plugin = plugin;
         this.stopService = new StopCommandService(plugin.getStopManager());
+        this.permissionGuard = new GuiPermissionGuard(plugin);
     }
 
     public void handleClick(Player player, GuiHolder holder, int slot) {
@@ -37,8 +39,14 @@ public final class StopSettingsController {
         switch (slot) {
             case SLOT_RENAME -> requestStopRename(player, stop, previousView, fromLineId);
             case SLOT_SET_POINT -> handleSetStopPoint(player, stop, previousView, fromLineId);
-            case SLOT_DELETE -> plugin.getGuiManager().openConfirmAction(player, "DELETE_STOP",
-                    stopId, stop.getName(), fromLineId, 0, holder.snapshot());
+            case SLOT_DELETE -> {
+                if (!permissionGuard.requireManageStop(player, stop)) {
+                    player.closeInventory();
+                    return;
+                }
+                plugin.getGuiManager().openConfirmAction(player, "DELETE_STOP",
+                        stopId, stop.getName(), fromLineId, 0, holder.snapshot());
+            }
             case SLOT_BACK -> plugin.getGuiManager().openPreviousView(player, holder, () -> {
                 if (fromLineId != null) {
                     plugin.getGuiManager().openLineDetail(player, fromLineId, 0);
@@ -52,13 +60,20 @@ public final class StopSettingsController {
     }
 
     private void requestStopRename(Player player, Stop stop, GuiHolder.GuiView previousView, String fromLineId) {
+        if (!permissionGuard.requireManageStop(player, stop)) {
+            player.closeInventory();
+            return;
+        }
         String stopId = stop.getId();
         String oldName = stop.getName();
         plugin.getChatInputManager().requestInput(player, plugin.getLanguageManager().getMessage("chat.enter_new_name"),
                 new ChatInputManager.ChatInputCallback() {
                     @Override
                     public void onInput(String input) {
-                        if (plugin.getStopManager().setStopName(stopId, input)) {
+                        if (requireCurrentStop(player, stopId) == null) {
+                            return;
+                        }
+                        if (stopService.renameStop(stopId, input) == StopCommandService.WriteStatus.SUCCESS) {
                             player.sendMessage(plugin.getLanguageManager().getMessage("stop.rename_success",
                                     args("old_name", oldName, "new_name", input)));
                         } else {
@@ -75,6 +90,10 @@ public final class StopSettingsController {
     }
 
     private void handleSetStopPoint(Player player, Stop stop, GuiHolder.GuiView previousView, String fromLineId) {
+        if (!permissionGuard.requireManageStop(player, stop)) {
+            player.closeInventory();
+            return;
+        }
         StopCommandService.SetPointResult result = stopService.setPoint(stop.getId(), stop, player.getLocation(), null);
         switch (result.status()) {
             case SUCCESS -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_success",
@@ -85,6 +104,19 @@ public final class StopSettingsController {
             default -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_fail"));
         }
         plugin.getGuiManager().openStopSettings(player, stop.getId(), fromLineId, previousView);
+    }
+
+    private Stop requireCurrentStop(Player player, String stopId) {
+        Stop currentStop = plugin.getStopManager().getStop(stopId);
+        if (currentStop == null) {
+            player.closeInventory();
+            return null;
+        }
+        if (!permissionGuard.requireManageStop(player, currentStop)) {
+            player.closeInventory();
+            return null;
+        }
+        return currentStop;
     }
 
     private Map<String, Object> args(Object... replacements) {

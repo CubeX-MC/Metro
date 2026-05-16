@@ -7,6 +7,9 @@ import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.gui.GuiHolder;
 import org.cubexmc.metro.manager.LanguageManager;
 import org.cubexmc.metro.model.Line;
+import org.cubexmc.metro.model.Stop;
+import org.cubexmc.metro.service.LineCommandService;
+import org.cubexmc.metro.service.StopCommandService;
 
 public final class ConfirmActionController {
     private static final int SLOT_CONFIRM = 11;
@@ -14,9 +17,15 @@ public final class ConfirmActionController {
     private static final int SLOT_BACK = 22;
 
     private final Metro plugin;
+    private final GuiPermissionGuard permissionGuard;
+    private final LineCommandService lineService;
+    private final StopCommandService stopService;
 
     public ConfirmActionController(Metro plugin) {
         this.plugin = plugin;
+        this.permissionGuard = new GuiPermissionGuard(plugin);
+        this.lineService = new LineCommandService(plugin.getLineManager());
+        this.stopService = new StopCommandService(plugin.getStopManager());
     }
 
     public void handleClick(Player player, GuiHolder holder, int slot) {
@@ -40,7 +49,18 @@ public final class ConfirmActionController {
 
     private void confirmDeleteLine(Player player, GuiHolder holder) {
         String lineId = holder.getData("targetId");
-        if (plugin.getLineManager().deleteLine(lineId)) {
+        Line line = plugin.getLineManager().getLine(lineId);
+        if (line == null) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.delete_not_found",
+                    LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
+            plugin.getGuiManager().openLineList(player, 0, false);
+            return;
+        }
+        if (!permissionGuard.requireManageLine(player, line)) {
+            player.closeInventory();
+            return;
+        }
+        if (lineService.deleteLine(lineId) == LineCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.delete_success",
                     LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
         } else {
@@ -53,13 +73,28 @@ public final class ConfirmActionController {
     private void confirmDeleteStop(Player player, GuiHolder holder) {
         String stopId = holder.getData("targetId");
         String fromLineId = holder.getData("lineId");
-        if (plugin.getStopManager().deleteStop(stopId)) {
+        Stop stop = plugin.getStopManager().getStop(stopId);
+        if (stop == null) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("stop.delete_not_found",
+                    LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
+            reopenAfterStopDelete(player, fromLineId);
+            return;
+        }
+        if (!permissionGuard.requireManageStop(player, stop)) {
+            player.closeInventory();
+            return;
+        }
+        if (stopService.deleteStop(stopId) == StopCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("stop.delete_success",
                     LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
         } else {
             player.sendMessage(plugin.getLanguageManager().getMessage("stop.delete_not_found",
                     LanguageManager.put(LanguageManager.args(), "stop_id", stopId)));
         }
+        reopenAfterStopDelete(player, fromLineId);
+    }
+
+    private void reopenAfterStopDelete(Player player, String fromLineId) {
         if (fromLineId != null) {
             plugin.getGuiManager().openLineDetail(player, fromLineId, 0);
         } else {
@@ -71,7 +106,18 @@ public final class ConfirmActionController {
         String stopId = holder.getData("targetId");
         String lineId = holder.getData("lineId");
         int returnPage = holder.getData("returnPage", 0);
-        if (plugin.getLineManager().delStopFromLine(lineId, stopId)) {
+        Line line = plugin.getLineManager().getLine(lineId);
+        if (line == null) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.delete_not_found",
+                    LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
+            player.closeInventory();
+            return;
+        }
+        if (!permissionGuard.requireManageLine(player, line)) {
+            player.closeInventory();
+            return;
+        }
+        if (lineService.removeStopFromLine(line, stopId) == LineCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.delstop_success",
                     LanguageManager.put(LanguageManager.put(LanguageManager.args(), "stop_id", stopId),
                             "line_id", lineId)));
@@ -84,11 +130,21 @@ public final class ConfirmActionController {
     private void confirmClearRoute(Player player, GuiHolder holder) {
         String lineId = holder.getData("targetId");
         Line line = plugin.getLineManager().getLine(lineId);
-        int previousPointCount = line == null ? 0 : line.getRoutePoints().size();
+        if (line == null) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("line.delete_not_found",
+                    LanguageManager.put(LanguageManager.args(), "line_id", lineId)));
+            player.closeInventory();
+            return;
+        }
+        if (!permissionGuard.requireManageLine(player, line)) {
+            player.closeInventory();
+            return;
+        }
         plugin.getRouteRecorder().clearActive(lineId);
-        if (plugin.getLineManager().clearLineRoutePoints(lineId)) {
+        LineCommandService.ClearRouteResult result = lineService.clearRoutePoints(line);
+        if (result.status() == LineCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.clearroute_success",
-                    args("line_id", lineId, "point_count", String.valueOf(previousPointCount))));
+                    args("line_id", lineId, "point_count", String.valueOf(result.previousPointCount()))));
         } else {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.clearroute_fail",
                     LanguageManager.put(LanguageManager.args(), "line_id", lineId)));

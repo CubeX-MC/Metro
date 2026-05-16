@@ -257,7 +257,7 @@ public final class MetroAPI {
     // =============================================================
 
     public boolean isEconomyEnabled() {
-        return plugin.getConfig().getBoolean("economy.enabled", true);
+        return config().isEconomyEnabled();
     }
 
     public boolean isVaultEconomyAvailable() {

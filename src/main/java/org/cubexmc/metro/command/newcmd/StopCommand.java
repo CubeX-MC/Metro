@@ -87,11 +87,16 @@ public class StopCommand {
         }
     }
 
-    @Command("m|metro stop|s delete <stopId>")
+    @Command("m|metro stop|s delete <stopId> [confirm]")
     @CommandDescription("Delete a metro stop")
-    public void delete(Player player, @Argument(value = "stopId", suggestions = "stopIds") String id) {
+    public void delete(Player player,
+                       @Argument(value = "stopId", suggestions = "stopIds") String id,
+                       @Argument("confirm") String confirm) {
         Stop stop = guard.requireManageableStop(player, id);
         if (stop == null) {
+            return;
+        }
+        if (!guard.requireConfirmation(player, confirm, "/m stop delete " + id + " confirm")) {
             return;
         }
 
@@ -106,6 +111,9 @@ public class StopCommand {
     @Command("m|metro stop|s tp <stopId>")
     @CommandDescription("Teleport to a metro stop")
     public void tp(Player player, @Argument(value = "stopId", suggestions = "stopIds") String id) {
+        if (!guard.requirePermission(player, "metro.tp")) {
+            return;
+        }
         Stop stop = guard.requireStop(player, id);
         if (stop == null) {
             return;

@@ -63,6 +63,7 @@ class MetroAPITest {
         when(plugin.getPortalManager()).thenReturn(portalManager);
         when(plugin.getConfigFacade()).thenReturn(configFacade);
         when(plugin.getConfig()).thenReturn(config);
+        when(configFacade.isEconomyEnabled()).thenReturn(false);
 
         MetroAPI.initialize(plugin);
         api = MetroAPI.getInstance();

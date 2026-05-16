@@ -170,6 +170,7 @@ class ConfigFacadeTest {
         config.set("settings.cart_departure_delay", 22L);
         config.set("settings.interact_cooldown", 33L);
         config.set("settings.minecart_pending_timeout", 44L);
+        config.set("economy.enabled", false);
 
         ConfigFacade facade = createFacade(config);
         facade.reload();
@@ -208,6 +209,7 @@ class ConfigFacadeTest {
         assertEquals(22L, facade.getCartDepartureDelay());
         assertEquals(33L, facade.getInteractCooldown());
         assertEquals(44L, facade.getMinecartPendingTimeout());
+        assertFalse(facade.isEconomyEnabled());
     }
 
     @Test

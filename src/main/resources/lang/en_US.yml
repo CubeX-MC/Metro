@@ -22,6 +22,8 @@ command:
   unknown: "&cUnknown command. Use /m for help."
   teleport_to: "&aClick to teleport to {stop_name}"
   player_not_found: "&cPlayer {player} not found."
+  confirm_required: "&eThis action is destructive. Add &6confirm &eto run it."
+  confirm_hint: "&eRun: &6{command}"
 
 # Selection Related Messages
 selection:
@@ -32,7 +34,7 @@ selection:
 line:
   help_header: "&a===== Metro Line Management Commands ====="
   help_create: "&6/m line create <line_id> <display_name> &f- Create new line"
-  help_delete: "&6/m line delete <line_id> &f- Delete line"
+  help_delete: "&6/m line delete <line_id> confirm &f- Delete line"
   help_list: "&6/m line list [page] &f- List all lines"
   help_setcolor: "&6/m line setcolor <line_id> <color> &f- Set line color"
   help_setterminus: "&6/m line setterminus <line_id> <direction_name> &f- Set line terminus direction name"
@@ -51,14 +53,14 @@ line:
   help_clonereverse: "&6/m line clonereverse <source_id> <new_id> [suffix] &f- Clone line in reverse"
   help_setprice: "&6/m line setprice <line_id> <price> &f- Set legacy flat ticket price\n&6/m line setprice <line_id> flat|distance|interval <base> [perUnit] [max] &f- Set advanced pricing\n&6/m line setprice reset <line_id> &f- Reset to legacy pricing"
   help_recordroute: "&6/m line recordroute <line_id> &f- Record or save route points for online maps and rail protection"
-  help_clearroute: "&6/m line clearroute <line_id> &f- Clear recorded route points"
+  help_clearroute: "&6/m line clearroute <line_id> confirm &f- Clear recorded route points"
   help_routeinfo: "&6/m line routeinfo <line_id> &f- Show route recording and rail protection status"
   help_protect: "&6/m line protect <line_id> <on|off|status> &f- Enable, disable, or inspect rail protection"
   help_setstatus: "&6/m line setstatus <line_id> <normal|suspended|maintenance> &f- Set line operational status"
   help_priceinfo: "&6/m line priceinfo <line_id> &f- View pricing details and active discounts"
   
   usage_create: "&cUsage: /m line create <line_id> <\"display_name\">"
-  usage_delete: "&cUsage: /m line delete <line_id>"
+  usage_delete: "&cUsage: /m line delete <line_id> confirm"
   usage_setcolor: "&cUsage: /m line setcolor <line_id> <color>\n&eColor examples: &a&a, &b&b, &c&c, &9&9 etc Minecraft color codes"
   usage_setterminus: "&cUsage: /m line setterminus <line_id> <terminus_direction_name>"
   usage_setmaxspeed: "&cUsage: /m line setmaxspeed <line_id> <speed>\n&eSpeed must be a positive number"
@@ -72,7 +74,7 @@ line:
   usage_owner: "&cUsage: /m line owner <line_id> <player>"
   usage_setprice: "&cUsage: /m line setprice <line_id> <price>\n&c/m line setprice <line_id> flat|distance|interval <base> [perUnit] [max]\n&c/m line setprice reset <line_id>"
   usage_recordroute: "&cUsage: /m line recordroute <line_id>"
-  usage_clearroute: "&cUsage: /m line clearroute <line_id>"
+  usage_clearroute: "&cUsage: /m line clearroute <line_id> confirm"
   usage_routeinfo: "&cUsage: /m line routeinfo <line_id>"
   usage_protect: "&cUsage: /m line protect <line_id> <on|off|status>"
   
@@ -213,7 +215,7 @@ portal:
   help_create: "&6/m portal create <portal_id> &f- Create a portal entrance at your position or targeted rail"
   help_setdest: "&6/m portal setdest <portal_id> &f- Set the portal destination to your current position and direction"
   help_link: "&6/m portal link <portal_id_1> <portal_id_2> &f- Link two portals both ways"
-  help_delete: "&6/m portal delete <portal_id> &f- Delete a portal"
+  help_delete: "&6/m portal delete <portal_id> confirm &f- Delete a portal"
   help_list: "&6/m portal list [page] &f- List all portals and destination locations"
   help_trust: "&6/m portal trust <portal_id> <player> &f- Add a portal administrator"
   help_untrust: "&6/m portal untrust <portal_id> <player> &f- Remove a portal administrator"
@@ -222,7 +224,7 @@ portal:
   usage_create: "&cUsage: /m portal create <portal_id>"
   usage_setdest: "&cUsage: /m portal setdest <portal_id>"
   usage_link: "&cUsage: /m portal link <portal_id_1> <portal_id_2>"
-  usage_delete: "&cUsage: /m portal delete <portal_id>"
+  usage_delete: "&cUsage: /m portal delete <portal_id> confirm"
   usage_trust: "&cUsage: /m portal trust <portal_id> <player>"
   usage_untrust: "&cUsage: /m portal untrust <portal_id> <player>"
   usage_owner: "&cUsage: /m portal owner <portal_id> <player>"
@@ -259,7 +261,7 @@ portal:
 stop:
   help_header: "&a===== Metro Stop Management Commands ====="
   help_create: "&6/m stop create <stop_id> <display_name> &f- Create new stop"
-  help_delete: "&6/m stop delete <stop_id> &f- Delete stop"
+  help_delete: "&6/m stop delete <stop_id> confirm &f- Delete stop"
   help_list: "&6/m stop list [page] &f- List all stops"
   help_setcorners: "&6/m stop setcorners <stop_id> &f- Update stop's corner points"
   help_setpoint: "&6/m stop setpoint [stop_id] [yaw] &f- Set stopping point position and departure direction"
@@ -278,7 +280,7 @@ stop:
   help_link: "&6/m stop link <allow|deny> <stop_id> <line_id> &f- Manage line link permissions"
   
   usage_create: "&cUsage: /m stop create <stop_id> <\"display_name\">"
-  usage_delete: "&cUsage: /m stop delete <stop_id>"
+  usage_delete: "&cUsage: /m stop delete <stop_id> confirm"
   usage_setcorners: "&cUsage: /m stop setcorners <stop_id>"
   usage_setpoint: "&cUsage: /m stop setpoint [stop_id] [yaw]"
   usage_tp: "&cUsage: /m stop tp <stop_id>"
@@ -569,6 +571,7 @@ interact:
   stop_no_line: "&cThis stop does not belong to any line."
   stop_no_point: "&cThis stop has no stopping point set, cannot board."
   terminal_stop: "&cCannot depart from terminal station, please go to starting station to board."
+  no_permission: "&cYou don't have permission to ride Metro trains."
   
 # Vehicle Related
 vehicle:

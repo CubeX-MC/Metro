@@ -16,10 +16,12 @@ import org.cubexmc.metro.service.LineCommandService;
 public final class LineSettingsController {
     private final Metro plugin;
     private final LineCommandService lineService;
+    private final GuiPermissionGuard permissionGuard;
 
     public LineSettingsController(Metro plugin) {
         this.plugin = plugin;
         this.lineService = new LineCommandService(plugin.getLineManager());
+        this.permissionGuard = new GuiPermissionGuard(plugin);
     }
 
     public void handleClick(Player player, GuiHolder holder, int slot) {
@@ -33,6 +35,10 @@ public final class LineSettingsController {
         GuiHolder.GuiView previousView = holder.getPreviousView();
         switch (slot) {
             case GuiSlots.LINE_SETTINGS_ROUTE_RECORDING -> {
+                if (!permissionGuard.requireManageLine(player, line)) {
+                    player.closeInventory();
+                    return;
+                }
                 handleRouteRecordingToggle(player, line);
                 plugin.getGuiManager().openLineSettings(player, lineId, previousView);
             }
@@ -40,9 +46,19 @@ public final class LineSettingsController {
                 sendRouteInfo(player, line);
                 plugin.getGuiManager().openLineSettings(player, lineId, previousView);
             }
-            case GuiSlots.LINE_SETTINGS_CLEAR_ROUTE -> plugin.getGuiManager().openConfirmAction(player, "CLEAR_ROUTE",
-                    lineId, line.getName(), null, 0, holder.snapshot());
+            case GuiSlots.LINE_SETTINGS_CLEAR_ROUTE -> {
+                if (!permissionGuard.requireManageLine(player, line)) {
+                    player.closeInventory();
+                    return;
+                }
+                plugin.getGuiManager().openConfirmAction(player, "CLEAR_ROUTE",
+                        lineId, line.getName(), null, 0, holder.snapshot());
+            }
             case GuiSlots.LINE_SETTINGS_RAIL_PROTECTION -> {
+                if (!permissionGuard.requireManageLine(player, line)) {
+                    player.closeInventory();
+                    return;
+                }
                 toggleRailProtection(player, line);
                 plugin.getGuiManager().openLineSettings(player, lineId, previousView);
             }
@@ -50,8 +66,14 @@ public final class LineSettingsController {
             case GuiSlots.LINE_SETTINGS_MAX_SPEED -> requestLineSpeed(player, line, previousView);
             case GuiSlots.LINE_SETTINGS_TICKET_PRICE -> requestLinePrice(player, line, previousView);
             case GuiSlots.LINE_SETTINGS_CLONE_REVERSE -> requestCloneReverse(player, line, previousView);
-            case GuiSlots.LINE_SETTINGS_DELETE -> plugin.getGuiManager().openConfirmAction(player, "DELETE_LINE",
-                    lineId, line.getName(), null, 0, holder.snapshot());
+            case GuiSlots.LINE_SETTINGS_DELETE -> {
+                if (!permissionGuard.requireManageLine(player, line)) {
+                    player.closeInventory();
+                    return;
+                }
+                plugin.getGuiManager().openConfirmAction(player, "DELETE_LINE",
+                        lineId, line.getName(), null, 0, holder.snapshot());
+            }
             case GuiSlots.LINE_SETTINGS_COLOR -> requestLineColor(player, line, previousView);
             case GuiSlots.LINE_SETTINGS_TERMINUS -> requestLineTerminus(player, line, previousView);
             case GuiSlots.LINE_SETTINGS_BACK -> plugin.getGuiManager().openPreviousView(player, holder,
@@ -64,7 +86,7 @@ public final class LineSettingsController {
     private void toggleRailProtection(Player player, Line line) {
         String lineId = line.getId();
         boolean enabled = !line.isRailProtected();
-        if (plugin.getLineManager().setLineRailProtected(lineId, enabled)) {
+        if (lineService.setRailProtected(lineId, enabled) == LineCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(plugin.getLanguageManager().getMessage("line.protect_updated",
                     args("line_id", lineId,
                             "state", plugin.getLanguageManager().getMessage(enabled
@@ -77,15 +99,23 @@ public final class LineSettingsController {
     }
 
     private void requestLineRename(Player player, Line line, GuiHolder.GuiView previousView) {
+        if (!permissionGuard.requireManageLine(player, line)) {
+            player.closeInventory();
+            return;
+        }
         String lineId = line.getId();
         String oldName = line.getName();
         plugin.getChatInputManager().requestInput(player, plugin.getLanguageManager().getMessage("chat.enter_new_name"),
                 new ChatInputManager.ChatInputCallback() {
                     @Override
                     public void onInput(String input) {
-                        if (plugin.getLineManager().setLineName(lineId, input)) {
+                        Line currentLine = requireCurrentLine(player, lineId);
+                        if (currentLine == null) {
+                            return;
+                        }
+                        if (lineService.renameLine(lineId, input) == LineCommandService.WriteStatus.SUCCESS) {
                             player.sendMessage(plugin.getLanguageManager().getMessage("line.rename_success",
-                                    args("old_name", oldName, "new_name", input)));
+                                    args("old_name", oldName, "line_id", lineId, "new_name", input)));
                         } else {
                             player.sendMessage(plugin.getLanguageManager().getMessage("line.rename_fail"));
                         }
@@ -100,17 +130,25 @@ public final class LineSettingsController {
     }
 
     private void requestLineSpeed(Player player, Line line, GuiHolder.GuiView previousView) {
+        if (!permissionGuard.requireManageLine(player, line)) {
+            player.closeInventory();
+            return;
+        }
         String lineId = line.getId();
         plugin.getChatInputManager().requestInput(player, plugin.getLanguageManager().getMessage("chat.enter_new_speed"),
                 new ChatInputManager.ChatInputCallback() {
                     @Override
                     public void onInput(String input) {
+                        if (requireCurrentLine(player, lineId) == null) {
+                            return;
+                        }
                         try {
                             double speed = Double.parseDouble(input);
-                            if (speed <= 0) {
+                            LineCommandService.WriteStatus status = lineService.setMaxSpeed(lineId, speed);
+                            if (status == LineCommandService.WriteStatus.INVALID_VALUE) {
                                 throw new NumberFormatException();
                             }
-                            if (plugin.getLineManager().setLineMaxSpeed(lineId, speed)) {
+                            if (status == LineCommandService.WriteStatus.SUCCESS) {
                                 player.sendMessage(plugin.getLanguageManager().getMessage("line.setmaxspeed_success",
                                         args("line_id", lineId, "max_speed", String.valueOf(speed))));
                             }
@@ -128,20 +166,28 @@ public final class LineSettingsController {
     }
 
     private void requestLinePrice(Player player, Line line, GuiHolder.GuiView previousView) {
+        if (!permissionGuard.requireManageLine(player, line)) {
+            player.closeInventory();
+            return;
+        }
         String lineId = line.getId();
-        String lineName = line.getName();
         plugin.getChatInputManager().requestInput(player, plugin.getLanguageManager().getMessage("chat.enter_new_price"),
                 new ChatInputManager.ChatInputCallback() {
                     @Override
                     public void onInput(String input) {
+                        Line currentLine = requireCurrentLine(player, lineId);
+                        if (currentLine == null) {
+                            return;
+                        }
                         try {
                             double price = Double.parseDouble(input);
-                            if (price < 0) {
+                            LineCommandService.WriteStatus status = lineService.setTicketPrice(lineId, price);
+                            if (status == LineCommandService.WriteStatus.INVALID_VALUE) {
                                 throw new NumberFormatException();
                             }
-                            if (plugin.getLineManager().setLineTicketPrice(lineId, price)) {
+                            if (status == LineCommandService.WriteStatus.SUCCESS) {
                                 player.sendMessage(plugin.getLanguageManager().getMessage("line.setprice_success",
-                                        args("line_name", lineName, "price", String.valueOf(price))));
+                                        args("line_name", currentLine.getName(), "price", String.valueOf(price))));
                             } else {
                                 player.sendMessage(plugin.getLanguageManager().getMessage("line.setprice_fail"));
                             }
@@ -159,17 +205,26 @@ public final class LineSettingsController {
     }
 
     private void requestCloneReverse(Player player, Line line, GuiHolder.GuiView previousView) {
+        if (!permissionGuard.requireManageLine(player, line) || !permissionGuard.requireCreateLine(player)) {
+            player.closeInventory();
+            return;
+        }
         String lineId = line.getId();
         plugin.getChatInputManager().requestInput(player, plugin.getLanguageManager().getMessage("chat.enter_clone_info"),
                 new ChatInputManager.ChatInputCallback() {
                     @Override
                     public void onInput(String input) {
+                        if (requireCurrentLine(player, lineId) == null || !permissionGuard.requireCreateLine(player)) {
+                            player.closeInventory();
+                            return;
+                        }
                         String[] parts = input.split(" ");
                         if (parts.length >= 1 && !parts[0].isEmpty()) {
                             String newId = parts[0];
                             String stopIdSuffix = parts.length > 1 ? parts[1] : "_rev";
-                            if (plugin.getLineManager().cloneReverseLine(lineId, newId, stopIdSuffix,
-                                    player.getUniqueId())) {
+                            LineCommandService.WriteStatus status = lineService.cloneReverseLine(lineId, newId,
+                                    stopIdSuffix, player.getUniqueId());
+                            if (status == LineCommandService.WriteStatus.SUCCESS) {
                                 player.sendMessage(plugin.getLanguageManager().getMessage("line.clone_success",
                                         LanguageManager.put(LanguageManager.args(), "new_line_id", newId)));
                             } else {
@@ -187,11 +242,19 @@ public final class LineSettingsController {
     }
 
     private void requestLineColor(Player player, Line line, GuiHolder.GuiView previousView) {
+        if (!permissionGuard.requireManageLine(player, line)) {
+            player.closeInventory();
+            return;
+        }
         String lineId = line.getId();
         plugin.getChatInputManager().requestInput(player, plugin.getLanguageManager().getMessage("chat.enter_new_color"),
                 new ChatInputManager.ChatInputCallback() {
                     @Override
                     public void onInput(String input) {
+                        Line currentLine = requireCurrentLine(player, lineId);
+                        if (currentLine == null) {
+                            return;
+                        }
                         String color = input.trim();
                         LineCommandService.WriteStatus status = lineService.setColor(lineId, color);
                         if (status == LineCommandService.WriteStatus.INVALID_COLOR) {
@@ -199,7 +262,7 @@ public final class LineSettingsController {
                                     LanguageManager.put(LanguageManager.args(), "color", color)));
                         } else if (status == LineCommandService.WriteStatus.SUCCESS) {
                             player.sendMessage(plugin.getLanguageManager().getMessage("line.setcolor_success",
-                                    args("line_id", lineId, "line_name", line.getName(), "color", color)));
+                                    args("line_id", lineId, "line_name", currentLine.getName(), "color", color)));
                         } else {
                             player.sendMessage(plugin.getLanguageManager().getMessage("line.setcolor_fail"));
                         }
@@ -214,12 +277,19 @@ public final class LineSettingsController {
     }
 
     private void requestLineTerminus(Player player, Line line, GuiHolder.GuiView previousView) {
+        if (!permissionGuard.requireManageLine(player, line)) {
+            player.closeInventory();
+            return;
+        }
         String lineId = line.getId();
         plugin.getChatInputManager().requestInput(player,
                 plugin.getLanguageManager().getMessage("chat.enter_new_terminus"),
                 new ChatInputManager.ChatInputCallback() {
                     @Override
                     public void onInput(String input) {
+                        if (requireCurrentLine(player, lineId) == null) {
+                            return;
+                        }
                         String terminusName = input.trim();
                         if (lineService.setTerminusName(lineId, terminusName)
                                 == LineCommandService.WriteStatus.SUCCESS) {
@@ -236,6 +306,19 @@ public final class LineSettingsController {
                         plugin.getGuiManager().openLineSettings(player, lineId, previousView);
                     }
                 });
+    }
+
+    private Line requireCurrentLine(Player player, String lineId) {
+        Line currentLine = plugin.getLineManager().getLine(lineId);
+        if (currentLine == null) {
+            player.closeInventory();
+            return null;
+        }
+        if (!permissionGuard.requireManageLine(player, currentLine)) {
+            player.closeInventory();
+            return null;
+        }
+        return currentLine;
     }
 
     private void handleRouteRecordingToggle(Player player, Line line) {

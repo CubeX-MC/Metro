@@ -154,11 +154,16 @@ public class PortalCommand {
                 LanguageManager.put(LanguageManager.put(LanguageManager.args(), "portal_id_1", id1), "portal_id_2", id2)));
     }
 
-    @Command("m|metro portal delete <portalId>")
+    @Command("m|metro portal delete <portalId> [confirm]")
     @CommandDescription("Delete a portal")
-    public void deletePortal(Player sender, @Argument(value = "portalId", suggestions = "portalIds") String id) {
+    public void deletePortal(Player sender,
+                             @Argument(value = "portalId", suggestions = "portalIds") String id,
+                             @Argument("confirm") String confirm) {
         Portal portal = guard.requireManageablePortal(sender, id);
         if (portal == null) {
+            return;
+        }
+        if (!guard.requireConfirmation(sender, confirm, "/m portal delete " + id + " confirm")) {
             return;
         }
 

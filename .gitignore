@@ -92,6 +92,12 @@ logs/
 # 依赖目录
 node_modules/
 
+# Agent / local harness workflow
+AGENTS.md
+docs/agent-*.md
+skills/
+.codex/
+
 Plugins/
 newnan-plugins/
 metro-modern-backup/
