@@ -8,8 +8,6 @@
 
 Metro 是一个受牛腩小镇启发的地铁交通系统插件，允许管理员创建自动化的地铁线路网络，为玩家提供便捷的乘车体验。
 
-![Imgurl](https://i.imgur.com/K335iWj.gif)
-
 本分支 (Metro-Forked) 由阿清开发维护，在原版 [CubeX-MC/Metro](https://github.com/CubeX-MC/Metro) 基础上进行了大量增强，同时兼容 MC 1.16.5+ 和 Java 8+ 服务器。
 
 ### 新增特性
