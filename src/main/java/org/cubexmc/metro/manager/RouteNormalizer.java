@@ -7,6 +7,7 @@ import org.bukkit.block.Block;
 import org.cubexmc.metro.model.RoutePoint;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -41,7 +42,7 @@ public final class RouteNormalizer {
      */
     public List<RoutePoint> normalize(List<RoutePoint> points, double simplifyEpsilon) {
         if (points == null || points.isEmpty()) {
-            return points == null ? List.of() : points;
+            return points == null ? Collections.emptyList() : points;
         }
 
         List<RoutePoint> snapped = snapToRailCenters(points);
