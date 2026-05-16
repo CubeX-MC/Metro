@@ -336,10 +336,9 @@ settings:
 
 ## 链接
 
-- [原版 GitHub 仓库](https://github.com/CubeX-MC/Metro)
 - [Discord](https://discord.com/invite/7tJeSZPZgv)
 - [QQ频道](https://pd.qq.com/s/1n3hpe4e7?b=9)
 
 ---
 
-*Metro-Forked — 在保留原版核心功能的基础上，增加高级票价、线路状态管理与公开 API 的增强分支。*
+*在保留原版核心功能的基础上，增加高级票价、线路状态管理与公开 API 的增强分支。*
