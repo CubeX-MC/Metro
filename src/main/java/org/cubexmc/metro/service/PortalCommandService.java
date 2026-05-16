@@ -10,6 +10,7 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.cubexmc.metro.manager.PortalManager;
 import org.cubexmc.metro.model.Portal;
+import java.util.stream.Collectors;
 
 /**
  * Business operations used by portal commands.
@@ -34,10 +35,46 @@ public class PortalCommandService {
         FAILED
     }
 
-    public record PortalWriteResult(WriteStatus status, Portal portal, Location location) {
+    public static final class PortalWriteResult {
+        private final WriteStatus status;
+        private final Portal portal;
+        private final Location location;
+
+        public PortalWriteResult(WriteStatus status, Portal portal, Location location) {
+            this.status = status;
+            this.portal = portal;
+            this.location = location;
+        }
+
+        public WriteStatus status() {
+            return status;
+        }
+
+        public Portal portal() {
+            return portal;
+        }
+
+        public Location location() {
+            return location;
+        }
     }
 
-    public record ReloadResult(WriteStatus status, int portalCount) {
+    public static final class ReloadResult {
+        private final WriteStatus status;
+        private final int portalCount;
+
+        public ReloadResult(WriteStatus status, int portalCount) {
+            this.status = status;
+            this.portalCount = portalCount;
+        }
+
+        public WriteStatus status() {
+            return status;
+        }
+
+        public int portalCount() {
+            return portalCount;
+        }
     }
 
     public PortalWriteResult createPortal(String id, Location fallbackLocation, Block targetBlock, UUID ownerId) {
@@ -103,7 +140,7 @@ public class PortalCommandService {
     public List<Portal> listPortals() {
         return portalManager.getAllPortals().stream()
                 .sorted(Comparator.comparing(Portal::getId))
-                .toList();
+                .collect(Collectors.toList());
     }
 
     public ReloadResult reloadPortals(Runnable migration) {
@@ -116,7 +153,7 @@ public class PortalCommandService {
 
     public boolean isValidId(String id) {
         return id != null
-                && !id.isBlank()
+                && !id.trim().isEmpty()
                 && id.length() <= MAX_ID_LENGTH
                 && ID_PATTERN.matcher(id).matches();
     }

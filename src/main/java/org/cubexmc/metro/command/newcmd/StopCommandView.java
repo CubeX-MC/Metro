@@ -1,5 +1,6 @@
 package org.cubexmc.metro.command.newcmd;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -25,7 +26,7 @@ import net.md_5.bungee.api.chat.hover.content.Text;
  */
 final class StopCommandView {
 
-    private static final List<String> HELP_KEYS = List.of(
+    private static final List<String> HELP_KEYS = Arrays.asList(
             "stop.help_create",
             "stop.help_delete",
             "stop.help_list",

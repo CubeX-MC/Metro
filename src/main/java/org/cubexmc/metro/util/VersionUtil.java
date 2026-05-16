@@ -1,5 +1,6 @@
 package org.cubexmc.metro.util;
 
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -25,9 +26,9 @@ public final class VersionUtil {
     static {
         // 解析服务器版本，例如 "1.20.4-R0.1-SNAPSHOT" 或 "26.1.2-R0.1-SNAPSHOT"
         SERVER_VERSION = parseBukkitVersion(readBukkitVersion());
-        MAJOR_VERSION = SERVER_VERSION.major();
-        MINOR_VERSION = SERVER_VERSION.minor();
-        PATCH_VERSION = SERVER_VERSION.patch();
+        MAJOR_VERSION = SERVER_VERSION.getMajor();
+        MINOR_VERSION = SERVER_VERSION.getMinor();
+        PATCH_VERSION = SERVER_VERSION.getPatch();
 
         // 检测是否为 Folia 服务器
         IS_FOLIA = checkClass("io.papermc.paper.threadedregions.RegionizedServer");
@@ -49,7 +50,7 @@ public final class VersionUtil {
     }
 
     static ServerVersion parseBukkitVersion(String rawVersion) {
-        if (rawVersion == null || rawVersion.isBlank()) {
+        if (rawVersion == null || rawVersion.trim().isEmpty()) {
             return ServerVersion.UNKNOWN;
         }
 
@@ -75,7 +76,7 @@ public final class VersionUtil {
     }
 
     private static int parseVersionPart(String part) {
-        if (part == null || part.isBlank()) {
+        if (part == null || part.trim().isEmpty()) {
             return 0;
         }
         try {
@@ -174,9 +175,30 @@ public final class VersionUtil {
         return SERVER_VERSION.toString();
     }
 
-    record ServerVersion(int major, int minor, int patch) {
-
+    static final class ServerVersion {
         static final ServerVersion UNKNOWN = new ServerVersion(0, 0, 0);
+
+        private final int major;
+        private final int minor;
+        private final int patch;
+
+        ServerVersion(int major, int minor, int patch) {
+            this.major = major;
+            this.minor = minor;
+            this.patch = patch;
+        }
+
+        int getMajor() {
+            return major;
+        }
+
+        int getMinor() {
+            return minor;
+        }
+
+        int getPatch() {
+            return patch;
+        }
 
         boolean isAtLeast(int requiredMajor, int requiredMinor, int requiredPatch) {
             if (major > requiredMajor) return true;
@@ -190,6 +212,18 @@ public final class VersionUtil {
         public String toString() {
             return major + "." + minor + "." + patch;
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof ServerVersion)) return false;
+            ServerVersion that = (ServerVersion) o;
+            return major == that.major && minor == that.minor && patch == that.patch;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(major, minor, patch);
+        }
     }
 }
-

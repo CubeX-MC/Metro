@@ -21,9 +21,8 @@ import java.util.List;
 import java.util.logging.Level;
 
 /**
- * 可选的 Dynmap 集成模块。
- * 当服务器安装了 Dynmap 插件且配置中 provider 设为 DYNMAP 时，
- * 自动在网页地图上绘制地铁网络的线路和站点。
+ * Dynmap integration module.
+ * Renders metro network lines and stops on the Dynmap web map.
  */
 public class DynmapIntegration implements MapIntegration {
 
@@ -48,25 +47,19 @@ public class DynmapIntegration implements MapIntegration {
         }
     }
 
-    /**
-     * 尝试启用 Dynmap 集成。
-     */
     @Override
     public void enable() {
-        // 检查配置是否启用了地图集成
         if (!plugin.getConfigFacade().isMapIntegrationEnabled()) {
             plugin.getLogger().info("[Dynmap] Map integration is disabled in config.yml.");
             return;
         }
 
-        // 检查配置的 provider 是否为 DYNMAP 或 AUTO
         if (!matchesProvider()) {
             plugin.getLogger().info("[Dynmap] Map provider is set to '"
                     + plugin.getConfigFacade().getMapProvider() + "', skipping Dynmap integration.");
             return;
         }
 
-        // 检验 Dynmap 插件是否已加载
         if (!isAvailable()) {
             plugin.getLogger().warning("[Dynmap] Dynmap plugin not found or not enabled. Skipping integration.");
             return;
@@ -91,9 +84,6 @@ public class DynmapIntegration implements MapIntegration {
         enabled = true;
     }
 
-    /**
-     * 强制刷新网页地图上的地铁线路标记。
-     */
     @Override
     public void refresh() {
         if (!plugin.getConfigFacade().isMapIntegrationEnabled() || !matchesProvider()) {
@@ -130,15 +120,12 @@ public class DynmapIntegration implements MapIntegration {
         return "DYNMAP".equalsIgnoreCase(provider) || "AUTO".equalsIgnoreCase(provider);
     }
 
-    // ========== 核心渲染逻辑 ==========
-
     private void renderMetroNetwork() {
         LineManager lineManager = plugin.getLineManager();
         StopManager stopManager = plugin.getStopManager();
 
         String label = plugin.getConfigFacade().getMapMarkerSetLabel();
 
-        // 获取或创建 MarkerSet（先删除旧的再重建，确保更新）
         MarkerSet markerSet = markerApi.getMarkerSet(MARKER_SET_ID);
         if (markerSet != null) {
             markerSet.deleteMarkerSet();
@@ -174,7 +161,7 @@ public class DynmapIntegration implements MapIntegration {
         }
 
         String worldName = routePoints.get(0).worldName();
-        if (worldName == null || worldName.isBlank()) {
+        if (worldName == null || worldName.trim().isEmpty()) {
             return;
         }
         List<RoutePoint> displayPoints = MapGeometry.orthogonalRoutePoints(routePoints, worldName);
@@ -182,9 +169,9 @@ public class DynmapIntegration implements MapIntegration {
             return;
         }
 
-        List<Double> xList = new ArrayList<>();
-        List<Double> yList = new ArrayList<>();
-        List<Double> zList = new ArrayList<>();
+        List<Double> xList = new ArrayList<Double>();
+        List<Double> yList = new ArrayList<Double>();
+        List<Double> zList = new ArrayList<Double>();
         for (RoutePoint point : displayPoints) {
             xList.add(point.x());
             yList.add(point.y());
@@ -214,7 +201,9 @@ public class DynmapIntegration implements MapIntegration {
     }
 
     private void renderStop(MarkerSet markerSet, Stop stop) {
-        if (stop == null) return;
+        if (stop == null) {
+            return;
+        }
 
         if (MapGeometry.stopBounds(stop).map(bounds -> renderStopArea(markerSet, stop, bounds)).orElse(false)) {
             return;
@@ -247,9 +236,13 @@ public class DynmapIntegration implements MapIntegration {
     }
 
     private void renderStopMarker(MarkerSet markerSet, Stop stop) {
-        if (stop.getStopPointLocation() == null) return;
+        if (stop.getStopPointLocation() == null) {
+            return;
+        }
         Location loc = stop.getStopPointLocation();
-        if (loc.getWorld() == null) return;
+        if (loc.getWorld() == null) {
+            return;
+        }
 
         Marker marker = markerSet.createMarker(
                 "stop_" + stop.getId(),
@@ -266,7 +259,7 @@ public class DynmapIntegration implements MapIntegration {
     }
 
     private String buildStopDescription(Stop stop) {
-        List<String> parts = new ArrayList<>();
+        List<String> parts = new ArrayList<String>();
         parts.add("<b>" + stopLabel(stop) + "</b>");
 
         List<org.cubexmc.metro.model.Line> servedLines = plugin.getLineManager().getLinesForStop(stop.getId());

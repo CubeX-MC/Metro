@@ -17,7 +17,7 @@ final class MapGeometry {
 
     static List<RoutePoint> orthogonalRoutePoints(List<RoutePoint> routePoints, String worldName) {
         List<RoutePoint> result = new ArrayList<>();
-        if (routePoints == null || worldName == null || worldName.isBlank()) {
+        if (routePoints == null || worldName == null || worldName.trim().isEmpty()) {
             return result;
         }
 
@@ -79,7 +79,53 @@ final class MapGeometry {
                 && Math.abs(left.z() - right.z()) <= SAME_COORDINATE_EPSILON;
     }
 
-    record StopBounds(String worldName, double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
+    static final class StopBounds {
+        private final String worldName;
+        private final double minX;
+        private final double minY;
+        private final double minZ;
+        private final double maxX;
+        private final double maxY;
+        private final double maxZ;
+
+        StopBounds(String worldName, double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
+            this.worldName = worldName;
+            this.minX = minX;
+            this.minY = minY;
+            this.minZ = minZ;
+            this.maxX = maxX;
+            this.maxY = maxY;
+            this.maxZ = maxZ;
+        }
+
+        String worldName() {
+            return worldName;
+        }
+
+        double minX() {
+            return minX;
+        }
+
+        double minY() {
+            return minY;
+        }
+
+        double minZ() {
+            return minZ;
+        }
+
+        double maxX() {
+            return maxX;
+        }
+
+        double maxY() {
+            return maxY;
+        }
+
+        double maxZ() {
+            return maxZ;
+        }
+
         double centerX() {
             return (minX + maxX) / 2.0D;
         }

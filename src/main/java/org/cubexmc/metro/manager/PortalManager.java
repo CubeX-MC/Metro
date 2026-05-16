@@ -19,14 +19,12 @@ import org.cubexmc.metro.model.Portal;
 import org.cubexmc.metro.util.MetroConstants;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
 
 /**
@@ -38,8 +36,6 @@ public class PortalManager {
     private final File portalFile;
     private YamlConfiguration portalConfig;
     private final Map<String, Portal> portals = new HashMap<>();
-    private final ReadWriteLock lock = new ReentrantReadWriteLock();
-    private volatile boolean isDirty = false;
 
     public PortalManager(Metro plugin) {
         this.plugin = plugin;
@@ -50,59 +46,33 @@ public class PortalManager {
     // =============== 加载 / 保存 ===============
 
     public void load() {
-        lock.writeLock().lock();
-        try {
-            portals.clear();
-            if (!portalFile.exists()) {
-                portalConfig = new YamlConfiguration();
-                return;
-            }
-            portalConfig = YamlConfiguration.loadConfiguration(portalFile);
-            ConfigurationSection section = portalConfig.getConfigurationSection("portals");
-            if (section == null) return;
-
-            for (String id : section.getKeys(false)) {
-                ConfigurationSection portalSection = section.getConfigurationSection(id);
-                if (portalSection != null) {
-                    portals.put(id, Portal.fromConfig(id, portalSection));
-                }
-            }
-            plugin.getLogger().info("[Portal] Loaded " + portals.size() + " portals.");
-        } finally {
-            lock.writeLock().unlock();
+        portals.clear();
+        if (!portalFile.exists()) {
+            portalConfig = new YamlConfiguration();
+            return;
         }
+        portalConfig = YamlConfiguration.loadConfiguration(portalFile);
+        ConfigurationSection section = portalConfig.getConfigurationSection("portals");
+        if (section == null) return;
+
+        for (String id : section.getKeys(false)) {
+            ConfigurationSection portalSection = section.getConfigurationSection(id);
+            if (portalSection != null) {
+                portals.put(id, Portal.fromConfig(id, portalSection));
+            }
+        }
+        plugin.getLogger().info("[Portal] Loaded " + portals.size() + " portals.");
     }
 
     public void save() {
-        this.isDirty = true;
-    }
-
-    public void processAsyncSave() {
-        if (!isDirty) {
-            return;
+        portalConfig = new YamlConfiguration();
+        for (Portal portal : portals.values()) {
+            ConfigurationSection section = portalConfig.createSection("portals." + portal.getId());
+            portal.toConfig(section);
         }
-
         try {
-            String yamlDataFinal = buildSnapshot();
-            isDirty = false;
-            plugin.getSaveCoordinator().submitSnapshot(portalFile.toPath(), yamlDataFinal);
-        } catch (Exception e) {
-            isDirty = true;
-            plugin.getLogger().log(Level.SEVERE, "[Portal] Failed to process portals.yml save", e);
-        }
-    }
-
-    public void forceSaveSync() {
-        if (!isDirty) {
-            return;
-        }
-
-        try {
-            String yamlDataFinal = buildSnapshot();
-            isDirty = false;
-            plugin.getSaveCoordinator().saveNow(portalFile.toPath(), yamlDataFinal);
-        } catch (Exception e) {
-            isDirty = true;
+            portalConfig.save(portalFile);
+        } catch (IOException e) {
             plugin.getLogger().log(Level.SEVERE, "[Portal] Failed to save portals.yml", e);
         }
     }
@@ -113,39 +83,23 @@ public class PortalManager {
         Portal portal = new Portal(id);
         portal.setEntrance(entrance);
         portal.setOwner(ownerId);
-        lock.writeLock().lock();
-        try {
-            portals.put(id, portal);
-        } finally {
-            lock.writeLock().unlock();
-        }
+        portals.put(id, portal);
         save();
         return portal;
     }
 
     public boolean setPortalOwner(String id, UUID ownerId) {
-        lock.writeLock().lock();
-        try {
-            Portal portal = portals.get(id);
-            if (portal == null) return false;
-            portal.setOwner(ownerId);
-        } finally {
-            lock.writeLock().unlock();
-        }
+        Portal portal = portals.get(id);
+        if (portal == null) return false;
+        portal.setOwner(ownerId);
         save();
         return true;
     }
 
     public boolean addPortalAdmin(String id, UUID adminId) {
-        boolean changed;
-        lock.writeLock().lock();
-        try {
-            Portal portal = portals.get(id);
-            if (portal == null) return false;
-            changed = portal.addAdmin(adminId);
-        } finally {
-            lock.writeLock().unlock();
-        }
+        Portal portal = portals.get(id);
+        if (portal == null) return false;
+        boolean changed = portal.addAdmin(adminId);
         if (changed) {
             save();
         }
@@ -153,15 +107,9 @@ public class PortalManager {
     }
 
     public boolean removePortalAdmin(String id, UUID adminId) {
-        boolean changed;
-        lock.writeLock().lock();
-        try {
-            Portal portal = portals.get(id);
-            if (portal == null) return false;
-            changed = portal.removeAdmin(adminId);
-        } finally {
-            lock.writeLock().unlock();
-        }
+        Portal portal = portals.get(id);
+        if (portal == null) return false;
+        boolean changed = portal.removeAdmin(adminId);
         if (changed) {
             save();
         }
@@ -169,74 +117,48 @@ public class PortalManager {
     }
 
     public boolean deletePortal(String id) {
-        boolean removedPortal;
-        lock.writeLock().lock();
-        try {
-            Portal removed = portals.remove(id);
-            removedPortal = removed != null;
-            if (removed != null && removed.getLinkedPortalId() != null) {
+        Portal removed = portals.remove(id);
+        if (removed != null) {
+            // 清除反向配对
+            if (removed.getLinkedPortalId() != null) {
                 Portal linked = portals.get(removed.getLinkedPortalId());
                 if (linked != null) {
                     linked.setLinkedPortalId(null);
                 }
             }
-        } finally {
-            lock.writeLock().unlock();
+            if (plugin.getLineManager() != null) {
+                plugin.getLineManager().delPortalFromAllLines(id);
+            }
+            save();
+            return true;
         }
-        if (!removedPortal) {
-            return false;
-        }
-        if (plugin.getLineManager() != null) {
-            plugin.getLineManager().delPortalFromAllLines(id);
-        }
-        save();
-        return true;
+        return false;
     }
 
     public boolean setDestination(String id, Location destination) {
-        lock.writeLock().lock();
-        try {
-            Portal portal = portals.get(id);
-            if (portal == null) return false;
-            portal.setDestination(destination);
-        } finally {
-            lock.writeLock().unlock();
-        }
+        Portal portal = portals.get(id);
+        if (portal == null) return false;
+        portal.setDestination(destination);
         save();
         return true;
     }
 
     public boolean linkPortals(String id1, String id2) {
-        lock.writeLock().lock();
-        try {
-            Portal p1 = portals.get(id1);
-            Portal p2 = portals.get(id2);
-            if (p1 == null || p2 == null) return false;
-            p1.setLinkedPortalId(id2);
-            p2.setLinkedPortalId(id1);
-        } finally {
-            lock.writeLock().unlock();
-        }
+        Portal p1 = portals.get(id1);
+        Portal p2 = portals.get(id2);
+        if (p1 == null || p2 == null) return false;
+        p1.setLinkedPortalId(id2);
+        p2.setLinkedPortalId(id1);
         save();
         return true;
     }
 
     public Portal getPortal(String id) {
-        lock.readLock().lock();
-        try {
-            return portals.get(id);
-        } finally {
-            lock.readLock().unlock();
-        }
+        return portals.get(id);
     }
 
     public List<Portal> getAllPortals() {
-        lock.readLock().lock();
-        try {
-            return new ArrayList<>(portals.values());
-        } finally {
-            lock.readLock().unlock();
-        }
+        return new ArrayList<>(portals.values());
     }
 
     // =============== 位置查询 ===============
@@ -246,17 +168,12 @@ public class PortalManager {
      * 匹配的是铁轨所在位置的 blockX/Y/Z。
      */
     public Portal getPortalAt(Location railLocation) {
-        lock.readLock().lock();
-        try {
-            for (Portal portal : portals.values()) {
-                if (portal.matchesLocation(railLocation)) {
-                    return portal;
-                }
+        for (Portal portal : portals.values()) {
+            if (portal.matchesLocation(railLocation)) {
+                return portal;
             }
-            return null;
-        } finally {
-            lock.readLock().unlock();
         }
+        return null;
     }
 
     // =============== 传送逻辑 ===============
@@ -338,22 +255,25 @@ public class PortalManager {
             // 传送乘客（如果有）
             if (finalPassenger != null && finalPassenger.isOnline()) {
                 org.cubexmc.metro.util.SchedulerUtil.teleportEntity(finalPassenger, destination).thenAccept(success -> {
-                    org.cubexmc.metro.util.SchedulerUtil.regionRun(plugin, destination, () -> {
-                        if (success && finalPassenger.isOnline() && newCart.isValid()) {
-                            newCart.addPassenger(finalPassenger);
+                    if (success && finalPassenger.isOnline() && newCart.isValid()) {
+                        // 传送完成后，让乘客上车
+                        org.cubexmc.metro.util.SchedulerUtil.entityRun(plugin, newCart, () -> {
+                            if (finalPassenger.isOnline() && newCart.isValid()) {
+                                newCart.addPassenger(finalPassenger);
 
-                            // 转移 TrainMovementTask (接管新矿车)
-                            if (oldTask != null) {
-                                oldTask.transferMinecart(newCart);
+                                // 转移 TrainMovementTask (接管新矿车)
+                                if (oldTask != null) {
+                                    oldTask.transferMinecart(newCart);
+                                }
+
+                                // 给矿车一个初始速度
+                                float yaw = destination.getYaw();
+                                double rad = Math.toRadians(yaw);
+                                Vector direction = new Vector(-Math.sin(rad), 0, Math.cos(rad)).normalize();
+                                newCart.setVelocity(direction.multiply(plugin.getConfigFacade().getCartSpeed()));
                             }
-
-                            // 给矿车一个初始速度
-                            float yaw = destination.getYaw();
-                            double rad = Math.toRadians(yaw);
-                            Vector direction = new Vector(-Math.sin(rad), 0, Math.cos(rad)).normalize();
-                            newCart.setVelocity(direction.multiply(plugin.getConfigFacade().getCartSpeed()));
-                        }
-                    }, 2L, -1L);
+                        }, 2L, -1L);
+                    }
                 });
             } else {
                 // 如果没有乘客，也要给空车一个初始速度
@@ -398,26 +318,6 @@ public class PortalManager {
 
         if (plugin.getConfigFacade().isPortalEffectSound()) {
             loc.getWorld().playSound(loc, Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.2f);
-        }
-    }
-
-    private String buildSnapshot() {
-        YamlConfiguration snapshot = new YamlConfiguration();
-        lock.readLock().lock();
-        try {
-            List<String> portalIds = new ArrayList<>(portals.keySet());
-            Collections.sort(portalIds);
-            for (String portalId : portalIds) {
-                Portal portal = portals.get(portalId);
-                if (portal == null) {
-                    continue;
-                }
-                ConfigurationSection section = snapshot.createSection("portals." + portal.getId());
-                portal.toConfig(section);
-            }
-            return snapshot.saveToString();
-        } finally {
-            lock.readLock().unlock();
         }
     }
 }

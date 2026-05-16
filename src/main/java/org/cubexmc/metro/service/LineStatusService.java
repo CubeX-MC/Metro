@@ -1,6 +1,8 @@
 package org.cubexmc.metro.service;
 
+import org.bukkit.Bukkit;
 import org.cubexmc.metro.Metro;
+import org.cubexmc.metro.event.LineStatusChangeEvent;
 import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.LineStatus;
@@ -43,7 +45,13 @@ public class LineStatusService {
         if (oldStatus == newStatus) return false;
 
         line.setLineStatus(newStatus);
+
+        // Fire event
+        Bukkit.getPluginManager().callEvent(new LineStatusChangeEvent(line, oldStatus, newStatus));
+
+        // Save changes
         lineManager.saveConfig();
+
         return true;
     }
 

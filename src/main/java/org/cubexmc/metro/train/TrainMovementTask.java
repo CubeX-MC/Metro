@@ -4,6 +4,7 @@ import java.util.Map;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Minecart;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -17,8 +18,8 @@ import org.cubexmc.metro.event.TrainEnterStopEvent;
 import org.cubexmc.metro.manager.LanguageManager;
 import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.manager.StopManager;
+import org.cubexmc.metro.model.FareRule;
 import org.cubexmc.metro.model.Line;
-import org.cubexmc.metro.model.PriceRule;
 import org.cubexmc.metro.model.Stop;
 import org.cubexmc.metro.service.TicketService;
 import org.cubexmc.metro.util.SchedulerUtil;
@@ -155,6 +156,7 @@ public class TrainMovementTask implements Listener {
         }
         updateLastTravelDirection(event.getFrom(), event.getTo());
 
+        // Track distance traveled for per-block charging
         if (session.getState() == TrainState.MOVING_BETWEEN_STATIONS) {
             Location from = event.getFrom();
             Location to = event.getTo();
@@ -207,52 +209,12 @@ public class TrainMovementTask implements Listener {
         }
         SchedulerUtil.teleportEntity(minecart, snapLocation);
 
-        settleDistanceFare(stop);
-
         TrainState previousState = stateMachine.transitionTo(TrainState.STOPPED_AT_STATION, null);
         if (previousState == TrainState.MOVING_IN_STATION) {
             handleArrivalAtStation();
         }
 
         scoreboardController.updateBasedOnState(session);
-    }
-
-    private void settleDistanceFare(Stop stop) {
-        Line line = session.getLine();
-        if (line == null) return;
-
-        PriceRule rule = line.getPriceRule();
-        if (rule == null) return;
-
-        double distance = session.getDistanceTraveled();
-        if (distance <= 0 && rule.getMode() != PriceRule.PricingMode.INTERVAL) return;
-
-        Player passenger = session.getPassenger();
-        if (passenger == null || !passenger.isOnline()) return;
-
-        double variablePrice = 0;
-
-        if (rule.getMode() == PriceRule.PricingMode.DISTANCE) {
-            variablePrice = distance * rule.getPerBlockRate();
-        } else if (rule.getMode() == PriceRule.PricingMode.INTERVAL) {
-            int intervals = session.getPlugin().getPriceService()
-                    .countStopIntervals(line, session.getEntryStopId(), stop.getId());
-            variablePrice = intervals * rule.getPerIntervalRate();
-        } else {
-            return;
-        }
-
-        if (variablePrice > 0) {
-            TicketService.TicketChargeStatus status = session.getPlugin().getTicketService()
-                    .chargePrice(passenger, line, variablePrice);
-            if (status == TicketService.TicketChargeStatus.CHARGED) {
-                passenger.sendMessage(session.getPlugin().getLanguageManager().getMessage("economy.paid_distance",
-                        LanguageManager.put(LanguageManager.args(), "price",
-                                session.getPlugin().getTicketService().format(variablePrice))));
-            }
-        }
-
-        session.addDistance(-distance);
     }
 
     private void transitionToMovingInStation(Stop targetStop) {
@@ -423,12 +385,24 @@ public class TrainMovementTask implements Listener {
         LanguageManager.put(args, "line_id", result.lineId());
         LanguageManager.put(args, "point_count", String.valueOf(result.pointCount()));
 
-        String key = switch (result.status()) {
-            case SAVED -> "line.record_saved";
-            case TOO_FEW_POINTS -> "line.record_too_few";
-            case FAILED -> "line.record_failed";
-            case NOT_RECORDING -> null;
-        };
+        String key;
+        switch (result.status()) {
+            case SAVED:
+                key = "line.record_saved";
+                break;
+            case TOO_FEW_POINTS:
+                key = "line.record_too_few";
+                break;
+            case FAILED:
+                key = "line.record_failed";
+                break;
+            case NOT_RECORDING:
+                key = null;
+                break;
+            default:
+                key = null;
+                break;
+        }
         if (key != null) {
             recorder.sendMessage(session.getPlugin().getLanguageManager().getMessage(key, args));
         }

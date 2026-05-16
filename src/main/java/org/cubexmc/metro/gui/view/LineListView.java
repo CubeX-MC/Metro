@@ -70,7 +70,7 @@ public final class LineListView {
                         String.valueOf(representative.getOrderedStopIds().size())));
                 addLineSummaryLore(lore, representative);
                 if (representative.getColor() != null) {
-                    lore.add(msg("gui.line_list.color") + representative.getColor() + "■■■■■");
+lore.add(msg("gui.line_list.color") + representative.getColor() + "█████");
                 }
                 lore.add("");
                 if (OwnershipUtil.canManageLine(player, representative)) {
@@ -112,7 +112,7 @@ public final class LineListView {
             lore.add(msg("gui.line_list.stop_count", "count", String.valueOf(line.getOrderedStopIds().size())));
             addLineSummaryLore(lore, line);
             if (line.getColor() != null) {
-                lore.add(msg("gui.line_list.color") + line.getColor() + "■■■■■");
+lore.add(msg("gui.line_list.color") + line.getColor() + "█████");
             }
             lore.add("");
             if (OwnershipUtil.canManageLine(player, line)) {
@@ -232,7 +232,7 @@ public final class LineListView {
     }
 
     private String getTerminusDisplayName(Line line) {
-        if (line.getTerminusName() == null || line.getTerminusName().isBlank()) {
+        if (line.getTerminusName() == null || line.getTerminusName().trim().isEmpty()) {
             return msg("line.info_default");
         }
         return line.getTerminusName();

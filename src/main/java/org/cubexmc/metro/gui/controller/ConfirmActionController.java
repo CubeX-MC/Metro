@@ -30,11 +30,21 @@ public final class ConfirmActionController {
 
         String action = holder.getData("action");
         switch (action) {
-            case "DELETE_LINE" -> confirmDeleteLine(player, holder);
-            case "DELETE_STOP" -> confirmDeleteStop(player, holder);
-            case "REMOVE_STOP_FROM_LINE" -> confirmRemoveStopFromLine(player, holder);
-            case "CLEAR_ROUTE" -> confirmClearRoute(player, holder);
-            default -> plugin.getGuiManager().openPreviousView(player, holder, () -> reopenSource(player, holder));
+            case "DELETE_LINE":
+                confirmDeleteLine(player, holder);
+                break;
+            case "DELETE_STOP":
+                confirmDeleteStop(player, holder);
+                break;
+            case "REMOVE_STOP_FROM_LINE":
+                confirmRemoveStopFromLine(player, holder);
+                break;
+            case "CLEAR_ROUTE":
+                confirmClearRoute(player, holder);
+                break;
+            default:
+                plugin.getGuiManager().openPreviousView(player, holder, () -> reopenSource(player, holder));
+                break;
         }
     }
 
@@ -104,11 +114,21 @@ public final class ConfirmActionController {
         String lineId = holder.getData("lineId");
         int returnPage = holder.getData("returnPage", 0);
         switch (action) {
-            case "DELETE_LINE" -> plugin.getGuiManager().openLineSettings(player, targetId);
-            case "DELETE_STOP" -> plugin.getGuiManager().openStopSettings(player, targetId, lineId);
-            case "REMOVE_STOP_FROM_LINE" -> plugin.getGuiManager().openLineDetail(player, lineId, returnPage);
-            case "CLEAR_ROUTE" -> plugin.getGuiManager().openLineSettings(player, targetId);
-            default -> player.closeInventory();
+            case "DELETE_LINE":
+                plugin.getGuiManager().openLineSettings(player, targetId);
+                break;
+            case "DELETE_STOP":
+                plugin.getGuiManager().openStopSettings(player, targetId, lineId);
+                break;
+            case "REMOVE_STOP_FROM_LINE":
+                plugin.getGuiManager().openLineDetail(player, lineId, returnPage);
+                break;
+            case "CLEAR_ROUTE":
+                plugin.getGuiManager().openLineSettings(player, targetId);
+                break;
+            default:
+                player.closeInventory();
+                break;
         }
     }
 

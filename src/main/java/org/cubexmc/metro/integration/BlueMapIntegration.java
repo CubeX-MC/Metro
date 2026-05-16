@@ -25,10 +25,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * 可选的 BlueMap 集成模块。
- * 当服务器安装了 BlueMap 插件时，自动在网页地图上绘制地铁网络。
- * 该类通过 BlueMapAPI 的 onEnable 回调注册，确保 BlueMap 准备就绪后再执行。
- */
+ * 鍙€夌殑 BlueMap 闆嗘垚妯″潡銆? * 褰撴湇鍔″櫒瀹夎浜?BlueMap 鎻掍欢鏃讹紝鑷姩鍦ㄧ綉椤靛湴鍥句笂缁樺埗鍦伴搧缃戠粶銆? * 璇ョ被閫氳繃 BlueMapAPI 鐨?onEnable 鍥炶皟娉ㄥ唽锛岀‘淇?BlueMap 鍑嗗灏辩华鍚庡啀鎵ц銆? */
 public class BlueMapIntegration implements MapIntegration {
 
     private static final String MARKER_SET_ID = "metro_network";
@@ -54,18 +51,16 @@ public class BlueMapIntegration implements MapIntegration {
     }
 
     /**
-     * 尝试启用 BlueMap 集成。
-     * 如果 BlueMap 不在 classpath 中，将安静地跳过。
-     */
+     * 灏濊瘯鍚敤 BlueMap 闆嗘垚銆?     * 濡傛灉 BlueMap 涓嶅湪 classpath 涓紝灏嗗畨闈欏湴璺宠繃銆?     */
     @Override
     public void enable() {
-        // 检查配置是否启用了地图集成
+        // 妫€鏌ラ厤缃槸鍚﹀惎鐢ㄤ簡鍦板浘闆嗘垚
         if (!plugin.getConfigFacade().isMapIntegrationEnabled()) {
             plugin.getLogger().info("[BlueMap] Map integration is disabled in config.yml.");
             return;
         }
 
-        // 检查配置的 provider 是否为 BLUEMAP 或 AUTO
+        // 妫€鏌ラ厤缃殑 provider 鏄惁涓?BLUEMAP 鎴?AUTO
         if (!matchesProvider()) {
             plugin.getLogger().info("[BlueMap] Map provider is set to '" 
                 + plugin.getConfigFacade().getMapProvider() + "', skipping BlueMap integration.");
@@ -89,9 +84,7 @@ public class BlueMapIntegration implements MapIntegration {
     }
 
     /**
-     * 强制刷新网页地图上的地铁线路标记。
-     * 可在管理员编辑线路后手动调用。
-     */
+     * 寮哄埗鍒锋柊缃戦〉鍦板浘涓婄殑鍦伴搧绾胯矾鏍囪銆?     * 鍙湪绠＄悊鍛樼紪杈戠嚎璺悗鎵嬪姩璋冪敤銆?     */
     @Override
     public void refresh() {
         if (!plugin.getConfigFacade().isMapIntegrationEnabled() || !matchesProvider()) {
@@ -134,7 +127,7 @@ public class BlueMapIntegration implements MapIntegration {
         return "BLUEMAP".equalsIgnoreCase(provider) || "AUTO".equalsIgnoreCase(provider);
     }
 
-    // ========== 核心渲染逻辑 ==========
+    // ========== 鏍稿績娓叉煋閫昏緫 ==========
 
     private void handleBlueMapEnabled(BlueMapAPI api) {
         plugin.getLogger().info("[BlueMap] BlueMap API detected. Rendering metro stops on map...");
@@ -151,7 +144,7 @@ public class BlueMapIntegration implements MapIntegration {
         LineManager lineManager = plugin.getLineManager();
         StopManager stopManager = plugin.getStopManager();
 
-        // 先清理旧的 MarkerSet
+        // 鍏堟竻鐞嗘棫鐨?MarkerSet
         for (BlueMapMap map : api.getMaps()) {
             map.getMarkerSets().remove(MARKER_SET_ID);
         }
@@ -178,7 +171,7 @@ public class BlueMapIntegration implements MapIntegration {
         }
 
         String worldName = routePoints.get(0).worldName();
-        if (worldName == null || worldName.isBlank()) {
+        if (worldName == null || worldName.trim().isEmpty()) {
             return;
         }
         for (BlueMapMap map : getMapsForWorld(api, worldName)) {

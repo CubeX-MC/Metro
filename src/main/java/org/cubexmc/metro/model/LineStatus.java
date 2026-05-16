@@ -1,9 +1,5 @@
 package org.cubexmc.metro.model;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.Locale;
-
 /**
  * Represents the operational status of a metro line.
  */
@@ -20,18 +16,14 @@ public enum LineStatus {
     }
 
     public String getConfigKey() {
-        return name().toLowerCase(Locale.ROOT);
+        return name().toLowerCase();
     }
 
     public static LineStatus fromConfig(String value) {
         if (value == null) return NORMAL;
-        String normalized = value.trim();
-        if (normalized.isEmpty()) return NORMAL;
         try {
-            return valueOf(normalized.toUpperCase(Locale.ROOT));
+            return valueOf(value.toUpperCase());
         } catch (IllegalArgumentException e) {
-            Logger.getGlobal().log(Level.WARNING,
-                    "Invalid line status in config: '" + value + "', defaulting to NORMAL");
             return NORMAL;
         }
     }

@@ -43,7 +43,7 @@ public final class ConfirmActionView {
             inv.setItem(i, filler);
         }
 
-        String target = targetName == null || targetName.isBlank() ? targetId : targetName + " (" + targetId + ")";
+        String target = targetName == null || targetName.trim().isEmpty() ? targetId : targetName + " (" + targetId + ")";
         inv.setItem(SLOT_CONFIRM, new ItemBuilder(Material.LIME_CONCRETE)
                 .name(msg("gui.confirm.confirm"))
                 .lore(msg(messageKey(action), "target", target),
@@ -63,13 +63,18 @@ public final class ConfirmActionView {
     }
 
     private String messageKey(String action) {
-        return switch (action) {
-            case "DELETE_LINE" -> "gui.confirm.delete_line";
-            case "DELETE_STOP" -> "gui.confirm.delete_stop";
-            case "REMOVE_STOP_FROM_LINE" -> "gui.confirm.remove_stop_from_line";
-            case "CLEAR_ROUTE" -> "gui.confirm.clear_route";
-            default -> "gui.confirm.generic";
-        };
+        switch (action) {
+            case "DELETE_LINE":
+                return "gui.confirm.delete_line";
+            case "DELETE_STOP":
+                return "gui.confirm.delete_stop";
+            case "REMOVE_STOP_FROM_LINE":
+                return "gui.confirm.remove_stop_from_line";
+            case "CLEAR_ROUTE":
+                return "gui.confirm.clear_route";
+            default:
+                return "gui.confirm.generic";
+        }
     }
 
     private String msg(String key) {

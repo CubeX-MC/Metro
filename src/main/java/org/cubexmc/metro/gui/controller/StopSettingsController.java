@@ -35,19 +35,21 @@ public final class StopSettingsController {
 
         GuiHolder.GuiView previousView = holder.getPreviousView();
         switch (slot) {
-            case SLOT_RENAME -> requestStopRename(player, stop, previousView, fromLineId);
-            case SLOT_SET_POINT -> handleSetStopPoint(player, stop, previousView, fromLineId);
-            case SLOT_DELETE -> plugin.getGuiManager().openConfirmAction(player, "DELETE_STOP",
-                    stopId, stop.getName(), fromLineId, 0, holder.snapshot());
-            case SLOT_BACK -> plugin.getGuiManager().openPreviousView(player, holder, () -> {
-                if (fromLineId != null) {
-                    plugin.getGuiManager().openLineDetail(player, fromLineId, 0);
-                } else {
-                    plugin.getGuiManager().openStopList(player, 0, false);
-                }
-            });
-            default -> {
-            }
+            case SLOT_RENAME:
+                requestStopRename(player, stop, previousView, fromLineId);
+                break;
+            case SLOT_SET_POINT:
+                handleSetStopPoint(player, stop, previousView, fromLineId);
+                break;
+            case SLOT_DELETE:
+                plugin.getGuiManager().openConfirmAction(player, "DELETE_STOP",
+                stopId, stop.getName(), fromLineId, 0, holder.snapshot());
+                break;
+            case SLOT_BACK:
+                plugin.getGuiManager().openPreviousView(player, holder, () -> handleBack(player, fromLineId));
+                break;
+            default:
+                break;
         }
     }
 
@@ -77,14 +79,30 @@ public final class StopSettingsController {
     private void handleSetStopPoint(Player player, Stop stop, GuiHolder.GuiView previousView, String fromLineId) {
         StopCommandService.SetPointResult result = stopService.setPoint(stop.getId(), stop, player.getLocation(), null);
         switch (result.status()) {
-            case SUCCESS -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_success",
-                    args("stop_id", stop.getId(), "yaw", String.format("%.1f", result.yaw()))));
-            case NOT_RAIL -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_not_rail"));
-            case NOT_IN_STOP -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_not_in_area",
-                    LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName())));
-            default -> player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_fail"));
+            case SUCCESS:
+                player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_success",
+                args("stop_id", stop.getId(), "yaw", String.format("%.1f", result.yaw()))));
+                break;
+            case NOT_RAIL:
+                player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_not_rail"));
+                break;
+            case NOT_IN_STOP:
+                player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_not_in_area",
+                LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName())));
+                break;
+            default:
+                player.sendMessage(plugin.getLanguageManager().getMessage("stop.setpoint_fail"));
+                break;
         }
         plugin.getGuiManager().openStopSettings(player, stop.getId(), fromLineId, previousView);
+    }
+
+    private void handleBack(Player player, String fromLineId) {
+        if (fromLineId != null) {
+            plugin.getGuiManager().openLineDetail(player, fromLineId, 0);
+        } else {
+            plugin.getGuiManager().openStopList(player, 0, false);
+        }
     }
 
     private Map<String, Object> args(Object... replacements) {
