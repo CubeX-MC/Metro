@@ -8,6 +8,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.bukkit.entity.Minecart;
+import org.cubexmc.metro.Metro;
 
 /**
  * Tracks active train movement tasks by minecart UUID.
@@ -41,9 +42,17 @@ final class TrainTaskRegistry {
     }
 
     static int shutdownActiveTasks() {
+        return shutdownActiveTasks(null, false);
+    }
+
+    static int shutdownActiveTasks(Metro plugin, boolean folia) {
         List<TrainMovementTask> tasks = new ArrayList<>(new LinkedHashSet<>(ACTIVE_TASKS.values()));
         for (TrainMovementTask task : tasks) {
-            task.removeMinecartAndCancel();
+            if (folia && plugin != null) {
+                task.removeMinecartAndCancelOnEntityScheduler();
+            } else {
+                task.removeMinecartAndCancel();
+            }
         }
         ACTIVE_TASKS.clear();
         return tasks.size();

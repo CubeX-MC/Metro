@@ -3,12 +3,14 @@ package org.cubexmc.metro.train;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.UUID;
 
 import org.bukkit.entity.Minecart;
+import org.cubexmc.metro.Metro;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -55,6 +57,24 @@ class TrainTaskRegistryTest {
 
         assertEquals(1, TrainTaskRegistry.shutdownActiveTasks());
         verify(task).removeMinecartAndCancel();
+        assertNull(TrainTaskRegistry.get(firstCart));
+        assertNull(TrainTaskRegistry.get(secondCart));
+    }
+
+    @Test
+    void shouldUseEntitySchedulerCleanupDuringFoliaShutdown() {
+        Metro plugin = mock(Metro.class);
+        Minecart firstCart = mockMinecart(UUID.randomUUID());
+        Minecart secondCart = mockMinecart(UUID.randomUUID());
+        TrainMovementTask task = mock(TrainMovementTask.class);
+
+        TrainTaskRegistry.register(firstCart, task);
+        TrainTaskRegistry.register(secondCart, task);
+
+        assertEquals(1, TrainTaskRegistry.shutdownActiveTasks(plugin, true));
+
+        verify(task).removeMinecartAndCancelOnEntityScheduler();
+        verify(task, never()).removeMinecartAndCancel();
         assertNull(TrainTaskRegistry.get(firstCart));
         assertNull(TrainTaskRegistry.get(secondCart));
     }

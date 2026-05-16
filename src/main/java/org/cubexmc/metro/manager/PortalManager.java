@@ -273,7 +273,7 @@ public class PortalManager {
      */
     public void teleportMinecart(Minecart sourceCart, Portal portal) {
         Location destination = portal.getDestination();
-        if (destination == null || destination.getWorld() == null) {
+        if (destination == null || worldOf(destination) == null) {
             plugin.getLogger().warning("[Portal] Invalid destination for portal: " + portal.getId());
             return;
         }
@@ -319,8 +319,12 @@ public class PortalManager {
 
         // 延迟在目标位置生成新矿车并传送乘客
         org.cubexmc.metro.util.SchedulerUtil.regionRun(plugin, destination, () -> {
-            World destWorld = destination.getWorld();
+            World destWorld = worldOf(destination);
             if (destWorld == null) return;
+            if (!destWorld.isChunkLoaded(destination.getBlockX() >> 4, destination.getBlockZ() >> 4)) {
+                plugin.getLogger().warning("[Portal] Destination chunk is not loaded for portal: " + portal.getId());
+                return;
+            }
 
             Minecart newCart = destWorld.spawn(destination, Minecart.class);
 
@@ -339,7 +343,17 @@ public class PortalManager {
             if (finalPassenger != null && finalPassenger.isOnline()) {
                 org.cubexmc.metro.util.SchedulerUtil.teleportEntity(finalPassenger, destination).thenAccept(success -> {
                     org.cubexmc.metro.util.SchedulerUtil.regionRun(plugin, destination, () -> {
-                        if (success && finalPassenger.isOnline() && newCart.isValid()) {
+                        if (!success) {
+                            plugin.getLogger().warning("[Portal] Failed to teleport passenger for portal: " + portal.getId());
+                            if (newCart.isValid()) {
+                                newCart.remove();
+                            }
+                            if (oldTask != null) {
+                                oldTask.setTeleporting(false);
+                            }
+                            return;
+                        }
+                        if (finalPassenger.isOnline() && newCart.isValid()) {
                             newCart.addPassenger(finalPassenger);
 
                             // 转移 TrainMovementTask (接管新矿车)
@@ -389,15 +403,27 @@ public class PortalManager {
      * 播放传送门特效（粒子 + 音效）
      */
     private void playEffects(Location loc) {
-        if (loc == null || loc.getWorld() == null) return;
+        World world = worldOf(loc);
+        if (loc == null || world == null) return;
 
         if (plugin.getConfigFacade().isPortalEffectParticles()) {
-            loc.getWorld().spawnParticle(Particle.PORTAL, loc.clone().add(0, 1, 0), 50, 0.5, 0.5, 0.5, 0.5);
-            loc.getWorld().spawnParticle(Particle.END_ROD, loc.clone().add(0, 1.5, 0), 20, 0.3, 0.3, 0.3, 0.05);
+            world.spawnParticle(Particle.PORTAL, loc.clone().add(0, 1, 0), 50, 0.5, 0.5, 0.5, 0.5);
+            world.spawnParticle(Particle.END_ROD, loc.clone().add(0, 1.5, 0), 20, 0.3, 0.3, 0.3, 0.05);
         }
 
         if (plugin.getConfigFacade().isPortalEffectSound()) {
-            loc.getWorld().playSound(loc, Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.2f);
+            world.playSound(loc, Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.2f);
+        }
+    }
+
+    private World worldOf(Location location) {
+        if (location == null) {
+            return null;
+        }
+        try {
+            return location.getWorld();
+        } catch (IllegalArgumentException e) {
+            return null;
         }
     }
 

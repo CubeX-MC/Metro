@@ -52,7 +52,7 @@ Metro supports Paper/Bukkit and Folia through `SchedulerUtil`. Folia APIs are re
 - Async tasks are only for file I/O, serialization work on already-created snapshots, or other non-Bukkit work. Async code must not access Bukkit worlds, entities, blocks, inventories, or player state.
 - `SchedulerUtil` logs one warning when Folia reflection fails and it must fall back to Bukkit scheduling. That fallback keeps Paper/Bukkit compatibility but is not considered fully Folia-safe.
 
-Shutdown cleanup: `Metro.onDisable()` clears online player displays and asks `TrainMovementTask` to remove active Metro trains tracked by the current runtime registry. Paper/Bukkit then runs a fallback world scan to remove old Metro minecart leftovers. Folia skips that fallback scan because full world entity scans are not region-owned; future Folia hardening should move active-train removal itself onto entity schedulers before plugin shutdown completes.
+Shutdown cleanup: `Metro.onDisable()` clears online player displays and asks `TrainMovementTask` to remove active Metro trains tracked by the current runtime registry. Paper/Bukkit performs active train cleanup immediately and then runs a fallback world scan to remove old Metro minecart leftovers. Folia schedules active train cleanup on each minecart's entity scheduler and skips the fallback world scan because full world entity scans are not region-owned.
 
 ## Quality Gates
 

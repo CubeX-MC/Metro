@@ -10,6 +10,7 @@ target/
 .mvn/
 mvnw
 mvnw.cmd
+dependency-reduced-pom.xml
 
 # IDE 文件和配置
 .idea/

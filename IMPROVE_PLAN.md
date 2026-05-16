@@ -6,15 +6,15 @@
 
 - `docs/archive/improve-plan-2026-04-29.md`
 
-最近整理时间：2026-05-10
+最近整理时间：2026-05-16
 
 ## 1. 当前状态
 
 - Maven 单模块项目，主插件版本 `1.1.6`。
 - 最近记录的验证结果：`mvn verify` 已通过。
-- 最近记录的测试状态：509 个单元测试，通过率 100%。
+- 最近记录的测试状态：518 个单元测试，通过率 100%。
 - 最近记录的静态检查：SpotBugs 0 个问题。
-- 最近记录的覆盖率：JaCoCo 行覆盖率约 42.08%，质量门最低行覆盖率 25%。
+- 最近记录的覆盖率：JaCoCo 行覆盖率约 43.21%，质量门最低行覆盖率 25%。
 - 核心能力已覆盖线路、站点、矿车运行、站台提示、计分板、音效、GUI、Vault、BlueMap/Dynmap/Squaremap、Folia 调度适配和数据迁移。
 - 已集成 PriceRule 定价系统（flat/distance/interval）、LineStatus 线路状态（NORMAL/SUSPENDED/MAINTENANCE）和 MetroAPI。
 
@@ -54,7 +54,7 @@
 - CYY 分支功能已整合：PriceRule 三种定价模式、LineStatus 状态系统、暂停线路拦截乘车、距离扣费、MetroAPI。
 - `setprice` 命令已扩展支持 flat/distance/interval/reset 模式，新增 `priceinfo` 和 `setstatus` 命令。
 - MetroAPI 已提供线路查询、票价计算、状态管理和 Vault 集成接口。
-- PriceRule (25)、PriceService (11)、LineStatusService (18)、LineStatus (5)、LineCommandService (+12)、TicketService (+3)、RouteNormalizer (9) 已补单元测试；本轮新增 PortalManager (7) 与 ScheduledTaskLifecycle (4)，总计 509 测试。
+- PriceRule (25)、PriceService (11)、LineStatusService (18)、LineStatus (5)、LineCommandService (+12)、TicketService (+3)、RouteNormalizer (11)、PortalManager (13)、ScheduledTaskLifecycle (4) 已补单元测试；总计 518 测试。
 - README / README_en 已更新所有命令说明。
 - Minecraft 26.1.2 兼容已实现：`VersionUtil` 正则支持 26.1.2 格式，`LegacyPaperCommandManager` fallback 已就绪，`docs/compatibility.md` 有完整策略。
 - `RouteNormalizer` 已实现：路线点吸附到铁轨方块中心 + 共线冗余删除，集成到 `RouteRecorder.saveSession()`。
@@ -65,15 +65,20 @@
 - 2026-05-10 推进：`LineStatus.fromConfig()` 已补空值、空白、大小写与非法值边界测试，并使用 `Locale.ROOT` 做稳定大小写归一化。
 - 2026-05-10 推进：`PortalManager` 已补保存失败重试和并发修改/保存测试，确认 dirty 状态不会在协调器失败后丢失。
 - 2026-05-10 推进：`PortalManager.teleportMinecart()` 已补目标世界不可用早退测试，确认不会触碰源矿车或进入调度流程。
+- 2026-05-16 推进：Folia shutdown 下 active train cleanup 已改为通过矿车 entity scheduler 执行，不再由 disable 主流程直接访问活跃矿车实体。
+- 2026-05-16 推进：`PortalManager.teleportMinecart()` 已补在线乘客恢复、玩家离线、目标区块未加载、新矿车失效和源矿车已失效测试；目标区块未加载时不会强制加载或生成新矿车。
+- 2026-05-16 推进：`PortalManager.teleportMinecart()` 已处理 `SchedulerUtil.teleportEntity()` 返回失败的回调，失败时清理已生成的新矿车并复位旧任务 teleporting 标记，避免传送失败后留下孤立矿车。
+- 2026-05-16 推进：Kyori Adventure 已通过 BOM 收敛到 4.25.0，shade 已过滤 manifest 与 module-info 元数据，`dependency-reduced-pom.xml` 不再生成到仓库根目录。
+- 2026-05-16 推进：`RouteNormalizer` 已补真实 mock 世界/铁轨方块吸附测试，覆盖成功吸附与找不到铁轨保留原点。
 
 ## 4. 当前剩余重点
 
 ### P1：Folia 支持声明与线程边界
 
-当前 `plugin.yml` 标记 `folia-supported: true`，但仍有少数路径需要进一步核对，避免声明强于实际线程安全程度：
+当前 `plugin.yml` 标记 `folia-supported: true`，主要已通过调度封装降低线程风险；发布前仍建议用真实服务端 smoke test 防止声明强于实际线程安全程度：
 
-- `Metro.onDisable()` 已在 Folia 下跳过 fallback world scan，但 active train cleanup 仍应继续核对是否全部落在实体调度边界内。
-- `PortalManager.teleportMinecart()` 的 passenger restore 已转入区域调度器；后续若继续加固 Folia，应补真实 Folia/Paper smoke test 覆盖跨世界传送、玩家离线和目标区块未加载场景。
+- `Metro.onDisable()` 已在 Folia 下跳过 fallback world scan，active train cleanup 已转入矿车 entity scheduler；仍需真实 Folia shutdown smoke test 验证 disable 阶段调度执行时序。
+- `PortalManager.teleportMinecart()` 的 passenger restore 已转入区域调度器，并已有单元测试覆盖在线乘客、玩家离线、目标世界/区块不可用和矿车失效路径；仍建议补真实 Folia/Paper smoke test 覆盖跨世界传送。
 - 如果短期内无法完全加固 Folia，应在兼容性文档中把 Folia 标为“实验/部分支持”，不要让发布说明承诺过满。
 
 ### P1：PortalManager 持久化与并发模型
@@ -81,8 +86,8 @@
 `PortalManager` 已迁移到与 `LineManager` / `StopManager` 接近的保存模型，后续重点从“保存架构”转向“传送行为验证”：
 
 - 已完成：读写锁、dirty 标记、快照构建、`processAsyncSave()`、`forceSaveSync()`、自动保存任务和 shutdown flush。
-- 已覆盖：Portal create/persist/reload/location lookup、async save、link/delete、线路引用清理和 ScheduledTaskLifecycle 自动保存调度。
-- 仍需覆盖：传送失败、跨世界 passenger restore、玩家离线、目标世界/目标区块不可用、传送过程中旧矿车/新矿车失效。
+- 已覆盖：Portal create/persist/reload/location lookup、async save、link/delete、线路引用清理、ScheduledTaskLifecycle 自动保存调度、目标世界不可用、目标区块未加载、在线乘客恢复、玩家离线、新矿车失效、源矿车已失效和 passenger teleport 返回失败。
+- 仍需覆盖：真实 Folia/Paper 跨世界 passenger restore smoke test。
 - 传送门数据迁移已存在于 `DataFileUpdater`，改保存模型时必须验证旧 `portals.yml` 兼容。
 
 ### P1：新模块测试覆盖
@@ -96,12 +101,13 @@
 - `TicketService` — 7 tests (+3)，estimatedMinimumPrice / distance boarding check
 - `TrainMovementTask` — 39 tests (+3)，settleDistanceFare 新逻辑已覆盖
 - `LineStatus` — 5 tests，fromConfig 空值 / 空白 / 大小写 / 非法值、config key、boardable
-- `PortalManager` — 7 tests，保存、重载、查询、link/delete、线路引用清理、保存失败重试、并发修改与保存、目标世界不可用早退
+- `PortalManager` — 13 tests，保存、重载、查询、link/delete、线路引用清理、保存失败重试、并发修改与保存、目标世界不可用早退、目标区块未加载、在线/离线乘客恢复、新旧矿车失效、乘客传送失败清理
 - `ScheduledTaskLifecycle` — 4 tests，Folia 跳过 legacy 扫描、非 Folia 调度、自动保存、shutdown cancel
+- `TrainTaskRegistry` — 4 tests，注册/迁移/去重 shutdown，以及 Folia shutdown 下转入 entity scheduler
 
 仍需补测：
 
-- `PortalManager` — 传送回调、跨世界 passenger restore、玩家离线、目标区块不可用、传送过程中旧矿车/新矿车失效
+- `PortalManager` — 真实 Folia/Paper 跨世界 smoke test
 
 ### P1：防止核心交互路径回归
 
@@ -113,26 +119,24 @@
 - reload、disable、高频保存和保存失败不能造成旧数据覆盖新数据。
 - GUI 删除、票价、颜色、终点方向、route 和 protection 操作必须继续经过确认或权限边界。
 
-### P2：依赖收敛与 Shade 治理
+### P2：依赖收敛与 Shade 治理（已完成）
 
-`mvn verify` 当前通过，但 shade 阶段存在 `module-info.class` 与资源重叠警告；依赖树中 Adventure 版本同时出现 4.13、4.15、4.25 系列。
+`mvn verify` 当前通过，Kyori Adventure 已通过 BOM 收敛到 4.25.0，shade 阶段不再输出 `module-info.class` 与资源重叠警告。
 
-后续建议：
+已完成：
 
-- 用 `dependencyManagement` 明确统一 Kyori Adventure 版本，确认 scoreboard-library 与 cloud 依赖兼容。
-- 评估是否需要为 `module-info.class`、重复 manifest 或无用 transitive 依赖增加 shade filter。
+- 用 `dependencyManagement` 明确统一 Kyori Adventure 版本，并通过 `mvn verify` 确认 scoreboard-library 与 cloud 当前组合可用。
+- 为 `module-info.class`、多版本 module-info 和重复 manifest 增加 shade filter。
+- 禁用根目录 `dependency-reduced-pom.xml` 生成，并把该生成物加入 `.gitignore`。
 - 保持 Spigot API 1.18.2 与 Java 17 作为编译基线，不为了消除警告引入更高 API 绑定。
 
 ### P2：Route Normalizer 后续改进
 
-当前路线录制已支持更密采样，并在保存前删除同一直线上的冗余采样点。后续若继续提升在线地图和 rail protection 精度，应把"浮点矿车轨迹"规范化为"铁轨方块路径"：
+当前路线录制已支持更密采样，并在保存前把浮点轨迹吸附到铁轨方块中心、删除同一直线上的冗余采样点。后续若继续提升在线地图和 rail protection 精度，应继续加固特殊轨道形态：
 
-1. 新增 `RouteNormalizer`，输入录制得到的 `RoutePoint` 列表，输出经过清洗的 `RoutePoint` 列表。
-2. 对每个采样点复用 rail protection 的附近铁轨查找思路，吸附到最近铁轨方块中心；找不到铁轨时保留原点并记录警告统计。
-3. 保留起点、终点、世界变化点、Y 变化点、铁轨方块变化点和行驶方向变化点。
-4. 删除同一直线、同一坡度上的中间点，避免 `lines.yml` 因高频采样膨胀。
-5. 对交叉轨、并行轨、传送门前后和站台内低速抖动补单元测试。
-6. 让地图渲染、routeinfo 和 rail protection 共用规范化后的 route points，避免各自猜测拐点。
+1. 对交叉轨、并行轨、传送门前后和站台内低速抖动补更贴近真实方块布局的单元测试。
+2. 继续确认地图渲染、routeinfo 和 rail protection 均使用保存后的规范化 route points，避免各自猜测拐点。
+3. 如果后续暴露出误吸附，考虑把 rail protection 的附近铁轨查找与 RouteNormalizer 合并成共享 helper。
 
 ### P2：保持服务边界清晰（已完成）
 

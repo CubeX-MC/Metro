@@ -2,12 +2,20 @@ package org.cubexmc.metro.manager;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.cubexmc.metro.model.RoutePoint;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 
 class RouteNormalizerTest {
 
@@ -109,5 +117,49 @@ class RouteNormalizerTest {
                 new RoutePoint("world", 10.0, 64.0, 0.0));
         List<RoutePoint> result = normalizer.normalize(points, 0.2);
         assertEquals(2, result.size());
+    }
+
+    @Test
+    void shouldSnapPointToNearestRailBlockCenter() {
+        World world = mock(World.class);
+        Block air = block(Material.AIR);
+        Block rail = block(Material.POWERED_RAIL);
+        when(world.getBlockAt(anyInt(), anyInt(), anyInt())).thenReturn(air);
+        when(world.getBlockAt(4, 64, 4)).thenReturn(rail);
+
+        try (MockedStatic<Bukkit> bukkit = org.mockito.Mockito.mockStatic(Bukkit.class)) {
+            bukkit.when(() -> Bukkit.getWorld("world")).thenReturn(world);
+
+            List<RoutePoint> result = normalizer.normalize(
+                    List.of(new RoutePoint("world", 4.7, 64.3, 4.6)),
+                    0);
+
+            assertEquals(1, result.size());
+            assertEquals(4.5, result.get(0).x());
+            assertEquals(64.5, result.get(0).y());
+            assertEquals(4.5, result.get(0).z());
+        }
+    }
+
+    @Test
+    void shouldKeepOriginalPointWhenNoNearbyRailExists() {
+        World world = mock(World.class);
+        Block air = block(Material.AIR);
+        when(world.getBlockAt(anyInt(), anyInt(), anyInt())).thenReturn(air);
+        RoutePoint point = new RoutePoint("world", 4.7, 64.3, 4.6);
+
+        try (MockedStatic<Bukkit> bukkit = org.mockito.Mockito.mockStatic(Bukkit.class)) {
+            bukkit.when(() -> Bukkit.getWorld("world")).thenReturn(world);
+
+            List<RoutePoint> result = normalizer.normalize(List.of(point), 0);
+
+            assertEquals(point, result.get(0));
+        }
+    }
+
+    private Block block(Material material) {
+        Block block = mock(Block.class);
+        when(block.getType()).thenReturn(material);
+        return block;
     }
 }

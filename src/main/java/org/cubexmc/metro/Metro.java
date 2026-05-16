@@ -189,7 +189,7 @@ public final class Metro extends JavaPlugin {
                 scoreboardManager.clearPlayerDisplay(player);
             }
         }
-        int activeTrainCount = TrainMovementTask.shutdownActiveTasks();
+        int activeTrainCount = TrainMovementTask.shutdownActiveTasks(this, VersionUtil.isFolia());
         if (activeTrainCount > 0) {
             getLogger().info("Cleaned up " + activeTrainCount + " active Metro train(s).");
         }

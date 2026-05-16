@@ -84,6 +84,15 @@ public class TrainMovementTask implements Listener {
         cancel();
     }
 
+    void removeMinecartAndCancelOnEntityScheduler() {
+        Minecart minecart = session.getMinecart();
+        if (minecart == null) {
+            cancel();
+            return;
+        }
+        SchedulerUtil.entityRun(session.getPlugin(), minecart, this::removeMinecartAndCancel, 0L, -1L);
+    }
+
     public void transferMinecart(Minecart newCart) {
         Minecart previousCart = session.getMinecart();
         session.setMinecart(newCart);
@@ -114,6 +123,10 @@ public class TrainMovementTask implements Listener {
 
     public static int shutdownActiveTasks() {
         return TrainTaskRegistry.shutdownActiveTasks();
+    }
+
+    public static int shutdownActiveTasks(Metro plugin, boolean folia) {
+        return TrainTaskRegistry.shutdownActiveTasks(plugin, folia);
     }
 
     Object scheduleSessionTask(Runnable task, long delay, long period) {

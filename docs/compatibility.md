@@ -42,4 +42,4 @@ Smoke tests should cover plugin startup, Cloud command registration, GUI opening
 - Entity work should run through entity scheduling.
 - World/block work should run through region scheduling.
 - Async work must not access Bukkit worlds, entities, blocks, inventories, or player state.
-- On shutdown, Metro cleans active train sessions through its train registry. Paper/Bukkit additionally run a fallback world scan for old Metro minecart leftovers; Folia skips that fallback scan to avoid unsafe cross-region access.
+- On shutdown, Metro cleans active train sessions through its train registry. Paper/Bukkit additionally run a fallback world scan for old Metro minecart leftovers; Folia schedules active train cleanup on each minecart's entity scheduler and skips that fallback scan to avoid unsafe cross-region access.
