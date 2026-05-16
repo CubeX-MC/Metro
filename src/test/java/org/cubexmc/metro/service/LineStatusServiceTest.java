@@ -3,13 +3,19 @@ package org.cubexmc.metro.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 import java.util.List;
 
+import org.bukkit.Bukkit;
+import org.bukkit.plugin.PluginManager;
 import org.cubexmc.metro.Metro;
+import org.cubexmc.metro.event.LineStatusChangeEvent;
 import org.cubexmc.metro.manager.LineManager;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.LineStatus;
@@ -34,9 +40,22 @@ class LineStatusServiceTest {
 
     @Test
     void setStatusShouldReturnTrue() {
-        Line line = new Line("l1", "Test");
-        assertTrue(service.setStatus(line, LineStatus.SUSPENDED));
-        assertEquals(LineStatus.SUSPENDED, line.getLineStatus());
+        try (var bukkitMock = mockStatic(Bukkit.class)) {
+            PluginManager pluginManager = mock(PluginManager.class);
+            bukkitMock.when(Bukkit::getPluginManager).thenReturn(pluginManager);
+
+            Line line = new Line("l1", "Test");
+            assertTrue(service.setStatus(line, LineStatus.SUSPENDED));
+            assertEquals(LineStatus.SUSPENDED, line.getLineStatus());
+            verify(pluginManager).callEvent(argThat(event -> {
+                if (!(event instanceof LineStatusChangeEvent changeEvent)) {
+                    return false;
+                }
+                return changeEvent.getLine() == line
+                        && changeEvent.getOldStatus() == LineStatus.NORMAL
+                        && changeEvent.getNewStatus() == LineStatus.SUSPENDED;
+            }));
+        }
     }
 
     @Test
