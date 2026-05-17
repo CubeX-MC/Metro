@@ -19,5 +19,5 @@ Metro 是一个 Minecraft 地铁交通系统插件，允许管理员创建自动
 
 完整文档请查看 [Metro Wiki](https://github.com/CubeX-MC/Metro/wiki)。
 
-[![Forkers](https://reporoster.com/forks/CubeX-MC/Metro)](https://github.com/CubeX-MC/Metro/network/members)
-[![Stargazers](https://reporoster.com/stars/CubeX-MC/Metro)](https://github.com/CubeX-MC/Metro/stargazers)
+[![Stars](https://img.shields.io/github/stars/CubeX-MC/Metro?style=social)](https://github.com/CubeX-MC/Metro/stargazers)
+[![Forks](https://img.shields.io/github/forks/CubeX-MC/Metro?style=social)](https://github.com/CubeX-MC/Metro/network/members)
