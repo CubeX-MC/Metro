@@ -36,7 +36,7 @@ Metro是一个受牛腩小镇启发的地铁交通系统插件，允许管理员
 | `/m line setprice <line_id> interval <基础价> <每站> [封顶]` | 按站数计价 |
 | `/m line setprice reset <line_id>`       | 重置为默认单一票价       |
 | `/m line priceinfo <line_id>`            | 查看线路定价详情         |
-| `/m line setstatus <line_id> <normal|suspended|maintenance>` | 设置运营状态 |
+| `/m line setstatus <line_id> <normal&#124;suspended&#124;maintenance>` | 设置运营状态         |
 | `/m line addstop <line_id> <stop_id> [位置索引]` | 将停靠区添加到线路 |
 | `/m line delstop <line_id> <stop_id>`    | 从线路中移除停靠区       |
 | `/m line stops <line_id>`                | 查看线路的所有停靠区     |
@@ -47,7 +47,7 @@ Metro是一个受牛腩小镇启发的地铁交通系统插件，允许管理员
 | `/m line recordroute <line_id>`          | 录制或保存路线轨迹       |
 | `/m line clearroute <line_id> confirm`   | 清除已录制的路线         |
 | `/m line routeinfo <line_id>`            | 查看路线录制状态         |
-| `/m line protect <line_id> <on|off>`     | 启停铁轨保护             |
+| `/m line protect <line_id> <on&#124;off>`     | 启停铁轨保护             |
 | `/m line clonereverse <源ID> <新ID> [后缀]` | 反向克隆线路           |
 | `/m line trust <line_id> <玩家>`         | 授予线路管理权限          |
 | `/m line untrust <line_id> <玩家>`       | 移除线路管理权限          |
@@ -63,7 +63,7 @@ Metro是一个受牛腩小镇启发的地铁交通系统插件，允许管理员
 | `/m stop rename <stop_id> <新名称>`                     | 重命名停靠区                  |
 | `/m stop info <stop_id>`                                | 查看停靠区详细信息            |
 | `/m stop setcorners <stop_id>`                          | 更新空间对角点                |
-| `/m stop setpoint [朝向角度]`                            | 设置精确停靠点                |
+| `/m stop setpoint [stopId] [朝向角度]`                      | 设置精确停靠点                |
 | `/m stop addtransfer <stop_id> <换乘线路ID>`             | 添加可换乘线路                |
 | `/m stop deltransfer <stop_id> <换乘线路ID>`             | 移除可换乘线路                |
 | `/m stop listtransfers <stop_id>`                       | 查看可换乘线路                |
@@ -74,7 +74,7 @@ Metro是一个受牛腩小镇启发的地铁交通系统插件，允许管理员
 | `/m stop trust <stop_id> <玩家>`                        | 授予停靠区管理权限            |
 | `/m stop untrust <stop_id> <玩家>`                      | 移除停靠区管理权限            |
 | `/m stop owner <stop_id> <玩家>`                        | 转移停靠区所有权              |
-| `/m stop link <allow|deny> <stop_id> <line_id>`         | 管理线路接入白名单            |
+| `/m stop link <allow&#124;deny> <stop_id> <line_id>`         | 管理线路接入白名单            |
 
 ### 传送门管理
 
@@ -148,7 +148,7 @@ Metro是一个受牛腩小镇启发的地铁交通系统插件，允许管理员
 
 - **构建插件**: `mvn clean package`
   - 生成 `target/metro-<version>.jar`
-  - 当前版本号来自 `pom.xml`，例如 `target/metro-1.1.6.jar`
+  - 当前版本号来自 `pom.xml`，例如 `target/metro-1.1.7.jar`
 
 当前仓库是单模块 Maven 项目，面向 Java 17 与 1.18+ 服务器，包含 Paper/Folia 兼容逻辑。
 
