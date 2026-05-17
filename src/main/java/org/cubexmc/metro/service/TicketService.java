@@ -12,49 +12,82 @@ import org.cubexmc.metro.model.PriceRule;
 
 /**
  * Coordinates ticket price checks and delayed economy charges.
+ * <p>
+ * The flow is: {@link #checkCanBoard} → {@link #createTransaction} →
+ * {@link #charge}. This two-phase design (check before boarding, charge
+ * on spawn) avoids locking economy funds during the spawn delay.
  */
 public class TicketService {
 
+    /**
+     * Result of a pre-boarding balance check.
+     */
     public enum TicketCheckStatus {
+        /** Player has sufficient funds to board. */
         OK,
+        /** No charge applies for this line, boarding is free. */
         FREE,
+        /** The in-game economy is disabled in config. */
         ECONOMY_DISABLED,
+        /** Vault is not available; cannot check balance. */
         VAULT_UNAVAILABLE,
+        /** Player does not have enough money for the fare. */
         INSUFFICIENT_FUNDS
     }
 
+    /**
+     * Result of a delayed charge attempt at minecart spawn time.
+     */
     public enum TicketChargeStatus {
+        /** Amount was successfully withdrawn and transferred. */
         CHARGED,
+        /** No charge applies, ride is free. */
         FREE,
+        /** Economy is disabled in config. */
         ECONOMY_DISABLED,
+        /** Vault is not available; cannot process payment. */
         VAULT_UNAVAILABLE,
+        /** Player no longer has enough funds (race between check and charge). */
         INSUFFICIENT_FUNDS,
+        /** Vault withdrawal returned {@code false} for an unknown reason. */
         TRANSACTION_FAILED
     }
 
+    /**
+     * The result of {@link #checkCanBoard}.
+     */
     public static final class TicketCheck {
         private final TicketCheckStatus status;
         private final double price;
         private final String formattedPrice;
 
+        /**
+         * @param status         the check status
+         * @param price          the raw price amount
+         * @param formattedPrice the Vault-formatted price string
+         */
         public TicketCheck(TicketCheckStatus status, double price, String formattedPrice) {
             this.status = status;
             this.price = price;
             this.formattedPrice = formattedPrice;
         }
 
-        public TicketCheckStatus getStatus() {
-            return status;
-        }
+        /** @return the check status */
+        public TicketCheckStatus getStatus() { return status; }
 
-        public double getPrice() {
-            return price;
-        }
+        /** @return the raw price amount */
+        public double getPrice() { return price; }
 
-        public String getFormattedPrice() {
-            return formattedPrice;
-        }
+        /** @return the Vault-formatted price string */
+        public String getFormattedPrice() { return formattedPrice; }
 
+        /**
+         * Whether the player is allowed to board (status is
+         * {@link TicketCheckStatus#OK}, {@link TicketCheckStatus#FREE},
+         * or {@link TicketCheckStatus#ECONOMY_DISABLED}).
+         *
+         * @return {@code true} if boarding is permitted
+         */
         public boolean canBoard() {
             return status == TicketCheckStatus.OK
                     || status == TicketCheckStatus.FREE
@@ -62,6 +95,10 @@ public class TicketService {
         }
     }
 
+    /**
+     * A delayed charge ticket created by {@link #createTransaction}.
+     * The actual withdrawal happens later via {@link TicketService#charge}.
+     */
     public static final class TicketTransaction {
         private final Player player;
         private final Line line;
@@ -74,35 +111,41 @@ public class TicketService {
             this.price = Math.max(0.0, price);
         }
 
-        public Player getPlayer() {
-            return player;
-        }
+        /** @return the player being charged */
+        public Player getPlayer() { return player; }
 
-        public Line getLine() {
-            return line;
-        }
+        /** @return the line being boarded */
+        public Line getLine() { return line; }
 
-        public double getPrice() {
-            return price;
-        }
+        /** @return the price to charge */
+        public double getPrice() { return price; }
 
-        public boolean isCharged() {
-            return charged;
-        }
+        /** @return whether the charge has already been applied */
+        public boolean isCharged() { return charged; }
 
-        private void markCharged() {
-            this.charged = true;
-        }
+        private void markCharged() { this.charged = true; }
     }
 
     private final Supplier<VaultIntegration> vaultSupplier;
     private final BooleanSupplier economyEnabledSupplier;
 
+    /**
+     * @param vaultSupplier          supplies the current Vault integration
+     * @param economyEnabledSupplier whether the in-game economy is enabled
+     */
     public TicketService(Supplier<VaultIntegration> vaultSupplier, BooleanSupplier economyEnabledSupplier) {
         this.vaultSupplier = Objects.requireNonNull(vaultSupplier, "vaultSupplier");
         this.economyEnabledSupplier = Objects.requireNonNull(economyEnabledSupplier, "economyEnabledSupplier");
     }
 
+    /**
+     * Checks whether a player can board the given line (balance check).
+     * This is the first phase of the two-phase boarding flow.
+     *
+     * @param player the boarding player
+     * @param line   the line to board
+     * @return a {@link TicketCheck} describing the result
+     */
     public TicketCheck checkCanBoard(Player player, Line line) {
         double price = getEstimatedMinimumPrice(line);
         String formattedPrice = format(price);
@@ -123,10 +166,26 @@ public class TicketService {
         return new TicketCheck(TicketCheckStatus.OK, price, formattedPrice);
     }
 
+    /**
+     * Creates a delayed-charge transaction for the player and line.
+     * The actual withdrawal happens later via {@link #charge}.
+     *
+     * @param player the boarding player
+     * @param line   the line being boarded
+     * @return a new, uncharged transaction
+     */
     public TicketTransaction createTransaction(Player player, Line line) {
         return new TicketTransaction(player, line, getTicketPrice(line));
     }
 
+    /**
+     * Executes the actual economy withdrawal (second phase).
+     * This is called at minecart spawn time, after the boardability
+     * check in {@link #checkCanBoard}.
+     *
+     * @param transaction the transaction created by {@link #createTransaction}
+     * @return the charge result status
+     */
     public TicketChargeStatus charge(TicketTransaction transaction) {
         if (transaction == null) {
             return TicketChargeStatus.TRANSACTION_FAILED;
@@ -160,6 +219,12 @@ public class TicketService {
         return TicketChargeStatus.CHARGED;
     }
 
+    /**
+     * Formats a price amount using Vault's currency format.
+     *
+     * @param amount the raw amount
+     * @return the formatted price string
+     */
     public String format(double amount) {
         VaultIntegration vault = getEnabledVault();
         if (vault != null) {
@@ -192,6 +257,15 @@ public class TicketService {
         return Math.max(0.0, line.getTicketPrice());
     }
 
+    /**
+     * One-shot charge convenience method (bypasses the two-phase flow).
+     * Use for direct charges that don't go through the boarding lifecycle.
+     *
+     * @param player        the player to charge
+     * @param line          the line context (used for owner deposit)
+     * @param priceToCharge the amount to charge
+     * @return the charge result status
+     */
     public TicketChargeStatus chargePrice(Player player, Line line, double priceToCharge) {
         if (player == null || line == null || priceToCharge <= 0.0) {
             return TicketChargeStatus.FREE;

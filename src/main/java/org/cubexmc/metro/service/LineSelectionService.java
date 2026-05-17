@@ -16,7 +16,12 @@ import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Stop;
 
 /**
- * Resolves stable, boardable line choices for a stop.
+ * Resolves which lines are boardable at a given stop, handles per-player
+ * line-choice remembering, and selects the default line by yaw alignment.
+ * <p>
+ * A line is "boardable" when the stop is the line's current calling point
+ * (not a terminal), the next stop has a stop-point configured, and the
+ * stop's linked-line set (if non-empty) includes the line.
  */
 public class LineSelectionService {
 
@@ -24,11 +29,22 @@ public class LineSelectionService {
     private final StopManager stopManager;
     private final Map<UUID, Map<String, String>> recentChoices = new ConcurrentHashMap<>();
 
+    /**
+     * @param lineManager the line manager
+     * @param stopManager the stop manager
+     */
     public LineSelectionService(LineManager lineManager, StopManager stopManager) {
         this.lineManager = lineManager;
         this.stopManager = stopManager;
     }
 
+    /**
+     * Returns the lines that can be boarded from the given stop.
+     * Results are sorted by line ID.
+     *
+     * @param stop the stop to query
+     * @return sorted, non-null list of boardable lines
+     */
     public List<Line> getBoardableLines(Stop stop) {
         if (stop == null) {
             return List.of();
@@ -44,6 +60,13 @@ public class LineSelectionService {
         return lines;
     }
 
+    /**
+     * Returns lines that terminate at the given stop (no next stop).
+     * Results are sorted by line ID.
+     *
+     * @param stop the stop to query
+     * @return sorted, non-null list of terminal lines
+     */
     public List<Line> getTerminalLines(Stop stop) {
         if (stop == null) {
             return List.of();
@@ -59,6 +82,16 @@ public class LineSelectionService {
         return lines;
     }
 
+    /**
+     * Resolves the default line for boarding, preferring a previously
+     * remembered choice, then the line whose launch yaw best matches the
+     * player's current yaw.
+     *
+     * @param player          the boarding player
+     * @param stop            the stop to board from
+     * @param clickedLocation the block the player clicked
+     * @return the best-matching boardable line, or {@code null} if none
+     */
     public Line resolveDefaultLine(Player player, Stop stop, Location clickedLocation) {
         List<Line> lines = getBoardableLines(stop);
         if (lines.isEmpty()) {
@@ -68,6 +101,14 @@ public class LineSelectionService {
         return lines.get(0);
     }
 
+    /**
+     * Whether the player must choose a line explicitly (multiple boardable
+     * lines and no remembered choice).
+     *
+     * @param player the boarding player
+     * @param stop   the stop to board from
+     * @return {@code true} if a choice GUI should be shown
+     */
     public boolean requiresChoice(Player player, Stop stop) {
         List<Line> lines = getBoardableLines(stop);
         if (lines.size() <= 1) {
@@ -77,6 +118,14 @@ public class LineSelectionService {
                 || lines.stream().noneMatch(line -> line.getId().equals(getRememberedLineId(player, stop)));
     }
 
+    /**
+     * Records the player's choice of line for a given stop so the same
+     * line is auto-selected next time.
+     *
+     * @param player the boarding player
+     * @param stopId the stop ID
+     * @param lineId the chosen line ID
+     */
     public void rememberChoice(Player player, String stopId, String lineId) {
         if (player == null || stopId == null || stopId.isEmpty() || lineId == null || lineId.isEmpty()) {
             return;

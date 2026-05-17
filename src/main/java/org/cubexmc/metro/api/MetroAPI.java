@@ -36,6 +36,8 @@ import org.cubexmc.metro.util.VersionUtil;
  * The raw managers ({@link #getLineManager()}, {@link #getStopManager()},
  * {@link #getPortalManager()}, {@link #getPlugin()}) are exposed for advanced
  * use but are not the recommended integration surface.
+ *
+ * @since 1.1.6
  */
 public final class MetroAPI {
 
@@ -238,6 +240,10 @@ public final class MetroAPI {
     // Lifecycle
     // =============================================================
 
+    /**
+     * @param plugin the Metro plugin instance
+     * @since 1.1.6
+     */
     public static void initialize(Metro plugin) {
         if (instance == null) {
             instance = new MetroAPI(plugin);
