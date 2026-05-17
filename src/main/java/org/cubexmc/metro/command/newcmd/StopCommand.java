@@ -19,6 +19,7 @@ import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Stop;
 import org.cubexmc.metro.service.CommandDisplayService;
 import org.cubexmc.metro.service.StopCommandService;
+import org.cubexmc.metro.util.MountAwareTeleportUtil;
 import org.cubexmc.metro.util.OwnershipUtil;
 
 public class StopCommand {
@@ -124,7 +125,7 @@ public class StopCommand {
             return;
         }
 
-        org.cubexmc.metro.util.SchedulerUtil.teleportEntity(player, location).thenAccept(success -> {
+        MountAwareTeleportUtil.teleportPlayer(plugin, player, location).thenAccept(success -> {
             if (success) {
                 player.sendMessage(plugin.getLanguageManager().getMessage("stop.tp_success",
                         LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName())));

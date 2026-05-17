@@ -36,6 +36,10 @@ Smoke tests should cover plugin startup, Cloud command registration, GUI opening
 - dynmap: optional map marker integration.
 - squaremap: optional map marker integration.
 - ViaVersion: optional soft dependency for mixed-client environments.
+- Geyser-Spigot and floodgate: optional soft dependencies used only for
+  Bedrock-player detection. Metro keeps these integrations optional through
+  reflection; when detected, mount-aware teleport flows use more conservative
+  dismount and remount delays for Bedrock passengers.
 
 ## Folia Notes
 

@@ -9,8 +9,8 @@ import org.cubexmc.metro.gui.GuiSlots;
 import org.cubexmc.metro.manager.LanguageManager;
 import org.cubexmc.metro.model.Line;
 import org.cubexmc.metro.model.Stop;
+import org.cubexmc.metro.util.MountAwareTeleportUtil;
 import org.cubexmc.metro.util.OwnershipUtil;
-import org.cubexmc.metro.util.SchedulerUtil;
 
 public final class LineDetailController {
     private static final int SLOT_SETTINGS = 50;
@@ -93,7 +93,7 @@ public final class LineDetailController {
             }
         } else if (player.hasPermission("metro.tp") && stop.getStopPointLocation() != null) {
             player.closeInventory();
-            SchedulerUtil.teleportEntity(player, stop.getStopPointLocation()).thenAccept(success -> {
+            MountAwareTeleportUtil.teleportPlayer(plugin, player, stop.getStopPointLocation()).thenAccept(success -> {
                 if (success) {
                     player.sendMessage(plugin.getLanguageManager().getMessage("stop.tp_success",
                             LanguageManager.put(LanguageManager.args(), "stop_name", stop.getName())));

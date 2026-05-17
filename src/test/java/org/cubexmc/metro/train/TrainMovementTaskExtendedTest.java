@@ -605,7 +605,8 @@ class TrainMovementTaskExtendedTest {
         Player passenger = createOnlinePlayer("Alice");
         when(passenger.getVehicle()).thenReturn(cart);
 
-        try (var bukkitMock = mockStatic(org.bukkit.Bukkit.class)) {
+        try (var bukkitMock = mockStatic(org.bukkit.Bukkit.class);
+                var schedulerMock = mockStatic(org.cubexmc.metro.util.SchedulerUtil.class)) {
             org.bukkit.plugin.PluginManager pm = mock(org.bukkit.plugin.PluginManager.class);
             bukkitMock.when(org.bukkit.Bukkit::getPluginManager).thenReturn(pm);
             bukkitMock.when(org.bukkit.Bukkit::getBukkitVersion).thenReturn("1.20.4-R0.1-SNAPSHOT");
@@ -638,6 +639,8 @@ class TrainMovementTaskExtendedTest {
 
             verify(cart).setVelocity(new Vector(0, 0, 0));
             verify(cart).setMaxSpeed(0);
+            schedulerMock.verify(() -> org.cubexmc.metro.util.SchedulerUtil.teleportEntity(eq(cart),
+                    any(Location.class)), never());
         }
     }
 

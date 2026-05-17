@@ -220,6 +220,7 @@ class PortalManagerTest {
         Player passenger = (Player) sourceCart.getPassengers().get(0);
         Minecart newCart = mock(Minecart.class);
         when(newCart.isValid()).thenReturn(true);
+        when(newCart.addPassenger(passenger)).thenReturn(true);
         when(destWorld.spawn(any(Location.class), eq(Minecart.class))).thenReturn(newCart);
 
         try (MockedStatic<Bukkit> bukkit = org.mockito.Mockito.mockStatic(Bukkit.class);

@@ -17,6 +17,7 @@ import org.bukkit.util.Vector;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.model.Portal;
 import org.cubexmc.metro.util.MetroConstants;
+import org.cubexmc.metro.util.MountAwareTeleportUtil;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -341,10 +342,11 @@ public class PortalManager {
 
             // 传送乘客（如果有）
             if (finalPassenger != null && finalPassenger.isOnline()) {
-                org.cubexmc.metro.util.SchedulerUtil.teleportEntity(finalPassenger, destination).thenAccept(success -> {
+                MountAwareTeleportUtil.teleportAndMountPassenger(plugin, finalPassenger, destination, newCart)
+                        .thenAccept(success -> {
                     org.cubexmc.metro.util.SchedulerUtil.regionRun(plugin, destination, () -> {
                         if (!success) {
-                            plugin.getLogger().warning("[Portal] Failed to teleport passenger for portal: " + portal.getId());
+                            plugin.getLogger().warning("[Portal] Failed to teleport or remount passenger for portal: " + portal.getId());
                             if (newCart.isValid()) {
                                 newCart.remove();
                             }
@@ -354,8 +356,6 @@ public class PortalManager {
                             return;
                         }
                         if (finalPassenger.isOnline() && newCart.isValid()) {
-                            newCart.addPassenger(finalPassenger);
-
                             // 转移 TrainMovementTask (接管新矿车)
                             if (oldTask != null) {
                                 oldTask.transferMinecart(newCart);

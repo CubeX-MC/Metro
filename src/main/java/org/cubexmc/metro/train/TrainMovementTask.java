@@ -218,7 +218,8 @@ public class TrainMovementTask implements Listener {
         if (session.getLine() != null) {
             session.getPlugin().getRouteRecorder().sample(session.getLine().getId(), minecart, snapLocation);
         }
-        SchedulerUtil.teleportEntity(minecart, snapLocation);
+        // Disabled to avoid mounted minecart teleport desync for Bedrock players through Geyser.
+        // SchedulerUtil.teleportEntity(minecart, snapLocation);
 
         settleDistanceFare(stop);
 
