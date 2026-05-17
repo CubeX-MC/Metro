@@ -15,6 +15,7 @@ import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.util.BoundingBox;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.model.Stop;
 import org.cubexmc.metro.spatial.Octree;
@@ -371,7 +372,11 @@ public class StopManager {
 
     /**
      * 查找包含指定位置的停靠区
-     * 
+     * <p>
+     * 优先通过八叉树空间索引查找以获得 O(log N) 性能；
+     * 当八叉树未命中时，回退到遍历全部停靠区逐一检查包围盒，
+     * 确保跨八叉树子节点的区域仍能被正确匹配。
+     *
      * @param location 要检查的位置
      * @return 包含该位置的停靠区，如果没有则返回null
      */
@@ -381,11 +386,21 @@ public class StopManager {
         }
         lock.readLock().lock();
         try {
+            // Fast path: octree spatial index
             Octree<Stop> octree = worldStopIndex.get(location.getWorld().getName());
-            if (octree == null) {
-                return null;
+            if (octree != null) {
+                Stop found = octree.firstRange(new Point3D(location));
+                if (found != null) {
+                    return found;
+                }
             }
-            return octree.firstRange(new Point3D(location));
+            // Fallback: linear scan — covers stops that span multiple octree children
+            for (Stop stop : stops.values()) {
+                if (stop.isInStop(location)) {
+                    return stop;
+                }
+            }
+            return null;
         } finally {
             lock.readLock().unlock();
         }
@@ -393,7 +408,9 @@ public class StopManager {
 
     /**
      * 查找最匹配给定位置及偏航角的停靠区
-     * 
+     * <p>
+     * 先通过八叉树收集候选停靠区，再对未命中的情况回退到遍历。
+     *
      * @param location 要检查的位置
      * @param playerYaw 玩家偏航角
      * @return 包含该位置的停靠区中最符合方向的一个，如果没有则返回null
@@ -404,17 +421,28 @@ public class StopManager {
         }
         lock.readLock().lock();
         try {
+            List<Stop> candidates = new ArrayList<>();
+
+            // Fast path: octree spatial index
             Octree<Stop> octree = worldStopIndex.get(location.getWorld().getName());
-            if (octree == null) {
+            if (octree != null) {
+                candidates.addAll(octree.getAllRanges(new Point3D(location)));
+            }
+
+            // Fallback: linear scan for stops missed by the octree
+            for (Stop stop : stops.values()) {
+                if (stop.isInStop(location) && !candidates.contains(stop)) {
+                    candidates.add(stop);
+                }
+            }
+
+            if (candidates.isEmpty()) {
                 return null;
             }
-            List<Stop> foundStops = octree.getAllRanges(new Point3D(location));
-            if (foundStops.isEmpty()) {
-                return null;
-            }
-            Stop bestStop = foundStops.get(0);
+
+            Stop bestStop = candidates.get(0);
             double minDiff = Double.MAX_VALUE;
-            for (Stop stop : foundStops) {
+            for (Stop stop : candidates) {
                 double stopYaw = stop.getLaunchYaw();
                 double diff = Math.abs((stopYaw - playerYaw + 360) % 360);
                 diff = Math.min(diff, 360 - diff);
@@ -531,6 +559,12 @@ public class StopManager {
         loadConfig();
     }
 
+    private static Range3D toRange3D(BoundingBox bb) {
+        if (bb == null) return null;
+        return new Range3D(bb.getMinX(), bb.getMinY(), bb.getMinZ(),
+                bb.getMaxX(), bb.getMaxY(), bb.getMaxZ());
+    }
+
     private void indexStop(Stop stop) {
         if (stop == null) {
             return;
@@ -539,7 +573,7 @@ public class StopManager {
         if (worldName == null || worldName.isEmpty()) {
             return;
         }
-        Range3D range = stop.getRange3D();
+        Range3D range = toRange3D(stop.getBoundingBox());
         if (range == null) return;
         
         Octree<Stop> octree = worldStopIndex.computeIfAbsent(worldName, key -> 
@@ -555,7 +589,7 @@ public class StopManager {
         if (worldName == null || worldName.isEmpty()) {
             return;
         }
-        Range3D range = stop.getRange3D();
+        Range3D range = toRange3D(stop.getBoundingBox());
         if (range == null) return;
         
         Octree<Stop> octree = worldStopIndex.get(worldName);

@@ -27,7 +27,7 @@ class StopModelBehaviorTest {
         World otherWorld = world("other");
         Stop stop = new Stop("central", "Central");
 
-        assertNull(stop.getRange3D());
+        assertNull(stop.getBoundingBox());
         assertFalse(stop.isInStop(new Location(world, 2, 65, 2)));
 
         stop.setCorner1(new Location(world, 5, 70, 5));
@@ -38,7 +38,7 @@ class StopModelBehaviorTest {
         assertTrue(stop.isInStop(new Location(world, 2, 65, 2)));
         assertFalse(stop.isInStop(new Location(world, 6, 65, 2)));
         assertFalse(stop.isInStop(new Location(otherWorld, 2, 65, 2)));
-        assertNotNull(stop.getRange3D());
+        assertNotNull(stop.getBoundingBox());
         assertEquals("world", stop.getWorldName());
 
         assertTrue(stop.addTransferableLine("red"));

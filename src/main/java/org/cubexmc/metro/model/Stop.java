@@ -1,8 +1,8 @@
 package org.cubexmc.metro.model;
 
+import org.bukkit.util.BoundingBox;
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
-import org.cubexmc.metro.spatial.Range3D;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,10 +30,9 @@ public class Stop {
     
     // 自定义titles配置
     private Map<String, Map<String, String>> customTitles;
-    
-    // 缓存的边界值，避免每次isInStop调用时重复计算
-    private int cachedMinX, cachedMaxX, cachedMinY, cachedMaxY, cachedMinZ, cachedMaxZ;
-    private boolean boundsCached = false;
+
+    // 由 corner1/corner2 计算的轴对齐包围盒，为 null 表示尚未设定区域
+    private BoundingBox boundingBox;
     
     /**
      * 创建新停靠区
@@ -259,30 +258,17 @@ public class Stop {
      * @return 是否在区域内
      */
     public boolean isInStop(Location location) {
-        if (!boundsCached || location == null || 
+        if (boundingBox == null || location == null || 
                 location.getWorld() == null || 
                 corner1 == null || !location.getWorld().equals(corner1.getWorld())) {
             return false;
         }
         
-        int x = location.getBlockX();
-        int y = location.getBlockY();
-        int z = location.getBlockZ();
-        
-        // 使用缓存的边界值，避免重复计算
-        return x >= cachedMinX && x <= cachedMaxX && 
-               y >= cachedMinY && y <= cachedMaxY && 
-               z >= cachedMinZ && z <= cachedMaxZ;
+        return boundingBox.contains(location.getX(), location.getY(), location.getZ());
     }
     
-    /**
-     * 获取停靠区的3D范围表示，用于空间树索引
-     * 
-     * @return Range3D实例，如果边界未确立则返回null
-     */
-    public Range3D getRange3D() {
-        if (!boundsCached) return null;
-        return new Range3D(cachedMinX, cachedMinY, cachedMinZ, cachedMaxX, cachedMaxY, cachedMaxZ);
+    public BoundingBox getBoundingBox() {
+        return boundingBox;
     }
     
     /**
@@ -354,15 +340,15 @@ public class Stop {
      */
     private void updateBoundsCache() {
         if (corner1 != null && corner2 != null) {
-            cachedMinX = Math.min(corner1.getBlockX(), corner2.getBlockX());
-            cachedMaxX = Math.max(corner1.getBlockX(), corner2.getBlockX());
-            cachedMinY = Math.min(corner1.getBlockY(), corner2.getBlockY());
-            cachedMaxY = Math.max(corner1.getBlockY(), corner2.getBlockY());
-            cachedMinZ = Math.min(corner1.getBlockZ(), corner2.getBlockZ());
-            cachedMaxZ = Math.max(corner1.getBlockZ(), corner2.getBlockZ());
-            boundsCached = true;
+            int minX = Math.min(corner1.getBlockX(), corner2.getBlockX());
+            int maxX = Math.max(corner1.getBlockX(), corner2.getBlockX()) + 1;
+            int minY = Math.min(corner1.getBlockY(), corner2.getBlockY());
+            int maxY = Math.max(corner1.getBlockY(), corner2.getBlockY()) + 1;
+            int minZ = Math.min(corner1.getBlockZ(), corner2.getBlockZ());
+            int maxZ = Math.max(corner1.getBlockZ(), corner2.getBlockZ()) + 1;
+            boundingBox = new BoundingBox(minX, minY, minZ, maxX, maxY, maxZ);
         } else {
-            boundsCached = false;
+            boundingBox = null;
         }
     }
     

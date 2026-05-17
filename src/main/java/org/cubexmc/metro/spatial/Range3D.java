@@ -13,7 +13,7 @@ public class Range3D {
     }
 
     public boolean contains(Point3D p) {
-        return p.x >= minX && p.x <= maxX && p.y >= minY && p.y <= maxY && p.z >= minZ && p.z <= maxZ;
+        return p.x >= minX && p.x < maxX && p.y >= minY && p.y < maxY && p.z >= minZ && p.z < maxZ;
     }
 
     public boolean intersects(Range3D o) {
