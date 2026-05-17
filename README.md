@@ -1,156 +1,88 @@
 # Metro 地铁系统
 
 [English](README_en.md) | 简体中文<br>
-[Discord](https://discord.com/invite/7tJeSZPZgv) | [QQ频道](https://pd.qq.com/s/1n3hpe4e7?b=9)
+[Discord](https://discord.com/invite/7tJeSZPZgv) | [QQ频道](https://pd.qq.com/s/1n3hpe4e7?b=9) | [Wiki](https://github.com/CubeX-MC/Metro/wiki)
 ![bstats](https://bstats.org/signatures/bukkit/Metro.svg)
 
-## 插件概述
-
-Metro是一个受牛腩小镇启发的地铁交通系统插件，允许管理员创建自动化的地铁线路网络，为玩家提供便捷的乘车体验。当前仓库是单模块 Maven 项目，面向 Java 17 与 1.18+ 服务器，并包含 Paper/Folia 兼容逻辑。
+Metro 是一个 Minecraft 地铁交通系统插件，允许管理员创建自动化的地铁线路网络，为玩家提供便捷的乘车体验。支持 Paper 1.18+ 与 Folia。
 
 ![Imgurl](https://i.imgur.com/K335iWj.gif)
 
 ## 基本概念
 
-* **线路(Line)**: 地铁线路，包含按顺序排列的停靠区列表，定义列车行驶路径
-* **停靠区(Stop)**: 地铁站台，由两个对角点定义的三维空间区域
-* **停靠点(StopPoint)**: 停靠区内的红石铁轨，玩家右键乘车的具体位置
-* **换乘**: 在停靠区可以转乘其他线路
-
-## 管理员命令 (主指令: `/m`)
-
-### 线路管理
-
-| 命令                                    | 描述                     |
-| :-------------------------------------- | :----------------------- |
-| `/m line create <line_id> <显示名称>`    | 创建新线路               |
-| `/m line delete <line_id> confirm`       | 删除指定线路             |
-| `/m line list`                           | 列出所有线路             |
-| `/m line rename <line_id> <新名称>`      | 重命名线路               |
-| `/m line setcolor <line_id> <颜色代码>`  | 设置线路颜色             |
-| `/m line setterminus <line_id> <名称>`   | 设置终点方向描述         |
-| `/m line setmaxspeed <line_id> <速度>`   | 设置线路最大运行速度     |
-| `/m line setprice <line_id> <价格>`      | 设置单一定价             |
-| `/m line setprice <line_id> flat <基础价>` | 设置固定票价           |
-| `/m line setprice <line_id> distance <基础价> <每方块> [封顶]` | 按距离计价 |
-| `/m line setprice <line_id> interval <基础价> <每站> [封顶]` | 按站数计价 |
-| `/m line setprice reset <line_id>`       | 重置为默认单一票价       |
-| `/m line priceinfo <line_id>`            | 查看线路定价详情         |
-| `/m line setstatus <line_id> <normal&#124;suspended&#124;maintenance>` | 设置运营状态         |
-| `/m line addstop <line_id> <stop_id> [位置索引]` | 将停靠区添加到线路 |
-| `/m line delstop <line_id> <stop_id>`    | 从线路中移除停靠区       |
-| `/m line stops <line_id>`                | 查看线路的所有停靠区     |
-| `/m line addportal <line_id> <portal_id>` | 允许线路使用传送门       |
-| `/m line delportal <line_id> <portal_id>` | 从线路中移除传送门       |
-| `/m line portals <line_id>`              | 查看线路启用的传送门     |
-| `/m line info <line_id>`                 | 查看线路详细信息及权限   |
-| `/m line recordroute <line_id>`          | 录制或保存路线轨迹       |
-| `/m line clearroute <line_id> confirm`   | 清除已录制的路线         |
-| `/m line routeinfo <line_id>`            | 查看路线录制状态         |
-| `/m line protect <line_id> <on&#124;off>`     | 启停铁轨保护             |
-| `/m line clonereverse <源ID> <新ID> [后缀]` | 反向克隆线路           |
-| `/m line trust <line_id> <玩家>`         | 授予线路管理权限          |
-| `/m line untrust <line_id> <玩家>`       | 移除线路管理权限          |
-| `/m line owner <line_id> <玩家>`         | 转移线路所有权            |
-
-### 停靠区管理
-
-| 命令                                                     | 描述                          |
-| :------------------------------------------------------- | :---------------------------- |
-| `/m stop create <stop_id> <显示名称>`                   | 选区后创建新停靠区                  |
-| `/m stop delete <stop_id> confirm`                      | 删除停靠区及其所有配置        |
-| `/m stop list`                                          | 列出所有停靠区                |
-| `/m stop rename <stop_id> <新名称>`                     | 重命名停靠区                  |
-| `/m stop info <stop_id>`                                | 查看停靠区详细信息            |
-| `/m stop setcorners <stop_id>`                          | 更新空间对角点                |
-| `/m stop setpoint [stopId] [朝向角度]`                      | 设置精确停靠点                |
-| `/m stop addtransfer <stop_id> <换乘线路ID>`             | 添加可换乘线路                |
-| `/m stop deltransfer <stop_id> <换乘线路ID>`             | 移除可换乘线路                |
-| `/m stop listtransfers <stop_id>`                       | 查看可换乘线路                |
-| `/m stop settitle <stop_id> <类型> <键> <文本内容>`      | 设置自定义 Title 显示        |
-| `/m stop deltitle <stop_id> <类型> [键]`                 | 删除自定义 Title 设置         |
-| `/m stop listtitles <stop_id>`                          | 查看自定义 Title 配置         |
-| `/m stop tp <stop_id>`                                  | 传送到指定停靠区              |
-| `/m stop trust <stop_id> <玩家>`                        | 授予停靠区管理权限            |
-| `/m stop untrust <stop_id> <玩家>`                      | 移除停靠区管理权限            |
-| `/m stop owner <stop_id> <玩家>`                        | 转移停靠区所有权              |
-| `/m stop link <allow&#124;deny> <stop_id> <line_id>`         | 管理线路接入白名单            |
-
-### 传送门管理
-
-| 命令                                      | 描述                         |
-| :---------------------------------------- | :--------------------------- |
-| `/m portal create <portal_id>`            | 创建新的矿车传送门入口       |
-| `/m portal setdest <portal_id>`           | 设置传送门目标位置           |
-| `/m portal link <portal_id_1> <portal_id_2>` | 双向配对两个传送门        |
-| `/m portal delete <portal_id> confirm`    | 删除传送门                   |
-| `/m portal list`                          | 列出所有传送门               |
-| `/m portal trust <portal_id> <玩家>`      | 授予传送门管理权限           |
-| `/m portal untrust <portal_id> <玩家>`    | 移除传送门管理权限           |
-| `/m portal owner <portal_id> <玩家>`      | 转移传送门所有权             |
-| `/m portal reload`                        | 重新加载传送门配置           |
-
-### 系统管理
-
-| 命令               | 描述                         |
-| :----------------- | :--------------------------- |
-| `/m gui`           | 打开图形管理界面             |
-| `/m reload`        | 重新加载配置和数据文件       |
-
-## 权限
-
-| 权限                 | 默认值 | 描述                                      |
-| :------------------ | :----- | :---------------------------------------- |
-| `metro.admin`        | OP     | 允许使用所有管理员命令，并继承传送权限        |
-| `metro.use`          | 所有人 | 允许玩家使用地铁系统（右键乘车等）        |
-| `metro.gui`          | 所有人 | 允许打开 `/m gui` 图形管理界面，界面内容会按权限自动裁剪 |
-| `metro.tp`           | 否     | 允许通过命令和 GUI 传送到停靠区           |
-| `metro.line.create`  | 否     | 允许玩家创建新的线路                      |
-| `metro.stop.create`  | 否     | 允许玩家创建新的停靠区                    |
-| `metro.portal.create`| 否     | 允许玩家创建新的矿车传送门                |
-
-## 所有权与权限管理
-
-* 新创建的线路、停靠区和传送门会自动将创建者设置为所有者，并加入管理员列表。
-* 使用 `/m line trust/untrust/owner`、`/m stop trust/untrust/owner` 与 `/m portal trust/untrust/owner` 可以维护各元素的管理成员。
-* 停靠区可通过 `/m stop link allow/deny` 为特定线路开放接入；线路管理员必须获得停靠区授权后才能将其加入线路。
-* 传送门可独立存在；线路管理员使用 `/m line addportal/delportal` 控制线路是否能使用指定传送门。
-* 旧版本数据中没有权限配置的线路/停靠区/传送门会被视为“服务器所有”，只有 OP 或 `metro.admin` 拥有者可以操作。
+* **线路 (Line)** — 包含按顺序排列的停靠区列表，定义列车行驶路径
+* **停靠区 (Stop)** — 由两个对角点定义的三维空间区域（站台）
+* **停靠点 (StopPoint)** — 停靠区内的红石铁轨，玩家右键乘车的具体位置
+* **换乘** — 在停靠区转乘其他线路
 
 ## 快速开始
 
-### 创建第一条地铁线路
+### 创建第一条线路
 
-1. **创建线路**: `/m line create line1 1号线`
-2. **设置线路颜色**: `/m line setcolor line1 &9` （蓝色）
-3. **设置终点方向**: `/m line setterminus line1 东城总站方向`
+1. `/m line create line1 1号线`
+2. `/m line setcolor line1 &9`
+3. `/m line setterminus line1 东城总站方向`
 
 ### 创建停靠区
 
-1. **创建停靠区**: `/m stop create station1 中央车站`
-2. **选区**: 手持金锄头左/右键点击停靠区的两个对角点
-3. **应用选区**: `/m stop setcorners station1`
-4. **设置停靠点**: 站在红石铁轨上执行 `/m stop setpoint`
-5. **添加到线路**: `/m line addstop line1 station1`
+1. `/m stop create station1 中央车站`
+2. 手持金锄头左/右键点击停靠区的两个对角点
+3. `/m stop setcorners station1` — 应用选区
+4. 站在红石铁轨上执行 `/m stop setpoint` — 设置停靠点
+5. `/m line addstop line1 station1`
 
 ### 玩家使用
 
-玩家右键点击停靠区内的红石铁轨即可呼叫矿车并自动乘坐，系统会自动处理行驶和到站。
+右键点击停靠区内的红石铁轨即可呼叫矿车并自动乘坐。
+
+## 完整命令参考
+
+详细命令列表请查看 [Wiki 命令参考](https://github.com/CubeX-MC/Metro/wiki/Commands-zh)。
+
+## 权限
+
+| 权限 | 默认值 | 描述 |
+| :--- | :--- | :--- |
+| `metro.admin` | OP | 允许使用所有管理员命令，并继承传送权限 |
+| `metro.use` | 所有人 | 允许玩家使用地铁系统（右键乘车等） |
+| `metro.gui` | 所有人 | 允许打开 `/m gui` 图形管理界面 |
+| `metro.tp` | 否 | 允许传送至停靠区 |
+| `metro.line.create` | 否 | 允许创建新线路 |
+| `metro.stop.create` | 否 | 允许创建新停靠区 |
+| `metro.portal.create` | 否 | 允许创建矿车传送门 |
+
+## 所有权与权限管理
+
+* 新创建的线路/停靠区/传送门自动将创建者设为所有者并加入管理员列表。
+* 使用 `trust`/`untrust`/`owner` 子命令管理各元素的管理成员。
+* 停靠区可通过 `/m stop link allow/deny` 为特定线路开放接入。
+* 旧版本数据中没有权限配置的元素被视为"服务器所有"，仅 OP 或 `metro.admin` 可操作。
+
+## 附属插件
+
+| 名称 | 作者 | 描述 |
+| :--- | :--- | :--- |
+| [Metro-Altroutes](https://github.com/ALingqing/Metro-Altroutes) | ALingqing | 线路运营状态管理 · 暂停公告 · 替代路线推荐 · 乘车拦截 |
+
+> 如需添加你的附属插件，请提交 Pull Request。
 
 ## 配置文件
 
-* `config.yml` - 全局配置，包括显示样式、音效、矿车设置等
-* `lines.yml` - 线路数据存储
-* `stops.yml` - 停靠区数据存储
-* `zh_CN.yml` - 中文语言文件
+* `config.yml` — 全局配置（显示样式、音效、矿车设置等）
+* `lines.yml` — 线路数据存储
+* `stops.yml` — 停靠区数据存储
+* `lang/` — 语言文件目录
+
+配置文件详细说明请查看 [Wiki 配置参考](https://github.com/CubeX-MC/Metro/wiki)。
 
 ## 构建
 
-- **构建插件**: `mvn clean package`
-  - 生成 `target/metro-<version>.jar`
-  - 当前版本号来自 `pom.xml`，例如 `target/metro-1.1.7.jar`
+```bash
+mvn clean package
+# 生成 target/metro-<version>.jar
+```
 
-当前仓库是单模块 Maven 项目，面向 Java 17 与 1.18+ 服务器，包含 Paper/Folia 兼容逻辑。
+当前仓库为单模块 Maven 项目，面向 Java 17 与 1.18+ 服务器。
 
-[![Forkers repo roster for @CubeX-MC/Metro](https://reporoster.com/forks/CubeX-MC/Metro)](https://github.com/CubeX-MC/Metro/network/members)
-[![Stargazers repo roster for @CubeX-MC/Metro](https://reporoster.com/stars/CubeX-MC/Metro)](https://github.com/CubeX-MC/Metro/stargazers) 
+[![Forkers](https://reporoster.com/forks/CubeX-MC/Metro)](https://github.com/CubeX-MC/Metro/network/members)
+[![Stargazers](https://reporoster.com/stars/CubeX-MC/Metro)](https://github.com/CubeX-MC/Metro/stargazers)
