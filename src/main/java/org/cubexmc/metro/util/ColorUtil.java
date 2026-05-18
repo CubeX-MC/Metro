@@ -15,7 +15,7 @@ public class ColorUtil {
 
     /**
      * 将包含颜色代码的字符串转换为带颜色的文本
-     * 支持传统的 &0-&f 以及 &#RRGGBB 的十六进制颜色
+     * 支持传统的 {@code &0}-{@code &f} 以及 {@code &#RRGGBB} 的十六进制颜色
      *
      * @param text 原始字符串
      * @return 转换颜色后的字符串
