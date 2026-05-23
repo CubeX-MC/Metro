@@ -3,7 +3,7 @@
 [English](README_en.md) · 简体中文
 [Discord](https://discord.com/invite/7tJeSZPZgv) · [QQ频道](https://pd.qq.com/s/1n3hpe4e7?b=9) · [Wiki](https://github.com/CubeX-MC/Metro/wiki)
 
-![](https://img.shields.io/badge/Minecraft-1.18%2B-blue) ![](https://img.shields.io/badge/Folia-supported-brightgreen) ![](https://img.shields.io/badge/Java-17%2B-orange) ![](https://img.shields.io/github/v/release/CubeX-MC/Metro?label=version)
+![](https://img.shields.io/badge/Minecraft-1.18%2B-blue) ![](https://img.shields.io/badge/Folia-supported-brightgreen) ![](https://img.shields.io/badge/Java-17%2B-orange)
 
 ---
 
