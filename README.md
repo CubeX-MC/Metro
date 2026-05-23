@@ -9,6 +9,8 @@
 
 Metro 是一个 Minecraft 地铁交通系统插件。管理员可以创建自动化的地铁线路网络，玩家右键红石铁轨即可呼叫矿车并自动乘坐。
 
+![example](https://i.imgur.com/TbvWjBR.gif)
+
 支持 Paper 1.18+ 和 Folia。
 
 ## 特性
