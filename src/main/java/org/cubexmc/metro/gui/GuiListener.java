@@ -94,9 +94,14 @@ public class GuiListener implements Listener {
     
     @EventHandler
     public void onInventoryDrag(InventoryDragEvent event) {
-        // 防止在 GUI 中拖拽物品
-        if (event.getInventory().getHolder() instanceof GuiHolder) {
-            event.setCancelled(true);
+        if (event.getView().getTopInventory().getHolder() instanceof GuiHolder) {
+            int topSize = event.getView().getTopInventory().getSize();
+            for (int slot : event.getRawSlots()) {
+                if (slot < topSize) {
+                    event.setCancelled(true);
+                    return;
+                }
+            }
         }
     }
 }
