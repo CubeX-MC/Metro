@@ -144,11 +144,89 @@ class TicketServiceTest {
         verify(vault).withdraw(player, 3.0);
     }
 
+    @Test
+    void shouldRefundPlayerWhenOwnerDepositFailsInCharge() {
+        VaultIntegration vault = enabledVault();
+        Player player = player();
+        UUID playerUuid = UUID.randomUUID();
+        UUID owner = UUID.randomUUID();
+        Line line = line(5.0);
+        line.setOwner(owner);
+
+        when(player.getUniqueId()).thenReturn(playerUuid);
+        when(vault.has(player, 5.0)).thenReturn(true);
+        when(vault.withdraw(player, 5.0)).thenReturn(true);
+        when(vault.deposit(owner, 5.0)).thenReturn(false);
+
+        TicketService service = new TicketService(() -> vault, () -> true);
+        TicketService.TicketTransaction txn = service.createTransaction(player, line);
+
+        assertEquals(TicketChargeStatus.TRANSACTION_FAILED, service.charge(txn));
+        verify(vault).withdraw(player, 5.0);
+        verify(vault).deposit(owner, 5.0);
+        verify(vault).deposit(playerUuid, 5.0);
+    }
+
+    @Test
+    void shouldRefundPlayerWhenOwnerDepositFailsInChargePrice() {
+        VaultIntegration vault = enabledVault();
+        Player player = player();
+        UUID playerUuid = UUID.randomUUID();
+        UUID owner = UUID.randomUUID();
+        Line line = line(5.0);
+        line.setOwner(owner);
+        line.setPriceRule(new PriceRule(PriceRule.PricingMode.DISTANCE, 2.0));
+
+        when(player.getUniqueId()).thenReturn(playerUuid);
+        when(vault.has(player, 3.0)).thenReturn(true);
+        when(vault.withdraw(player, 3.0)).thenReturn(true);
+        when(vault.deposit(owner, 3.0)).thenReturn(false);
+
+        TicketService service = new TicketService(() -> vault, () -> true);
+
+        assertEquals(TicketChargeStatus.TRANSACTION_FAILED, service.chargePrice(player, line, 3.0));
+        verify(vault).withdraw(player, 3.0);
+        verify(vault).deposit(owner, 3.0);
+        verify(vault).deposit(playerUuid, 3.0);
+    }
+
+    @Test
+    void shouldSkipDepositWhenLineHasNoOwner() {
+        VaultIntegration vault = enabledVault();
+        Player player = player();
+        Line line = line(5.0);
+
+        when(vault.has(player, 5.0)).thenReturn(true);
+        when(vault.withdraw(player, 5.0)).thenReturn(true);
+
+        TicketService service = new TicketService(() -> vault, () -> true);
+        TicketService.TicketTransaction txn = service.createTransaction(player, line);
+
+        assertEquals(TicketChargeStatus.CHARGED, service.charge(txn));
+        verify(vault, never()).deposit(any(), anyDouble());
+    }
+
+    @Test
+    void shouldSkipOwnerDepositWhenDepositFailsInChargePriceAndNoOwner() {
+        VaultIntegration vault = enabledVault();
+        Player player = player();
+        Line line = line(5.0);
+
+        when(vault.has(player, 5.0)).thenReturn(true);
+        when(vault.withdraw(player, 5.0)).thenReturn(true);
+
+        TicketService service = new TicketService(() -> vault, () -> true);
+
+        assertEquals(TicketChargeStatus.CHARGED, service.chargePrice(player, line, 5.0));
+        verify(vault, never()).deposit(any(), anyDouble());
+    }
+
     private VaultIntegration enabledVault() {
         VaultIntegration vault = mock(VaultIntegration.class);
         when(vault.isEnabled()).thenReturn(true);
         when(vault.format(5.0)).thenReturn("$5.00");
         when(vault.format(7.0)).thenReturn("$7.00");
+        when(vault.format(3.0)).thenReturn("$3.00");
         return vault;
     }
 

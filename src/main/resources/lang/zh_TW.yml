@@ -440,6 +440,7 @@ vehicle:
   terminal_arrived: "<green>已抵達終點站: <terminal_stop_name>"
   auto_depart: "<green>自動發車: 從 <current_stop_name> 前往 <next_stop_name>"
   passenger_exit: "<gold>玩家已下車，將不會自動發車"
+  cannot_dismount: "<red>列車行駛中，禁止下車！"
 
 ownership:
   server: "伺服器"

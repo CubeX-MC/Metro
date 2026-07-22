@@ -190,7 +190,11 @@ class TicketService(
         transaction.markCharged()
         val owner: UUID? = transaction.line.owner
         if (owner != null) {
-            vault.deposit(owner, transaction.price)
+            if (!vault.deposit(owner, transaction.price)) {
+                // Owner deposit failed: refund the passenger and report failure
+                vault.deposit(transaction.player.uniqueId, transaction.price)
+                return TicketChargeStatus.TRANSACTION_FAILED
+            }
         }
         return TicketChargeStatus.CHARGED
     }
@@ -261,7 +265,11 @@ class TicketService(
         }
         val owner = line.owner
         if (owner != null) {
-            vault.deposit(owner, priceToCharge)
+            if (!vault.deposit(owner, priceToCharge)) {
+                // Owner deposit failed: refund the passenger and report failure
+                vault.deposit(player.uniqueId, priceToCharge)
+                return TicketChargeStatus.TRANSACTION_FAILED
+            }
         }
         return TicketChargeStatus.CHARGED
     }

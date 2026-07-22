@@ -89,6 +89,9 @@ public class MetroMainCommand {
             plugin.getPortalManager().load();
         }
         plugin.getLanguageManager().loadLanguages();
+        if (plugin.getVaultIntegration() != null) {
+            plugin.getVaultIntegration().refreshProvider();
+        }
 
         plugin.refreshMapIntegrations();
 

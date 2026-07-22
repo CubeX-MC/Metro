@@ -571,7 +571,8 @@ interact:
 vehicle:
   terminal_arrived: "<green>Endstation erreicht: <terminal_stop_name>"
   auto_depart: "<green>Automatische Abfahrt: von <current_stop_name> nach <next_stop_name>"
-  passenger_exit: "<gold>Spieler ist ausgestiegen, fährt nicht automatisch ab" 
+  passenger_exit: "<gold>Spieler ist ausgestiegen, fährt nicht automatisch ab"
+  cannot_dismount: "<red>Du kannst nicht aussteigen, während der Zug fährt!"
 
 chat:
   enter_new_name: "<green>Bitte neuen Namen eingeben. Tippe 'cancel' zum Abbrechen."

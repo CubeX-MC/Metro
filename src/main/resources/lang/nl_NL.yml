@@ -572,7 +572,8 @@ interact:
 vehicle:
   terminal_arrived: "<green>Eindstation bereikt: <terminal_stop_name>"
   auto_depart: "<green>Automatisch vertrek: van <current_stop_name> naar <next_stop_name>"
-  passenger_exit: "<gold>Speler is uitgestapt, vertrekt niet automatisch" 
+  passenger_exit: "<gold>Speler is uitgestapt, vertrekt niet automatisch"
+  cannot_dismount: "<red>Je kunt niet uitstappen terwijl de trein rijdt!"
 
 chat:
   enter_new_name: "<green>Voer een nieuwe naam in. Typ 'cancel' om te annuleren."

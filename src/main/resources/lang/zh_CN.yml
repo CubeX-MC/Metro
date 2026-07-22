@@ -439,7 +439,8 @@ interact:
 vehicle:
   terminal_arrived: "<green>已到达终点站: <terminal_stop_name>"
   auto_depart: "<green>自动发车: 从 <current_stop_name> 前往 <next_stop_name>"
-  passenger_exit: "<gold>玩家已下车，不会自动发车" 
+  passenger_exit: "<gold>玩家已下车，不会自动发车"
+  cannot_dismount: "<red>列车行驶中，禁止下车！"
 
 ownership:
   server: "服务器"

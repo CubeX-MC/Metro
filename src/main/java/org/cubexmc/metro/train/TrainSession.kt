@@ -26,6 +26,8 @@ class TrainSession(
     var entryStopId: String? = currentStopId
     var distanceTraveled: Double = 0.0
         private set
+    /** 整个行程中已收取的可变费用总额（不含 basePrice），用于 maxPrice 上限检查 */
+    var totalVariableCharged: Double = 0.0
 
     fun addDistance(blocks: Double): Double {
         distanceTraveled += blocks

@@ -573,6 +573,7 @@ vehicle:
   terminal_arrived: "<green>Arrived at terminal station: <terminal_stop_name>"
   auto_depart: "<green>Auto departure: From <current_stop_name> to <next_stop_name>"
   passenger_exit: "<gold>Player has alighted, will not auto depart"
+  cannot_dismount: "<red>You cannot dismount while the train is moving!"
 
 chat:
   enter_new_name: "<green>Please enter the new name. Type 'cancel' to cancel."

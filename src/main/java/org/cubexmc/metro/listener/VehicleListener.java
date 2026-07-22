@@ -61,11 +61,18 @@ public class VehicleListener implements Listener {
             return;
         }
 
-        // 玩家下车，清除其界面显示
-        plugin.getScoreboardManager().clearPlayerDisplay(player);
-
         // 获取当前位置
         Location location = minecart.getLocation();
+
+        // 检查位置是否在停靠区上，如果不在则禁止下车
+        if (!isAtStop(location)) {
+            event.setCancelled(true);
+            player.sendMessage(plugin.getLanguageManager().getMessage("vehicle.cannot_dismount"));
+            return;
+        }
+
+        // 玩家下车，清除其界面显示
+        plugin.getScoreboardManager().clearPlayerDisplay(player);
 
         // 检查位置是否在停靠区上
         if (!isAtStop(location)) {

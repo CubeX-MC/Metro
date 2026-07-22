@@ -573,6 +573,7 @@ vehicle:
   terminal_arrived: "<green>Son durağa varıldı: <terminal_stop_name>"
   auto_depart: "<green>Otomatik kalkış: <current_stop_name> durağından <next_stop_name> durağına"
   passenger_exit: "<gold>Oyuncu indi, otomatik kalkış yapılmayacak"
+  cannot_dismount: "<red>Tren hareket halindeyken inemezsiniz!"
 
 chat:
   enter_new_name: "<green>Lütfen yeni adı girin. İptal etmek için 'cancel' yazın."

@@ -117,7 +117,7 @@ class ConfigFacade(private val plugin: Metro) {
     private var safeModePassengerRailBreakProtection = false
     private var safeModeMinCruiseSpeed = 0.0
     private var safeModeStallRecoveryTicks = 0L
-    private var economyEnabled = true
+    private var economyEnabled = false
 
     private var selectionTool: Material = Material.GOLDEN_SHOVEL
     private var selectionToolName = ""
