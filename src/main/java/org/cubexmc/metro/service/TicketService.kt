@@ -187,11 +187,12 @@ class TicketService(
             return TicketChargeStatus.TRANSACTION_FAILED
         }
 
-        transaction.markCharged()
         val owner: UUID? = transaction.line.owner
-        if (owner != null) {
-            vault.deposit(owner, transaction.price)
+        if (owner != null && !vault.deposit(owner, transaction.price)) {
+            refund(vault, transaction.player, transaction.price)
+            return TicketChargeStatus.TRANSACTION_FAILED
         }
+        transaction.markCharged()
         return TicketChargeStatus.CHARGED
     }
 
@@ -260,10 +261,15 @@ class TicketService(
             return TicketChargeStatus.TRANSACTION_FAILED
         }
         val owner = line.owner
-        if (owner != null) {
-            vault.deposit(owner, priceToCharge)
+        if (owner != null && !vault.deposit(owner, priceToCharge)) {
+            refund(vault, player, priceToCharge)
+            return TicketChargeStatus.TRANSACTION_FAILED
         }
         return TicketChargeStatus.CHARGED
+    }
+
+    private fun refund(vault: VaultIntegration, player: Player, amount: Double) {
+        vault.deposit(player.uniqueId, amount)
     }
 
     private fun getEnabledVault(): VaultIntegration? {

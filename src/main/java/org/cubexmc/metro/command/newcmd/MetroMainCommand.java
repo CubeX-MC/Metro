@@ -82,6 +82,7 @@ public class MetroMainCommand {
         }
         plugin.reloadConfig();
         plugin.getConfigFacade().reload();
+        plugin.refreshVaultIntegration();
         DataFileUpdater.migrateAll(plugin);
         lineManager.reload();
         stopManager.reload();

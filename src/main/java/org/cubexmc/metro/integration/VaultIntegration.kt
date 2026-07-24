@@ -4,21 +4,49 @@ import java.util.UUID
 import net.milkbowl.vault.economy.Economy
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
+import org.bukkit.event.EventHandler
+import org.bukkit.event.Listener
+import org.bukkit.event.server.ServiceRegisterEvent
+import org.bukkit.event.server.ServiceUnregisterEvent
 import org.cubexmc.metro.Metro
 
-class VaultIntegration(private val plugin: Metro) {
+class VaultIntegration(private val plugin: Metro) : Listener {
+    @Volatile
     var economy: Economy? = null
         private set
-    var isEnabled: Boolean = setupEconomy()
-        private set
 
-    private fun setupEconomy(): Boolean {
-        if (plugin.server.pluginManager.getPlugin("Vault") == null) {
-            return false
+    val isEnabled: Boolean
+        get() = economy != null
+
+    init {
+        refresh()
+    }
+
+    /**
+     * Re-resolves the currently registered Vault economy provider.
+     *
+     * Economy bridges may register or replace their provider after Metro has
+     * already enabled, so the provider must not be cached for the entire
+     * plugin lifetime.
+    */
+    @Synchronized
+    fun refresh(): Boolean {
+        economy = plugin.server.servicesManager.getRegistration(Economy::class.java)?.provider
+        return isEnabled
+    }
+
+    @EventHandler
+    fun onServiceRegister(event: ServiceRegisterEvent) {
+        if (event.provider.service == Economy::class.java) {
+            refresh()
         }
-        val registration = plugin.server.servicesManager.getRegistration(Economy::class.java) ?: return false
-        economy = registration.provider
-        return economy != null
+    }
+
+    @EventHandler
+    fun onServiceUnregister(event: ServiceUnregisterEvent) {
+        if (event.provider.service == Economy::class.java) {
+            refresh()
+        }
     }
 
     fun has(player: Player, amount: Double): Boolean {

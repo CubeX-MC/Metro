@@ -44,6 +44,7 @@ class TrainMovementTask @JvmOverloads constructor(
     private val eventPublisher: TrainEventPublisher
     private val scoreboardController: TrainScoreboardController
     private val movementAssistController: TrainMovementAssistController
+    private var passengerExitHandled: Boolean = false
 
     init {
         val lineManager = plugin.lineManager
@@ -208,7 +209,7 @@ class TrainMovementTask @JvmOverloads constructor(
             session.plugin.routeRecorder.sample(line.id, minecart, snapLocation)
         }
 
-        settleDistanceFare(stop)
+        settleVariableFare(stop)
 
         val previousState = stateMachine.transitionTo(TrainState.STOPPED_AT_STATION, null)
         if (previousState == TrainState.MOVING_IN_STATION) {
@@ -218,7 +219,7 @@ class TrainMovementTask @JvmOverloads constructor(
         scoreboardController.updateBasedOnState(session)
     }
 
-    private fun settleDistanceFare(stop: Stop) {
+    private fun settleVariableFare(stop: Stop) {
         val line = session.line ?: return
         val rule = line.priceRule ?: return
         val distance = session.distanceTraveled
@@ -234,30 +235,37 @@ class TrainMovementTask @JvmOverloads constructor(
         val variablePrice = when (rule.getMode()) {
             PriceRule.PricingMode.DISTANCE -> distance * rule.getPerBlockRate()
             PriceRule.PricingMode.INTERVAL -> {
-                val intervals = session.plugin.priceService.countStopIntervals(line, session.entryStopId, stop.id)
+                val intervals = session.plugin.priceService.countStopIntervals(line, session.lastSettledStopId, stop.id)
                 intervals * rule.getPerIntervalRate()
             }
 
             else -> return
         }
 
-        if (variablePrice > 0) {
-            val status = session.plugin.ticketService.chargePrice(passenger, line, variablePrice)
-            if (status == TicketService.TicketChargeStatus.CHARGED) {
-                passenger.sendMessage(
-                    session.plugin.languageManager.getMessage(
-                        "economy.paid_distance",
-                        LanguageManager.put(
-                            LanguageManager.args(),
-                            "price",
-                            session.plugin.ticketService.format(variablePrice),
-                        ),
+        val status = if (variablePrice > 0) {
+            session.plugin.ticketService.chargePrice(passenger, line, variablePrice)
+        } else {
+            TicketService.TicketChargeStatus.FREE
+        }
+        if (status == TicketService.TicketChargeStatus.CHARGED) {
+            passenger.sendMessage(
+                session.plugin.languageManager.getMessage(
+                    "economy.paid_distance",
+                    LanguageManager.put(
+                        LanguageManager.args(),
+                        "price",
+                        session.plugin.ticketService.format(variablePrice),
                     ),
-                )
-            }
+                ),
+            )
         }
 
-        session.addDistance(-distance)
+        if (status == TicketService.TicketChargeStatus.CHARGED ||
+            status == TicketService.TicketChargeStatus.FREE ||
+            status == TicketService.TicketChargeStatus.ECONOMY_DISABLED
+        ) {
+            session.markFareSettledAt(stop.id)
+        }
     }
 
     private fun transitionToMovingInStation(targetStop: Stop) {
@@ -471,7 +479,18 @@ class TrainMovementTask @JvmOverloads constructor(
         }
     }
 
-    private fun handlePassengerExit() {
+    fun handlePassengerExit() {
+        if (passengerExitHandled) {
+            return
+        }
+        passengerExitHandled = true
+
+        if (session.state != TrainState.STOPPED_AT_STATION) {
+            val targetStop = session.plugin.stopManager?.getStop(session.targetStopId)
+            if (targetStop != null) {
+                settleVariableFare(targetStop)
+            }
+        }
         cancel()
     }
 

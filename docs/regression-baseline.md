@@ -8,7 +8,7 @@ This checklist is used to validate behavior after refactors and hotfixes.
 - Waiting/departure flow (`waiting title/actionbar/sound` -> movement starts)
 - Arrival flow (`arrive title/sound` -> stop transition)
 - Terminal flow (`terminal title` -> forced dismount -> cleanup)
-- Manual exit flow (`vehicle exit` -> scoreboard/title cleanup -> despawn rules)
+- Manual exit flow (`vehicle exit` -> pending fare settlement -> scoreboard/title cleanup -> despawn rules)
 
 ## Preconditions
 
@@ -66,7 +66,9 @@ Build or keep a small regression world with these named scenarios. The IDs below
 3. Verify minecart departs automatically after `settings.cart_departure_delay`.
 4. Verify station entry shows arrival info and station-arrival sound.
 5. Verify terminal stop ejects passenger and removes minecart.
-6. Verify exiting minecart mid-route clears title/actionbar/scoreboard.
+6. Verify exiting a minecart mid-route clears title/actionbar/scoreboard and
+   charges an interval fare through the current target station. For distance
+   pricing, verify it charges the distance actually travelled before exit.
 7. Verify `/m stop tp <stop_id>` works with `metro.tp` and fails without it.
 8. Verify GUI teleport behavior matches command permission semantics.
 9. Verify `/m line delete <line_id>`, `/m stop delete <stop_id>`,

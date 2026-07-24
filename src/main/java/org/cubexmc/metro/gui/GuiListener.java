@@ -6,6 +6,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryView;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.gui.controller.AddStopController;
 import org.cubexmc.metro.gui.controller.ConfirmActionController;
@@ -46,7 +47,8 @@ public class GuiListener implements Listener {
     
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
-        Inventory inv = event.getInventory();
+        InventoryView view = event.getView();
+        Inventory inv = view.getTopInventory();
         
         // 检查是否是我们的 GUI
         if (!(inv.getHolder() instanceof GuiHolder holder)) {
@@ -94,8 +96,15 @@ public class GuiListener implements Listener {
     
     @EventHandler
     public void onInventoryDrag(InventoryDragEvent event) {
-        // 防止在 GUI 中拖拽物品
-        if (event.getInventory().getHolder() instanceof GuiHolder) {
+        Inventory topInventory = event.getView().getTopInventory();
+        if (!(topInventory.getHolder() instanceof GuiHolder)) {
+            return;
+        }
+
+        int topSize = topInventory.getSize();
+        boolean touchesMetroGui = event.getRawSlots().stream()
+                .anyMatch(slot -> slot >= 0 && slot < topSize);
+        if (touchesMetroGui) {
             event.setCancelled(true);
         }
     }

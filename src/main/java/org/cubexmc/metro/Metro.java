@@ -117,13 +117,14 @@ public final class Metro extends CubexPlugin {
 
         // 初始化经济集成
         this.vaultIntegration = new org.cubexmc.metro.integration.VaultIntegration(this);
+        Bukkit.getPluginManager().registerEvents(this.vaultIntegration, this);
         if (this.vaultIntegration.isEnabled()) {
             getLogger().info("Vault economy integration enabled.");
         } else {
             getLogger().info("Vault economy not found or disabled.");
         }
         this.ticketService = new org.cubexmc.metro.service.TicketService(this::getVaultIntegration,
-                () -> getConfig().getBoolean("economy.enabled", true));
+                () -> getConfigFacade().isEconomyEnabled());
 
         this.priceService = new org.cubexmc.metro.service.PriceService();
         this.lineStatusService = new org.cubexmc.metro.service.LineStatusService(this, lineManager);
@@ -425,6 +426,17 @@ public final class Metro extends CubexPlugin {
 
     public org.cubexmc.metro.integration.VaultIntegration getVaultIntegration() {
         return vaultIntegration;
+    }
+
+    public boolean refreshVaultIntegration() {
+        if (vaultIntegration == null) {
+            return false;
+        }
+        boolean enabled = vaultIntegration.refresh();
+        getLogger().info(enabled
+                ? "Vault economy integration refreshed."
+                : "Vault economy provider is currently unavailable.");
+        return enabled;
     }
 
     public org.cubexmc.metro.service.LineSelectionService getLineSelectionService() {

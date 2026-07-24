@@ -43,7 +43,7 @@ public class VehicleListener implements Listener {
     /**
      * 监听玩家离开矿车事件
      */
-    @EventHandler(priority = EventPriority.NORMAL)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onVehicleExit(VehicleExitEvent event) {
         Vehicle vehicle = event.getVehicle();
         Entity passenger = event.getExited();
@@ -59,6 +59,11 @@ public class VehicleListener implements Listener {
         // 检查是否是Metro的矿车
         if (!isMetroMinecart(minecart)) {
             return;
+        }
+
+        TrainMovementTask trainTask = TrainMovementTask.getTaskFor(minecart);
+        if (trainTask != null) {
+            trainTask.handlePassengerExit();
         }
 
         // 玩家下车，清除其界面显示

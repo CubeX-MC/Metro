@@ -14,6 +14,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -916,7 +917,7 @@ class TrainMovementTaskExtendedTest {
                 .thenReturn("Paid $50.00");
 
         Stop stopB = new Stop("B", "Bravo");
-        java.lang.reflect.Method method = TrainMovementTask.class.getDeclaredMethod("settleDistanceFare", Stop.class);
+        java.lang.reflect.Method method = TrainMovementTask.class.getDeclaredMethod("settleVariableFare", Stop.class);
         method.setAccessible(true);
         method.invoke(task, stopB);
 
@@ -938,7 +939,7 @@ class TrainMovementTaskExtendedTest {
         task.getSession().addDistance(100.0);
 
         Stop stopB = new Stop("B", "Bravo");
-        java.lang.reflect.Method method = TrainMovementTask.class.getDeclaredMethod("settleDistanceFare", Stop.class);
+        java.lang.reflect.Method method = TrainMovementTask.class.getDeclaredMethod("settleVariableFare", Stop.class);
         method.setAccessible(true);
         method.invoke(task, stopB);
 
@@ -958,10 +959,87 @@ class TrainMovementTaskExtendedTest {
         task.getSession().addDistance(100.0);
 
         Stop stopB = new Stop("B", "Bravo");
-        java.lang.reflect.Method method = TrainMovementTask.class.getDeclaredMethod("settleDistanceFare", Stop.class);
+        java.lang.reflect.Method method = TrainMovementTask.class.getDeclaredMethod("settleVariableFare", Stop.class);
         method.setAccessible(true);
         method.invoke(task, stopB);
 
         verify(ticketService, never()).chargePrice(any(), any(), anyDouble());
+    }
+
+    @Test
+    void shouldChargeThroughTargetStationWhenPassengerExitsMidRouteOnlyOnce() {
+        Line line = createLineWithStops("l1", "A", "B", "C");
+        PriceRule rule = new PriceRule(PriceRule.PricingMode.INTERVAL, 0.0);
+        rule.setPerIntervalRate(4.0);
+        line.setPriceRule(rule);
+
+        Minecart cart = createMinecart();
+        Player passenger = createOnlinePlayer("Alice");
+        Stop stopB = new Stop("B", "Bravo");
+        when(stopManager.getStop("B")).thenReturn(stopB);
+        when(priceService.countStopIntervals(line, "A", "B")).thenReturn(1);
+        when(ticketService.chargePrice(passenger, line, 4.0))
+                .thenReturn(TicketService.TicketChargeStatus.CHARGED);
+
+        TrainMovementTask task = new TrainMovementTask(plugin, cart, passenger, "l1", "A",
+                TrainMovementTask.TrainState.MOVING_BETWEEN_STATIONS);
+
+        task.handlePassengerExit();
+        task.handlePassengerExit();
+
+        verify(ticketService, times(1)).chargePrice(passenger, line, 4.0);
+        assertEquals("B", task.getSession().getLastSettledStopId());
+    }
+
+    @Test
+    void shouldChargeActualDistanceWhenPassengerExitsMidRoute() {
+        Line line = createLineWithStops("l1", "A", "B");
+        PriceRule rule = new PriceRule(PriceRule.PricingMode.DISTANCE, 0.0);
+        rule.setPerBlockRate(0.5);
+        line.setPriceRule(rule);
+
+        Minecart cart = createMinecart();
+        Player passenger = createOnlinePlayer("Alice");
+        Stop stopB = new Stop("B", "Bravo");
+        when(stopManager.getStop("B")).thenReturn(stopB);
+        when(ticketService.chargePrice(passenger, line, 6.0))
+                .thenReturn(TicketService.TicketChargeStatus.CHARGED);
+
+        TrainMovementTask task = new TrainMovementTask(plugin, cart, passenger, "l1", "A",
+                TrainMovementTask.TrainState.MOVING_BETWEEN_STATIONS);
+        task.getSession().addDistance(12.0);
+
+        task.handlePassengerExit();
+
+        verify(ticketService).chargePrice(passenger, line, 6.0);
+        assertEquals(0.0, task.getSession().getDistanceTraveled());
+    }
+
+    @Test
+    void shouldSettleEachIntervalFromLastSettledStation() throws Exception {
+        Line line = createLineWithStops("l1", "A", "B", "C");
+        PriceRule rule = new PriceRule(PriceRule.PricingMode.INTERVAL, 0.0);
+        rule.setPerIntervalRate(4.0);
+        line.setPriceRule(rule);
+
+        Minecart cart = createMinecart();
+        Player passenger = createOnlinePlayer("Alice");
+        when(priceService.countStopIntervals(line, "A", "B")).thenReturn(1);
+        when(priceService.countStopIntervals(line, "B", "C")).thenReturn(1);
+        when(ticketService.chargePrice(passenger, line, 4.0))
+                .thenReturn(TicketService.TicketChargeStatus.CHARGED);
+
+        TrainMovementTask task = new TrainMovementTask(plugin, cart, passenger, "l1", "A",
+                TrainMovementTask.TrainState.MOVING_BETWEEN_STATIONS);
+        Method method = TrainMovementTask.class.getDeclaredMethod("settleVariableFare", Stop.class);
+        method.setAccessible(true);
+
+        method.invoke(task, new Stop("B", "Bravo"));
+        method.invoke(task, new Stop("C", "Charlie"));
+
+        verify(priceService).countStopIntervals(line, "A", "B");
+        verify(priceService).countStopIntervals(line, "B", "C");
+        verify(ticketService, times(2)).chargePrice(passenger, line, 4.0);
+        assertEquals("C", task.getSession().getLastSettledStopId());
     }
 }

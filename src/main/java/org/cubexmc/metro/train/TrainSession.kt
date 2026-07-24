@@ -23,13 +23,19 @@ class TrainSession(
         if (targetStopId == null) TrainMovementTask.TrainState.STOPPED_AT_STATION else state
     var isTeleporting: Boolean = false
     var lastTravelDirection: Vector? = null
-    var entryStopId: String? = currentStopId
+    var lastSettledStopId: String? = currentStopId
+        private set
     var distanceTraveled: Double = 0.0
         private set
 
     fun addDistance(blocks: Double): Double {
         distanceTraveled += blocks
         return distanceTraveled
+    }
+
+    fun markFareSettledAt(stopId: String?) {
+        lastSettledStopId = stopId
+        distanceTraveled = 0.0
     }
 
     fun refreshTargetFromCurrentStop() {

@@ -91,6 +91,49 @@ class TicketServiceTest {
     }
 
     @Test
+    void shouldRefundPassengerWhenOwnerDepositFails() {
+        VaultIntegration vault = enabledVault();
+        Player player = player();
+        UUID playerId = UUID.randomUUID();
+        UUID owner = UUID.randomUUID();
+        Line line = line(8.0);
+        line.setOwner(owner);
+
+        when(player.getUniqueId()).thenReturn(playerId);
+        when(vault.has(player, 8.0)).thenReturn(true);
+        when(vault.withdraw(player, 8.0)).thenReturn(true);
+        when(vault.deposit(owner, 8.0)).thenReturn(false);
+        when(vault.deposit(playerId, 8.0)).thenReturn(true);
+
+        TicketService service = new TicketService(() -> vault, () -> true);
+        TicketService.TicketTransaction transaction = service.createTransaction(player, line);
+
+        assertEquals(TicketChargeStatus.TRANSACTION_FAILED, service.charge(transaction));
+        assertFalse(transaction.isCharged());
+        verify(vault).deposit(playerId, 8.0);
+    }
+
+    @Test
+    void shouldRefundDirectFareWhenOwnerDepositFails() {
+        VaultIntegration vault = enabledVault();
+        Player player = player();
+        UUID playerId = UUID.randomUUID();
+        UUID owner = UUID.randomUUID();
+        Line line = line(0.0);
+        line.setOwner(owner);
+
+        when(player.getUniqueId()).thenReturn(playerId);
+        when(vault.has(player, 4.0)).thenReturn(true);
+        when(vault.withdraw(player, 4.0)).thenReturn(true);
+        when(vault.deposit(owner, 4.0)).thenReturn(false);
+
+        TicketService service = new TicketService(() -> vault, () -> true);
+
+        assertEquals(TicketChargeStatus.TRANSACTION_FAILED, service.chargePrice(player, line, 4.0));
+        verify(vault).deposit(playerId, 4.0);
+    }
+
+    @Test
     void shouldEstimateMinimumPriceForDistanceMode() {
         VaultIntegration vault = enabledVault();
         Player player = player();

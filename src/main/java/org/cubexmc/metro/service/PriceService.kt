@@ -5,7 +5,6 @@ import org.cubexmc.metro.model.Line
 import org.cubexmc.metro.model.PriceRule
 import org.cubexmc.metro.model.Stop
 import kotlin.math.max
-import kotlin.math.min
 
 /**
  * Calculates prices based on line pricing rules, distance traveled, and time discounts.
@@ -64,9 +63,11 @@ class PriceService {
         if (entryIndex == -1 || exitIndex == -1) return 0
 
         if (line.isCircular) {
-            val forwardDist = (exitIndex - entryIndex + stopIds.size) % stopIds.size
-            val backwardDist = (entryIndex - exitIndex + stopIds.size) % stopIds.size
-            return min(forwardDist, backwardDist)
+            // Circular lines still travel in their configured order. The final
+            // stop duplicates the first one, so exclude it from the modulus.
+            val distinctStopCount = stopIds.size - 1
+            if (distinctStopCount <= 0) return 0
+            return (exitIndex - entryIndex + distinctStopCount) % distinctStopCount
         }
 
         if (exitIndex <= entryIndex) return 0

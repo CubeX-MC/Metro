@@ -66,7 +66,7 @@ class PriceServiceTest {
     }
 
     @Test
-    void circularLineShouldTakeShorterPath() {
+    void circularLineShouldFollowConfiguredDirection() {
         Line line = new Line("l1", "Circle");
         line.addStop("A", -1);
         line.addStop("B", -1);
@@ -74,6 +74,7 @@ class PriceServiceTest {
         line.addStop("D", -1);
         line.addStop("A", -1);
         assertEquals(2, service.countStopIntervals(line, "D", "B"));
+        assertEquals(3, service.countStopIntervals(line, "A", "D"));
     }
 
     @Test

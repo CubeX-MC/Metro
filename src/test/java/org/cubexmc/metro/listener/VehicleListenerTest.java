@@ -18,10 +18,12 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Minecart;
+import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.vehicle.VehicleDamageEvent;
 import org.bukkit.event.vehicle.VehicleDestroyEvent;
 import org.bukkit.event.vehicle.VehicleEntityCollisionEvent;
+import org.bukkit.event.vehicle.VehicleExitEvent;
 import org.bukkit.event.vehicle.VehicleMoveEvent;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
@@ -33,10 +35,35 @@ import org.cubexmc.metro.model.Portal;
 import org.cubexmc.metro.train.ScoreboardManager;
 import org.cubexmc.metro.train.TrainMovementTask;
 import org.cubexmc.metro.util.MetroConstants;
+import org.cubexmc.metro.util.SchedulerUtil;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
 class VehicleListenerTest {
+
+    @Test
+    void shouldSettleFareWhenPlayerExitsMetroMinecart() {
+        Metro plugin = plugin(false, false);
+        VehicleListener listener = new VehicleListener(plugin);
+        Minecart minecart = metroMinecart();
+        Player player = mock(Player.class);
+        Location location = mock(Location.class);
+        VehicleExitEvent event = mock(VehicleExitEvent.class);
+        TrainMovementTask task = mock(TrainMovementTask.class);
+
+        when(event.getVehicle()).thenReturn(minecart);
+        when(event.getExited()).thenReturn(player);
+        when(minecart.getLocation()).thenReturn(location);
+
+        try (MockedStatic<TrainMovementTask> taskRegistry = org.mockito.Mockito.mockStatic(TrainMovementTask.class);
+                MockedStatic<SchedulerUtil> scheduler = org.mockito.Mockito.mockStatic(SchedulerUtil.class)) {
+            taskRegistry.when(() -> TrainMovementTask.getTaskFor(minecart)).thenReturn(task);
+            listener.onVehicleExit(event);
+        }
+
+        verify(task).handlePassengerExit();
+        verify(plugin.getScoreboardManager()).clearPlayerDisplay(player);
+    }
 
     @Test
     void shouldCancelDamageToMetroMinecartWhenDamageProtectionIsEnabled() {

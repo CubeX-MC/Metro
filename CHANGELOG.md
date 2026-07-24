@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- **Economy compatibility**: rebind the active Vault economy provider when
+  services register/unregister and during `/m reload`, so late-loading or
+  hot-reloaded currency providers remain usable.
+- **Fare settlement**: charge interval fares from the last settled station,
+  settle a mid-route exit through the current target station, and refund the
+  passenger if the line-owner payout fails.
+- **GUI safety**: reject drag operations that touch Metro GUI slots while
+  allowing drags confined to the player's own inventory.
+
 ## 1.1.9 (2026-07-15)
 
 - **Folia**: rebuild protected-route rail indexes through region-owned chunk
