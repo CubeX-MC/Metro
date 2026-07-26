@@ -9,6 +9,7 @@ import java.util.logging.Level;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Minecart;
 import org.bukkit.entity.Player;
@@ -111,6 +112,15 @@ public class PlayerInteractListener implements Listener {
 
         // 检查点击的是否是铁轨
         if (!clickedBlock.getType().name().contains("RAIL")) {
+            return;
+        }
+
+        // 已经坐在地铁矿车里的玩家不能再次触发上车流程，否则会重复生成矿车
+        if (isRidingMetroMinecart(player)) {
+            event.setCancelled(true);
+            if (event.getHand() == EquipmentSlot.HAND) {
+                player.sendMessage(plugin.getLanguageManager().getMessage("interact.already_riding"));
+            }
             return;
         }
 
@@ -245,11 +255,27 @@ public class PlayerInteractListener implements Listener {
             sendNoBoardableLineMessage(player, stop);
             return;
         }
+        if (isRidingMetroMinecart(player)) {
+            player.sendMessage(plugin.getLanguageManager().getMessage("interact.already_riding"));
+            return;
+        }
         if (hasActivePendingMinecart(player, stop)) {
             return;
         }
 
         beginBoarding(player, stop, line);
+    }
+
+    /**
+     * 玩家是否已经是某辆地铁矿车的乘客
+     */
+    private boolean isRidingMetroMinecart(Player player) {
+        Entity vehicle = player.getVehicle();
+        if (!(vehicle instanceof Minecart minecart)) {
+            return false;
+        }
+        return minecart.getPersistentDataContainer()
+                .has(MetroConstants.getMinecartKey(), org.bukkit.persistence.PersistentDataType.BYTE);
     }
 
     private void beginBoarding(Player player, Stop stop, Line line) {

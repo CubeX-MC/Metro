@@ -184,6 +184,71 @@ class TrainMovementAssistControllerTest {
         verify(minecart).setVelocity(assistVelocity);
     }
 
+    @Test
+    void shouldDriveAtCruiseSpeedWhenCruiseControlIsEnabled() {
+        MockSetup setup = mockSetup(false, 20L, 0.4, 0.05);
+        when(setup.config().isCruiseControlEnabled()).thenReturn(true);
+        when(setup.config().getCruiseControlTargetSpeed()).thenReturn(-1.0);
+        when(setup.config().getCruiseControlIntervalTicks()).thenReturn(2L);
+
+        Minecart minecart = validMinecart();
+        Player passenger = mock(Player.class);
+        when(passenger.isOnline()).thenReturn(true);
+        when(passenger.getVehicle()).thenReturn(minecart);
+        TrainSession session = movingSession(setup.plugin(), minecart, passenger);
+        session.setLastTravelDirection(new Vector(1, 0, 0));
+
+        TrainPhysicsController physics = mock(TrainPhysicsController.class);
+        Vector cruiseVelocity = new Vector(3.0, 0, 0);
+        when(physics.canRecoverStalledMinecart(session)).thenReturn(true);
+        when(physics.resolveCruiseSpeed(minecart, -1.0)).thenReturn(3.0);
+        when(physics.isBelowCruiseSpeed(minecart, 3.0 * 0.95)).thenReturn(true);
+        when(physics.buildAssistVelocity(any(Vector.class), eq(3.0))).thenReturn(cruiseVelocity);
+        CapturingTrainScheduler scheduler = new CapturingTrainScheduler(setup.plugin());
+
+        TrainMovementAssistController ctrl = new TrainMovementAssistController(
+                session, scheduler, physics, () -> {}, () -> {});
+        ctrl.start();
+
+        // Cruise control runs even with safe-mode movement assist disabled
+        assertNotNull(scheduler.capturedTask);
+        assertEquals(2L, scheduler.period);
+
+        scheduler.capturedTask.run();
+
+        verify(minecart).setVelocity(cruiseVelocity);
+        verify(physics, never()).resolveAssistSpeed(any(), org.mockito.ArgumentMatchers.anyDouble(),
+                org.mockito.ArgumentMatchers.anyDouble());
+    }
+
+    @Test
+    void shouldNotPushWhenAlreadyAtCruiseSpeed() {
+        MockSetup setup = mockSetup(false, 20L, 0.4, 0.05);
+        when(setup.config().isCruiseControlEnabled()).thenReturn(true);
+        when(setup.config().getCruiseControlTargetSpeed()).thenReturn(-1.0);
+        when(setup.config().getCruiseControlIntervalTicks()).thenReturn(2L);
+
+        Minecart minecart = validMinecart();
+        Player passenger = mock(Player.class);
+        when(passenger.isOnline()).thenReturn(true);
+        when(passenger.getVehicle()).thenReturn(minecart);
+        TrainSession session = movingSession(setup.plugin(), minecart, passenger);
+        session.setLastTravelDirection(new Vector(1, 0, 0));
+
+        TrainPhysicsController physics = mock(TrainPhysicsController.class);
+        when(physics.canRecoverStalledMinecart(session)).thenReturn(true);
+        when(physics.resolveCruiseSpeed(minecart, -1.0)).thenReturn(3.0);
+        when(physics.isBelowCruiseSpeed(minecart, 3.0 * 0.95)).thenReturn(false);
+        CapturingTrainScheduler scheduler = new CapturingTrainScheduler(setup.plugin());
+
+        TrainMovementAssistController ctrl = new TrainMovementAssistController(
+                session, scheduler, physics, () -> {}, () -> {});
+        ctrl.start();
+        scheduler.capturedTask.run();
+
+        verify(minecart, never()).setVelocity(any(Vector.class));
+    }
+
     private Metro mockPlugin(boolean safeModeEnabled) {
         return mockSetup(safeModeEnabled, 20L, 0.4, 0.05).plugin();
     }

@@ -563,6 +563,8 @@ interact:
   train_spawned: "<green>Trene binildi, <departure_seconds> saniye içinde hareket edilecek..."
   train_error: "<red>Tren oluşturulurken bir hata oluştu, lütfen daha sonra tekrar deneyin."
   train_pending: "<red>Bu perona şu anda bir tren yaklaşıyor, lütfen tekrar denemeden önce biraz bekleyin."
+  already_riding: "<red>Zaten bir trendesiniz, tekrar binemezsiniz."
+  exit_locked: "<red>Tren hareket halinde, ancak bir sonraki istasyonda inebilirsiniz."
   stop_no_line: "<red>Bu durak hiçbir hatta ait değil."
   stop_no_point: "<red>Bu durağın bir durma noktası ayarlanmamış, binilemez."
   terminal_stop: "<red>Son duraktan hareket edilemez, lütfen binmek için başlangıç durağına gidin."

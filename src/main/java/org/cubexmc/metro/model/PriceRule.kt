@@ -87,20 +87,53 @@ class PriceRule {
         return multiplier
     }
 
+    /**
+     * Full trip price. Time discounts are applied *before* [maxPrice] so that
+     * `max_price` is the highest amount a passenger can ever be charged;
+     * capping first would make the discount cut into the cap instead.
+     */
     fun calculatePrice(distanceBlocks: Double, intervals: Int, gameTime: Long): Double {
-        var price = when (mode) {
+        val price = when (mode) {
             PricingMode.DISTANCE -> basePrice + distanceBlocks * perBlockRate
             PricingMode.INTERVAL -> basePrice + intervals * perIntervalRate
             PricingMode.FLAT -> basePrice
         }
-        if (maxPrice > 0.0 && price > maxPrice) {
-            price = maxPrice
+        return capTripTotal(applyDiscount(price, gameTime), 0.0)
+    }
+
+    /**
+     * Price of the variable part of a trip only, without [basePrice], which is
+     * already charged when boarding.
+     *
+     * Variable fares are settled once per stop, but [maxPrice] caps the whole
+     * trip, so [chargedForTripSoFar] (base price included) is deducted from the
+     * remaining allowance instead of capping each segment on its own.
+     */
+    fun calculateVariableFare(
+        distanceBlocks: Double,
+        intervals: Int,
+        gameTime: Long,
+        chargedForTripSoFar: Double,
+    ): Double {
+        val price = when (mode) {
+            PricingMode.DISTANCE -> distanceBlocks * perBlockRate
+            PricingMode.INTERVAL -> intervals * perIntervalRate
+            PricingMode.FLAT -> 0.0
         }
+        return capTripTotal(applyDiscount(price, gameTime), chargedForTripSoFar)
+    }
+
+    private fun applyDiscount(price: Double, gameTime: Long): Double {
         val discount = getActiveDiscountMultiplier(gameTime)
-        if (discount < 1.0) {
-            price *= discount
+        return if (discount < 1.0) price * discount else price
+    }
+
+    private fun capTripTotal(price: Double, chargedForTripSoFar: Double): Double {
+        if (maxPrice <= 0.0) {
+            return max(0.0, price)
         }
-        return max(0.0, price)
+        val remaining = maxPrice - max(0.0, chargedForTripSoFar)
+        return max(0.0, min(price, remaining))
     }
 
     fun getDescription(): String {

@@ -68,10 +68,12 @@ class LineCommandService(lineManager: LineManager?) {
         if (lineManager.setLineName(id, name)) WriteStatus.SUCCESS else WriteStatus.FAILED
 
     fun setColor(id: String, color: String?): WriteStatus {
-        if (!isValidColor(color)) {
+        // The color argument is parsed greedily, so trim before validating.
+        val normalized = color?.trim()
+        if (!isValidColor(normalized)) {
             return WriteStatus.INVALID_COLOR
         }
-        return if (lineManager.setLineColor(id, color)) WriteStatus.SUCCESS else WriteStatus.FAILED
+        return if (lineManager.setLineColor(id, normalized)) WriteStatus.SUCCESS else WriteStatus.FAILED
     }
 
     fun setTerminusName(id: String, terminusName: String?): WriteStatus =

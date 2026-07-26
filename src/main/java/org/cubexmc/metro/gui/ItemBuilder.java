@@ -5,8 +5,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.persistence.PersistentDataType;
 import org.cubexmc.metro.util.ColorUtil;
+import org.cubexmc.metro.util.MetroConstants;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -72,9 +75,27 @@ public class ItemBuilder {
 
     public ItemStack build() {
         if (meta != null) {
+            // 打上 GUI 标记，任何逃逸到玩家背包里的按钮都能被识别并清除
+            NamespacedKey guiItemKey = MetroConstants.getGuiItemKey();
+            if (guiItemKey != null) {
+                meta.getPersistentDataContainer().set(guiItemKey, PersistentDataType.BYTE, (byte) 1);
+            }
             item.setItemMeta(meta);
         }
         return item;
+    }
+
+    /**
+     * 判断物品是否由 Metro GUI 生成
+     */
+    public static boolean isGuiItem(ItemStack stack) {
+        NamespacedKey guiItemKey = MetroConstants.getGuiItemKey();
+        if (guiItemKey == null || stack == null || !stack.hasItemMeta()) {
+            return false;
+        }
+        ItemMeta itemMeta = stack.getItemMeta();
+        return itemMeta != null
+                && itemMeta.getPersistentDataContainer().has(guiItemKey, PersistentDataType.BYTE);
     }
 }
 

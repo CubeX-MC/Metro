@@ -41,6 +41,7 @@ import org.cubexmc.metro.service.LineSelectionService;
 import org.cubexmc.metro.service.TicketService;
 import org.cubexmc.metro.util.MetroConstants;
 import org.cubexmc.metro.util.OwnershipUtil;
+import org.cubexmc.metro.util.SchedulerUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -520,6 +521,83 @@ class PlayerInteractListenerExtendedTest {
     }
 
     // ---- Helper methods ----
+
+    // ---- Issue #41: right-clicking a rail while already riding must not board again ----
+
+    @Test
+    void shouldIgnoreRailClickWhilePlayerAlreadyRidesMetroMinecart() {
+        PlayerInteractListener listener = createListener();
+        seatPlayerInMetroMinecart();
+        when(languageManager.getMessage("interact.already_riding")).thenReturn("already riding");
+
+        Stop stop = createStopWithPoint("s1");
+        when(stopManager.getBestStopContainingLocation(any(Location.class), anyFloat())).thenReturn(stop);
+
+        Block rail = createBlock(Material.POWERED_RAIL, new Location(mock(World.class), 8, 64, 8));
+        PlayerInteractEvent event = createEvent(Action.RIGHT_CLICK_BLOCK, rail, EquipmentSlot.HAND);
+
+        listener.onPlayerInteract(event);
+
+        verify(event).setCancelled(true);
+        verify(player).sendMessage("already riding");
+        verify(stopManager, never()).getBestStopContainingLocation(any(Location.class), anyFloat());
+        verify(lineSelectionService, never()).getBoardableLines(any(Stop.class));
+    }
+
+    @Test
+    void shouldRejectGuiLineSelectionWhilePlayerAlreadyRidesMetroMinecart() {
+        PlayerInteractListener listener = createListener();
+        seatPlayerInMetroMinecart();
+        when(languageManager.getMessage("interact.already_riding")).thenReturn("already riding");
+
+        Stop stop = createStopWithPoint("s1");
+        Line line = createLine("l1", "s1", "s2");
+        when(stopManager.getStop("s1")).thenReturn(stop);
+        when(lineManager.getLine("l1")).thenReturn(line);
+        when(lineSelectionService.getBoardableLines(stop)).thenReturn(List.of(line));
+
+        listener.boardSelectedLine(player, "s1", "l1");
+
+        verify(player).sendMessage("already riding");
+        verify(ticketService, never()).checkCanBoard(any(Player.class), any(Line.class));
+    }
+
+    @Test
+    void shouldStillBoardWhenPlayerRidesNonMetroMinecart() {
+        PlayerInteractListener listener = createListener();
+        org.bukkit.entity.Minecart cart = mock(org.bukkit.entity.Minecart.class);
+        org.bukkit.persistence.PersistentDataContainer pdc =
+                mock(org.bukkit.persistence.PersistentDataContainer.class);
+        when(cart.getPersistentDataContainer()).thenReturn(pdc);
+        when(pdc.has(eq(MetroConstants.getMinecartKey()), eq(org.bukkit.persistence.PersistentDataType.BYTE)))
+                .thenReturn(false);
+        when(player.getVehicle()).thenReturn(cart);
+
+        Stop stop = createStopWithPoint("s1");
+        when(stopManager.getBestStopContainingLocation(any(Location.class), anyFloat())).thenReturn(stop);
+        when(lineSelectionService.getBoardableLines(stop)).thenReturn(List.of());
+        when(lineManager.getLinesForStop("s1")).thenReturn(List.of());
+        when(languageManager.getMessage("interact.stop_no_line")).thenReturn("no line");
+
+        Block rail = createBlock(Material.POWERED_RAIL, new Location(mock(World.class), 8, 64, 8));
+        PlayerInteractEvent event = createEvent(Action.RIGHT_CLICK_BLOCK, rail, EquipmentSlot.HAND);
+
+        try (var schedulerMock = mockStatic(SchedulerUtil.class)) {
+            listener.onPlayerInteract(event);
+        }
+
+        verify(player).sendMessage("no line");
+    }
+
+    private void seatPlayerInMetroMinecart() {
+        org.bukkit.entity.Minecart cart = mock(org.bukkit.entity.Minecart.class);
+        org.bukkit.persistence.PersistentDataContainer pdc =
+                mock(org.bukkit.persistence.PersistentDataContainer.class);
+        when(cart.getPersistentDataContainer()).thenReturn(pdc);
+        when(pdc.has(eq(MetroConstants.getMinecartKey()), eq(org.bukkit.persistence.PersistentDataType.BYTE)))
+                .thenReturn(true);
+        when(player.getVehicle()).thenReturn(cart);
+    }
 
     private static void invokeHandleStopPoint(PlayerInteractListener listener, Player player, Stop stop) throws Exception {
         Method method = PlayerInteractListener.class.getDeclaredMethod("handleStopPoint", Player.class, Stop.class);

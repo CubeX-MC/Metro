@@ -19,6 +19,7 @@ import org.cubexmc.metro.Metro
 import org.cubexmc.metro.model.Portal
 import org.cubexmc.metro.train.TrainMovementTask
 import org.cubexmc.metro.util.MetroConstants
+import org.cubexmc.metro.util.MinecartEjector
 import org.cubexmc.metro.util.SchedulerUtil
 
 /**
@@ -236,7 +237,7 @@ class PortalManager(private val plugin: Metro) {
         }
 
         if (passenger != null) {
-            sourceCart.eject()
+            MinecartEjector.eject(sourceCart)
         }
 
         val sourcePdc = sourceCart.persistentDataContainer

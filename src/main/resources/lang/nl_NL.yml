@@ -563,6 +563,8 @@ interact:
   train_spawned: "<green>Ingestapt, vertrek over <departure_seconds> seconden..."
   train_error: "<red>Fout bij het genereren van trein, probeer later opnieuw."
   train_pending: "<red>Er is al een trein onderweg naar dit perron, wacht even en probeer opnieuw."
+  already_riding: "<red>Je zit al in een trein, je kunt niet opnieuw instappen."
+  exit_locked: "<red>De trein rijdt, je kunt pas op het volgende station uitstappen."
   stop_no_line: "<red>Dit stopgebied behoort tot geen enkele lijn."
   stop_no_point: "<red>Dit stopgebied heeft nog geen stoppunt ingesteld, kan niet instappen."
   terminal_stop: "<red>Eindstation kan niet vertrekken, ga naar startstation om in te stappen."

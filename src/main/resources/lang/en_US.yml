@@ -563,6 +563,8 @@ interact:
   train_spawned: "<green>Boarded train, departing in <departure_seconds> seconds..."
   train_error: "<red>Error occurred while spawning train, please try again later."
   train_pending: "<red>A train is already arriving at this platform, please wait a moment before trying again."
+  already_riding: "<red>You are already on board a train, you cannot board again."
+  exit_locked: "<red>The train is moving, you can only get off at the next station."
   stop_no_line: "<red>This stop does not belong to any line."
   stop_no_point: "<red>This stop has no stopping point set, cannot board."
   terminal_stop: "<red>Cannot depart from terminal station, please go to starting station to board."

@@ -1,5 +1,9 @@
 package org.cubexmc.metro.listener;
 
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Minecart;
@@ -25,6 +29,7 @@ import org.cubexmc.metro.model.Portal;
 import org.cubexmc.metro.train.TrainMovementTask;
 import org.cubexmc.metro.util.LocationUtil;
 import org.cubexmc.metro.util.MetroConstants;
+import org.cubexmc.metro.util.MinecartEjector;
 import org.cubexmc.metro.util.SchedulerUtil;
 
 /**
@@ -32,12 +37,62 @@ import org.cubexmc.metro.util.SchedulerUtil;
  */
 public class VehicleListener implements Listener {
 
+    /** 行驶中下车提示的重发间隔，避免玩家按住 Shift 时刷屏 */
+    private static final long EXIT_LOCK_NOTICE_COOLDOWN_MS = 3000L;
+
+    /** 上坡补推的最低速度（格/tick），等于原版动力铁轨的基础速度 */
+    private static final double UPHILL_PUSH_SPEED = 0.4;
+
     private final Metro plugin;
     private final org.bukkit.NamespacedKey CURRENT_STOP_KEY;
+    private final Map<UUID, Long> exitLockNotices = new ConcurrentHashMap<>();
 
     public VehicleListener(Metro plugin) {
         this.plugin = plugin;
         this.CURRENT_STOP_KEY = new org.bukkit.NamespacedKey(plugin, "current_stop_id");
+    }
+
+    /**
+     * safe_mode.passenger_exit_lock：列车行驶途中禁止乘客下车
+     *
+     * <p>只在列车仍然由 Metro 控制且未停靠时拦截；矿车已死亡或没有对应的
+     * 行程任务时一律放行，避免玩家被卡在故障矿车里。
+     */
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    public void onPassengerExitWhileMoving(VehicleExitEvent event) {
+        if (!plugin.getConfigFacade().isSafeModePassengerExitLock()) {
+            return;
+        }
+        Vehicle vehicle = event.getVehicle();
+        if (!(vehicle instanceof Minecart minecart) || !(event.getExited() instanceof Player player)) {
+            return;
+        }
+        if (!isMetroMinecart(minecart) || minecart.isDead() || !minecart.isValid()) {
+            return;
+        }
+        // 插件自己触发的下车（传送门、脱轨清理、关服）不受锁限制
+        if (MinecartEjector.isPluginEjecting(minecart) || !plugin.isEnabled()) {
+            return;
+        }
+
+        TrainMovementTask trainTask = TrainMovementTask.getTaskFor(minecart);
+        if (trainTask == null || trainTask.isStoppedAtStation()) {
+            return;
+        }
+
+        event.setCancelled(true);
+        notifyExitLocked(player);
+    }
+
+    private void notifyExitLocked(Player player) {
+        UUID playerId = player.getUniqueId();
+        long now = System.currentTimeMillis();
+        Long lastNotice = exitLockNotices.get(playerId);
+        if (lastNotice != null && now - lastNotice < EXIT_LOCK_NOTICE_COOLDOWN_MS) {
+            return;
+        }
+        exitLockNotices.put(playerId, now);
+        player.sendMessage(plugin.getLanguageManager().getMessage("interact.exit_locked"));
     }
 
     /**
@@ -65,6 +120,8 @@ public class VehicleListener implements Listener {
         if (trainTask != null) {
             trainTask.handlePassengerExit();
         }
+
+        exitLockNotices.remove(player.getUniqueId());
 
         // 玩家下车，清除其界面显示
         plugin.getScoreboardManager().clearPlayerDisplay(player);
@@ -209,14 +266,17 @@ public class VehicleListener implements Listener {
                 }
             }
 
-            // 限制上坡速度为0.4，防止到达坡顶后倒退
+            // 上坡时补推，防止到达坡顶后倒退。
+            // 不再写死 0.4：线路 max_speed 高于该值时按线路速度推进，
+            // 否则任何上坡路段都会把车速强行压到 8 格/秒
             if (minecart.getMaxSpeed() > 0.0 && to.getY() > from.getY()) {
                 Vector direction = LocationUtil.getDirectionVector(from, to);
-                minecart.setVelocity(direction.multiply(0.4));
+                double uphillSpeed = Math.max(UPHILL_PUSH_SPEED, minecart.getMaxSpeed());
+                minecart.setVelocity(direction.multiply(uphillSpeed));
             }
         } else {
             // 矿车已脱轨，强制乘客下车并移除矿车
-            minecart.eject();
+            MinecartEjector.eject(minecart);
             minecart.remove();
         }
     }

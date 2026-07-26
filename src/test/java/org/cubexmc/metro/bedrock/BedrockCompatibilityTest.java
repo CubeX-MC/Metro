@@ -20,7 +20,6 @@ import org.bukkit.entity.Minecart;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.cubexmc.metro.util.SchedulerUtil;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 class BedrockCompatibilityTest {
@@ -119,7 +118,6 @@ class BedrockCompatibilityTest {
     }
 
     @Test
-    @Disabled("临时测试：BedrockArrivalSync 已在 BedrockCompatibility.onTrainArrival 中禁用")
     void onTrainArrivalShouldScheduleEntityTaskForBedrockPlayer() {
         Plugin plugin = mock(Plugin.class);
         BedrockCompatibility compatibility = new BedrockCompatibility(plugin);
@@ -141,7 +139,6 @@ class BedrockCompatibilityTest {
     }
 
     @Test
-    @Disabled("临时测试：BedrockArrivalSync 已在 BedrockCompatibility.onTrainArrival 中禁用")
     void onTrainDepartureShouldCancelActiveArrivalTask() {
         Plugin plugin = mock(Plugin.class);
         BedrockCompatibility compatibility = new BedrockCompatibility(plugin);
@@ -160,6 +157,49 @@ class BedrockCompatibilityTest {
             compatibility.onTrainDeparture(minecart);
 
             scheduler.verify(() -> SchedulerUtil.cancelTask(scheduledHandle));
+        }
+    }
+
+    @Test
+    void onTrainArrivalShouldBeNoOpWhenArrivalSyncIsDisabledInConfig() {
+        Plugin plugin = mock(Plugin.class);
+        BedrockCompatibility compatibility = new BedrockCompatibility(plugin, () -> false);
+        Player passenger = onlinePlayer();
+        Minecart minecart = mock(Minecart.class);
+        when(minecart.getUniqueId()).thenReturn(UUID.randomUUID());
+
+        try (var detector = mockStatic(BedrockDetector.class);
+             var scheduler = mockStatic(SchedulerUtil.class)) {
+            detector.when(() -> BedrockDetector.isBedrockPlayer(passenger)).thenReturn(true);
+
+            compatibility.onTrainArrival(passenger, minecart);
+
+            scheduler.verify(() -> SchedulerUtil.entityRun(eq(plugin), eq(minecart), any(Runnable.class),
+                    anyLong(), anyLong()), never());
+        }
+    }
+
+    @Test
+    void onTrainArrivalShouldReadConfigFlagPerCallSoReloadTakesEffect() {
+        Plugin plugin = mock(Plugin.class);
+        java.util.concurrent.atomic.AtomicBoolean enabled = new java.util.concurrent.atomic.AtomicBoolean(false);
+        BedrockCompatibility compatibility = new BedrockCompatibility(plugin, enabled::get);
+        Player passenger = onlinePlayer();
+        Minecart minecart = mock(Minecart.class);
+        when(minecart.getUniqueId()).thenReturn(UUID.randomUUID());
+
+        try (var detector = mockStatic(BedrockDetector.class);
+             var scheduler = mockStatic(SchedulerUtil.class)) {
+            detector.when(() -> BedrockDetector.isBedrockPlayer(passenger)).thenReturn(true);
+            scheduler.when(() -> SchedulerUtil.entityRun(eq(plugin), eq(minecart), any(Runnable.class),
+                    anyLong(), anyLong())).thenReturn(new Object());
+
+            compatibility.onTrainArrival(passenger, minecart);
+            enabled.set(true);
+            compatibility.onTrainArrival(passenger, minecart);
+
+            scheduler.verify(() -> SchedulerUtil.entityRun(eq(plugin), eq(minecart), any(Runnable.class),
+                    anyLong(), anyLong()));
         }
     }
 

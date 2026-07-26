@@ -28,9 +28,22 @@ class TrainSession(
     var distanceTraveled: Double = 0.0
         private set
 
+    /**
+     * Everything the passenger has paid for this trip, starting with the base
+     * price charged when boarding. Used to cap the trip total at `max_price`.
+     */
+    var fareChargedForTrip: Double = line?.priceRule?.getBasePrice() ?: 0.0
+        private set
+
     fun addDistance(blocks: Double): Double {
         distanceTraveled += blocks
         return distanceTraveled
+    }
+
+    fun addFareCharged(amount: Double) {
+        if (amount > 0.0) {
+            fareChargedForTrip += amount
+        }
     }
 
     fun markFareSettledAt(stopId: String?) {

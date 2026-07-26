@@ -1,6 +1,7 @@
 package org.cubexmc.metro.bedrock
 
 import java.util.concurrent.CompletableFuture
+import java.util.function.BooleanSupplier
 import org.bukkit.Location
 import org.bukkit.entity.Minecart
 import org.bukkit.entity.Player
@@ -13,7 +14,14 @@ import org.bukkit.plugin.Plugin
  * agnostic of Geyser/Floodgate quirks. Java players take the lightweight code path;
  * Bedrock players get conservative timings and any future targeted fixes.
  */
-class BedrockCompatibility(private val plugin: Plugin) {
+class BedrockCompatibility @JvmOverloads constructor(
+    private val plugin: Plugin,
+    /**
+     * Reads `settings.bedrock.arrival_sync` at call time so `/metro reload`
+     * takes effect. Defaults to enabled when no supplier is given.
+     */
+    private val arrivalSyncEnabled: BooleanSupplier = BooleanSupplier { true },
+) {
     private val arrivalSync = BedrockArrivalSync()
 
     /**
@@ -44,12 +52,13 @@ class BedrockCompatibility(private val plugin: Plugin) {
      * and the mounted player does not drift into the void. No-op for Java players.
      */
     fun onTrainArrival(passenger: Player?, minecart: Minecart?) {
-        // 临时测试：禁用 BedrockArrivalSync，验证到站漂移是否已由 teleport 修复解决。
-        // 若基岩玩家到站后仍漂移/掉虚空，则恢复以下代码；否则可整体移除该特性。
-        // if (passenger == null || minecart == null || !isBedrock(passenger)) {
-        //     return;
-        // }
-        // arrivalSync.start(plugin, passenger, minecart);
+        if (passenger == null || minecart == null) {
+            return
+        }
+        if (!arrivalSyncEnabled.asBoolean || !isBedrock(passenger)) {
+            return
+        }
+        arrivalSync.start(plugin, passenger, minecart)
     }
 
     /**

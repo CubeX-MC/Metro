@@ -83,6 +83,16 @@ titles:
     subtitle: '<gray>Current: <green><stop_name> <dark_gray>| <gray>Next: <yellow><next_stop_name>'
     actionbar: '<yellow>⚠ Departing in <red><countdown>s'
 
+  # 行驶途中的动作栏，<next_stop_distance> 为距离下一站的方块数
+  # In-transit action bar; <next_stop_distance> is the remaining distance to
+  # the next stop in blocks
+  traveling:
+    enabled: true
+    # 刷新间隔，单位tick（矿车每移动这么多 tick 刷新一次）
+    # Refresh interval in ticks
+    interval: 10
+    actionbar: '<gray>Next: <yellow><next_stop_name> <dark_gray>| <gray><next_stop_distance> blocks'
+
 # 音乐配置
 # Sound Configuration
 sounds:
@@ -194,6 +204,29 @@ speed_control:
   # 控速模式: VANILLA_MOMENTUM (原版推力惯性) 或 BLOCK_BASED (根据铁轨下方方块实时控速)
   # Speed control mode: VANILLA_MOMENTUM (Vanilla momentum) or BLOCK_BASED (Real-time speed control based on blocks below rails)
   mode: VANILLA_MOMENTUM
+  # 巡航控速（实验性）
+  # max_speed / cart_speed 只是速度上限，不是目标速度：原版动力铁轨给矿车的
+  # 加速度与摩擦力平衡后约为 1.5 格/tick（约 30 格/秒），把上限调到 100 也不会
+  # 更快。开启巡航控速后，插件会在区间行驶中主动把车速维持在目标速度，
+  # 从而突破这一平衡点。
+  #
+  # 代价：高速过弯更容易脱轨，且客户端预测会更明显。建议配合直线线路，
+  # 或用上面的 BLOCK_BASED 在弯道处降速。
+  #
+  # Cruise control (experimental)
+  # max_speed / cart_speed are only upper clamps, not targets: vanilla powered
+  # rails settle at about 1.5 blocks/tick (~30 blocks/s) regardless of the
+  # clamp. With cruise control the plugin actively drives the cart at the
+  # target speed between stops, which is the only way past that plateau.
+  # Trade-off: derailing on curves becomes much more likely at high speed.
+  cruise_control:
+    enabled: false
+    # 目标速度（格/tick）。<= 0 表示使用线路 max_speed（未设置时用 settings.cart_speed）
+    # Target speed in blocks/tick. <= 0 uses the line max_speed, falling back to settings.cart_speed
+    target_speed: -1
+    # 控速间隔（tick），越小越平滑，开销也越大
+    # Control interval in ticks; smaller is smoother but costs more
+    interval_ticks: 2
   # 铁轨下方方块速度映射表 (仅在 BLOCK_BASED 开启时有效) 可以按世界分组配置
   # Block speed mapping table (only effective when BLOCK_BASED is enabled). Can be configured per world
   worlds:
@@ -292,12 +325,32 @@ settings:
     # 乘客拆轨保护：玩家乘坐 Metro 矿车时禁止破坏铁轨
     # Passenger rail break protection: prevent players riding Metro minecarts from breaking rails
     passenger_rail_break_protection: true
+    # 行驶中禁止下车：列车未停靠时按 Shift 无法离开矿车（防止逃票/半路跳车）
+    # 矿车已损坏或没有行程任务时仍然可以下车，不会把玩家卡住
+    # Passenger exit lock: passengers cannot leave the minecart while the train
+    # is not docked (prevents fare evasion). Broken carts and carts without an
+    # active ride can always be left, so players never get stuck.
+    passenger_exit_lock: true
     # 判定为失速的水平速度阈值
     # Horizontal speed threshold used to detect stalls
     min_cruise_speed: 0.08
     # 失速检测间隔，单位tick；只按活动矿车数量运行
     # Stall recovery interval in ticks; runs only per active metro minecart
     stall_recovery_ticks: 8
+  # 基岩版（Geyser/Floodgate）兼容设置
+  # Bedrock (Geyser/Floodgate) compatibility
+  bedrock:
+    # 到站零速度同步：基岩版矿车没有 maxSpeed 概念，Geyser 无法翻译
+    # setMaxSpeed(0)，客户端会按最后收到的速度继续预测，导致基岩玩家到站后
+    # 漂移甚至掉虚空。开启后会在停靠期间周期性地向基岩乘客补发零速度包。
+    # 只影响通过 Geyser/Floodgate 连接的玩家；纯 Java 服务器上不做任何事。
+    #
+    # Arrival velocity sync: Bedrock minecarts have no maxSpeed concept, so
+    # Geyser cannot translate setMaxSpeed(0) and the client keeps predicting
+    # forward motion, drifting the passenger away or into the void. When
+    # enabled, zero-velocity updates are pushed to Bedrock passengers while
+    # docked. Only affects Geyser/Floodgate players; a no-op otherwise.
+    arrival_sync: true
   # 矿车移动速度
   # Minecart movement speed
   cart_speed: 0.3
@@ -329,6 +382,9 @@ settings:
     # 计分板诊断日志
     # Scoreboard diagnostic logs
     scoreboard: true
+    # GUI 物品泄漏清理日志
+    # Logs for cleaning up leaked GUI items
+    gui: true
 
 # 脱轨相关设置
 # Derailment Settings

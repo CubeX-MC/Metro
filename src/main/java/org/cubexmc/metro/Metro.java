@@ -79,6 +79,9 @@ public final class Metro extends CubexPlugin {
             getDataFolder().mkdirs();
         }
 
+        // PDC 键要在任何管理器/GUI 构建物品之前准备好
+        MetroConstants.initialize(this);
+
         // 初始化并迁移配置文件
         MetroMigrations.ensureConfigResources(this);
         MetroMigrations.migrateConfig(this);
@@ -91,7 +94,8 @@ public final class Metro extends CubexPlugin {
         DataFileUpdater.migrateAll(this);
 
         // 初始化 Bedrock 兼容 facade
-        this.bedrockCompatibility = new BedrockCompatibility(this);
+        this.bedrockCompatibility = new BedrockCompatibility(this,
+                () -> getConfigFacade().isBedrockArrivalSyncEnabled());
 
         // 初始化并迁移语言文件
         MetroMigrations.ensureLanguageResources(this);
@@ -139,7 +143,6 @@ public final class Metro extends CubexPlugin {
 
         // 初始化计分板管理器
         scoreboardManager = new ScoreboardManager(this);
-        MetroConstants.initialize(this);
 
         CommandRegistration.Result commandRegistration =
                 new CommandRegistration(this, lineManager, stopManager, portalManager).register();
@@ -262,7 +265,7 @@ public final class Metro extends CubexPlugin {
                             && minecart.getPersistentDataContainer().has(
                                     org.cubexmc.metro.util.MetroConstants.getMinecartKey(),
                                     org.bukkit.persistence.PersistentDataType.BYTE)) {
-                        minecart.eject();
+                        org.cubexmc.metro.util.MinecartEjector.eject(minecart);
                         minecart.remove();
                     }
                 }

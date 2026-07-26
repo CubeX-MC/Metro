@@ -118,7 +118,8 @@ public class LineCommand {
     @CommandDescription("Set the color of a metro line")
     public void setColor(Player player,
                          @Argument(value = "lineId", suggestions = "lineIds") String id,
-                         @Argument(value = "color", suggestions = "lineColors") String color) {
+                         // Greedy: Brigadier's单词参数不接受 & 和 #，会把 &#RRGGBB 判为语法错误
+                         @Greedy @Argument(value = "color", suggestions = "lineColors") String color) {
         Line line = guard.requireManageableLine(player, id);
         if (line == null) {
             return;

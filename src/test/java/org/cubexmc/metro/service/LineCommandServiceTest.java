@@ -56,6 +56,15 @@ class LineCommandServiceTest {
     }
 
     @Test
+    void shouldTrimGreedyColorArgumentBeforeValidating() {
+        when(lineManager.setLineColor("red", "&#e4002b")).thenReturn(true);
+
+        assertEquals(WriteStatus.SUCCESS, service.setColor("red", "&#e4002b "));
+
+        verify(lineManager).setLineColor("red", "&#e4002b");
+    }
+
+    @Test
     void shouldListLinesInStableIdOrder() {
         Line beta = line("beta", "world", List.of());
         Line alpha = line("alpha", "world", List.of());

@@ -1,19 +1,26 @@
 package org.cubexmc.metro.gui;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Set;
 
+import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.InventoryView;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.cubexmc.metro.Metro;
+import org.cubexmc.metro.util.SchedulerUtil;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 
 class GuiListenerTest {
 
@@ -102,5 +109,57 @@ class GuiListenerTest {
         listener.onInventoryDrag(event);
 
         verify(event, never()).setCancelled(true);
+    }
+
+    @Test
+    void shouldRemoveLeakedGuiItemsWhenMetroGuiCloses() {
+        Metro plugin = mock(Metro.class);
+        GuiListener listener = new GuiListener(plugin);
+        InventoryCloseEvent event = mock(InventoryCloseEvent.class);
+        Inventory inventory = mock(Inventory.class);
+        InventoryView view = mock(InventoryView.class);
+        Player player = mock(Player.class);
+        PlayerInventory playerInventory = mock(PlayerInventory.class);
+        ItemStack guiItem = mock(ItemStack.class);
+        ItemStack ownItem = mock(ItemStack.class);
+
+        when(event.getView()).thenReturn(view);
+        when(view.getTopInventory()).thenReturn(inventory);
+        when(inventory.getHolder()).thenReturn(new GuiHolder(GuiHolder.GuiType.LINE_LIST));
+        when(event.getPlayer()).thenReturn(player);
+        when(player.getName()).thenReturn("Alice");
+        when(player.getInventory()).thenReturn(playerInventory);
+        when(player.getItemOnCursor()).thenReturn(guiItem);
+        when(playerInventory.getContents()).thenReturn(new ItemStack[] { ownItem, guiItem });
+
+        try (MockedStatic<ItemBuilder> itemBuilder = mockStatic(ItemBuilder.class);
+                MockedStatic<SchedulerUtil> scheduler = mockStatic(SchedulerUtil.class)) {
+            itemBuilder.when(() -> ItemBuilder.isGuiItem(guiItem)).thenReturn(true);
+            itemBuilder.when(() -> ItemBuilder.isGuiItem(ownItem)).thenReturn(false);
+
+            listener.onInventoryClose(event);
+        }
+
+        verify(player).setItemOnCursor(null);
+        verify(playerInventory).setItem(1, null);
+        verify(playerInventory, never()).setItem(0, null);
+    }
+
+    @Test
+    void shouldIgnoreCloseOfForeignInventory() {
+        GuiListener listener = new GuiListener(mock(Metro.class));
+        InventoryCloseEvent event = mock(InventoryCloseEvent.class);
+        Inventory inventory = mock(Inventory.class);
+        InventoryView view = mock(InventoryView.class);
+        Player player = mock(Player.class);
+
+        when(event.getView()).thenReturn(view);
+        when(view.getTopInventory()).thenReturn(inventory);
+        when(inventory.getHolder()).thenReturn(mock(InventoryHolder.class));
+        when(event.getPlayer()).thenReturn(player);
+
+        listener.onInventoryClose(event);
+
+        verify(player, never()).getInventory();
     }
 }

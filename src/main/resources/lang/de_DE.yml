@@ -562,6 +562,8 @@ interact:
   train_spawned: "<green>Eingestiegen, Abfahrt in <departure_seconds> Sekunden..."
   train_error: "<red>Fehler beim Generieren des Zugs, versuche es später erneut."
   train_pending: "<red>Es ist bereits ein Zug zu diesem Bahnsteig unterwegs, warte einen Moment und versuche es erneut."
+  already_riding: "<red>Du sitzt bereits in einem Zug, du kannst nicht erneut einsteigen."
+  exit_locked: "<red>Der Zug fährt gerade, du kannst erst am nächsten Bahnhof aussteigen."
   stop_no_line: "<red>Dieser Haltebereich gehört zu keiner Linie."
   stop_no_point: "<red>Dieser Haltebereich hat noch keinen Haltepunkt festgelegt, kann nicht einsteigen."
   terminal_stop: "<red>Endstation kann nicht abfahren, gehe zur Startstation um einzusteigen."

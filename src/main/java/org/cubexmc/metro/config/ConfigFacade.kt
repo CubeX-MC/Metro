@@ -53,6 +53,10 @@ class ConfigFacade(private val plugin: Metro) {
     private var waitingSubtitle = ""
     private var waitingActionbar = ""
 
+    private var travelingActionbarEnabled = false
+    private var travelingActionbar = ""
+    private var travelingActionbarInterval = 10
+
     private var departureSoundEnabled = false
     private var departureNotes: List<String> = emptyList()
     private var departureInitialDelay = 0
@@ -74,6 +78,9 @@ class ConfigFacade(private val plugin: Metro) {
     private var lineSymbol = ""
 
     private var speedControlMode = ""
+    private var cruiseControlEnabled = false
+    private var cruiseControlTargetSpeed = -1.0
+    private var cruiseControlIntervalTicks = 2L
     private var blockSpeedMap: MutableMap<String, MutableMap<String, Double>> = HashMap()
 
     private var mapIntegrationEnabled = false
@@ -115,6 +122,8 @@ class ConfigFacade(private val plugin: Metro) {
     private var safeModeDamageProtection = false
     private var safeModeMovementAssist = false
     private var safeModePassengerRailBreakProtection = false
+    private var safeModePassengerExitLock = false
+    private var bedrockArrivalSyncEnabled = true
     private var safeModeMinCruiseSpeed = 0.0
     private var safeModeStallRecoveryTicks = 0L
     private var economyEnabled = false
@@ -202,6 +211,13 @@ class ConfigFacade(private val plugin: Metro) {
                 ?: "列车将在 &c{countdown} &f秒后发车",
         )
 
+        travelingActionbarEnabled = plugin.config.getBoolean("titles.traveling.enabled", true)
+        travelingActionbar = colorize(
+            plugin.config.getString("titles.traveling.actionbar", TRAVELING_ACTIONBAR_DEFAULT)
+                ?: TRAVELING_ACTIONBAR_DEFAULT,
+        )
+        travelingActionbarInterval = plugin.config.getInt("titles.traveling.interval", 10).coerceAtLeast(1)
+
         departureSoundEnabled = plugin.config.getBoolean("sounds.departure.enabled", true)
         departureNotes = plugin.config.getStringList("sounds.departure.notes")
         departureInitialDelay = plugin.config.getInt("sounds.departure.initial_delay", 0)
@@ -223,6 +239,10 @@ class ConfigFacade(private val plugin: Metro) {
         lineSymbol = plugin.config.getString("scoreboard.line_symbol", "❙") ?: "❙"
 
         speedControlMode = plugin.config.getString("speed_control.mode", "VANILLA_MOMENTUM") ?: "VANILLA_MOMENTUM"
+        cruiseControlEnabled = plugin.config.getBoolean("speed_control.cruise_control.enabled", false)
+        cruiseControlTargetSpeed = plugin.config.getDouble("speed_control.cruise_control.target_speed", -1.0)
+        cruiseControlIntervalTicks =
+            plugin.config.getLong("speed_control.cruise_control.interval_ticks", 2L).coerceAtLeast(1L)
         blockSpeedMap = HashMap()
         if (plugin.config.isConfigurationSection("speed_control.worlds")) {
             val worldsSection = plugin.config.getConfigurationSection("speed_control.worlds")
@@ -297,8 +317,11 @@ class ConfigFacade(private val plugin: Metro) {
         safeModeMovementAssist = plugin.config.getBoolean("settings.safe_mode.movement_assist", true)
         safeModePassengerRailBreakProtection =
             plugin.config.getBoolean("settings.safe_mode.passenger_rail_break_protection", true)
+        safeModePassengerExitLock =
+            plugin.config.getBoolean("settings.safe_mode.passenger_exit_lock", true)
         safeModeMinCruiseSpeed = plugin.config.getDouble("settings.safe_mode.min_cruise_speed", 0.08)
         safeModeStallRecoveryTicks = plugin.config.getLong("settings.safe_mode.stall_recovery_ticks", 8L)
+        bedrockArrivalSyncEnabled = plugin.config.getBoolean("settings.bedrock.arrival_sync", true)
         economyEnabled = plugin.config.getBoolean("economy.enabled", true)
 
         val toolName = plugin.config.getString("settings.selection_tool", "GOLDEN_SHOVEL") ?: "GOLDEN_SHOVEL"
@@ -412,6 +435,12 @@ class ConfigFacade(private val plugin: Metro) {
 
     fun getWaitingActionbar(): String = waitingActionbar
 
+    fun isTravelingActionbarEnabled(): Boolean = travelingActionbarEnabled
+
+    fun getTravelingActionbar(): String = travelingActionbar
+
+    fun getTravelingActionbarInterval(): Int = travelingActionbarInterval
+
     fun isDepartureSoundEnabled(): Boolean = departureSoundEnabled
 
     fun getDepartureNotes(): List<String> = departureNotes
@@ -447,6 +476,12 @@ class ConfigFacade(private val plugin: Metro) {
     fun getLineSymbol(): String = lineSymbol
 
     fun getSpeedControlMode(): String = speedControlMode
+
+    fun isCruiseControlEnabled(): Boolean = cruiseControlEnabled
+
+    fun getCruiseControlTargetSpeed(): Double = cruiseControlTargetSpeed
+
+    fun getCruiseControlIntervalTicks(): Long = cruiseControlIntervalTicks
 
     fun getBlockSpeedMap(): Map<String, Map<String, Double>> = blockSpeedMap
 
@@ -486,6 +521,10 @@ class ConfigFacade(private val plugin: Metro) {
 
     fun isSafeModePassengerRailBreakProtection(): Boolean =
         safeModeEnabled && safeModePassengerRailBreakProtection
+
+    fun isSafeModePassengerExitLock(): Boolean = safeModeEnabled && safeModePassengerExitLock
+
+    fun isBedrockArrivalSyncEnabled(): Boolean = bedrockArrivalSyncEnabled
 
     fun getSafeModeMinCruiseSpeed(): Double = safeModeMinCruiseSpeed
 
@@ -568,5 +607,7 @@ class ConfigFacade(private val plugin: Metro) {
     companion object {
         private const val STOP_CONTINUOUS_PATH = "titles.stop_continuous"
         private const val LEGACY_ENTER_STOP_PATH = "titles.enter_stop"
+        private const val TRAVELING_ACTIONBAR_DEFAULT =
+            "<gray>Next: <yellow><next_stop_name> <dark_gray>| <gray><next_stop_distance> blocks"
     }
 }

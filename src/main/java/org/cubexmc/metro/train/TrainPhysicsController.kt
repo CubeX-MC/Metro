@@ -64,6 +64,19 @@ class TrainPhysicsController {
         return horizontalSpeed < minCruiseSpeed
     }
 
+    /**
+     * Speed cruise control drives the cart at.
+     *
+     * `Minecart.setMaxSpeed` is only an upper clamp: on powered rails vanilla
+     * settles at roughly 1.5 blocks/tick no matter how high the clamp is, so
+     * reaching a higher configured speed requires driving the cart directly.
+     *
+     * @param configuredSpeed explicit target from config, or a value <= 0 to
+     *   use the cart's own max speed (line `max_speed`, else `cart_speed`)
+     */
+    fun resolveCruiseSpeed(minecart: Minecart, configuredSpeed: Double): Double =
+        if (configuredSpeed > 0.0) min(configuredSpeed, minecart.maxSpeed) else minecart.maxSpeed
+
     fun buildAssistVelocity(lastTravelDirection: Vector, targetSpeed: Double): Vector =
         lastTravelDirection.clone().normalize().multiply(targetSpeed)
 

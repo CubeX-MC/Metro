@@ -19,6 +19,7 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Minecart;
 import org.bukkit.entity.Player;
+import org.cubexmc.metro.manager.LanguageManager;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.vehicle.VehicleDamageEvent;
 import org.bukkit.event.vehicle.VehicleDestroyEvent;
@@ -47,6 +48,7 @@ class VehicleListenerTest {
         VehicleListener listener = new VehicleListener(plugin);
         Minecart minecart = metroMinecart();
         Player player = mock(Player.class);
+        when(player.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
         Location location = mock(Location.class);
         VehicleExitEvent event = mock(VehicleExitEvent.class);
         TrainMovementTask task = mock(TrainMovementTask.class);
@@ -291,6 +293,122 @@ class VehicleListenerTest {
     }
 
     @Test
+    void shouldBlockDismountWhileTrainIsMoving() {
+        Metro plugin = plugin(false, false);
+        when(plugin.getConfigFacade().isSafeModePassengerExitLock()).thenReturn(true);
+        LanguageManager languageManager = mock(LanguageManager.class);
+        when(languageManager.getMessage("interact.exit_locked")).thenReturn("still moving");
+        when(plugin.getLanguageManager()).thenReturn(languageManager);
+
+        VehicleListener listener = new VehicleListener(plugin);
+        Minecart minecart = metroMinecart();
+        when(minecart.isValid()).thenReturn(true);
+        Player player = mock(Player.class);
+        when(player.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
+        VehicleExitEvent event = mock(VehicleExitEvent.class);
+        when(event.getVehicle()).thenReturn(minecart);
+        when(event.getExited()).thenReturn(player);
+
+        TrainMovementTask task = mock(TrainMovementTask.class);
+        when(task.isStoppedAtStation()).thenReturn(false);
+
+        try (MockedStatic<TrainMovementTask> taskRegistry = org.mockito.Mockito.mockStatic(TrainMovementTask.class)) {
+            taskRegistry.when(() -> TrainMovementTask.getTaskFor(minecart)).thenReturn(task);
+            listener.onPassengerExitWhileMoving(event);
+            // 连续尝试只提示一次
+            listener.onPassengerExitWhileMoving(event);
+        }
+
+        verify(event, org.mockito.Mockito.times(2)).setCancelled(true);
+        verify(player, org.mockito.Mockito.times(1)).sendMessage("still moving");
+    }
+
+    @Test
+    void shouldAllowDismountWhileTrainIsDocked() {
+        Metro plugin = plugin(false, false);
+        when(plugin.getConfigFacade().isSafeModePassengerExitLock()).thenReturn(true);
+
+        VehicleListener listener = new VehicleListener(plugin);
+        Minecart minecart = metroMinecart();
+        when(minecart.isValid()).thenReturn(true);
+        Player player = mock(Player.class);
+        VehicleExitEvent event = mock(VehicleExitEvent.class);
+        when(event.getVehicle()).thenReturn(minecart);
+        when(event.getExited()).thenReturn(player);
+
+        TrainMovementTask task = mock(TrainMovementTask.class);
+        when(task.isStoppedAtStation()).thenReturn(true);
+
+        try (MockedStatic<TrainMovementTask> taskRegistry = org.mockito.Mockito.mockStatic(TrainMovementTask.class)) {
+            taskRegistry.when(() -> TrainMovementTask.getTaskFor(minecart)).thenReturn(task);
+            listener.onPassengerExitWhileMoving(event);
+        }
+
+        verify(event, never()).setCancelled(true);
+    }
+
+    @Test
+    void shouldNotBlockPluginInitiatedEjectWhileMoving() {
+        Metro plugin = plugin(false, false);
+        when(plugin.getConfigFacade().isSafeModePassengerExitLock()).thenReturn(true);
+
+        VehicleListener listener = new VehicleListener(plugin);
+        Minecart minecart = metroMinecart();
+        when(minecart.isValid()).thenReturn(true);
+        Player player = mock(Player.class);
+        VehicleExitEvent event = mock(VehicleExitEvent.class);
+        when(event.getVehicle()).thenReturn(minecart);
+        when(event.getExited()).thenReturn(player);
+
+        TrainMovementTask task = mock(TrainMovementTask.class);
+        when(task.isStoppedAtStation()).thenReturn(false);
+        // 传送门/脱轨清理都通过 MinecartEjector 触发下车，必须放行
+        org.mockito.Mockito.doAnswer(invocation -> {
+            try (MockedStatic<TrainMovementTask> taskRegistry =
+                    org.mockito.Mockito.mockStatic(TrainMovementTask.class)) {
+                taskRegistry.when(() -> TrainMovementTask.getTaskFor(minecart)).thenReturn(task);
+                listener.onPassengerExitWhileMoving(event);
+            }
+            return null;
+        }).when(minecart).eject();
+
+        org.cubexmc.metro.util.MinecartEjector.eject(minecart);
+
+        verify(event, never()).setCancelled(true);
+    }
+
+    @Test
+    void shouldAllowDismountFromDeadMinecartSoPlayersNeverGetStuck() {
+        Metro plugin = plugin(false, false);
+        when(plugin.getConfigFacade().isSafeModePassengerExitLock()).thenReturn(true);
+
+        VehicleListener listener = new VehicleListener(plugin);
+        Minecart minecart = metroMinecart();
+        when(minecart.isDead()).thenReturn(true);
+        Player player = mock(Player.class);
+        VehicleExitEvent event = mock(VehicleExitEvent.class);
+        when(event.getVehicle()).thenReturn(minecart);
+        when(event.getExited()).thenReturn(player);
+
+        listener.onPassengerExitWhileMoving(event);
+
+        verify(event, never()).setCancelled(true);
+    }
+
+    @Test
+    void shouldNotBlockDismountWhenExitLockIsDisabled() {
+        Metro plugin = plugin(false, false);
+        when(plugin.getConfigFacade().isSafeModePassengerExitLock()).thenReturn(false);
+
+        VehicleListener listener = new VehicleListener(plugin);
+        VehicleExitEvent event = mock(VehicleExitEvent.class);
+
+        listener.onPassengerExitWhileMoving(event);
+
+        verify(event, never()).setCancelled(true);
+    }
+
+    @Test
     void shouldNotCancelDamageWhenDamageProtectionIsDisabled() {
         VehicleListener listener = new VehicleListener(plugin(false, false));
         VehicleDamageEvent event = mock(VehicleDamageEvent.class);
@@ -304,6 +422,7 @@ class VehicleListenerTest {
     private Metro plugin(boolean damageProtection, boolean pushProtection) {
         Metro plugin = mock(Metro.class);
         when(plugin.getName()).thenReturn("metro");
+        when(plugin.isEnabled()).thenReturn(true);
 
         ConfigFacade configFacade = mock(ConfigFacade.class);
         StopManager stopManager = mock(StopManager.class);
@@ -326,6 +445,7 @@ class VehicleListenerTest {
     private Minecart metroMinecart() {
         Minecart minecart = mock(Minecart.class);
         PersistentDataContainer pdc = mock(PersistentDataContainer.class);
+        when(minecart.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
         when(minecart.getPersistentDataContainer()).thenReturn(pdc);
         when(pdc.has(eq(MetroConstants.getMinecartKey()), eq(PersistentDataType.BYTE))).thenReturn(true);
         return minecart;

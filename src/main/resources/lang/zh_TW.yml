@@ -430,6 +430,8 @@ interact:
   train_spawned: "<green>已上車，<departure_seconds> 秒後發車..."
   train_error: "<red>生成列車時發生錯誤，請稍後再試。"
   train_pending: "<red>此月台已有列車正在進站，請稍待片刻再嘗試。"
+  already_riding: "<red>你已經在列車上了，無法重複上車。"
+  exit_locked: "<red>列車正在行駛中，請在下一站再下車。"
   stop_no_line: "<red>該停靠區不屬於任何路線。"
   stop_no_point: "<red>該停靠區尚未設定停靠點，無法上車。"
   terminal_stop: "<red>終點站無法發車，請前往起點站乘車。"

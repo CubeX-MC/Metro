@@ -18,6 +18,7 @@ import org.cubexmc.metro.model.Line
 import org.cubexmc.metro.model.PriceRule
 import org.cubexmc.metro.model.Stop
 import org.cubexmc.metro.service.TicketService
+import org.cubexmc.metro.util.MinecartEjector
 import org.cubexmc.metro.util.SchedulerUtil
 
 /**
@@ -43,6 +44,7 @@ class TrainMovementTask @JvmOverloads constructor(
     private val physicsController: TrainPhysicsController
     private val eventPublisher: TrainEventPublisher
     private val scoreboardController: TrainScoreboardController
+    private val travelDisplayController: TrainTravelDisplayController
     private val movementAssistController: TrainMovementAssistController
     private var passengerExitHandled: Boolean = false
 
@@ -55,6 +57,7 @@ class TrainMovementTask @JvmOverloads constructor(
         physicsController = TrainPhysicsController()
         eventPublisher = TrainEventPublisher(session)
         scoreboardController = TrainScoreboardController()
+        travelDisplayController = TrainTravelDisplayController()
         movementAssistController = TrainMovementAssistController(
             session,
             trainScheduler,
@@ -84,7 +87,7 @@ class TrainMovementTask @JvmOverloads constructor(
     fun removeMinecartAndCancel() {
         val minecart = session.minecart
         if (minecart != null && !minecart.isDead) {
-            minecart.eject()
+            MinecartEjector.eject(minecart)
             minecart.remove()
         }
         cancel()
@@ -130,6 +133,9 @@ class TrainMovementTask @JvmOverloads constructor(
 
     fun getSession(): TrainSession = session
 
+    /** Whether the train is docked, i.e. passengers may leave. */
+    fun isStoppedAtStation(): Boolean = session.state == TrainState.STOPPED_AT_STATION
+
     @EventHandler(priority = EventPriority.NORMAL)
     fun onTrainEnterStop(event: TrainEnterStopEvent) {
         if (event.minecart != session.minecart) {
@@ -173,6 +179,8 @@ class TrainMovementTask @JvmOverloads constructor(
             }
         }
 
+        travelDisplayController.onTrainMoved(session)
+
         if (session.state != TrainState.MOVING_IN_STATION) {
             return
         }
@@ -200,16 +208,19 @@ class TrainMovementTask @JvmOverloads constructor(
         movementAssistController.stop()
         session.plugin.bedrockCompatibility.onTrainArrival(session.passenger, minecart)
 
-        val baseLocation = stop.stopPointLocation ?: return
-        val snapLocation = baseLocation.clone()
-        snapLocation.x = snapLocation.blockX + 0.5
-        snapLocation.z = snapLocation.blockZ + 0.5
+        // Settle before the route sampling below: a stop whose stop point has
+        // been cleared must still charge the distance already travelled, and
+        // must still leave MOVING_IN_STATION.
+        settleVariableFare(stop)
+
+        val baseLocation = stop.stopPointLocation
         val line = session.line
-        if (line != null) {
+        if (baseLocation != null && line != null) {
+            val snapLocation = baseLocation.clone()
+            snapLocation.x = snapLocation.blockX + 0.5
+            snapLocation.z = snapLocation.blockZ + 0.5
             session.plugin.routeRecorder.sample(line.id, minecart, snapLocation)
         }
-
-        settleVariableFare(stop)
 
         val previousState = stateMachine.transitionTo(TrainState.STOPPED_AT_STATION, null)
         if (previousState == TrainState.MOVING_IN_STATION) {
@@ -232,15 +243,19 @@ class TrainMovementTask @JvmOverloads constructor(
             return
         }
 
-        val variablePrice = when (rule.getMode()) {
-            PriceRule.PricingMode.DISTANCE -> distance * rule.getPerBlockRate()
-            PriceRule.PricingMode.INTERVAL -> {
-                val intervals = session.plugin.priceService.countStopIntervals(line, session.lastSettledStopId, stop.id)
-                intervals * rule.getPerIntervalRate()
-            }
-
-            else -> return
+        val intervals = if (rule.getMode() == PriceRule.PricingMode.INTERVAL) {
+            session.plugin.priceService.countStopIntervals(line, session.lastSettledStopId, stop.id)
+        } else {
+            0
         }
+        // Goes through the rule so that time discounts and max_price apply to
+        // per-stop settlement too, not only to the boarding estimate.
+        val variablePrice = rule.calculateVariableFare(
+            distance,
+            intervals,
+            resolveGameTime(stop),
+            session.fareChargedForTrip,
+        )
 
         val status = if (variablePrice > 0) {
             session.plugin.ticketService.chargePrice(passenger, line, variablePrice)
@@ -248,6 +263,7 @@ class TrainMovementTask @JvmOverloads constructor(
             TicketService.TicketChargeStatus.FREE
         }
         if (status == TicketService.TicketChargeStatus.CHARGED) {
+            session.addFareCharged(variablePrice)
             passenger.sendMessage(
                 session.plugin.languageManager.getMessage(
                     "economy.paid_distance",
@@ -267,6 +283,11 @@ class TrainMovementTask @JvmOverloads constructor(
             session.markFareSettledAt(stop.id)
         }
     }
+
+    private fun resolveGameTime(stop: Stop): Long =
+        session.minecart?.world?.time
+            ?: stop.stopPointLocation?.world?.time
+            ?: DEFAULT_GAME_TIME
 
     private fun transitionToMovingInStation(targetStop: Stop) {
         movementAssistController.stop()
@@ -426,7 +447,7 @@ class TrainMovementTask @JvmOverloads constructor(
             Runnable {
                 val currentMinecart = session.minecart
                 if (currentMinecart != null && !currentMinecart.isDead) {
-                    currentMinecart.eject()
+                    MinecartEjector.eject(currentMinecart)
                     session.plugin.scoreboardManager.clearPlayerDisplay(passenger)
 
                     trainScheduler.entityRun(
@@ -509,6 +530,9 @@ class TrainMovementTask @JvmOverloads constructor(
     }
 
     companion object {
+        /** Noon, used when no world clock is reachable for discount evaluation. */
+        private const val DEFAULT_GAME_TIME = 6000L
+
         @JvmStatic
         fun getTaskFor(cart: Minecart?): TrainMovementTask? = TrainTaskRegistry.get(cart)
 

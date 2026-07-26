@@ -1,5 +1,6 @@
 package org.cubexmc.metro.util;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -26,6 +27,26 @@ class TextUtilTest {
         assertTrue(result.contains("Harbor"));
         assertTrue(result.contains("Airport"));
         assertTrue(result.contains("\u00a7a"));
+    }
+
+    @Test
+    void shouldRenderRoundedNextStopDistance() {
+        Stop next = new Stop("s2", "Harbor");
+
+        String result = TextUtil.replacePlaceholders(
+                "{next_stop_name}:{next_stop_distance}", null, null, null, next, null, null, 128.6);
+
+        assertEquals("Harbor:129", result);
+    }
+
+    @Test
+    void shouldRenderEmptyDistanceWhenUnknown() {
+        Stop next = new Stop("s2", "Harbor");
+
+        assertEquals("Harbor:", TextUtil.replacePlaceholders(
+                "{next_stop_name}:{next_stop_distance}", null, null, null, next, null, null, null));
+        assertEquals("Harbor:", TextUtil.replacePlaceholders(
+                "{next_stop_name}:{next_stop_distance}", null, null, null, next, null, null));
     }
 
     @Test

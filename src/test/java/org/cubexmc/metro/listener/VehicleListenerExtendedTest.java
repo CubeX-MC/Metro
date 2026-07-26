@@ -261,6 +261,65 @@ class VehicleListenerExtendedTest {
         }
     }
 
+    @Test
+    void shouldPushUphillAtLineSpeedInsteadOfHardcodedCap() {
+        VehicleListener listener = createListener();
+        Minecart minecart = metroMinecart();
+        World world = mock(World.class);
+
+        Location from = railLocation(Material.RAIL, 64, world);
+        Location to = railLocation(Material.RAIL, 65, world);
+
+        // 高速线路：上坡不应再被压到 0.4 格/tick
+        when(minecart.getMaxSpeed()).thenReturn(1.5);
+
+        VehicleMoveEvent event = mock(VehicleMoveEvent.class);
+        when(event.getVehicle()).thenReturn(minecart);
+        when(event.getFrom()).thenReturn(from);
+        when(event.getTo()).thenReturn(to);
+
+        org.mockito.ArgumentCaptor<Vector> velocity = org.mockito.ArgumentCaptor.forClass(Vector.class);
+        try (var locationUtilMock = mockStatic(LocationUtil.class)) {
+            locationUtilMock.when(() -> LocationUtil.isOnRail(to)).thenReturn(true);
+            locationUtilMock.when(() -> LocationUtil.getDirectionVector(from, to))
+                    .thenReturn(new Vector(1, 0, 0));
+
+            listener.onVehicleMove(event);
+        }
+
+        verify(minecart).setVelocity(velocity.capture());
+        org.junit.jupiter.api.Assertions.assertEquals(1.5, velocity.getValue().length(), 1e-9);
+    }
+
+    @Test
+    void shouldKeepUphillFloorForSlowLines() {
+        VehicleListener listener = createListener();
+        Minecart minecart = metroMinecart();
+        World world = mock(World.class);
+
+        Location from = railLocation(Material.RAIL, 64, world);
+        Location to = railLocation(Material.RAIL, 65, world);
+
+        when(minecart.getMaxSpeed()).thenReturn(0.3);
+
+        VehicleMoveEvent event = mock(VehicleMoveEvent.class);
+        when(event.getVehicle()).thenReturn(minecart);
+        when(event.getFrom()).thenReturn(from);
+        when(event.getTo()).thenReturn(to);
+
+        org.mockito.ArgumentCaptor<Vector> velocity = org.mockito.ArgumentCaptor.forClass(Vector.class);
+        try (var locationUtilMock = mockStatic(LocationUtil.class)) {
+            locationUtilMock.when(() -> LocationUtil.isOnRail(to)).thenReturn(true);
+            locationUtilMock.when(() -> LocationUtil.getDirectionVector(from, to))
+                    .thenReturn(new Vector(1, 0, 0));
+
+            listener.onVehicleMove(event);
+        }
+
+        verify(minecart).setVelocity(velocity.capture());
+        org.junit.jupiter.api.Assertions.assertEquals(0.4, velocity.getValue().length(), 1e-9);
+    }
+
     // ---- VehicleMoveEvent: non-minecart vehicle ignored ----
 
     @Test

@@ -17,12 +17,30 @@ object TextUtil {
         nextStop: Stop?,
         terminalStop: Stop?,
         lineManager: LineManager?,
+    ): String = replacePlaceholders(text, line, stop, lastStop, nextStop, terminalStop, lineManager, null)
+
+    /**
+     * @param nextStopDistanceBlocks remaining distance to [nextStop] in blocks,
+     *   or `null` when it is unknown (e.g. while docked). Unknown distances
+     *   render as an empty string.
+     */
+    @JvmStatic
+    fun replacePlaceholders(
+        text: String?,
+        line: Line?,
+        stop: Stop?,
+        lastStop: Stop?,
+        nextStop: Stop?,
+        terminalStop: Stop?,
+        lineManager: LineManager?,
+        nextStopDistanceBlocks: Double?,
     ): String {
         if (text == null) {
             return ""
         }
 
         var result = text
+        result = result.replace("{next_stop_distance}", formatDistance(nextStopDistanceBlocks))
 
         if (line != null) {
             result = result.replace("{line}", line.name)
@@ -84,6 +102,13 @@ object TextUtil {
         }
 
         return result
+    }
+
+    private fun formatDistance(distanceBlocks: Double?): String {
+        if (distanceBlocks == null || distanceBlocks.isNaN() || distanceBlocks < 0.0) {
+            return ""
+        }
+        return kotlin.math.round(distanceBlocks).toInt().toString()
     }
 
     private fun formatTransferableLines(stop: Stop?, lineManager: LineManager?): String {

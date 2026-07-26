@@ -563,6 +563,8 @@ interact:
   train_spawned: "<green>Subido al tren, salida en <departure_seconds> segundos..."
   train_error: "<red>Error al generar tren, inténtalo de nuevo más tarde."
   train_pending: "<red>Ya hay un tren en camino a esta plataforma, espera un momento e inténtalo de nuevo."
+  already_riding: "<red>Ya estás a bordo de un tren, no puedes subir de nuevo."
+  exit_locked: "<red>El tren está en marcha, solo puedes bajar en la próxima estación."
   stop_no_line: "<red>Esta área de parada no pertenece a ninguna línea."
   stop_no_point: "<red>Esta área de parada aún no tiene punto de parada establecido, no se puede subir."
   terminal_stop: "<red>La estación terminal no puede salir, ve a la estación inicial para subir."

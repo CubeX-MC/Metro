@@ -57,6 +57,57 @@ class PriceRuleTest {
     }
 
     @Test
+    void discountShouldApplyBeforeMaxPriceCap() {
+        // Issue #42: 20 raw -> 10 discounted -> capped at 10, not 20 -> 10 -> 5.
+        PriceRule rule = new PriceRule(PriceRule.PricingMode.DISTANCE, 0.0);
+        rule.setPerBlockRate(1.0);
+        rule.setMaxPrice(10.0);
+        rule.addTimeDiscount(new PriceRule.TimeDiscount(0, 12000, 0.5));
+        assertEquals(10.0, rule.calculatePrice(20, 0, 6000));
+    }
+
+    @Test
+    void discountShouldStillReducePriceBelowMaxPriceCap() {
+        PriceRule rule = new PriceRule(PriceRule.PricingMode.DISTANCE, 0.0);
+        rule.setPerBlockRate(1.0);
+        rule.setMaxPrice(10.0);
+        rule.addTimeDiscount(new PriceRule.TimeDiscount(0, 12000, 0.5));
+        assertEquals(4.0, rule.calculatePrice(8, 0, 6000));
+    }
+
+    @Test
+    void variableFareShouldExcludeBasePrice() {
+        PriceRule rule = new PriceRule(PriceRule.PricingMode.DISTANCE, 2.0);
+        rule.setPerBlockRate(0.5);
+        assertEquals(50.0, rule.calculateVariableFare(100, 0, 6000, 2.0));
+    }
+
+    @Test
+    void variableFareShouldApplyDiscount() {
+        PriceRule rule = new PriceRule(PriceRule.PricingMode.INTERVAL, 0.0);
+        rule.setPerIntervalRate(4.0);
+        rule.addTimeDiscount(new PriceRule.TimeDiscount(0, 12000, 0.5));
+        assertEquals(4.0, rule.calculateVariableFare(0, 2, 6000, 0.0));
+    }
+
+    @Test
+    void variableFareShouldCapTripTotalNotEachSegment() {
+        PriceRule rule = new PriceRule(PriceRule.PricingMode.DISTANCE, 2.0);
+        rule.setPerBlockRate(0.5);
+        rule.setMaxPrice(10.0);
+        // Base price of 2.0 already charged, so only 8.0 of allowance is left.
+        assertEquals(6.0, rule.calculateVariableFare(12, 0, 6000, 2.0));
+        assertEquals(2.0, rule.calculateVariableFare(12, 0, 6000, 8.0));
+        assertEquals(0.0, rule.calculateVariableFare(12, 0, 6000, 10.0));
+    }
+
+    @Test
+    void variableFareShouldBeZeroForFlatMode() {
+        PriceRule rule = new PriceRule(PriceRule.PricingMode.FLAT, 5.0);
+        assertEquals(0.0, rule.calculateVariableFare(100, 3, 6000, 5.0));
+    }
+
+    @Test
     void timeDiscountShouldReducePrice() {
         PriceRule rule = new PriceRule(PriceRule.PricingMode.FLAT, 10.0);
         rule.addTimeDiscount(new PriceRule.TimeDiscount(0, 12000, 0.7));
