@@ -308,7 +308,7 @@ internal class BukkitFallbackCommandRegistration(
                 "lineIds", "lineId", "sourceId" -> plugin.lineManager.getAllLines().map { it.id }
                 "stopIds", "stopId" -> ArrayList(plugin.stopManager.getAllStopIds())
                 "portalIds", "portalId", "id1", "id2" ->
-                    plugin.portalManager.getAllPortals().map { it.id }.sorted()
+                    plugin.portalManager?.getAllPortals().orEmpty().map { it.id }.sorted()
                 "playerName" -> Bukkit.getOnlinePlayers().map { it.name }.sorted()
                 "page" -> listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")
                 "color" -> LINE_COLORS

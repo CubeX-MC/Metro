@@ -358,9 +358,7 @@ class LineManager(private val plugin: Metro) {
 
     fun reload() {
         loadConfig()
-        if (plugin.railProtectionManager != null) {
-            plugin.railProtectionManager.rebuildAll()
-        }
+        plugin.railProtectionManager?.rebuildAll()
     }
 
     fun setLineColor(lineId: String, color: String?): Boolean {
@@ -745,8 +743,6 @@ class LineManager(private val plugin: Metro) {
     }
 
     private fun rebuildRailProtection(lineId: String) {
-        if (plugin.railProtectionManager != null) {
-            plugin.railProtectionManager.rebuildLine(lineId)
-        }
+        plugin.railProtectionManager?.rebuildLine(lineId)
     }
 }

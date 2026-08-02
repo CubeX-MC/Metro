@@ -11,7 +11,12 @@ import org.cubexmc.metro.model.Portal
 /**
  * Business operations used by portal commands.
  */
-class PortalCommandService(private val portalManager: PortalManager) {
+class PortalCommandService(portalManager: PortalManager?) {
+
+    private val portalManagerRef: PortalManager? = portalManager
+    private val portalManager: PortalManager
+        get() = portalManagerRef ?: throw NullPointerException("portalManager")
+
     enum class WriteStatus {
         SUCCESS,
         INVALID_ID,

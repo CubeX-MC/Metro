@@ -379,7 +379,7 @@ class MetroAPI private constructor(private val plugin: Metro) {
     fun isEconomyEnabled(): Boolean = config().isEconomyEnabled()
 
     fun isVaultEconomyAvailable(): Boolean {
-        val vaultIntegration = plugin.getVaultIntegration()
+        val vaultIntegration = plugin.vaultIntegration
         return vaultIntegration != null && vaultIntegration.isEnabled
     }
 
@@ -397,37 +397,37 @@ class MetroAPI private constructor(private val plugin: Metro) {
 
     fun isFoliaRuntime(): Boolean = VersionUtil.isFolia()
 
-    fun getLine(lineId: String?): Line? = plugin.getLineManager().getLine(lineId)
+    fun getLine(lineId: String?): Line? = plugin.lineManager.getLine(lineId)
 
-    fun getAllLines(): List<Line> = plugin.getLineManager().getAllLines()
+    fun getAllLines(): List<Line> = plugin.lineManager.getAllLines()
 
     fun getLinesForStop(stopId: String?): List<Line> =
-        if (stopId != null) plugin.getLineManager().getLinesForStop(stopId) else emptyList()
+        if (stopId != null) plugin.lineManager.getLinesForStop(stopId) else emptyList()
 
     fun getLineSnapshot(lineId: String?): LineSnapshot? = LineSnapshot.from(getLine(lineId))
 
     fun getLineSnapshots(): List<LineSnapshot> = getAllLines().mapNotNull(LineSnapshot::from)
 
-    fun getStop(stopId: String?): Stop? = plugin.getStopManager().getStop(stopId)
+    fun getStop(stopId: String?): Stop? = plugin.stopManager.getStop(stopId)
 
-    fun getAllStops(): List<Stop> = plugin.getStopManager().getAllStops()
+    fun getAllStops(): List<Stop> = plugin.stopManager.getAllStops()
 
     fun getStopSnapshot(stopId: String?): StopSnapshot? = StopSnapshot.from(getStop(stopId))
 
     fun getStopSnapshots(): List<StopSnapshot> = getAllStops().mapNotNull(StopSnapshot::from)
 
     fun getPortal(portalId: String?): Portal? {
-        val portalManager = plugin.getPortalManager()
+        val portalManager = plugin.portalManager
         return portalManager?.getPortal(portalId)
     }
 
     fun getAllPortals(): List<Portal> {
-        val portalManager = plugin.getPortalManager()
+        val portalManager = plugin.portalManager
         return portalManager?.getAllPortals() ?: emptyList()
     }
 
     fun getPortalAt(location: Location?): Portal? {
-        val portalManager = plugin.getPortalManager()
+        val portalManager = plugin.portalManager
         return portalManager?.getPortalAt(location)
     }
 
@@ -464,7 +464,7 @@ class MetroAPI private constructor(private val plugin: Metro) {
 
     fun setLineStatus(lineId: String?, status: LineStatus?): Boolean {
         val line = getLine(lineId) ?: return false
-        val statusService: LineStatusService = plugin.getLineStatusService() ?: return false
+        val statusService: LineStatusService = plugin.lineStatusService ?: return false
         return status != null && statusService.setStatus(line, status)
     }
 
@@ -476,7 +476,7 @@ class MetroAPI private constructor(private val plugin: Metro) {
         val line = getLine(lineId)
         if (line != null) {
             line.suspensionMessage = message
-            plugin.getLineManager().saveConfig()
+            plugin.lineManager.saveConfig()
         }
     }
 
@@ -489,7 +489,7 @@ class MetroAPI private constructor(private val plugin: Metro) {
         val line = getLine(lineId)
         if (line != null) {
             line.priceRule = rule
-            plugin.getLineManager().saveConfig()
+            plugin.lineManager.saveConfig()
         }
     }
 
@@ -507,7 +507,7 @@ class MetroAPI private constructor(private val plugin: Metro) {
             return 0.0
         }
 
-        val priceService: PriceService = plugin.getPriceService()
+        val priceService: PriceService = plugin.priceService
             ?: return max(0.0, line.ticketPrice)
 
         return priceService.calculatePrice(
@@ -522,14 +522,14 @@ class MetroAPI private constructor(private val plugin: Metro) {
 
     fun getEstimatedPrice(lineId: String?): Double {
         val line = getLine(lineId) ?: return 0.0
-        val priceService: PriceService = plugin.getPriceService()
+        val priceService: PriceService = plugin.priceService
             ?: return max(0.0, line.ticketPrice)
         return priceService.getEstimatedPrice(line)
     }
 
     fun getPriceDescription(lineId: String?): String {
         val line = getLine(lineId) ?: return "Free"
-        val priceService: PriceService = plugin.getPriceService()
+        val priceService: PriceService = plugin.priceService
             ?: return max(0.0, line.ticketPrice).toString()
         return priceService.getPriceDescription(line)
     }
@@ -543,7 +543,7 @@ class MetroAPI private constructor(private val plugin: Metro) {
                 "0",
             )
         }
-        return plugin.getTicketService().checkCanBoard(player, line)
+        return plugin.ticketService.checkCanBoard(player, line)
     }
 
     fun getLineOwner(lineId: String?): UUID? = getLine(lineId)?.owner
@@ -600,7 +600,7 @@ class MetroAPI private constructor(private val plugin: Metro) {
         if (ownerId == null) {
             return OwnershipWriteStatus.INVALID_PLAYER
         }
-        return if (plugin.getLineManager().setLineOwner(line.id, ownerId)) {
+        return if (plugin.lineManager.setLineOwner(line.id, ownerId)) {
             OwnershipWriteStatus.SUCCESS
         } else {
             OwnershipWriteStatus.FAILED
@@ -615,7 +615,7 @@ class MetroAPI private constructor(private val plugin: Metro) {
         if (line.admins.contains(adminId)) {
             return OwnershipWriteStatus.EXISTS
         }
-        return if (plugin.getLineManager().addLineAdmin(line.id, adminId)) {
+        return if (plugin.lineManager.addLineAdmin(line.id, adminId)) {
             OwnershipWriteStatus.SUCCESS
         } else {
             OwnershipWriteStatus.FAILED
@@ -633,7 +633,7 @@ class MetroAPI private constructor(private val plugin: Metro) {
         if (!line.admins.contains(adminId)) {
             return OwnershipWriteStatus.NOT_ADMIN
         }
-        return if (plugin.getLineManager().removeLineAdmin(line.id, adminId)) {
+        return if (plugin.lineManager.removeLineAdmin(line.id, adminId)) {
             OwnershipWriteStatus.SUCCESS
         } else {
             OwnershipWriteStatus.FAILED
@@ -645,7 +645,7 @@ class MetroAPI private constructor(private val plugin: Metro) {
         if (ownerId == null) {
             return OwnershipWriteStatus.INVALID_PLAYER
         }
-        return if (plugin.getStopManager().setStopOwner(stop.id, ownerId)) {
+        return if (plugin.stopManager.setStopOwner(stop.id, ownerId)) {
             OwnershipWriteStatus.SUCCESS
         } else {
             OwnershipWriteStatus.FAILED
@@ -660,7 +660,7 @@ class MetroAPI private constructor(private val plugin: Metro) {
         if (stop.admins.contains(adminId)) {
             return OwnershipWriteStatus.EXISTS
         }
-        return if (plugin.getStopManager().addStopAdmin(stop.id, adminId)) {
+        return if (plugin.stopManager.addStopAdmin(stop.id, adminId)) {
             OwnershipWriteStatus.SUCCESS
         } else {
             OwnershipWriteStatus.FAILED
@@ -678,7 +678,7 @@ class MetroAPI private constructor(private val plugin: Metro) {
         if (!stop.admins.contains(adminId)) {
             return OwnershipWriteStatus.NOT_ADMIN
         }
-        return if (plugin.getStopManager().removeStopAdmin(stop.id, adminId)) {
+        return if (plugin.stopManager.removeStopAdmin(stop.id, adminId)) {
             OwnershipWriteStatus.SUCCESS
         } else {
             OwnershipWriteStatus.FAILED
@@ -690,7 +690,7 @@ class MetroAPI private constructor(private val plugin: Metro) {
         if (ownerId == null) {
             return OwnershipWriteStatus.INVALID_PLAYER
         }
-        return if (plugin.getPortalManager().setPortalOwner(portal.id, ownerId)) {
+        return if (plugin.portalManager?.setPortalOwner(portal.id, ownerId) == true) {
             OwnershipWriteStatus.SUCCESS
         } else {
             OwnershipWriteStatus.FAILED
@@ -705,7 +705,7 @@ class MetroAPI private constructor(private val plugin: Metro) {
         if (portal.admins.contains(adminId)) {
             return OwnershipWriteStatus.EXISTS
         }
-        return if (plugin.getPortalManager().addPortalAdmin(portal.id, adminId)) {
+        return if (plugin.portalManager?.addPortalAdmin(portal.id, adminId) == true) {
             OwnershipWriteStatus.SUCCESS
         } else {
             OwnershipWriteStatus.FAILED
@@ -723,25 +723,25 @@ class MetroAPI private constructor(private val plugin: Metro) {
         if (!portal.admins.contains(adminId)) {
             return OwnershipWriteStatus.NOT_ADMIN
         }
-        return if (plugin.getPortalManager().removePortalAdmin(portal.id, adminId)) {
+        return if (plugin.portalManager?.removePortalAdmin(portal.id, adminId) == true) {
             OwnershipWriteStatus.SUCCESS
         } else {
             OwnershipWriteStatus.FAILED
         }
     }
 
-    fun getLineManager(): LineManager = plugin.getLineManager()
+    fun getLineManager(): LineManager = plugin.lineManager
 
-    fun getStopManager(): StopManager = plugin.getStopManager()
+    fun getStopManager(): StopManager = plugin.stopManager
 
-    fun getPortalManager(): PortalManager = plugin.getPortalManager()
+    fun getPortalManager(): PortalManager? = plugin.portalManager
 
     fun getPlugin(): Metro = plugin
 
-    private fun config(): ConfigFacade = plugin.getConfigFacade()
+    private fun config(): ConfigFacade = plugin.configFacade
 
     private fun portalService(): PortalCommandService? {
-        val portalManager = plugin.getPortalManager()
+        val portalManager = plugin.portalManager
         return if (portalManager != null) PortalCommandService(portalManager) else null
     }
 

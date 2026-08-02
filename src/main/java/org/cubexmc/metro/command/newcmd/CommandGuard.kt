@@ -96,7 +96,7 @@ internal class CommandGuard(
     }
 
     fun requirePortal(player: Player, portalId: String): Portal? {
-        val portal = plugin.portalManager.getPortal(portalId)
+        val portal = plugin.portalManager?.getPortal(portalId)
         if (portal == null) {
             player.sendMessage(
                 plugin.languageManager.getMessage(
