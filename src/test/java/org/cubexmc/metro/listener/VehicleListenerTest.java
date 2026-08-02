@@ -59,7 +59,7 @@ class VehicleListenerTest {
 
         try (MockedStatic<TrainMovementTask> taskRegistry = org.mockito.Mockito.mockStatic(TrainMovementTask.class);
                 MockedStatic<SchedulerUtil> scheduler = org.mockito.Mockito.mockStatic(SchedulerUtil.class)) {
-            taskRegistry.when(() -> TrainMovementTask.getTaskFor(minecart)).thenReturn(task);
+            org.cubexmc.metro.train.TrainTaskRegistry.register(minecart, task);
             listener.onVehicleExit(event);
         }
 
@@ -251,7 +251,7 @@ class VehicleListenerTest {
         when(minecart.getMaxSpeed()).thenReturn(0.4);
 
         try (MockedStatic<TrainMovementTask> taskRegistry = org.mockito.Mockito.mockStatic(TrainMovementTask.class)) {
-            taskRegistry.when(() -> TrainMovementTask.getTaskFor(minecart)).thenReturn(task);
+            org.cubexmc.metro.train.TrainTaskRegistry.register(minecart, task);
             listener.onVehicleMove(event);
         }
 
@@ -285,7 +285,7 @@ class VehicleListenerTest {
         when(minecart.getMaxSpeed()).thenReturn(0.4);
 
         try (MockedStatic<TrainMovementTask> taskRegistry = org.mockito.Mockito.mockStatic(TrainMovementTask.class)) {
-            taskRegistry.when(() -> TrainMovementTask.getTaskFor(minecart)).thenReturn(task);
+            org.cubexmc.metro.train.TrainTaskRegistry.register(minecart, task);
             listener.onVehicleMove(event);
         }
 
@@ -313,7 +313,7 @@ class VehicleListenerTest {
         when(task.isStoppedAtStation()).thenReturn(false);
 
         try (MockedStatic<TrainMovementTask> taskRegistry = org.mockito.Mockito.mockStatic(TrainMovementTask.class)) {
-            taskRegistry.when(() -> TrainMovementTask.getTaskFor(minecart)).thenReturn(task);
+            org.cubexmc.metro.train.TrainTaskRegistry.register(minecart, task);
             listener.onPassengerExitWhileMoving(event);
             // 连续尝试只提示一次
             listener.onPassengerExitWhileMoving(event);
@@ -340,7 +340,7 @@ class VehicleListenerTest {
         when(task.isStoppedAtStation()).thenReturn(true);
 
         try (MockedStatic<TrainMovementTask> taskRegistry = org.mockito.Mockito.mockStatic(TrainMovementTask.class)) {
-            taskRegistry.when(() -> TrainMovementTask.getTaskFor(minecart)).thenReturn(task);
+            org.cubexmc.metro.train.TrainTaskRegistry.register(minecart, task);
             listener.onPassengerExitWhileMoving(event);
         }
 
@@ -366,7 +366,7 @@ class VehicleListenerTest {
         org.mockito.Mockito.doAnswer(invocation -> {
             try (MockedStatic<TrainMovementTask> taskRegistry =
                     org.mockito.Mockito.mockStatic(TrainMovementTask.class)) {
-                taskRegistry.when(() -> TrainMovementTask.getTaskFor(minecart)).thenReturn(task);
+                org.cubexmc.metro.train.TrainTaskRegistry.register(minecart, task);
                 listener.onPassengerExitWhileMoving(event);
             }
             return null;

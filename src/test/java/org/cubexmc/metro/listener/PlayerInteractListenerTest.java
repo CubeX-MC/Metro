@@ -88,7 +88,9 @@ class PlayerInteractListenerTest {
 
         invokeHandleStopPoint(fixtures.listener, fixtures.player, stop);
 
-        verify(fixtures.guiManager).openLineBoardingChoice(fixtures.player, stop, 0);
+        // Kotlin call sites always target the full-arity method, so the default previousView
+        // argument shows up explicitly as null instead of hitting the @JvmOverloads bridge.
+        verify(fixtures.guiManager).openLineBoardingChoice(fixtures.player, stop, 0, null);
     }
 
     @Test
