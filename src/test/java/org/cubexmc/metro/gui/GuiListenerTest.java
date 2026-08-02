@@ -132,10 +132,10 @@ class GuiListenerTest {
         when(player.getItemOnCursor()).thenReturn(guiItem);
         when(playerInventory.getContents()).thenReturn(new ItemStack[] { ownItem, guiItem });
 
-        try (MockedStatic<ItemBuilder> itemBuilder = mockStatic(ItemBuilder.class);
+        try (MockedStatic<GuiItemMarker> itemBuilder = mockStatic(GuiItemMarker.class);
                 MockedStatic<SchedulerUtil> scheduler = mockStatic(SchedulerUtil.class)) {
-            itemBuilder.when(() -> ItemBuilder.isGuiItem(guiItem)).thenReturn(true);
-            itemBuilder.when(() -> ItemBuilder.isGuiItem(ownItem)).thenReturn(false);
+            itemBuilder.when(() -> GuiItemMarker.isGuiItem(guiItem)).thenReturn(true);
+            itemBuilder.when(() -> GuiItemMarker.isGuiItem(ownItem)).thenReturn(false);
 
             listener.onInventoryClose(event);
         }

@@ -1,4 +1,4 @@
-﻿package org.cubexmc.metro.integration
+package org.cubexmc.metro.integration
 
 import com.flowpowered.math.vector.Vector3d
 import de.bluecolored.bluemap.api.BlueMapAPI
