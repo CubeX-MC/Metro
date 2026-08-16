@@ -1,4 +1,4 @@
-lang-version: 2
+lang-version: 3
 # Metro Plugin Nederlandse Taalbestand
 
 # Basisinformatie
@@ -589,6 +589,7 @@ economy:
   insufficient_funds: "<red>Onvoldoende saldo. Deze rit kost: <price>"
   paid_boarding: "<green>Succesvol ingestapt. <price> is afgeschreven."
   paid_distance: "<green>Afstandstarief: <price> is afgeschreven."
+  paid_mid_route_exit: "<green>Onderweg uitgestapt: <price> is afgerekend tot het volgende station."
   transaction_failed: "<red>Tickettransactie mislukt. Probeer het later opnieuw."
   vault_unavailable: "<red>Economieservice is niet beschikbaar. Neem contact op met een beheerder."
   refunded: "<yellow>Je ticketbetaling is terugbetaald."

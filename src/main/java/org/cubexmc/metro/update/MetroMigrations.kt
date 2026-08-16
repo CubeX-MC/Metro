@@ -8,8 +8,8 @@ import org.cubexmc.config.ResourceFiles
 import org.cubexmc.metro.Metro
 
 object MetroMigrations {
-    const val CONFIG_VERSION: Int = 2
-    const val LANG_VERSION: Int = 2
+    const val CONFIG_VERSION: Int = 3
+    const val LANG_VERSION: Int = 3
 
     @JvmField
     val BUNDLED_LANGUAGES: List<String> = listOf("zh_CN", "zh_TW", "en_US", "de_DE", "es_ES", "nl_NL", "tr_TR")
@@ -31,7 +31,8 @@ object MetroMigrations {
                 .missingVersion(1)
                 .targetVersion(CONFIG_VERSION)
                 .failurePolicy(MigrationFailurePolicy.ABORT)
-                .addStep(MetroConfigModernizationStep(plugin)),
+                .addStep(MetroConfigModernizationStep(plugin))
+                .addStep(MetroMidRouteExitFareStep(plugin)),
         )
     }
 
@@ -60,7 +61,8 @@ object MetroMigrations {
                 .missingVersion(1)
                 .targetVersion(LANG_VERSION)
                 .failurePolicy(MigrationFailurePolicy.ABORT)
-                .addStep(MetroLanguageModernizationStep(plugin)),
+                .addStep(MetroLanguageModernizationStep(plugin))
+                .addStep(MergeBundledDefaultsStep(plugin, 2, LANG_VERSION, "language")),
         )
     }
 

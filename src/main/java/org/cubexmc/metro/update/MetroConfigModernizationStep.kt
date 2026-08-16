@@ -1,8 +1,5 @@
 package org.cubexmc.metro.update
 
-import java.io.InputStreamReader
-import java.nio.charset.StandardCharsets
-import org.bukkit.configuration.file.YamlConfiguration
 import org.cubexmc.config.MigrationContext
 import org.cubexmc.config.MigrationStep
 import org.cubexmc.metro.Metro
@@ -11,7 +8,7 @@ import org.cubexmc.metro.util.MetroTextRenderer
 class MetroConfigModernizationStep(private val plugin: Metro) : MigrationStep {
     override fun fromVersion(): Int = 1
 
-    override fun toVersion(): Int = MetroMigrations.CONFIG_VERSION
+    override fun toVersion(): Int = 2
 
     override fun description(): String = "Convert Metro config display templates to MiniMessage and merge v2 defaults."
 
@@ -22,28 +19,7 @@ class MetroConfigModernizationStep(private val plugin: Metro) : MigrationStep {
                 context.yaml().set(path, MetroTextRenderer.convertLegacyTemplate(context.yaml().getString(path, "")))
             }
         }
-        mergeCurrentDefaults(context)
-    }
-
-    private fun mergeCurrentDefaults(context: MigrationContext) {
-        try {
-            plugin.getResource(context.resourcePath()).use { inputStream ->
-                if (inputStream == null) {
-                    context.fail(context.resourcePath(), "Bundled config resource is missing.")
-                    return
-                }
-                val defaults = YamlConfiguration.loadConfiguration(
-                    InputStreamReader(inputStream, StandardCharsets.UTF_8),
-                )
-                for (key in defaults.getKeys(true)) {
-                    if (!defaults.isConfigurationSection(key) && !context.yaml().contains(key)) {
-                        context.yaml().set(key, defaults.get(key))
-                    }
-                }
-            }
-        } catch (ex: Exception) {
-            context.fail(context.resourcePath(), "Failed to merge config defaults: ${ex.message}")
-        }
+        BundledDefaults.mergeMissing(plugin, context, "config")
     }
 
     companion object {

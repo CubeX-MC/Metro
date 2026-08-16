@@ -8,6 +8,13 @@
 - **Fare settlement**: charge interval fares from the last settled station,
   settle a mid-route exit through the current target station, and refund the
   passenger if the line-owner payout fails.
+- **Mid-route dismount**: `settings.safe_mode.passenger_exit_lock` now defaults
+  to off, so a passenger can never be trapped in a cart that stopped short of a
+  station. Fare evasion is handled by the new `economy.mid_route_exit_fare`
+  (`NEXT_STOP` by default), which bills a mid-route exit as if the passenger had
+  ridden through to the next stop. Config and language files migrate to v3 on
+  first start; an existing `passenger_exit_lock: true` is kept as-is and
+  reported in the server log rather than flipped.
 - **GUI safety**: reject drag operations that touch Metro GUI slots while
   allowing drags confined to the player's own inventory.
 

@@ -1,4 +1,4 @@
-lang-version: 2
+lang-version: 3
 # Metro Plugin English Language File
 
 # Basic Information
@@ -589,6 +589,7 @@ economy:
   insufficient_funds: "<red>Insufficient funds. This ride costs: <price>"
   paid_boarding: "<green>Successfully boarded. <price> has been deducted."
   paid_distance: "<green>Distance fare: <price> has been deducted."
+  paid_mid_route_exit: "<green>Left mid-route: <price> was charged through to the next station."
   transaction_failed: "<red>Ticket transaction failed. Please try again later."
   vault_unavailable: "<red>Economy service is unavailable. Please contact an administrator."
   refunded: "<yellow>Your ticket payment was refunded."

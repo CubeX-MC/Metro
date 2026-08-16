@@ -1,6 +1,8 @@
 package org.cubexmc.metro.train
 
 import java.util.UUID
+import kotlin.math.max
+import kotlin.math.sqrt
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.entity.Minecart
@@ -12,6 +14,7 @@ import org.bukkit.event.Listener
 import org.bukkit.event.vehicle.VehicleMoveEvent
 import org.bukkit.util.Vector
 import org.cubexmc.metro.Metro
+import org.cubexmc.metro.config.MidRouteExitFare
 import org.cubexmc.metro.event.TrainEnterStopEvent
 import org.cubexmc.metro.manager.LanguageManager
 import org.cubexmc.metro.model.Line
@@ -211,7 +214,7 @@ class TrainMovementTask @JvmOverloads constructor(
         // Settle before the route sampling below: a stop whose stop point has
         // been cleared must still charge the distance already travelled, and
         // must still leave MOVING_IN_STATION.
-        settleVariableFare(stop)
+        settleVariableFare(stop, chargeFullSegment = false)
 
         val baseLocation = stop.stopPointLocation
         val line = session.line
@@ -230,10 +233,16 @@ class TrainMovementTask @JvmOverloads constructor(
         scoreboardController.updateBasedOnState(session)
     }
 
-    private fun settleVariableFare(stop: Stop) {
+    /**
+     * @param chargeFullSegment bill the whole leg instead of the distance
+     *   actually covered, so a mid-route dismount costs what riding on to
+     *   [stop] would have cost. Only affects [PriceRule.PricingMode.DISTANCE];
+     *   the other modes are already per-leg.
+     */
+    private fun settleVariableFare(stop: Stop, chargeFullSegment: Boolean) {
         val line = session.line ?: return
         val rule = line.priceRule ?: return
-        val distance = session.distanceTraveled
+        val distance = if (chargeFullSegment) resolveFullSegmentDistance(stop) else session.distanceTraveled
         if (distance <= 0 && rule.getMode() != PriceRule.PricingMode.INTERVAL) {
             return
         }
@@ -266,7 +275,7 @@ class TrainMovementTask @JvmOverloads constructor(
             session.addFareCharged(variablePrice)
             passenger.sendMessage(
                 session.plugin.languageManager.getMessage(
-                    "economy.paid_distance",
+                    if (chargeFullSegment) "economy.paid_mid_route_exit" else "economy.paid_distance",
                     LanguageManager.put(
                         LanguageManager.args(),
                         "price",
@@ -282,6 +291,38 @@ class TrainMovementTask @JvmOverloads constructor(
         ) {
             session.markFareSettledAt(stop.id)
         }
+    }
+
+    /**
+     * Distance to bill for a leg the passenger left early.
+     *
+     * The straight line between the two stop points stands in for the real
+     * track length: [TrainSession.distanceTraveled] only accumulates while
+     * `MOVING_BETWEEN_STATIONS`, so no exact per-leg length is recorded
+     * anywhere. Whichever of the two is larger wins, so a winding line still
+     * bills at least what the passenger actually rode.
+     *
+     * Lines with portals keep the travelled distance: a portal jump makes the
+     * two stop points arbitrarily far apart without the cart covering that
+     * ground.
+     */
+    private fun resolveFullSegmentDistance(targetStop: Stop): Double {
+        val traveled = session.distanceTraveled
+        val line = session.line ?: return traveled
+        if (line.portalIds.isNotEmpty()) {
+            return traveled
+        }
+
+        val from = session.plugin.stopManager?.getStop(session.currentStopId)?.stopPointLocation ?: return traveled
+        val to = targetStop.stopPointLocation ?: return traveled
+        if (from.world == null || from.world != to.world) {
+            return traveled
+        }
+
+        // Horizontal only, matching how distanceTraveled is accumulated.
+        val dx = to.x - from.x
+        val dz = to.z - from.z
+        return max(traveled, sqrt(dx * dx + dz * dz))
     }
 
     private fun resolveGameTime(stop: Stop): Long =
@@ -507,12 +548,22 @@ class TrainMovementTask @JvmOverloads constructor(
         passengerExitHandled = true
 
         if (session.state != TrainState.STOPPED_AT_STATION) {
-            val targetStop = session.plugin.stopManager?.getStop(session.targetStopId)
-            if (targetStop != null) {
-                settleVariableFare(targetStop)
-            }
+            settleMidRouteExitFare()
         }
         cancel()
+    }
+
+    /**
+     * Settles the leg a passenger abandoned by dismounting mid-route, per
+     * `economy.mid_route_exit_fare`.
+     */
+    private fun settleMidRouteExitFare() {
+        val policy = session.plugin.configFacade?.getMidRouteExitFare() ?: MidRouteExitFare.NEXT_STOP
+        if (policy == MidRouteExitFare.NONE) {
+            return
+        }
+        val targetStop = session.plugin.stopManager?.getStop(session.targetStopId) ?: return
+        settleVariableFare(targetStop, chargeFullSegment = policy == MidRouteExitFare.NEXT_STOP)
     }
 
     private fun updateLastTravelDirection(from: Location?, to: Location?) {

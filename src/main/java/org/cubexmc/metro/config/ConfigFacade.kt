@@ -123,6 +123,7 @@ class ConfigFacade(private val plugin: Metro) {
     private var safeModeMovementAssist = false
     private var safeModePassengerRailBreakProtection = false
     private var safeModePassengerExitLock = false
+    private var midRouteExitFare: MidRouteExitFare = MidRouteExitFare.NEXT_STOP
     private var bedrockArrivalSyncEnabled = true
     private var safeModeMinCruiseSpeed = 0.0
     private var safeModeStallRecoveryTicks = 0L
@@ -318,7 +319,9 @@ class ConfigFacade(private val plugin: Metro) {
         safeModePassengerRailBreakProtection =
             plugin.config.getBoolean("settings.safe_mode.passenger_rail_break_protection", true)
         safeModePassengerExitLock =
-            plugin.config.getBoolean("settings.safe_mode.passenger_exit_lock", true)
+            plugin.config.getBoolean("settings.safe_mode.passenger_exit_lock", false)
+        midRouteExitFare =
+            MidRouteExitFare.parse(plugin.config.getString("economy.mid_route_exit_fare"))
         safeModeMinCruiseSpeed = plugin.config.getDouble("settings.safe_mode.min_cruise_speed", 0.08)
         safeModeStallRecoveryTicks = plugin.config.getLong("settings.safe_mode.stall_recovery_ticks", 8L)
         bedrockArrivalSyncEnabled = plugin.config.getBoolean("settings.bedrock.arrival_sync", true)
@@ -523,6 +526,8 @@ class ConfigFacade(private val plugin: Metro) {
         safeModeEnabled && safeModePassengerRailBreakProtection
 
     fun isSafeModePassengerExitLock(): Boolean = safeModeEnabled && safeModePassengerExitLock
+
+    fun getMidRouteExitFare(): MidRouteExitFare = midRouteExitFare
 
     fun isBedrockArrivalSyncEnabled(): Boolean = bedrockArrivalSyncEnabled
 

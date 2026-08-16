@@ -224,6 +224,44 @@ class ConfigFacadeTest {
         assertEquals("Golden Shovel", facade.getSelectionToolName());
     }
 
+    @Test
+    void shouldLeavePassengerExitLockOffByDefault() {
+        ConfigFacade facade = createFacade(new YamlConfiguration());
+        facade.reload();
+
+        assertFalse(facade.isSafeModePassengerExitLock());
+    }
+
+    @Test
+    void shouldDefaultMidRouteExitFareToNextStop() {
+        ConfigFacade facade = createFacade(new YamlConfiguration());
+        facade.reload();
+
+        assertEquals(MidRouteExitFare.NEXT_STOP, facade.getMidRouteExitFare());
+    }
+
+    @Test
+    void shouldReadConfiguredMidRouteExitFare() {
+        YamlConfiguration config = new YamlConfiguration();
+        config.set("economy.mid_route_exit_fare", "actual");
+
+        ConfigFacade facade = createFacade(config);
+        facade.reload();
+
+        assertEquals(MidRouteExitFare.ACTUAL, facade.getMidRouteExitFare());
+    }
+
+    @Test
+    void shouldFallbackToNextStopWhenMidRouteExitFareIsInvalid() {
+        YamlConfiguration config = new YamlConfiguration();
+        config.set("economy.mid_route_exit_fare", "NOT_A_POLICY");
+
+        ConfigFacade facade = createFacade(config);
+        facade.reload();
+
+        assertEquals(MidRouteExitFare.NEXT_STOP, facade.getMidRouteExitFare());
+    }
+
     private ConfigFacade createFacade(YamlConfiguration config) {
         Metro plugin = mock(Metro.class);
         when(plugin.getConfig()).thenReturn(config);

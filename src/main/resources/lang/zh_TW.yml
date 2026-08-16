@@ -1,4 +1,4 @@
-lang-version: 2
+lang-version: 3
 # Metro 插件繁體中文語言檔案
 
 # 基本資訊
@@ -586,6 +586,7 @@ economy:
   insufficient_funds: "<red>餘額不足。此次乘車需要: <price>"
   paid_boarding: "<green>乘車扣費成功，已扣除 <price>。"
   paid_distance: "<green>里程扣費，已扣除 <price>。"
+  paid_mid_route_exit: "<green>中途下車，已按坐到下一站計費，扣除 <price>。"
   transaction_failed: "<red>乘車扣費失敗，請稍後再試。"
   vault_unavailable: "<red>經濟服務不可用，請聯絡管理員。"
   refunded: "<yellow>已退回你的乘車費用。"

@@ -17,7 +17,7 @@ Run `/m` or `/metro` to open the management GUI directly. Use `/m help` for comm
 
 - **Multi-line Network** — Create multiple routes with stops and transfers
 - **GUI Administration** — Built-in GUI management
-- **Pricing System** — Flat, distance-based, and interval-based fares; mid-route exits settle interval fares through the current target station
+- **Pricing System** — Flat, distance-based, and interval-based fares; mid-route exits are billed through to the next station by default (`economy.mid_route_exit_fare`)
 - **Permission System** — Per-element trust and ownership
 - **Safe Mode** — Protect minecarts from pushing, attacks, and destruction
 - **Minecart Portals** — Cross-area and cross-world teleportation

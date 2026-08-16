@@ -1,4 +1,4 @@
-lang-version: 2
+lang-version: 3
 # Metro Plugin Türkçe Dil Dosyası AdnanPSD tarafından çevrilmiştir
 
 # Temel Bilgiler
@@ -589,6 +589,7 @@ economy:
   insufficient_funds: "<red>Yetersiz bakiye. Bu yolculuğun ücreti: <price>"
   paid_boarding: "<green>Başarıyla binildi. <price> bakiyenizden düşüldü."
   paid_distance: "<green>Mesafe ücreti: <price> bakiyenizden düşüldü."
+  paid_mid_route_exit: "<green>Yol ortasında indiniz: bir sonraki istasyona kadar <price> tahsil edildi."
   transaction_failed: "<red>Bilet işlemi başarısız oldu. Lütfen daha sonra tekrar deneyin."
   vault_unavailable: "<red>Ekonomi servisi kullanılamıyor. Lütfen bir yöneticiyle iletişime geçin."
   refunded: "<yellow>Bilet ödemeniz iade edildi."

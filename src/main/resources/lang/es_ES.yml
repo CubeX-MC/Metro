@@ -1,4 +1,4 @@
-lang-version: 2
+lang-version: 3
 # Archivo de idioma español del plugin Metro
 
 # Información básica
@@ -589,6 +589,7 @@ economy:
   insufficient_funds: "<red>Fondos insuficientes. Este viaje cuesta: <price>"
   paid_boarding: "<green>Has subido con éxito. Se han deducido <price>."
   paid_distance: "<green>Tarifa por distancia: se han deducido <price>."
+  paid_mid_route_exit: "<green>Bajada a mitad de trayecto: se han cobrado <price> hasta la próxima estación."
   transaction_failed: "<red>La transacción del billete falló. Inténtalo de nuevo más tarde."
   vault_unavailable: "<red>El servicio de economía no está disponible. Contacta con un administrador."
   refunded: "<yellow>Se ha reembolsado el pago de tu billete."

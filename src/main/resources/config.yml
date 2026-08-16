@@ -1,4 +1,4 @@
-config-version: 2
+config-version: 3
 # Metro 配置文件
 # Metro Configuration File
 
@@ -159,6 +159,21 @@ economy:
   # 是否启用经济系统收费功能
   # Enable economy system billing features
   enabled: true
+  # 半路下车如何计费（仅在 safe_mode.passenger_exit_lock 关闭时有意义）
+  #   NEXT_STOP：按坐到下一站收费，跳车不会比坐完便宜（默认）
+  #   ACTUAL：只按实际行驶的距离收费
+  #   NONE：不再补收
+  # 只影响按里程/按区间计价的线路；固定票价在上车时就已收全。
+  #
+  # How to bill a passenger who dismounts between two stops (only meaningful
+  # when safe_mode.passenger_exit_lock is off):
+  #   NEXT_STOP: bill as if they rode on to the next stop, so leaving early is
+  #              never cheaper than staying aboard (default)
+  #   ACTUAL:    bill only the distance actually travelled
+  #   NONE:      charge nothing further
+  # Affects distance/interval priced lines only; flat fares are already paid
+  # in full when boarding.
+  mid_route_exit_fare: NEXT_STOP
 
 # 计分板配置
 # Scoreboard Configuration
@@ -325,12 +340,16 @@ settings:
     # 乘客拆轨保护：玩家乘坐 Metro 矿车时禁止破坏铁轨
     # Passenger rail break protection: prevent players riding Metro minecarts from breaking rails
     passenger_rail_break_protection: true
-    # 行驶中禁止下车：列车未停靠时按 Shift 无法离开矿车（防止逃票/半路跳车）
-    # 矿车已损坏或没有行程任务时仍然可以下车，不会把玩家卡住
+    # 行驶中禁止下车：列车未停靠时按 Shift 无法离开矿车。
+    # 默认关闭：锁死会让玩家被困在卡住的矿车里，而逃票已经由下面的
+    # mid_route_exit_fare 处理。只有当线路会经过不该让玩家进入的区域时，
+    # 才需要把它打开。
+    #
     # Passenger exit lock: passengers cannot leave the minecart while the train
-    # is not docked (prevents fare evasion). Broken carts and carts without an
-    # active ride can always be left, so players never get stuck.
-    passenger_exit_lock: true
+    # is not docked. Off by default — locking players in strands them in a
+    # stuck cart, and fare evasion is handled by mid_route_exit_fare below.
+    # Turn it on only if a line passes through areas players must not reach.
+    passenger_exit_lock: false
     # 判定为失速的水平速度阈值
     # Horizontal speed threshold used to detect stalls
     min_cruise_speed: 0.08

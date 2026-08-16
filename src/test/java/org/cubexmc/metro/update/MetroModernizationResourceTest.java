@@ -11,6 +11,8 @@ import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.cubexmc.config.MigrationContext;
 import org.cubexmc.metro.Metro;
@@ -80,6 +82,144 @@ class MetroModernizationResourceTest {
 
         assertEquals("<green>Created <line_id>", yaml.getString("line.create_success"));
         assertEquals("<green>Default <line_id>", yaml.getString("new_default"));
+    }
+
+    @Test
+    void migrationStepsFormAnUnbrokenChainToTheCurrentConfigVersion() {
+        Metro plugin = mock(Metro.class);
+
+        assertEquals(1, new MetroConfigModernizationStep(plugin).fromVersion());
+        assertEquals(new MetroConfigModernizationStep(plugin).toVersion(),
+                new MetroMidRouteExitFareStep(plugin).fromVersion(),
+                "a version with no step leaves upgraded servers without the new keys");
+        assertEquals(MetroMigrations.CONFIG_VERSION, new MetroMidRouteExitFareStep(plugin).toVersion());
+    }
+
+    @Test
+    void midRouteExitFareStepAddsTheNewKeyToAV2Config() throws Exception {
+        Metro plugin = pluginWithResource("config.yml", """
+                config-version: 3
+                economy:
+                  enabled: true
+                  mid_route_exit_fare: NEXT_STOP
+                """);
+        YamlConfiguration yaml = yamlOf("""
+                config-version: 2
+                economy:
+                  enabled: false
+                """);
+
+        new MetroMidRouteExitFareStep(plugin).migrate(new SimpleMigrationContext("config.yml", yaml));
+
+        assertEquals("NEXT_STOP", yaml.getString("economy.mid_route_exit_fare"));
+        assertFalse(yaml.getBoolean("economy.enabled"), "an existing choice must survive the merge");
+    }
+
+    @Test
+    void midRouteExitFareStepKeepsAnExplicitExitLockAndWarnsAboutIt() throws Exception {
+        Metro plugin = pluginWithResource("config.yml", """
+                config-version: 3
+                settings:
+                  safe_mode:
+                    passenger_exit_lock: false
+                """);
+        YamlConfiguration yaml = yamlOf("""
+                config-version: 2
+                settings:
+                  safe_mode:
+                    passenger_exit_lock: true
+                """);
+        CollectingMigrationContext context = new CollectingMigrationContext("config.yml", yaml);
+
+        new MetroMidRouteExitFareStep(plugin).migrate(context);
+
+        assertTrue(yaml.getBoolean("settings.safe_mode.passenger_exit_lock"),
+                "the admin's lock choice must not be flipped silently");
+        assertEquals(1, context.warnings.size());
+        assertTrue(context.warnings.get(0).contains("passenger_exit_lock"));
+    }
+
+    @Test
+    void midRouteExitFareStepStaysQuietWhenTheExitLockIsAlreadyOff() throws Exception {
+        Metro plugin = pluginWithResource("config.yml", """
+                config-version: 3
+                settings:
+                  safe_mode:
+                    passenger_exit_lock: false
+                """);
+        YamlConfiguration yaml = yamlOf("""
+                config-version: 2
+                settings:
+                  safe_mode:
+                    passenger_exit_lock: false
+                """);
+        CollectingMigrationContext context = new CollectingMigrationContext("config.yml", yaml);
+
+        new MetroMidRouteExitFareStep(plugin).migrate(context);
+
+        assertTrue(context.warnings.isEmpty());
+    }
+
+    @Test
+    void languageMergeStepAddsTheMidRouteExitMessageToAV2File() throws Exception {
+        Metro plugin = pluginWithResource("lang/en_US.yml", """
+                lang-version: 3
+                economy:
+                  paid_distance: '<green>Distance fare'
+                  paid_mid_route_exit: '<green>Left mid-route'
+                """);
+        YamlConfiguration yaml = yamlOf("""
+                lang-version: 2
+                economy:
+                  paid_distance: '<gold>My own wording'
+                """);
+
+        new MergeBundledDefaultsStep(plugin, 2, MetroMigrations.LANG_VERSION, "language")
+                .migrate(new SimpleMigrationContext("lang/en_US.yml", yaml));
+
+        assertEquals("<green>Left mid-route", yaml.getString("economy.paid_mid_route_exit"));
+        assertEquals("<gold>My own wording", yaml.getString("economy.paid_distance"));
+    }
+
+    private YamlConfiguration yamlOf(String content) {
+        return YamlConfiguration.loadConfiguration(new InputStreamReader(
+                new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8));
+    }
+
+    private static final class CollectingMigrationContext implements MigrationContext {
+        private final String resourcePath;
+        private final YamlConfiguration yaml;
+        private final List<String> warnings = new ArrayList<>();
+
+        private CollectingMigrationContext(String resourcePath, YamlConfiguration yaml) {
+            this.resourcePath = resourcePath;
+            this.yaml = yaml;
+        }
+
+        @Override
+        public File file() {
+            return new File(resourcePath);
+        }
+
+        @Override
+        public String resourcePath() {
+            return resourcePath;
+        }
+
+        @Override
+        public YamlConfiguration yaml() {
+            return yaml;
+        }
+
+        @Override
+        public void warning(String path, String message) {
+            warnings.add(path + ": " + message);
+        }
+
+        @Override
+        public void fail(String path, String message) {
+            throw new AssertionError(path + ": " + message);
+        }
     }
 
     private YamlConfiguration load(String resourcePath) {

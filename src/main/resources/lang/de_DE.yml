@@ -1,4 +1,4 @@
-lang-version: 2
+lang-version: 3
 # Metro Plugin Deutsche Sprachdatei
 
 # Grundinformationen
@@ -588,6 +588,7 @@ economy:
   insufficient_funds: "<red>Unzureichendes Guthaben. Diese Fahrt kostet: <price>"
   paid_boarding: "<green>Erfolgreich eingestiegen. <price> wurden abgebucht."
   paid_distance: "<green>Streckentarif: <price> wurden abgebucht."
+  paid_mid_route_exit: "<green>Unterwegs ausgestiegen: <price> wurden bis zur nächsten Station berechnet."
   transaction_failed: "<red>Tickettransaktion fehlgeschlagen. Bitte versuche es später erneut."
   vault_unavailable: "<red>Wirtschaftsdienst ist nicht verfügbar. Bitte kontaktiere einen Administrator."
   refunded: "<yellow>Deine Ticketzahlung wurde erstattet."
