@@ -7,13 +7,23 @@
 
 ---
 
-Metro 是一个 Minecraft 地铁交通系统插件。管理员可以创建自动化的地铁线路网络，玩家右键红石铁轨即可呼叫矿车并自动乘坐。
+Metro 是一个 Minecraft 地铁交通系统插件。管理员创建自动化的地铁线路网络，玩家右键红石铁轨即可呼叫矿车并自动乘坐。
 
-支持 Paper 1.18+ 和 Folia。
+## 定位
 
-输入 `/m` 或 `/metro` 可直接打开管理 GUI；需要查看命令帮助时使用 `/m help`。
+把"服务器里的交通"做成一套可运营的基础设施，而不是一堆手搓的命令方块。
+管理员用 GUI 铺线路、划停靠区、设换乘与票价；玩家的操作只有一个——**右键红石铁轨**。
 
-## 特性
+差异化在于它是**线路网络**而不是单纯的传送点：停靠区有顺序、有换乘、有按距离或站数的计价，
+矿车会自动发车与到站，网页地图上能看到整张网。
+
+**不做什么**（避免误装）：
+
+- 不是传送插件；玩家仍然坐着矿车在世界里真实移动。
+- 不接管铁轨建造，线路铺设仍是管理员的工作。
+- **Metro 与 Metro/Railway 的另一侧不支持同时安装**（两者同源、包名相同）。
+
+## 功能特性
 
 - **多线路网络** — 创建多条线路，设置停靠区和换乘
 - **图形化管理** — 内置 GUI 界面
@@ -35,9 +45,48 @@ Metro 是一个 Minecraft 地铁交通系统插件。管理员可以创建自动
 | **停靠点 (StopPoint)** | 停靠区内的红石铁轨，玩家右键乘车的位置 |
 | **换乘 (Transfer)** | 在停靠区转乘其他线路 |
 
-## 了解更多
+## 运行要求
 
-完整文档请查看 [Metro Wiki](https://github.com/CubeX-MC/Metro/wiki)。
+| 项 | 要求 |
+|---|---|
+| 服务端 | Paper 1.18+ |
+| Java | 17 |
+| 必需依赖 | 无 |
+| 可选依赖 | Vault（经济）、BlueMap / Dynmap / Squaremap（网页地图）、PlaceholderAPI |
+| Folia | 支持 |
+
+## 安装
+
+1. 把 `metro-<version>.jar` 放进服务器 `plugins/`。
+2. 启动服务器生成默认配置。
+3. 输入 `/m` 或 `/metro` 打开管理 GUI 开始铺线路；`/m help` 查看命令帮助。
+
+> 部署用的是 `build/libs/metro-<version>.jar`；同目录的 `*-plain.jar` **不要**部署。
+
+## 命令
+
+完整命令与权限清单见 [Metro Wiki](https://github.com/CubeX-MC/Metro/wiki)。
+
+## 构建
+
+```powershell
+.\gradlew.bat :Metro:build      # 编译 + 测试 + 部署 jar
+.\gradlew.bat :Metro:test       # 只跑测试
+.\gradlew.bat :Metro:jarGate    # 部署 jar 门禁
+```
+
+Windows 必须用 PowerShell 跑 `.\gradlew.bat`（仓库路径含空格）。
+
+## 已知边界
+
+- **Metro 与另一侧（Railway）包名相同，不能同时安装。** 这是有意设计，便于两边同步功能更新。
+- 网页地图集成依赖对应地图插件在场；缺席时该能力不宣告为可用。
+
+## 相关文档
+
+- 完整文档：[Metro Wiki](https://github.com/CubeX-MC/Metro/wiki)
+- 待办与路线：仓库根 [`PLAN.md`](../PLAN.md)
+- 版本记录：[`CHANGELOG.md`](CHANGELOG.md)
 
 ---
 
