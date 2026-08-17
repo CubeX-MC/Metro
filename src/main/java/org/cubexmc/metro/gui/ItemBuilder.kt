@@ -1,59 +1,39 @@
 package org.cubexmc.metro.gui
 
 import org.bukkit.Material
-import org.bukkit.enchantments.Enchantment
-import org.bukkit.inventory.ItemFlag
 import org.bukkit.inventory.ItemStack
-import org.bukkit.inventory.meta.ItemMeta
-import org.bukkit.persistence.PersistentDataType
+import org.cubexmc.gui.ItemBuilder as SharedItemBuilder
+import org.cubexmc.gui.TextStyler
 import org.cubexmc.metro.util.ColorUtil
 import org.cubexmc.metro.util.MetroConstants
 
 /**
- * 简化物品创建的工具类
+ * 简化物品创建的工具类。
+ *
+ * 构造逻辑本身在共享模块 `cubex-gui` 的 [SharedItemBuilder]；这里只把它绑定到本插件的颜色管线
+ * （legacy `&` + `&#RRGGBB`），让 GUI 的 90 多个调用点保持原样。
  */
 class ItemBuilder @JvmOverloads constructor(material: Material, amount: Int = 1) {
+    private val delegate = SharedItemBuilder(material, amount, STYLER)
 
-    private val item: ItemStack = ItemStack(material, amount)
-    private val meta: ItemMeta? = item.itemMeta
+    fun name(name: String): ItemBuilder = apply { delegate.name(name) }
 
-    fun name(name: String): ItemBuilder {
-        meta?.setDisplayName(ColorUtil.colorize(name))
-        return this
-    }
+    fun lore(vararg lore: String): ItemBuilder = apply { delegate.lore(*lore) }
 
-    fun lore(vararg lore: String): ItemBuilder {
-        meta?.lore = lore.map { ColorUtil.colorize(it) }
-        return this
-    }
+    fun lore(lore: List<String>): ItemBuilder = apply { delegate.lore(lore) }
 
-    fun lore(lore: List<String>): ItemBuilder {
-        meta?.lore = lore.map { ColorUtil.colorize(it) }
-        return this
-    }
+    fun glow(): ItemBuilder = apply { delegate.glow() }
 
-    fun glow(): ItemBuilder {
-        if (meta != null) {
-            meta.addEnchant(Enchantment.DURABILITY, 1, true)
-            meta.addItemFlags(ItemFlag.HIDE_ENCHANTS)
-        }
-        return this
-    }
-
-    fun hideAttributes(): ItemBuilder {
-        meta?.addItemFlags(ItemFlag.HIDE_ATTRIBUTES)
-        return this
-    }
+    fun hideAttributes(): ItemBuilder = apply { delegate.hideAttributes() }
 
     fun build(): ItemStack {
-        if (meta != null) {
-            // 打上 GUI 标记，任何逃逸到玩家背包里的按钮都能被识别并清除
-            val guiItemKey = MetroConstants.getGuiItemKey()
-            if (guiItemKey != null) {
-                meta.persistentDataContainer.set(guiItemKey, PersistentDataType.BYTE, 1.toByte())
-            }
-            item.itemMeta = meta
-        }
-        return item
+        // 打上 GUI 标记，任何逃逸到玩家背包里的按钮都能被识别并清除
+        delegate.guiMarker(MetroConstants.getGuiItemKey())
+        return delegate.build()
+    }
+
+    private companion object {
+        // colorize 的返回值可空；退回原串比抛 NPE 更符合"按钮至少画得出来"的预期。
+        private val STYLER = TextStyler { input -> ColorUtil.colorize(input) ?: input }
     }
 }

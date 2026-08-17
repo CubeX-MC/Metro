@@ -12,9 +12,9 @@ import org.bukkit.configuration.file.YamlConfiguration
 import org.bukkit.util.BoundingBox
 import org.cubexmc.metro.Metro
 import org.cubexmc.metro.model.Stop
-import org.cubexmc.metro.spatial.Octree
-import org.cubexmc.metro.spatial.Point3D
-import org.cubexmc.metro.spatial.Range3D
+import org.cubexmc.spatial.Octree
+import org.cubexmc.spatial.Point3D
+import org.cubexmc.spatial.Range3D
 import org.cubexmc.metro.update.DataFileUpdater
 
 /**

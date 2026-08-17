@@ -43,6 +43,8 @@ dependencies {
     implementation(project(":modules:cubex-config"))
     implementation(project(":modules:cubex-i18n"))
     implementation(project(":modules:cubex-scheduler"))
+    implementation(project(":modules:cubex-spatial"))
+    implementation(project(":modules:cubex-gui"))
 
     compileOnly("de.bluecolored.bluemap:BlueMapAPI:2.7.2")
     compileOnly("us.dynmap:DynmapCoreAPI:3.7-beta-6")
