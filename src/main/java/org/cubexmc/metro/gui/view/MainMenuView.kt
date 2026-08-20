@@ -7,6 +7,7 @@ import org.bukkit.entity.Player
 import org.cubexmc.metro.Metro
 import org.cubexmc.metro.gui.GuiHolder
 import org.cubexmc.metro.gui.ItemBuilder
+import org.cubexmc.gui.fillEmpty
 
 class MainMenuView(private val plugin: Metro) {
 
@@ -35,12 +36,7 @@ class MainMenuView(private val plugin: Metro) {
                 .build(),
         )
 
-        val filler = ItemBuilder(Material.GRAY_STAINED_GLASS_PANE).name(" ").build()
-        for (slot in 0 until INVENTORY_SIZE) {
-            if (inv.getItem(slot) == null) {
-                inv.setItem(slot, filler)
-            }
-        }
+        inv.fillEmpty(ItemBuilder(Material.GRAY_STAINED_GLASS_PANE).name(" ").build())
 
         player.openInventory(inv)
     }

@@ -178,6 +178,8 @@ class Metro : CubexPlugin() {
         chatInputManager = ChatInputManager(this)
         routeRecorder = RouteRecorder(this)
         Bukkit.getPluginManager().registerEvents(chatInputManager, this)
+        // Paper 上再补一条现代聊天事件监听(Spigot 上是空操作),两条链路都能接住。
+        chatInputManager.registerModernChat()
 
         // 初始化传送门管理器
         val portals = PortalManager(this)
