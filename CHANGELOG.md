@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **Fare destination**: fares from a line with **no owner** used to be withdrawn
+  and destroyed. The new `economy.account` names the server account they are
+  paid into instead (player UUID, `name:<account>`, a player name, or
+  `bank:<name>`), reusing the shared `cubex-economy` routing. Owned lines are
+  unchanged - they still pay their owner. Config migrates to v4 on first start
+  with the key empty, which is exactly the old behaviour.
 - **Economy compatibility**: rebind the active Vault economy provider when
   services register/unregister and during `/m reload`, so late-loading or
   hot-reloaded currency providers remain usable.

@@ -14,6 +14,7 @@ import org.cubexmc.metro.config.ConfigFacade
 import org.cubexmc.metro.gui.ChatInputManager
 import org.cubexmc.metro.gui.GuiListener
 import org.cubexmc.metro.gui.GuiManager
+import org.cubexmc.economy.EconomyAccount
 import org.cubexmc.metro.integration.VaultIntegration
 import org.cubexmc.metro.lifecycle.CommandRegistration
 import org.cubexmc.metro.lifecycle.ListenerRegistration
@@ -194,6 +195,7 @@ class Metro : CubexPlugin() {
         } else {
             logger.info("Vault economy not found or disabled.")
         }
+        applyEconomyAccount()
         ticketService = TicketService({ vaultIntegration }, { configFacade.isEconomyEnabled() })
 
         priceService = PriceService()
@@ -382,10 +384,30 @@ class Metro : CubexPlugin() {
     fun refreshVaultIntegration(): Boolean {
         val economy = vaultIntegration ?: return false
         val enabled = economy.refresh()
+        applyEconomyAccount()
         logger.info(
             if (enabled) "Vault economy integration refreshed." else "Vault economy provider is currently unavailable.",
         )
         return enabled
+    }
+
+    /**
+     * Resolves `economy.account` - where a fare goes when the line has no owner.
+     *
+     * Called on enable and on every reload, never per fare: resolving a player
+     * name can hit the profile cache. A broken value does not stop the plugin;
+     * `VaultEconomy` logs it loudly and fares keep working (the money is lost
+     * the same way it was before this key existed).
+     */
+    private fun applyEconomyAccount() {
+        val economy = vaultIntegration ?: return
+        val account = try {
+            EconomyAccount.parse(configFacade.getEconomyAccount())
+        } catch (ex: IllegalArgumentException) {
+            logger.severe("Metro economy.account is invalid; fares from unowned lines will not be banked. ${ex.message}")
+            EconomyAccount.None
+        }
+        economy.useAccount(account)
     }
 
     fun flushPersistentData() {

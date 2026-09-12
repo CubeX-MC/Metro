@@ -81,7 +81,8 @@ class TicketServiceTest {
         VaultIntegration vault = enabledVault();
         Player player = player();
         when(vault.has(player, 3.0)).thenReturn(true);
-        when(vault.withdraw(player, 3.0)).thenReturn(false);
+        // No owner on this line, so the fare goes through the account route.
+        when(vault.chargeToAccount(player, 3.0)).thenReturn(false);
 
         TicketService service = new TicketService(() -> vault, () -> true);
         TicketService.TicketTransaction transaction = service.createTransaction(player, line(3.0));
@@ -170,7 +171,7 @@ class TicketServiceTest {
         VaultIntegration vault = enabledVault();
         Player player = player();
         when(vault.has(player, 3.0)).thenReturn(true);
-        when(vault.withdraw(player, 3.0)).thenReturn(true);
+        when(vault.chargeToAccount(player, 3.0)).thenReturn(true);
         when(vault.format(3.0)).thenReturn("$3.00");
 
         TicketService service = new TicketService(() -> vault, () -> true);
@@ -184,7 +185,45 @@ class TicketServiceTest {
         assertEquals(3.0, txn.getPrice());
 
         assertEquals(TicketChargeStatus.CHARGED, service.charge(txn));
-        verify(vault).withdraw(player, 3.0);
+        verify(vault).chargeToAccount(player, 3.0);
+    }
+
+    @Test
+    void shouldRouteFareToTheConfiguredAccountWhenTheLineHasNoOwner() {
+        VaultIntegration vault = enabledVault();
+        Player player = player();
+        Line unowned = line(6.0);
+
+        when(vault.has(player, 6.0)).thenReturn(true);
+        when(vault.chargeToAccount(player, 6.0)).thenReturn(true);
+
+        TicketService service = new TicketService(() -> vault, () -> true);
+        TicketService.TicketTransaction transaction = service.createTransaction(player, unowned);
+
+        assertEquals(TicketChargeStatus.CHARGED, service.charge(transaction));
+        assertTrue(transaction.isCharged());
+        // The fare used to be withdrawn and destroyed; it is now withdrawn and banked in one step.
+        verify(vault).chargeToAccount(player, 6.0);
+        verify(vault, never()).withdraw(player, 6.0);
+    }
+
+    @Test
+    void shouldStillPayTheOwnerAndNeverTheAccountWhenTheLineHasOne() {
+        VaultIntegration vault = enabledVault();
+        Player player = player();
+        UUID owner = UUID.randomUUID();
+        Line owned = line(9.0);
+        owned.setOwner(owner);
+
+        when(vault.has(player, 9.0)).thenReturn(true);
+        when(vault.withdraw(player, 9.0)).thenReturn(true);
+        when(vault.deposit(owner, 9.0)).thenReturn(true);
+
+        TicketService service = new TicketService(() -> vault, () -> true);
+
+        assertEquals(TicketChargeStatus.CHARGED, service.chargePrice(player, owned, 9.0));
+        verify(vault).deposit(owner, 9.0);
+        verify(vault, never()).chargeToAccount(player, 9.0);
     }
 
     private VaultIntegration enabledVault() {

@@ -183,17 +183,36 @@ class TicketService(
         if (!vault.has(transaction.player, transaction.price)) {
             return TicketChargeStatus.INSUFFICIENT_FUNDS
         }
-        if (!vault.withdraw(transaction.player, transaction.price)) {
-            return TicketChargeStatus.TRANSACTION_FAILED
-        }
-
         val owner: UUID? = transaction.line.owner
-        if (owner != null && !vault.deposit(owner, transaction.price)) {
-            refund(vault, transaction.player, transaction.price)
+        if (!collectFare(vault, transaction.player, owner, transaction.price)) {
             return TicketChargeStatus.TRANSACTION_FAILED
         }
         transaction.markCharged()
         return TicketChargeStatus.CHARGED
+    }
+
+    /**
+     * Takes the fare from the passenger and pays it out.
+     *
+     * An owned line still pays its owner exactly as before, refunding the
+     * passenger when that deposit fails. An **unowned** line routes the fare to
+     * `economy.account` instead of destroying it; leaving that key empty keeps
+     * the old behaviour, so nothing changes until a server configures it.
+     *
+     * @return `true` when the fare was collected
+     */
+    private fun collectFare(vault: VaultIntegration, player: Player, owner: UUID?, price: Double): Boolean {
+        if (owner == null) {
+            return vault.chargeToAccount(player, price)
+        }
+        if (!vault.withdraw(player, price)) {
+            return false
+        }
+        if (!vault.deposit(owner, price)) {
+            refund(vault, player, price)
+            return false
+        }
+        return true
     }
 
     /**
@@ -257,12 +276,7 @@ class TicketService(
         if (!vault.has(player, priceToCharge)) {
             return TicketChargeStatus.INSUFFICIENT_FUNDS
         }
-        if (!vault.withdraw(player, priceToCharge)) {
-            return TicketChargeStatus.TRANSACTION_FAILED
-        }
-        val owner = line.owner
-        if (owner != null && !vault.deposit(owner, priceToCharge)) {
-            refund(vault, player, priceToCharge)
+        if (!collectFare(vault, player, line.owner, priceToCharge)) {
             return TicketChargeStatus.TRANSACTION_FAILED
         }
         return TicketChargeStatus.CHARGED

@@ -7,12 +7,14 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.logging.Logger;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Server;
 import org.bukkit.event.server.ServiceRegisterEvent;
 import org.bukkit.event.server.ServiceUnregisterEvent;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.ServicesManager;
+import org.cubexmc.core.CubexLogger;
 import org.cubexmc.metro.Metro;
 import org.junit.jupiter.api.Test;
 
@@ -28,6 +30,8 @@ class VaultIntegrationTest {
         Economy economy = mock(Economy.class);
 
         when(plugin.getServer()).thenReturn(server);
+        // refresh() rebuilds the cubex-economy wrapper, which needs the plugin's structured logger.
+        when(plugin.log()).thenReturn(new CubexLogger(Logger.getLogger("VaultIntegrationTest")));
         when(server.getServicesManager()).thenReturn(services);
         when(registration.getService()).thenReturn(Economy.class);
         when(registration.getProvider()).thenReturn(economy);

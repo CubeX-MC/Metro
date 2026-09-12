@@ -8,7 +8,7 @@ import org.cubexmc.config.ResourceFiles
 import org.cubexmc.metro.Metro
 
 object MetroMigrations {
-    const val CONFIG_VERSION: Int = 3
+    const val CONFIG_VERSION: Int = 4
     const val LANG_VERSION: Int = 3
 
     @JvmField
@@ -32,7 +32,8 @@ object MetroMigrations {
                 .targetVersion(CONFIG_VERSION)
                 .failurePolicy(MigrationFailurePolicy.ABORT)
                 .addStep(MetroConfigModernizationStep(plugin))
-                .addStep(MetroMidRouteExitFareStep(plugin)),
+                .addStep(MetroMidRouteExitFareStep(plugin))
+                .addStep(MetroEconomyAccountStep(plugin)),
         )
     }
 

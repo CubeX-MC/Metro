@@ -13,7 +13,9 @@ import org.cubexmc.metro.Metro
  * about it instead.
  */
 class MetroMidRouteExitFareStep(plugin: Metro) :
-    MergeBundledDefaultsStep(plugin, 2, MetroMigrations.CONFIG_VERSION, "config") {
+    // Pinned to 3, not CONFIG_VERSION: this step is what v2 -> v3 means. Letting it follow the
+    // constant would silently swallow every later version bump into one 2 -> N jump.
+    MergeBundledDefaultsStep(plugin, 2, 3, "config") {
 
     override fun description(): String =
         "Add economy.mid_route_exit_fare and report a still-enabled passenger exit lock."

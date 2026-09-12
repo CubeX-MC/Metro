@@ -92,7 +92,49 @@ class MetroModernizationResourceTest {
         assertEquals(new MetroConfigModernizationStep(plugin).toVersion(),
                 new MetroMidRouteExitFareStep(plugin).fromVersion(),
                 "a version with no step leaves upgraded servers without the new keys");
-        assertEquals(MetroMigrations.CONFIG_VERSION, new MetroMidRouteExitFareStep(plugin).toVersion());
+        assertEquals(new MetroMidRouteExitFareStep(plugin).toVersion(),
+                new MetroEconomyAccountStep(plugin).fromVersion(),
+                "a version with no step leaves upgraded servers without the new keys");
+        assertEquals(MetroMigrations.CONFIG_VERSION, new MetroEconomyAccountStep(plugin).toVersion());
+    }
+
+    @Test
+    void economyAccountStepAddsTheNewKeyToAV3ConfigWithoutChangingFares() throws Exception {
+        Metro plugin = pluginWithResource("config.yml", """
+                config-version: 4
+                economy:
+                  enabled: true
+                  account: ""
+                """);
+        YamlConfiguration yaml = yamlOf("""
+                config-version: 3
+                economy:
+                  enabled: true
+                """);
+
+        new MetroEconomyAccountStep(plugin).migrate(new SimpleMigrationContext("config.yml", yaml));
+
+        // Empty = the pre-v4 behaviour (fares from unowned lines are destroyed).
+        assertEquals("", yaml.getString("economy.account"));
+        assertTrue(yaml.getBoolean("economy.enabled"));
+    }
+
+    @Test
+    void economyAccountStepKeepsAnAccountTheOwnerAlreadyConfigured() throws Exception {
+        Metro plugin = pluginWithResource("config.yml", """
+                config-version: 4
+                economy:
+                  account: ""
+                """);
+        YamlConfiguration yaml = yamlOf("""
+                config-version: 3
+                economy:
+                  account: 'name:cubex_bank'
+                """);
+
+        new MetroEconomyAccountStep(plugin).migrate(new SimpleMigrationContext("config.yml", yaml));
+
+        assertEquals("name:cubex_bank", yaml.getString("economy.account"));
     }
 
     @Test

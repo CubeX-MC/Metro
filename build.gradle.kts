@@ -45,6 +45,8 @@ dependencies {
     implementation(project(":modules:cubex-scheduler"))
     implementation(project(":modules:cubex-spatial"))
     implementation(project(":modules:cubex-gui"))
+    // Vault 封装 + economy.account 入账路由（无 owner 线路的票款不再蒸发）
+    implementation(project(":modules:cubex-economy"))
 
     compileOnly("de.bluecolored.bluemap:BlueMapAPI:2.7.2")
     compileOnly("us.dynmap:DynmapCoreAPI:3.7-beta-6")

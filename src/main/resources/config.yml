@@ -1,4 +1,4 @@
-config-version: 3
+config-version: 4
 # Metro 配置文件
 # Metro Configuration File
 
@@ -159,6 +159,16 @@ economy:
   # 是否启用经济系统收费功能
   # Enable economy system billing features
   enabled: true
+  # 没有 owner 的线路，票款转给谁。有 owner 的线路不受影响，票款照旧进 owner 口袋。
+  # 留空 = 保持旧行为（钱直接消失）。写法：
+  #   uuid:<uuid> / 裸 UUID  按 UUID 精确指定的玩家账户（最稳）
+  #   name:<账户名>        名字原样交给经济插件（适合从不登录的虚拟银行账户）
+  #   <玩家名>              先把名字解析成 UUID 再入账
+  #   bank:<名字>           Vault 的 bank 账户（需经济插件支持）
+  #
+  # Where fares from lines **without an owner** are paid in; owned lines keep
+  # paying their owner. Empty keeps the old behaviour (the money is destroyed).
+  account: ""
   # 半路下车如何计费（仅在 safe_mode.passenger_exit_lock 关闭时有意义）
   #   NEXT_STOP：按坐到下一站收费，跳车不会比坐完便宜（默认）
   #   ACTUAL：只按实际行驶的距离收费

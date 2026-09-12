@@ -22,7 +22,7 @@ Run `/m` or `/metro` to open the management GUI directly. Use `/m help` for comm
 - **Safe Mode** — Protect minecarts from pushing, attacks, and destruction
 - **Minecart Portals** — Cross-area and cross-world teleportation
 - **Web Map** — BlueMap / Dynmap / Squaremap integration
-- **Economy** — Optional Vault support
+- **Economy** — Optional Vault support; fares from lines without an owner can be paid into the account named by `economy.account` (empty = destroyed, the old behaviour)
 - **Multi-language** — Chinese, English, German, Spanish, and more
 - **Folia Support** — Compatible with Folia multithreaded servers
 
