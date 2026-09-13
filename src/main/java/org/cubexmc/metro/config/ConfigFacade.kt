@@ -240,7 +240,7 @@ class ConfigFacade(private val plugin: Metro) {
         lineSymbol = plugin.config.getString("scoreboard.line_symbol", "❙") ?: "❙"
 
         speedControlMode = plugin.config.getString("speed_control.mode", "VANILLA_MOMENTUM") ?: "VANILLA_MOMENTUM"
-        cruiseControlEnabled = plugin.config.getBoolean("speed_control.cruise_control.enabled", false)
+        cruiseControlEnabled = plugin.config.getBoolean("speed_control.cruise_control.enabled", true)
         cruiseControlTargetSpeed = plugin.config.getDouble("speed_control.cruise_control.target_speed", -1.0)
         cruiseControlIntervalTicks =
             plugin.config.getLong("speed_control.cruise_control.interval_ticks", 2L).coerceAtLeast(1L)

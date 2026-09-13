@@ -28,6 +28,7 @@ class MetroModernizationResourceTest {
         assertEquals("<aqua><stop_name>", config.getString("titles.stop_continuous.title"));
         assertEquals("<gold>☛ <bold>", config.getString("scoreboard.styles.current_stop"));
         assertEquals("VANILLA_MOMENTUM", config.getString("speed_control.mode"));
+        assertTrue(config.getBoolean("speed_control.cruise_control.enabled"));
         assertEquals("NOTE,18,1.0,PLING,0", config.getStringList("sounds.departure.notes").get(0));
         assertFalse(config.contains("lines.name"), "data resources must not be folded into config migration");
     }
