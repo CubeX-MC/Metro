@@ -219,7 +219,7 @@ speed_control:
   # 控速模式: VANILLA_MOMENTUM (原版推力惯性) 或 BLOCK_BASED (根据铁轨下方方块实时控速)
   # Speed control mode: VANILLA_MOMENTUM (Vanilla momentum) or BLOCK_BASED (Real-time speed control based on blocks below rails)
   mode: VANILLA_MOMENTUM
-  # 巡航控速（实验性）
+  # 巡航控速
   # max_speed / cart_speed 只是速度上限，不是目标速度：原版动力铁轨给矿车的
   # 加速度与摩擦力平衡后约为 1.5 格/tick（约 30 格/秒），把上限调到 100 也不会
   # 更快。开启巡航控速后，插件会在区间行驶中主动把车速维持在目标速度，
@@ -235,7 +235,7 @@ speed_control:
   # target speed between stops, which is the only way past that plateau.
   # Trade-off: derailing on curves becomes much more likely at high speed.
   cruise_control:
-    enabled: false
+    enabled: true
     # 目标速度（格/tick）。<= 0 表示使用线路 max_speed（未设置时用 settings.cart_speed）
     # Target speed in blocks/tick. <= 0 uses the line max_speed, falling back to settings.cart_speed
     target_speed: -1
