@@ -17,6 +17,7 @@ import org.cubexmc.metro.model.Stop
 import org.cubexmc.metro.util.ColorUtil
 import org.cubexmc.metro.util.SchedulerUtil
 import org.cubexmc.metro.util.SoundUtil
+import org.cubexmc.metro.util.MetroTextRenderer
 import org.cubexmc.metro.util.TextUtil
 
 class TrainDisplayController(private val plugin: Metro) : Listener {
@@ -39,7 +40,7 @@ class TrainDisplayController(private val plugin: Metro) : Listener {
                 if (plugin.configFacade.isTerminalStopTitleEnabled()) {
                     showTerminalStopInfo(passenger, targetStop, line)
                 }
-            } else {
+            } else if (plugin.configFacade.isArriveStopTitleEnabled()) {
                 showArriveStopInfo(passenger, targetStop, line)
             }
         } else if (event.arrivalType == MetroTrainArrivalEvent.ArrivalType.DOCKED) {
@@ -179,25 +180,6 @@ class TrainDisplayController(private val plugin: Metro) : Listener {
             null
         }
 
-        var actionbarTemplate = plugin.configFacade.getDepartureActionbar()
-        val customTitle = currentStop.getCustomTitle("departure")
-        if (customTitle != null && customTitle.containsKey("actionbar")) {
-            actionbarTemplate = customTitle.getValue("actionbar")
-        }
-
-        if (actionbarTemplate.contains("{countdown}")) {
-            startCountdownActionbar(
-                passenger,
-                minecart,
-                line,
-                "departure",
-                currentStop,
-                currentStop,
-                nextStop,
-                terminusStop,
-            )
-        }
-
         showStopInfo(
             passenger,
             line,
@@ -213,122 +195,34 @@ class TrainDisplayController(private val plugin: Metro) : Listener {
     }
 
     private fun showWaitingInfo(passenger: Player?, minecart: Minecart?, currentStop: Stop, line: Line) {
-        if (passenger == null || !passenger.isOnline) {
-            return
+        if (passenger == null || !passenger.isOnline || !plugin.configFacade.isWaitingTitleEnabled()) return
+        val config = plugin.configFacade
+        val nextStop = line.getNextStopId(currentStop.id)?.let { plugin.stopManager.getStop(it) }
+        val terminusStop = line.orderedStopIds.lastOrNull()?.let { plugin.stopManager.getStop(it) }
+        val duration = config.getCartDepartureDelay().coerceAtLeast(0)
+        val interval = config.getWaitingInterval().coerceAtLeast(1).toLong()
+
+        fun display(elapsed: Long) {
+            val remaining = kotlin.math.ceil((duration - elapsed).coerceAtLeast(0) / 20.0).toInt()
+            showStopInfo(passenger, line, "waiting", currentStop, null, nextStop, terminusStop,
+                if (elapsed == 0L) config.getWaitingFadeIn() else 0,
+                config.getWaitingStay(), config.getWaitingFadeOut(), remaining)
         }
-        if (!plugin.configFacade.isWaitingTitleEnabled()) {
-            return
+        display(0)
+        // Schedule only the next refresh, owned by the ride's existing scheduler.
+        fun refreshAfter(elapsed: Long) {
+            val next = elapsed + interval
+            if (next >= duration) return
+            scheduleTrainTask(minecart, Runnable {
+                val ride = minecart?.let { TrainMovementTask.getTaskFor(it) }
+                if (!passenger.isOnline || passenger.vehicle != minecart ||
+                    !config.isWaitingTitleEnabled() || (ride != null && !ride.isStoppedAtStation())) return@Runnable
+                display(next)
+                refreshAfter(next)
+            }, interval, -1)
         }
-
-        val stopManager = plugin.stopManager
-        val nextStopId = line.getNextStopId(currentStop.id)
-        val nextStop = if (nextStopId != null) stopManager.getStop(nextStopId) else null
-        val stopIds = line.orderedStopIds
-        val terminusStop = if (stopIds.isNotEmpty()) stopManager.getStop(stopIds[stopIds.size - 1]) else null
-        val lineManager = plugin.lineManager
-
-        var titleTemplate = plugin.configFacade.getWaitingTitle()
-        var subtitleTemplate = plugin.configFacade.getWaitingSubtitle()
-
-        val customTitle = currentStop.getCustomTitle("waiting")
-        if (customTitle != null) {
-            if (customTitle.containsKey("title")) {
-                titleTemplate = customTitle.getValue("title")
-            }
-            if (customTitle.containsKey("subtitle")) {
-                subtitleTemplate = customTitle.getValue("subtitle")
-            }
-        }
-
-        var title = TextUtil.replacePlaceholders(titleTemplate, line, currentStop, null, nextStop, terminusStop, lineManager)
-        var subtitle = TextUtil.replacePlaceholders(
-            subtitleTemplate,
-            line,
-            currentStop,
-            null,
-            nextStop,
-            terminusStop,
-            lineManager,
-        )
-
-        title = ColorUtil.colorizeOrEmpty(title)
-        subtitle = ColorUtil.colorizeOrEmpty(subtitle)
-        passenger.sendTitle(title, subtitle, 0, 1000000, 0)
-
-        var actionbarTemplate = plugin.configFacade.getWaitingActionbar()
-        if (customTitle != null && customTitle.containsKey("actionbar")) {
-            actionbarTemplate = customTitle.getValue("actionbar")
-        }
-
-        if (actionbarTemplate.contains("{countdown}")) {
-            startCountdownActionbar(passenger, minecart, line, "waiting", currentStop, null, nextStop, terminusStop)
-        } else {
-            var actionbarText = TextUtil.replacePlaceholders(
-                actionbarTemplate,
-                line,
-                currentStop,
-                null,
-                nextStop,
-                terminusStop,
-                lineManager,
-            )
-            actionbarText = ColorUtil.colorizeOrEmpty(actionbarText)
-            passenger.spigot().sendMessage(ChatMessageType.ACTION_BAR, *TextComponent.fromLegacyText(actionbarText))
-        }
+        refreshAfter(0)
     }
-
-    private fun startCountdownActionbar(
-        passenger: Player?,
-        minecart: Minecart?,
-        line: Line,
-        infoType: String,
-        mainStop: Stop,
-        prevStop: Stop?,
-        nextStop: Stop?,
-        terminusStop: Stop?,
-    ) {
-        if (passenger == null || !passenger.isOnline) {
-            return
-        }
-
-        var actionbarTemplate = ""
-        when (infoType) {
-            "waiting" -> actionbarTemplate = plugin.configFacade.getWaitingActionbar()
-            "departure" -> actionbarTemplate = plugin.configFacade.getDepartureActionbar()
-            "arrive_stop", "terminal_stop" -> {
-                // No default actionbar for these yet, wait for implementation if needed
-            }
-        }
-
-        val customTitle = mainStop.getCustomTitle(infoType)
-        if (customTitle != null && customTitle.containsKey("actionbar")) {
-            actionbarTemplate = customTitle.getValue("actionbar")
-        }
-
-        val template = actionbarTemplate
-        val lineManager = plugin.lineManager
-        val totalSeconds = kotlin.math.ceil(plugin.configFacade.getCartDepartureDelay() / 20.0).toInt()
-
-        for (secondsLeft in totalSeconds downTo 0) {
-            val delayTicks = (totalSeconds - secondsLeft) * 20L
-            scheduleTrainTask(
-                minecart,
-                Runnable {
-                    if (passenger == null || !passenger.isOnline || passenger.vehicle != minecart) {
-                        return@Runnable
-                    }
-
-                    var text = template.replace("{countdown}", secondsLeft.toString())
-                    text = TextUtil.replacePlaceholders(text, line, mainStop, prevStop, nextStop, terminusStop, lineManager)
-                    text = ColorUtil.colorizeOrEmpty(text)
-                    passenger.spigot().sendMessage(ChatMessageType.ACTION_BAR, *TextComponent.fromLegacyText(text))
-                },
-                delayTicks,
-                -1,
-            )
-        }
-    }
-
     private fun startWaitingSound(minecart: Minecart?, passenger: Player?) {
         if (!plugin.configFacade.isWaitingSoundEnabled() ||
             plugin.configFacade.getWaitingNotes().isEmpty() ||
@@ -394,6 +288,7 @@ class TrainDisplayController(private val plugin: Metro) : Listener {
         fadeIn: Int,
         stay: Int,
         fadeOut: Int,
+        countdown: Int = 0,
     ) {
         if (passenger == null || !passenger.isOnline || mainStop == null) {
             return
@@ -406,11 +301,13 @@ class TrainDisplayController(private val plugin: Metro) : Listener {
 
         when (infoType) {
             "arrive_stop" -> {
+                actionbarTemplate = plugin.configFacade.getArriveStopActionbar()
                 titleTemplate = plugin.configFacade.getArriveStopTitle()
                 subtitleTemplate = plugin.configFacade.getArriveStopSubtitle()
             }
 
             "terminal_stop" -> {
+                actionbarTemplate = plugin.configFacade.getTerminalStopActionbar()
                 titleTemplate = plugin.configFacade.getTerminalStopTitle()
                 subtitleTemplate = plugin.configFacade.getTerminalStopSubtitle()
             }
@@ -440,6 +337,10 @@ class TrainDisplayController(private val plugin: Metro) : Listener {
                 actionbarTemplate = customTitle.getValue("actionbar")
             }
         }
+
+        titleTemplate = MetroTextRenderer.renderPreservingPlaceholders(titleTemplate).replace("{countdown}", countdown.toString())
+        subtitleTemplate = MetroTextRenderer.renderPreservingPlaceholders(subtitleTemplate).replace("{countdown}", countdown.toString())
+        actionbarTemplate = MetroTextRenderer.renderPreservingPlaceholders(actionbarTemplate).replace("{countdown}", countdown.toString())
 
         var title = TextUtil.replacePlaceholders(titleTemplate, line, mainStop, prevStop, nextStop, terminusStop, lineManager)
         var subtitle = TextUtil.replacePlaceholders(

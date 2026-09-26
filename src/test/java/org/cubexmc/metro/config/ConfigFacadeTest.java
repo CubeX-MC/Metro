@@ -17,6 +17,24 @@ import org.junit.jupiter.api.Test;
 class ConfigFacadeTest {
 
     @Test
+    void waitingTimingsAndTerminalPrecedenceFollowConfiguration() {
+        YamlConfiguration config=new YamlConfiguration();
+        config.set("titles.waiting.interval",7);config.set("titles.waiting.fade_in",2);
+        config.set("titles.waiting.stay",25);config.set("titles.waiting.fade_out",3);
+        config.set("titles.waiting.title","<red><countdown>");
+        config.set("titles.arrive_stop.actionbar","<green>Arrived");
+        config.set("titles.stop_continuous.start_stop.title","Start");
+        config.set("titles.stop_continuous.end_stop.title","End");
+        ConfigFacade facade=createFacade(config);facade.reload();
+        assertEquals(7,facade.getWaitingInterval());assertEquals(2,facade.getWaitingFadeIn());
+        assertEquals(25,facade.getWaitingStay());assertEquals(3,facade.getWaitingFadeOut());
+        assertEquals("§c{countdown}",facade.getWaitingTitle());
+        assertEquals("§aArrived",facade.getArriveStopActionbar());
+        assertEquals("End",facade.getStopContinuousTitle(true,true));
+        config.set("titles.waiting.interval",0);config.set("titles.stop_continuous.interval",-1);facade.reload();
+        assertEquals(1,facade.getWaitingInterval());assertEquals(1,facade.getStopContinuousInterval());
+    }
+    @Test
     void shouldReadLegacyEnterStopWhenStopContinuousIsMissing() {
         YamlConfiguration config = new YamlConfiguration();
         config.set("titles.enter_stop.enabled", false);

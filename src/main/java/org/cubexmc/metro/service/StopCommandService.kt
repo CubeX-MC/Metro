@@ -197,7 +197,7 @@ class StopCommandService(stopManager: StopManager?) {
         private val ID_PATTERN: Pattern = Pattern.compile("[A-Za-z0-9_-]+")
 
         @JvmField
-        val TITLE_TYPES: Set<String> = setOf("stop_continuous", "arrive_stop", "terminal_stop", "departure")
+        val TITLE_TYPES: Set<String> = setOf("stop_continuous", "arrive_stop", "terminal_stop", "departure", "waiting")
 
         @JvmField
         val TITLE_KEYS: Set<String> = setOf("title", "subtitle", "actionbar")

@@ -36,6 +36,8 @@ Metro 是一个 Minecraft 地铁交通系统插件。管理员创建自动化的
 - **多语言** — 中英文等多国语言
 - **Folia 兼容** — 支持 Folia 多线程服务端
 
+Title 配置支持站台常驻、到站、终点、发车和等待场景，以及各站台自定义模板。等待场景的 `interval`、`fade_in`、`stay`、`fade_out` 生效，三个文本字段都支持 `<countdown>` / `{countdown}`。发车显示一次，旧 `titles.departure.interval` 无效，可删除。到站和终点支持 `actionbar`；关闭到站 Title 不影响到站声音。多线路站台可配置 `titles.stop_continuous.multi_line.title/subtitle/actionbar`（额外占位符 `{count}`、`{routes}`）；未配置时沿用语言文件提示。`always: false` 每次重新进入都显示。修改站台模板后重新进入区域查看效果。
+
 ## 基本概念
 
 | 概念 | 说明 |

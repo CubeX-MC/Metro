@@ -432,7 +432,6 @@ class TrainMovementTask @JvmOverloads constructor(
 
         val minecart = session.minecart ?: return
         session.plugin.routeRecorder.sample(line.id, minecart, currentStop.stopPointLocation)
-        eventPublisher.publishDeparture(currentStop, nextStop)
 
         var maxSpeed = line.getMaxSpeed() ?: -1.0
         if (maxSpeed == -1.0) {
@@ -447,6 +446,7 @@ class TrainMovementTask @JvmOverloads constructor(
         }
 
         transitionToMovingBetweenStations()
+        eventPublisher.publishDeparture(currentStop, nextStop)
         movementAssistController.start()
     }
 

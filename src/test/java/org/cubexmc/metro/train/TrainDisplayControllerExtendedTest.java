@@ -40,8 +40,13 @@ class TrainDisplayControllerExtendedTest {
     private StopManager stopManager;
     private LineManager lineManager;
 
+    private org.mockito.MockedStatic<org.cubexmc.metro.util.SchedulerUtil> scheduler;
+    @org.junit.jupiter.api.AfterEach
+    void closeScheduler() { scheduler.close(); }
+
     @BeforeEach
     void setUp() {
+        scheduler = mockStatic(org.cubexmc.metro.util.SchedulerUtil.class);
         plugin = mock(Metro.class);
         configFacade = mock(ConfigFacade.class);
         stopManager = mock(StopManager.class);
@@ -53,6 +58,11 @@ class TrainDisplayControllerExtendedTest {
         when(configFacade.isArrivalSoundEnabled()).thenReturn(false);
         when(configFacade.getArrivalNotes()).thenReturn(Collections.emptyList());
         when(configFacade.isStationArrivalSoundEnabled()).thenReturn(false);
+        when(configFacade.isArriveStopTitleEnabled()).thenReturn(true);
+        when(configFacade.getWaitingInterval()).thenReturn(20);
+        when(configFacade.getWaitingFadeIn()).thenReturn(5);
+        when(configFacade.getWaitingStay()).thenReturn(40);
+        when(configFacade.getWaitingFadeOut()).thenReturn(10);
         when(configFacade.isTerminalStopTitleEnabled()).thenReturn(true);
         when(configFacade.isDepartureTitleEnabled()).thenReturn(true);
         when(configFacade.isWaitingTitleEnabled()).thenReturn(true);
@@ -131,6 +141,7 @@ class TrainDisplayControllerExtendedTest {
 
         Line line = createLineWithStops("l1", "A", "B");
         Minecart cart = mock(Minecart.class);
+        when(cart.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
 
         TrainDisplayController controller = new TrainDisplayController(plugin);
         MetroTrainArrivalEvent event = new MetroTrainArrivalEvent(
@@ -150,6 +161,7 @@ class TrainDisplayControllerExtendedTest {
         TrainDisplayController controller = new TrainDisplayController(plugin);
         Line line = createLineWithStops("l1", "A", "B");
         Minecart cart = mock(Minecart.class);
+        when(cart.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
         Player passenger = createOnlinePlayer();
         Stop stop = new Stop("B", "Bravo");
 
@@ -172,6 +184,7 @@ class TrainDisplayControllerExtendedTest {
         TrainDisplayController controller = new TrainDisplayController(plugin);
         Line line = createLineWithStops("l1", "A", "B");
         Minecart cart = mock(Minecart.class);
+        when(cart.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
         Player passenger = createOnlinePlayer();
 
         MetroTrainArrivalEvent event = new MetroTrainArrivalEvent(
@@ -199,6 +212,7 @@ class TrainDisplayControllerExtendedTest {
         TrainDisplayController controller = new TrainDisplayController(plugin);
         Line line = createLineWithStops("l1", "A", "B", "C");
         Minecart cart = mock(Minecart.class);
+        when(cart.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
         Player passenger = createOnlinePlayer();
 
         Stop stopC = new Stop("C", "Charlie");
@@ -210,7 +224,7 @@ class TrainDisplayControllerExtendedTest {
 
         controller.onTrainArrival(event);
 
-        verify(passenger).sendTitle(anyString(), anyString(), eq(0), eq(1000000), eq(0));
+        verify(passenger).sendTitle(anyString(), anyString(), eq(5), eq(40), eq(10));
     }
 
     @Test
@@ -225,6 +239,7 @@ class TrainDisplayControllerExtendedTest {
         TrainDisplayController controller = new TrainDisplayController(plugin);
         Line line = createLineWithStops("l1", "A", "B");
         Minecart cart = mock(Minecart.class);
+        when(cart.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
         Player passenger = createOnlinePlayer();
 
         Stop stopB = new Stop("B", "Bravo");
@@ -249,6 +264,7 @@ class TrainDisplayControllerExtendedTest {
         TrainDisplayController controller = new TrainDisplayController(plugin);
         Line line = createLineWithStops("l1", "A", "B", "C");
         Minecart cart = mock(Minecart.class);
+        when(cart.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
         Player passenger = createOnlinePlayer();
 
         Stop stopB = new Stop("B", "Bravo");
@@ -274,6 +290,7 @@ class TrainDisplayControllerExtendedTest {
         TrainDisplayController controller = new TrainDisplayController(plugin);
         Line line = createLineWithStops("l1", "A", "B");
         Minecart cart = mock(Minecart.class);
+        when(cart.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
         Player passenger = createOnlinePlayer();
 
         Stop stopB = new Stop("B", "Bravo");
@@ -298,6 +315,7 @@ class TrainDisplayControllerExtendedTest {
         TrainDisplayController controller = new TrainDisplayController(plugin);
         Line line = createLineWithStops("l1", "A", "B", "C");
         Minecart cart = mock(Minecart.class);
+        when(cart.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
         Player passenger = createOnlinePlayer();
 
         Stop stopB = new Stop("B", "Bravo");
@@ -310,7 +328,7 @@ class TrainDisplayControllerExtendedTest {
 
         controller.onTrainArrival(event);
 
-        verify(passenger).sendTitle(anyString(), anyString(), eq(0), eq(1000000), eq(0));
+        verify(passenger).sendTitle(anyString(), anyString(), eq(5), eq(40), eq(10));
         verify(passenger.spigot()).sendMessage(eq(ChatMessageType.ACTION_BAR),
                 any(BaseComponent[].class));
     }
@@ -328,6 +346,7 @@ class TrainDisplayControllerExtendedTest {
         TrainDisplayController controller = new TrainDisplayController(plugin);
         Line line = createLineWithStops("l1", "A", "B", "C");
         Minecart cart = mock(Minecart.class);
+        when(cart.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
         Player passenger = createOnlinePlayer();
 
         Stop stopC = new Stop("C", "Charlie");
@@ -353,6 +372,7 @@ class TrainDisplayControllerExtendedTest {
         TrainDisplayController controller = new TrainDisplayController(plugin);
         Line line = createLineWithStops("l1", "A", "B");
         Minecart cart = mock(Minecart.class);
+        when(cart.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
         Player passenger = createOnlinePlayer();
 
         when(stopManager.getStop("B")).thenReturn(stopB);
@@ -373,6 +393,7 @@ class TrainDisplayControllerExtendedTest {
 
         TrainDisplayController controller = new TrainDisplayController(plugin);
         Minecart cart = mock(Minecart.class);
+        when(cart.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
         Player passenger = createOnlinePlayer();
 
         Stop stopA = new Stop("A", "Alpha");
@@ -392,6 +413,7 @@ class TrainDisplayControllerExtendedTest {
 
         TrainDisplayController controller = new TrainDisplayController(plugin);
         Minecart cart = mock(Minecart.class);
+        when(cart.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
         Player passenger = createOnlinePlayer();
 
         Stop stopB = new Stop("B", "Bravo");
@@ -416,6 +438,7 @@ class TrainDisplayControllerExtendedTest {
         TrainDisplayController controller = new TrainDisplayController(plugin);
         Line line = createLineWithStops("l1", "A", "B", "C");
         Minecart cart = mock(Minecart.class);
+        when(cart.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
         Player passenger = createOnlinePlayer();
 
         Stop stopC = new Stop("C", "Charlie");
@@ -446,6 +469,7 @@ class TrainDisplayControllerExtendedTest {
         TrainDisplayController controller = new TrainDisplayController(plugin);
         Line line = createLineWithStops("l1", "A", "B");
         Minecart cart = mock(Minecart.class);
+        when(cart.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
         Player passenger = createOnlinePlayer();
 
         MetroTrainArrivalEvent event = new MetroTrainArrivalEvent(

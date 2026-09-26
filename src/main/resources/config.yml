@@ -44,6 +44,7 @@ titles:
     enabled: true
     title: '<aqua><stop_name>'
     subtitle: '<gray>Next: <yellow><next_stop_name> <dark_gray>| <green>⇄ <stop_transfers>'
+    actionbar: ''
     fade_in: 10
     stay: 40
     fade_out: 10
@@ -54,6 +55,7 @@ titles:
     enabled: true
     title: '<aqua><stop_name>'
     subtitle: '<red>🛑 Terminal <dark_gray>| <green>⇄ <stop_transfers>'
+    actionbar: ''
     fade_in: 10
     stay: 60
     fade_out: 10
@@ -62,9 +64,6 @@ titles:
   # Trip information after passenger boards
   departure:
     enabled: true
-    # 刷新间隔，单位tick
-    # Refresh interval in ticks
-    interval: 40
     title: '<yellow>» <next_stop_name>'
     subtitle: '<light_purple>➔ <terminus_name>'
     actionbar: '<gray>Departing... Please stand clear of the doors.'
@@ -82,6 +81,9 @@ titles:
     title: '<white>Departing Soon'
     subtitle: '<gray>Current: <green><stop_name> <dark_gray>| <gray>Next: <yellow><next_stop_name>'
     actionbar: '<yellow>⚠ Departing in <red><countdown>s'
+    fade_in: 5
+    stay: 40
+    fade_out: 10
 
   # 行驶途中的动作栏，<next_stop_distance> 为距离下一站的方块数
   # In-transit action bar; <next_stop_distance> is the remaining distance to

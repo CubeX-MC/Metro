@@ -39,8 +39,13 @@ class TrainDisplayControllerTest {
     private StopManager stopManager;
     private LineManager lineManager;
 
+    private org.mockito.MockedStatic<org.cubexmc.metro.util.SchedulerUtil> scheduler;
+    @org.junit.jupiter.api.AfterEach
+    void closeScheduler() { scheduler.close(); }
+
     @BeforeEach
     void setUp() {
+        scheduler = mockStatic(org.cubexmc.metro.util.SchedulerUtil.class);
         plugin = mock(Metro.class);
         configFacade = mock(ConfigFacade.class);
         stopManager = mock(StopManager.class);
@@ -52,6 +57,11 @@ class TrainDisplayControllerTest {
         when(configFacade.isArrivalSoundEnabled()).thenReturn(false);
         when(configFacade.getArrivalNotes()).thenReturn(Collections.emptyList());
         when(configFacade.isStationArrivalSoundEnabled()).thenReturn(false);
+        when(configFacade.isArriveStopTitleEnabled()).thenReturn(true);
+        when(configFacade.getWaitingInterval()).thenReturn(20);
+        when(configFacade.getWaitingFadeIn()).thenReturn(5);
+        when(configFacade.getWaitingStay()).thenReturn(40);
+        when(configFacade.getWaitingFadeOut()).thenReturn(10);
         when(configFacade.isTerminalStopTitleEnabled()).thenReturn(true);
         when(configFacade.isDepartureTitleEnabled()).thenReturn(true);
         when(configFacade.isWaitingTitleEnabled()).thenReturn(true);
@@ -101,10 +111,43 @@ class TrainDisplayControllerTest {
     }
 
     @Test
+    void disabledArrivalTitleDoesNotRender() {
+        when(configFacade.isArriveStopTitleEnabled()).thenReturn(false);
+        Player passenger=createPlayerWithSpigot();
+        new TrainDisplayController(plugin).onTrainArrival(new MetroTrainArrivalEvent(mock(Minecart.class),passenger,
+                createLineWithStops("red","a","b"),new Stop("a","Alpha"),false,MetroTrainArrivalEvent.ArrivalType.ENTERING));
+        verify(passenger,never()).sendTitle(anyString(),anyString(),anyInt(),anyInt(),anyInt());
+    }
+
+    @Test
+    void customMiniMessageCountdownRefreshesAtConfiguredIntervalAndStopsAfterExit() {
+        when(configFacade.getWaitingInterval()).thenReturn(20);
+        Line line=createLineWithStops("red","a","b");
+        Stop stop=new Stop("a","Alpha");
+        stop.setCustomTitle("waiting",new java.util.HashMap<>(java.util.Map.of(
+                "title","<red>Leaving in <countdown>","subtitle","<yellow><stop_name>","actionbar","<green><countdown>")));
+        Minecart cart=mock(Minecart.class);when(cart.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
+        Player passenger=createPlayerWithSpigot();when(passenger.getVehicle()).thenReturn(cart);
+        java.util.List<Runnable> pending=new java.util.ArrayList<>();
+        scheduler.when(() -> org.cubexmc.metro.util.SchedulerUtil.entityRun(eq(plugin),eq(cart),any(Runnable.class),eq(20L),eq(-1L)))
+                .thenAnswer(c -> {pending.add(c.getArgument(2));return new Object();});
+        new TrainDisplayController(plugin).onTrainArrival(new MetroTrainArrivalEvent(cart,passenger,line,stop,false,
+                MetroTrainArrivalEvent.ArrivalType.DOCKED));
+        verify(passenger).sendTitle("§cLeaving in 3","§eAlpha",5,40,10);
+        org.junit.jupiter.api.Assertions.assertEquals(1,pending.size());
+        pending.get(0).run();
+        verify(passenger).sendTitle("§cLeaving in 2","§eAlpha",0,40,10);
+        org.junit.jupiter.api.Assertions.assertEquals(2,pending.size());
+        when(passenger.getVehicle()).thenReturn(null);
+        pending.get(1).run();
+        verify(passenger,org.mockito.Mockito.times(2)).sendTitle(anyString(),anyString(),anyInt(),anyInt(),anyInt());
+    }
+    @Test
     void shouldSkipArrivalWhenPassengerIsNull() {
         TrainDisplayController controller = new TrainDisplayController(plugin);
         Line line = createLineWithStops("l1", "A", "B");
         Minecart cart = mock(Minecart.class);
+        when(cart.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
         Stop stop = new Stop("B", "Bravo");
 
         MetroTrainArrivalEvent event = new MetroTrainArrivalEvent(
@@ -120,6 +163,7 @@ class TrainDisplayControllerTest {
         TrainDisplayController controller = new TrainDisplayController(plugin);
         Line line = createLineWithStops("l1", "A", "B");
         Minecart cart = mock(Minecart.class);
+        when(cart.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
         Player passenger = mock(Player.class);
         when(passenger.isOnline()).thenReturn(false);
         Stop stop = new Stop("B", "Bravo");
@@ -137,6 +181,7 @@ class TrainDisplayControllerTest {
         TrainDisplayController controller = new TrainDisplayController(plugin);
         Line line = createLineWithStops("l1", "A", "B", "C");
         Minecart cart = mock(Minecart.class);
+        when(cart.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
         Player passenger = createPlayerWithSpigot();
 
         Stop stopB = new Stop("B", "Bravo");
@@ -157,6 +202,7 @@ class TrainDisplayControllerTest {
         TrainDisplayController controller = new TrainDisplayController(plugin);
         Line line = createLineWithStops("l1", "A", "B");
         Minecart cart = mock(Minecart.class);
+        when(cart.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
         Player passenger = createPlayerWithSpigot();
 
         Stop stopB = new Stop("B", "Bravo");
@@ -175,6 +221,7 @@ class TrainDisplayControllerTest {
         TrainDisplayController controller = new TrainDisplayController(plugin);
         Line line = createLineWithStops("l1", "A", "B", "C");
         Minecart cart = mock(Minecart.class);
+        when(cart.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
         Player passenger = createPlayerWithSpigot();
         when(passenger.getVehicle()).thenReturn(cart);
 
@@ -188,7 +235,7 @@ class TrainDisplayControllerTest {
 
         controller.onTrainArrival(event);
 
-        verify(passenger).sendTitle(anyString(), anyString(), eq(0), eq(1000000), eq(0));
+        verify(passenger).sendTitle(anyString(), anyString(), eq(5), eq(40), eq(10));
     }
 
     @Test
@@ -196,6 +243,7 @@ class TrainDisplayControllerTest {
         TrainDisplayController controller = new TrainDisplayController(plugin);
         Line line = createLineWithStops("l1", "A", "B");
         Minecart cart = mock(Minecart.class);
+        when(cart.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
         Player passenger = createPlayerWithSpigot();
 
         Stop stopB = new Stop("B", "Bravo");
@@ -206,7 +254,7 @@ class TrainDisplayControllerTest {
 
         controller.onTrainArrival(event);
 
-        verify(passenger, never()).sendTitle(anyString(), anyString(), eq(0), eq(1000000), eq(0));
+        verify(passenger, never()).sendTitle(anyString(), anyString(), eq(5), eq(40), eq(10));
     }
 
     @Test
@@ -214,6 +262,7 @@ class TrainDisplayControllerTest {
         TrainDisplayController controller = new TrainDisplayController(plugin);
         Line line = createLineWithStops("l1", "A", "B");
         Minecart cart = mock(Minecart.class);
+        when(cart.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
         Player passenger = mock(Player.class);
         when(passenger.isOnline()).thenReturn(false);
 
@@ -233,6 +282,7 @@ class TrainDisplayControllerTest {
         TrainDisplayController controller = new TrainDisplayController(plugin);
         Line line = createLineWithStops("l1", "A", "B");
         Minecart cart = mock(Minecart.class);
+        when(cart.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
         Player passenger = createPlayerWithSpigot();
 
         Stop stopA = new Stop("A", "Alpha");
@@ -255,6 +305,7 @@ class TrainDisplayControllerTest {
         Line line = createLineWithStops("l1", "A", "B");
         line.setColor("&#55AAFF");
         Minecart cart = mock(Minecart.class);
+        when(cart.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
         Player passenger = createPlayerWithSpigot();
 
         Stop stopA = new Stop("A", "Alpha");
@@ -281,6 +332,7 @@ class TrainDisplayControllerTest {
 
         Line line = createLineWithStops("l1", "A", "B");
         Minecart cart = mock(Minecart.class);
+        when(cart.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
         Player passenger = createPlayerWithSpigot();
 
         Stop stopA = new Stop("A", "Alpha");
@@ -296,11 +348,17 @@ class TrainDisplayControllerTest {
 
     @Test
     void shouldNotShowTerminalTitleWhenDisabled() {
+        when(configFacade.isArriveStopTitleEnabled()).thenReturn(true);
+        when(configFacade.getWaitingInterval()).thenReturn(20);
+        when(configFacade.getWaitingFadeIn()).thenReturn(5);
+        when(configFacade.getWaitingStay()).thenReturn(40);
+        when(configFacade.getWaitingFadeOut()).thenReturn(10);
         when(configFacade.isTerminalStopTitleEnabled()).thenReturn(false);
         TrainDisplayController controller = new TrainDisplayController(plugin);
 
         Line line = createLineWithStops("l1", "A", "B");
         Minecart cart = mock(Minecart.class);
+        when(cart.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
         Player passenger = createPlayerWithSpigot();
 
         Stop stopB = new Stop("B", "Bravo");
@@ -320,6 +378,7 @@ class TrainDisplayControllerTest {
 
         Line line = createLineWithStops("l1", "A", "B", "C");
         Minecart cart = mock(Minecart.class);
+        when(cart.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
         Player passenger = createPlayerWithSpigot();
 
         Stop stopB = new Stop("B", "Bravo");
@@ -329,7 +388,7 @@ class TrainDisplayControllerTest {
 
         controller.onTrainArrival(event);
 
-        verify(passenger, never()).sendTitle(anyString(), anyString(), eq(0), eq(1000000), eq(0));
+        verify(passenger, never()).sendTitle(anyString(), anyString(), eq(5), eq(40), eq(10));
     }
 
     @Test
@@ -341,6 +400,7 @@ class TrainDisplayControllerTest {
         TrainDisplayController controller = new TrainDisplayController(plugin);
         Line line = createLineWithStops("l1", "A", "B");
         Minecart cart = mock(Minecart.class);
+        when(cart.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
         Player passenger = createPlayerWithSpigot();
 
         Stop stopB = new Stop("B", "Bravo");
@@ -363,6 +423,7 @@ class TrainDisplayControllerTest {
         TrainDisplayController controller = new TrainDisplayController(plugin);
         Line line = createLineWithStops("l1", "A", "B");
         Minecart cart = mock(Minecart.class);
+        when(cart.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
         Player passenger = createPlayerWithSpigot();
 
         Stop stopA = new Stop("A", "Alpha");
@@ -385,6 +446,7 @@ class TrainDisplayControllerTest {
         TrainDisplayController controller = new TrainDisplayController(plugin);
         Line line = createLineWithStops("l1", "A", "B");
         Minecart cart = mock(Minecart.class);
+        when(cart.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
         Player passenger = createPlayerWithSpigot();
 
         Stop stopB = new Stop("B", "Bravo");

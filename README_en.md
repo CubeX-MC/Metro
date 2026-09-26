@@ -26,6 +26,8 @@ Run `/m` or `/metro` to open the management GUI directly. Use `/m help` for comm
 - **Multi-language** — Chinese, English, German, Spanish, and more
 - **Folia Support** — Compatible with Folia multithreaded servers
 
+Waiting Titles honor `interval`, `fade_in`, `stay` and `fade_out`; title, subtitle and actionbar all support `<countdown>` / `{countdown}`, including custom stop templates. Departure displays once; the unused legacy `titles.departure.interval` can be removed. Arrival and terminal displays support `actionbar`; disabling arrival Titles does not mute arrival sounds. Optional `titles.stop_continuous.multi_line.title/subtitle/actionbar` templates support `{count}` and `{routes}`, with localized defaults when absent. `always: false` displays on every re-entry. Re-enter the area after editing station templates to see the changes.
+
 ## Basic Concepts
 
 | Concept | Description |

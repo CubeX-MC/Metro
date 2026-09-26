@@ -48,6 +48,10 @@ class ConfigFacade(private val plugin: Metro) {
     private var departureStay = 0
     private var departureFadeOut = 0
 
+    private var waitingInterval = 20
+    private var waitingFadeIn = 5
+    private var waitingStay = 40
+    private var waitingFadeOut = 10
     private var waitingTitleEnabled = false
     private var waitingTitle = ""
     private var waitingSubtitle = ""
@@ -132,7 +136,7 @@ class ConfigFacade(private val plugin: Metro) {
 
     fun reload() {
         stopContinuousTitleEnabled = getStopContinuousBoolean("enabled", true)
-        stopContinuousInterval = getStopContinuousInt("interval", 40)
+        stopContinuousInterval = getStopContinuousInt("interval", 40).coerceAtLeast(1)
         stopContinuousAlways = getStopContinuousBoolean("always", true)
         stopContinuousTitle = colorize(getStopContinuousString("title", "&b{stop_name}"))
         stopContinuousSubtitle = colorize(
@@ -197,6 +201,10 @@ class ConfigFacade(private val plugin: Metro) {
         departureStay = plugin.config.getInt("titles.departure.stay", 40)
         departureFadeOut = plugin.config.getInt("titles.departure.fade_out", 5)
 
+        waitingInterval = plugin.config.getInt("titles.waiting.interval", 20).coerceAtLeast(1)
+        waitingFadeIn = plugin.config.getInt("titles.waiting.fade_in", 5).coerceAtLeast(0)
+        waitingStay = plugin.config.getInt("titles.waiting.stay", 40).coerceAtLeast(0)
+        waitingFadeOut = plugin.config.getInt("titles.waiting.fade_out", 10).coerceAtLeast(0)
         waitingTitleEnabled = plugin.config.getBoolean("titles.waiting.enabled", true)
         waitingTitle = colorize(plugin.config.getString("titles.waiting.title", "列车即将发车") ?: "列车即将发车")
         waitingSubtitle = colorize(
@@ -362,24 +370,27 @@ class ConfigFacade(private val plugin: Metro) {
 
     fun getStopContinuousTitle(startStop: Boolean, endStop: Boolean): String =
         when {
-            startStop -> stopContinuousStartTitle
             endStop -> stopContinuousEndTitle
+            startStop -> stopContinuousStartTitle
             else -> stopContinuousTitle
         }
 
     fun getStopContinuousSubtitle(startStop: Boolean, endStop: Boolean): String =
         when {
-            startStop -> stopContinuousStartSubtitle
             endStop -> stopContinuousEndSubtitle
+            startStop -> stopContinuousStartSubtitle
             else -> stopContinuousSubtitle
         }
 
     fun getStopContinuousActionbar(startStop: Boolean, endStop: Boolean): String =
         when {
-            startStop -> stopContinuousStartActionbar
             endStop -> stopContinuousEndActionbar
+            startStop -> stopContinuousStartActionbar
             else -> stopContinuousActionbar
         }
+
+    fun getStopContinuousMultiLineTemplate(key: String): String? =
+        plugin.config.getString("titles.stop_continuous.multi_line.$key")?.let { colorize(it) }
 
     fun getStopContinuousFadeIn(): Int = stopContinuousFadeIn
 
@@ -388,6 +399,8 @@ class ConfigFacade(private val plugin: Metro) {
     fun getStopContinuousFadeOut(): Int = stopContinuousFadeOut
 
     fun isArriveStopTitleEnabled(): Boolean = arriveStopTitleEnabled
+
+    fun getArriveStopActionbar(): String = colorize(plugin.config.getString("titles.arrive_stop.actionbar", "") ?: "")
 
     fun getArriveStopTitle(): String = arriveStopTitle
 
@@ -400,6 +413,8 @@ class ConfigFacade(private val plugin: Metro) {
     fun getArriveStopFadeOut(): Int = arriveStopFadeOut
 
     fun isTerminalStopTitleEnabled(): Boolean = terminalStopTitleEnabled
+
+    fun getTerminalStopActionbar(): String = colorize(plugin.config.getString("titles.terminal_stop.actionbar", "") ?: "")
 
     fun getTerminalStopTitle(): String = terminalStopTitle
 
@@ -424,6 +439,11 @@ class ConfigFacade(private val plugin: Metro) {
     fun getDepartureStay(): Int = departureStay
 
     fun getDepartureFadeOut(): Int = departureFadeOut
+
+    fun getWaitingInterval(): Int = waitingInterval
+    fun getWaitingFadeIn(): Int = waitingFadeIn
+    fun getWaitingStay(): Int = waitingStay
+    fun getWaitingFadeOut(): Int = waitingFadeOut
 
     fun isWaitingTitleEnabled(): Boolean = waitingTitleEnabled
 

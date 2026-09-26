@@ -10,7 +10,8 @@ import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerMoveEvent
-import org.bukkit.metadata.FixedMetadataValue
+import org.bukkit.event.player.PlayerQuitEvent
+import org.bukkit.event.player.PlayerTeleportEvent
 import org.bukkit.persistence.PersistentDataType
 import org.cubexmc.metro.Metro
 import org.cubexmc.metro.model.Line
@@ -18,6 +19,7 @@ import org.cubexmc.metro.model.Stop
 import org.cubexmc.metro.util.ColorUtil
 import org.cubexmc.metro.util.MetroConstants
 import org.cubexmc.metro.util.SchedulerUtil
+import org.cubexmc.metro.util.MetroTextRenderer
 import org.cubexmc.metro.util.TextUtil
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -60,7 +62,7 @@ class PlayerMoveListener(private val plugin: Metro) : Listener {
         }
 
         // 玩家不在矿车内，正常处理站台信息
-        val stop = plugin.stopManager.getStopContainingLocation(player.location)
+        val stop = plugin.stopManager.getStopContainingLocation(event.to)
 
         val playerId = player.uniqueId
         val currentStopId = playerInStopMap[playerId]
@@ -96,6 +98,17 @@ class PlayerMoveListener(private val plugin: Metro) : Listener {
         }
     }
 
+    @EventHandler
+    fun onPlayerQuit(event: PlayerQuitEvent) {
+        val id = event.player.uniqueId
+        playerInStopMap.remove(id)
+        cancelContinuousInfoTask(id)
+        cancelActionBarTask(id)
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    fun onPlayerTeleport(event: PlayerTeleportEvent) = onPlayerMove(event)
+
     /**
      * 检查两个位置是否在同一方块内
      */
@@ -104,7 +117,7 @@ class PlayerMoveListener(private val plugin: Metro) : Listener {
             return true
         }
 
-        return from.blockX == to.blockX && from.blockY == to.blockY && from.blockZ == to.blockZ
+        return from.world == to.world && from.blockX == to.blockX && from.blockY == to.blockY && from.blockZ == to.blockZ
     }
 
     /**
@@ -165,16 +178,16 @@ class PlayerMoveListener(private val plugin: Metro) : Listener {
 
         val translatedTitle =
             ColorUtil.colorizeOrEmpty(
-                TextUtil.replacePlaceholders(title, line, stop, lastStop, nextStop, terminalStop, lineManager),
+                TextUtil.replacePlaceholders(MetroTextRenderer.renderPreservingPlaceholders(title), line, stop, lastStop, nextStop, terminalStop, lineManager),
             )
         val translatedSubtitle =
             ColorUtil.colorizeOrEmpty(
-                TextUtil.replacePlaceholders(subtitle, line, stop, lastStop, nextStop, terminalStop, lineManager),
+                TextUtil.replacePlaceholders(MetroTextRenderer.renderPreservingPlaceholders(subtitle), line, stop, lastStop, nextStop, terminalStop, lineManager),
             )
         val actionbarComponent: Array<BaseComponent> =
             TextComponent.fromLegacyText(
                 ColorUtil.colorizeOrEmpty(
-                    TextUtil.replacePlaceholders(actionbar, line, stop, lastStop, nextStop, terminalStop, lineManager),
+                    TextUtil.replacePlaceholders(MetroTextRenderer.renderPreservingPlaceholders(actionbar), line, stop, lastStop, nextStop, terminalStop, lineManager),
                 ),
             )
 
@@ -185,27 +198,21 @@ class PlayerMoveListener(private val plugin: Metro) : Listener {
         val config = plugin.configFacade
         val timings = TitleTimings.from(config)
 
-        val translatedTitle =
-            ColorUtil.colorizeOrEmpty(
-                plugin.languageManager.getMessage("interact.multi_line_title", mapOf("stop_name" to stop.name)),
-            )
-        val translatedSubtitle =
-            ColorUtil.colorizeOrEmpty(
-                plugin.languageManager.getMessage(
-                    "interact.multi_line_subtitle",
-                    mapOf("count" to boardableLines.size.toString()),
-                ),
-            )
-        val actionbarComponent: Array<BaseComponent> =
-            TextComponent.fromLegacyText(
-                ColorUtil.colorizeOrEmpty(
-                    plugin.languageManager.getMessage(
-                        "interact.multi_line_actionbar",
-                        mapOf("routes" to buildBoardableRouteSummary(stop, boardableLines)),
-                    ),
-                ),
-            )
-
+        val custom = stop.getCustomTitle("stop_continuous")
+        val routes = buildBoardableRouteSummary(stop, boardableLines)
+        fun render(key: String, fallback: String): String {
+            val template = custom?.get(key) ?: config.getStopContinuousMultiLineTemplate(key) ?: fallback
+            return ColorUtil.colorizeOrEmpty(TextUtil.replacePlaceholders(
+                MetroTextRenderer.renderPreservingPlaceholders(template), null, stop, null, null, null, plugin.lineManager,
+            ).replace("{count}", boardableLines.size.toString()).replace("{routes}", routes))
+        }
+        val translatedTitle = render("title", config.getStopContinuousTitle(false, false))
+        val translatedSubtitle = render("subtitle", plugin.languageManager.getMessage(
+            "interact.multi_line_subtitle", mapOf("count" to boardableLines.size.toString()),
+        ))
+        val actionbarComponent = TextComponent.fromLegacyText(render("actionbar", plugin.languageManager.getMessage(
+            "interact.multi_line_actionbar", mapOf("routes" to routes),
+        )))
         showStopInfo(player, stop, timings, translatedTitle, translatedSubtitle, actionbarComponent)
     }
 
@@ -284,12 +291,6 @@ class PlayerMoveListener(private val plugin: Metro) : Listener {
         actionbarComponent: Array<BaseComponent>,
     ) {
         val playerId = player.uniqueId
-        val metaKey = "metro_first_run_" + stop.id
-        if (player.getMetadata(metaKey).isNotEmpty()) {
-            return
-        }
-        player.setMetadata(metaKey, FixedMetadataValue(plugin, true))
-
         if (isInMetroMinecart(player)) {
             return
         }
@@ -331,7 +332,7 @@ class PlayerMoveListener(private val plugin: Metro) : Listener {
     }
 
     private fun canDisplayAt(player: Player, stop: Stop): Boolean =
-        player.isOnline && stop.isInStop(player.location) && !isInMetroMinecart(player)
+        player.isOnline && plugin.configFacade.isStopContinuousTitleEnabled() && stop.isInStop(player.location) && !isInMetroMinecart(player)
 
     private fun buildBoardableRouteSummary(stop: Stop, boardableLines: List<Line>): String {
         val routes = ArrayList<String>()
@@ -400,7 +401,7 @@ class PlayerMoveListener(private val plugin: Metro) : Listener {
     ) {
         companion object {
             fun from(config: org.cubexmc.metro.config.ConfigFacade): TitleTimings {
-                val interval = config.getStopContinuousInterval()
+                val interval = config.getStopContinuousInterval().coerceAtLeast(1)
                 val alwaysShow = config.isStopContinuousAlways()
                 val configuredFadeIn = config.getStopContinuousFadeIn()
                 val configuredStay = config.getStopContinuousStay()
