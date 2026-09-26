@@ -60,6 +60,16 @@ internal class CommandGuard(
         return stop
     }
 
+    fun requireCurrentStop(player: Player): Stop? {
+        val position = player.location
+        val matches = stopManager.getAllStopIds().mapNotNull { stopManager.getStop(it) }
+            .filter { it.isInStop(position) }
+        if (matches.size == 1) return matches[0]
+        player.sendMessage(plugin.languageManager.getMessage(
+            if (matches.isEmpty()) "stop.context_missing" else "stop.context_ambiguous",
+        ))
+        return null
+    }
     fun requirePermission(player: Player, permission: String): Boolean {
         if (player.hasPermission(permission)) {
             return true

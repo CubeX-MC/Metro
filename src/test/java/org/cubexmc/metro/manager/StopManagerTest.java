@@ -29,6 +29,20 @@ class StopManagerTest {
     Path tempDir;
 
     @Test
+    void completeCreationPersistsPointAndFacingWithCorners() throws IOException {
+        Files.writeString(tempDir.resolve("stops.yml"),"");
+        StopManager manager=new StopManager(createPluginMock(tempDir));
+        World world=mock(World.class);when(world.getName()).thenReturn("world");
+        Location point=new Location(world,3.5,64.1,3.5);
+        var stop=manager.createStop("ready","Ready",new Location(world,0,63,0),new Location(world,10,67,10),
+                UUID.randomUUID(),point,90f);
+        point.setX(99);
+        assertEquals(3.5,stop.getStopPointLocation().getX());assertEquals(90f,stop.getLaunchYaw());
+        manager.forceSaveSync();
+        String saved=Files.readString(tempDir.resolve("stops.yml"));
+        assertTrue(saved.contains("stoppoint_location:"));assertTrue(saved.contains("launch_yaw: 90.0"));
+    }
+    @Test
     void shouldCreateStopAndResolveByLocation() throws IOException {
         Files.writeString(tempDir.resolve("stops.yml"), "");
         StopManager manager = new StopManager(createPluginMock(tempDir));

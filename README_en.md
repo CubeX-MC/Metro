@@ -26,8 +26,13 @@ Run `/m` or `/metro` to open the management GUI directly. Use `/m help` for comm
 - **Multi-language** — Chinese, English, German, Spanish, and more
 - **Folia Support** — Compatible with Folia multithreaded servers
 
+After selecting the area, stand on the powered rail inside it and face the departure direction. `/m stop create central Central Station` saves both corners, the centered stop point and launch direction together. The name defaults to the ID. Without a powered rail beneath the player inside the selection, only the area is created and Metro explains how to finish with `/m stop setpoint`.
+
+`/m line create main` accepts an omitted display name. Inside a unique stop, `/m line addstop main` appends that stop. `/m stop setcorners` applies a new selection to the current stop, and `/m stop setpoint` uses your position and facing. Overlapping stops require an explicit ID; permissions and ownership still apply. Portal creation and destination commands retain their existing position-based behavior.
+
 Waiting Titles honor `interval`, `fade_in`, `stay` and `fade_out`; title, subtitle and actionbar all support `<countdown>` / `{countdown}`, including custom stop templates. Departure displays once; the unused legacy `titles.departure.interval` can be removed. Arrival and terminal displays support `actionbar`; disabling arrival Titles does not mute arrival sounds. Optional `titles.stop_continuous.multi_line.title/subtitle/actionbar` templates support `{count}` and `{routes}`, with localized defaults when absent. `always: false` displays on every re-entry. Re-enter the area after editing station templates to see the changes.
 
+Language files migrate to v4 with contextual feedback in all seven languages and updated optional-argument help, preserving other custom translations.
 ## Basic Concepts
 
 | Concept | Description |

@@ -9,7 +9,7 @@ import org.cubexmc.metro.Metro
 
 object MetroMigrations {
     const val CONFIG_VERSION: Int = 5
-    const val LANG_VERSION: Int = 3
+    const val LANG_VERSION: Int = 4
 
     @JvmField
     val BUNDLED_LANGUAGES: List<String> = listOf("zh_CN", "zh_TW", "en_US", "de_DE", "es_ES", "nl_NL", "tr_TR")
@@ -64,7 +64,8 @@ object MetroMigrations {
                 .targetVersion(LANG_VERSION)
                 .failurePolicy(MigrationFailurePolicy.ABORT)
                 .addStep(MetroLanguageModernizationStep(plugin))
-                .addStep(MergeBundledDefaultsStep(plugin, 2, LANG_VERSION, "language")),
+                .addStep(MergeBundledDefaultsStep(plugin, 2, 3, "language"))
+                .addStep(MetroBuildUxLanguageStep(plugin)),
         )
     }
 

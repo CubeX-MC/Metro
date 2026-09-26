@@ -1,4 +1,4 @@
-lang-version: 3
+lang-version: 4
 # Metro 插件繁體中文語言檔案
 
 # 基本資訊
@@ -254,6 +254,11 @@ portal:
 
 # 停靠區指令相關
 stop:
+  create_ready: '<prefix><#69DB7C>站台 <stop_name>（<stop_id>）已建立，選區、停車點和發車朝向已設定。'
+  create_area_only: '<prefix><#FFE066>站台 <stop_name>（<stop_id>）區域已建立。請站在區內動力鐵軌上，執行 /m stop setpoint <stop_id> 完成設定。'
+  selection_world_mismatch: '<prefix><#E63946>請在目前世界選取兩個角點後，再建立或調整站台。'
+  context_missing: '<prefix><#E63946>目前位置沒有站台。請站進站台區域，或明確填寫站台 ID。'
+  context_ambiguous: '<prefix><#E63946>目前位置有多個重疊站台，請明確填寫站台 ID。'
   help_header: "<green>===== Metro 停靠區管理指令 ====="
   help_create: "<gold>/m stop create \\<停靠區ID> \\<顯示名稱> <white>- 建立新停靠區"
   help_delete: "<gold>/m stop delete \\<停靠區ID> confirm <white>- 刪除停靠區"
@@ -365,7 +370,7 @@ stop:
   # 自訂標題相關
   title_type_invalid: "<red>無效的標題類型: <title_type>"
   title_key_invalid: "<red>無效的標題鍵: <title_key>"
-  title_types: "<red>有效的標題類型: stop_continuous, arrive_stop, terminal_stop, departure"
+  title_types: "<red>有效的標題類型: stop_continuous, arrive_stop, terminal_stop, departure, waiting"
   title_keys: "<red>有效的標題鍵: title, subtitle, actionbar"
   
   settitle_success: "<green>成功為停靠區 <stop_name> 設定自訂標題: [<title_type>.<title_key>] = \"<title_value>\""

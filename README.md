@@ -36,8 +36,13 @@ Metro 是一个 Minecraft 地铁交通系统插件。管理员创建自动化的
 - **多语言** — 中英文等多国语言
 - **Folia 兼容** — 支持 Folia 多线程服务端
 
+选区后，站在选区内准备作为停靠点的红石铁轨上，面向发车方向，执行 `/m stop create central 中央站`，即可一次保存 corners、stoppoint 和发车朝向。省略名称时使用 ID。如果脚下没有选区内的红石铁轨，只创建区域并提示使用 `/m stop setpoint` 补齐，不会猜测附近的轨道。
+
+`/m line create main` 可以省略显示名称；站在唯一站台内执行 `/m line addstop main` 即可按顺序追加当前站台。重新选区后 `/m stop setcorners`、调整站位和朝向后 `/m stop setpoint` 也可省略站台 ID。站台重叠时必须明确填写 ID；权限和所有权检查仍然适用。传送门创建和目标设置继续使用原有的当前位置逻辑。
+
 Title 配置支持站台常驻、到站、终点、发车和等待场景，以及各站台自定义模板。等待场景的 `interval`、`fade_in`、`stay`、`fade_out` 生效，三个文本字段都支持 `<countdown>` / `{countdown}`。发车显示一次，旧 `titles.departure.interval` 无效，可删除。到站和终点支持 `actionbar`；关闭到站 Title 不影响到站声音。多线路站台可配置 `titles.stop_continuous.multi_line.title/subtitle/actionbar`（额外占位符 `{count}`、`{routes}`）；未配置时沿用语言文件提示。`always: false` 每次重新进入都显示。修改站台模板后重新进入区域查看效果。
 
+语言文件自动迁移至 v4，补齐七种语言的操作提示并更新可选参数帮助，保留其他自定义翻译。
 ## 基本概念
 
 | 概念 | 说明 |

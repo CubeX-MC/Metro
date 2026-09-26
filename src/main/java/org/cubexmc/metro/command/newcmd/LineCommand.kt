@@ -45,16 +45,16 @@ class LineCommand(
         view.listLines(sender, lineService.listLines(), page)
     }
 
-    @Command("m|metro line|l create <id> <name>")
+    @Command("m|metro line|l create <id> [name]")
     @CommandDescription("Create a new metro line")
-    fun create(player: Player, @Argument("id") id: String, @Greedy @Argument("name") name: String) {
+    fun create(player: Player, @Argument("id") id: String, @Greedy @Argument("name") name: String?) {
         if (!OwnershipUtil.canCreateLine(player)) {
             player.sendMessage(plugin.languageManager.getMessage("line.permission_create"))
             return
         }
 
         val messageKey =
-            when (lineService.createLine(id, name, player.uniqueId)) {
+            when (lineService.createLine(id, name ?: id, player.uniqueId)) {
                 LineCommandService.WriteStatus.SUCCESS -> "line.create_success"
                 LineCommandService.WriteStatus.INVALID_ID -> "line.id_invalid"
                 LineCommandService.WriteStatus.EXISTS -> "line.create_exists"
@@ -180,16 +180,17 @@ class LineCommand(
         }
     }
 
-    @Command("m|metro line|l addstop <lineId> <stopId> [index]")
+    @Command("m|metro line|l addstop <lineId> [stopId] [index]")
     @CommandDescription("Add a stop to a line")
     fun addStop(
         player: Player,
         @Argument(value = "lineId", suggestions = "lineIds") lineId: String,
-        @Argument(value = "stopId", suggestions = "stopIds") stopId: String,
+        @Argument(value = "stopId", suggestions = "stopIds") stopId: String?,
         @Argument(value = "index", suggestions = "stopIndexes") index: Int?,
     ) {
         val line = guard.requireManageableLine(player, lineId) ?: return
-        val stop = guard.requireStop(player, stopId) ?: return
+        val stop = if (stopId == null) guard.requireCurrentStop(player) ?: return
+        else guard.requireStop(player, stopId) ?: return
 
         if (!guard.canModifyLineStops(player, line, stop)) {
             return
@@ -198,7 +199,7 @@ class LineCommand(
         when (lineService.addStopToLine(line, stop, index).status()) {
             LineCommandService.WriteStatus.SUCCESS -> {
                 val args = LanguageManager.args()
-                LanguageManager.put(args, "stop_id", stopId)
+                LanguageManager.put(args, "stop_id", stop.id)
                 LanguageManager.put(args, "line_id", line.id)
                 player.sendMessage(plugin.languageManager.getMessage("line.addstop_success", args))
             }
@@ -207,7 +208,7 @@ class LineCommand(
                 player.sendMessage(
                     plugin.languageManager.getMessage(
                         "line.addstop_stop_no_world",
-                        LanguageManager.put(LanguageManager.args(), "stop_id", stopId),
+                        LanguageManager.put(LanguageManager.args(), "stop_id", stop.id),
                     ),
                 )
 

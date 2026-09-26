@@ -105,7 +105,13 @@ class StopManager(private val plugin: Metro) {
         }
     }
 
-    fun createStop(stopId: String?, displayName: String?, corner1: Location?, corner2: Location?, ownerId: UUID?): Stop? {
+    fun createStop(stopId: String?, displayName: String?, corner1: Location?, corner2: Location?, ownerId: UUID?): Stop? =
+        createStop(stopId, displayName, corner1, corner2, ownerId, null, 0.0f)
+
+    fun createStop(
+        stopId: String?, displayName: String?, corner1: Location?, corner2: Location?, ownerId: UUID?,
+        stopPoint: Location?, launchYaw: Float,
+    ): Stop? {
         if (stopId == null) {
             return null
         }
@@ -121,6 +127,8 @@ class StopManager(private val plugin: Metro) {
                 stop.corner1 = corner1
                 stop.corner2 = corner2
             }
+            stop.stopPointLocation = stopPoint?.clone()
+            stop.launchYaw = launchYaw
             stops[stopId] = stop
             indexStop(stop)
             saveConfig()

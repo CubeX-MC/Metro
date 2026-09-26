@@ -1,4 +1,4 @@
-lang-version: 3
+lang-version: 4
 # Metro Plugin Deutsche Sprachdatei
 
 # Grundinformationen
@@ -40,7 +40,7 @@ line:
   help_setcolor: "<gold>/m line setcolor \\<line_id> \\<farbe> <white>- Linienfarbe festlegen"
   help_setterminus: "<gold>/m line setterminus \\<line_id> \\<richtungsname> <white>- Endstation-Richtungsname festlegen"
   help_setmaxspeed: "<gold>/m line setmaxspeed \\<line_id> \\<geschwindigkeit> <white>- Maximale Liniengeschwindigkeit festlegen"
-  help_addstop: "<gold>/m line addstop \\<line_id> \\<stop_id> [index] <white>- Haltebereich zur Linie hinzufügen"
+  help_addstop: "<gold>/m line addstop \\<line_id> [stop_id] [index] <white>- Haltebereich zur Linie hinzufügen"
   help_delstop: "<gold>/m line delstop \\<line_id> \\<stop_id> <white>- Haltebereich von Linie entfernen"
   help_stops: "<gold>/m line stops \\<line_id> [page] <white>- Alle Haltebereiche der Linie auflisten"
   help_addportal: "<gold>/m line addportal \\<line_id> \\<portal_id> <white>- Portal für Linie aktivieren"
@@ -65,7 +65,7 @@ line:
   usage_setcolor: "<red>Verwendung: /m line setcolor \\<line_id> \\<farbe>\n<yellow>Farbbeispiele: <green><green>, <aqua><aqua>, <red><red>, <blue><blue> usw. Minecraft Farbcodes"
   usage_setterminus: "<red>Verwendung: /m line setterminus \\<line_id> \\<endstation_richtungsname>"
   usage_setmaxspeed: "<red>Verwendung: /m line setmaxspeed \\<line_id> \\<geschwindigkeit>\n<yellow>Geschwindigkeit muss eine positive Zahl sein"
-  usage_addstop: "<red>Verwendung: /m line addstop \\<line_id> \\<stop_id> [reihenfolge_index]"
+  usage_addstop: "<red>Verwendung: /m line addstop \\<line_id> [stop_id] [reihenfolge_index]"
   usage_delstop: "<red>Verwendung: /m line delstop \\<line_id> \\<stop_id>"
   usage_rename: "<red>Verwendung: /m line rename \\<line_id> \\<neuer_name>"
   usage_stops: "<red>Verwendung: /m line stops \\<line_id>"
@@ -254,11 +254,16 @@ portal:
 
 # Haltebereich-Befehl bezogen
 stop:
+  create_ready: '<prefix><#69DB7C>Haltestelle <stop_name> (<stop_id>) mit Auswahl, Haltepunkt und Blickrichtung erstellt.'
+  create_area_only: '<prefix><#FFE066>Bereich <stop_name> (<stop_id>) erstellt. Stelle dich auf eine Antriebsschiene im Bereich und nutze /m stop setpoint <stop_id>.'
+  selection_world_mismatch: '<prefix><#E63946>Wähle beide Eckpunkte in deiner aktuellen Welt, bevor du eine Haltestelle erstellst oder anpasst.'
+  context_missing: '<prefix><#E63946>Hier ist keine Haltestelle. Betritt einen Haltestellenbereich oder gib die ID an.'
+  context_ambiguous: '<prefix><#E63946>Hier überlappen mehrere Haltestellen. Gib die Haltestellen-ID an.'
   help_header: "<green>===== Metro Haltebereichsverwaltung Befehle ====="
   help_create: "<gold>/m stop create \\<stop_id> \\<anzeigename> <white>- Neuen Haltebereich erstellen"
   help_delete: "<gold>/m stop delete \\<stop_id> confirm <white>- Haltebereich löschen"
   help_list: "<gold>/m stop list [page] <white>- Alle Haltebereiche auflisten"
-  help_setcorners: "<gold>/m stop setcorners \\<stop_id> <white>- Eckpunkte des Haltebereichs aktualisieren"
+  help_setcorners: "<gold>/m stop setcorners [stop_id] <white>- Eckpunkte des Haltebereichs aktualisieren"
   help_setpoint: "<gold>/m stop setpoint [stop_id] [yaw] <white>- Haltepunkt-Position und Abfahrtsrichtung festlegen"
   help_addtransfer: "<gold>/m stop addtransfer \\<stop_id> \\<transfer_line_id> <white>- Umsteigelinie hinzufügen"
   help_deltransfer: "<gold>/m stop deltransfer \\<stop_id> \\<transfer_line_id> <white>- Umsteigelinie entfernen"
@@ -276,7 +281,7 @@ stop:
   
   usage_create: "<red>Verwendung: /m stop create \\<stop_id> \\<\"anzeigename\">"
   usage_delete: "<red>Verwendung: /m stop delete \\<stop_id> confirm"
-  usage_setcorners: "<red>Verwendung: /m stop setcorners \\<stop_id>"
+  usage_setcorners: "<red>Verwendung: /m stop setcorners [stop_id]"
   usage_setpoint: "<red>Verwendung: /m stop setpoint [stop_id] [yaw]"
   usage_tp: "<red>Verwendung: /m stop tp \\<stop_id>"
   usage_info: "<red>Verwendung: /m stop info \\<stop_id>"
@@ -365,7 +370,7 @@ stop:
   # Benutzerdefinierte Titel bezogen
   title_type_invalid: "<red>Ungültiger Titel-Typ: <title_type>"
   title_key_invalid: "<red>Ungültiger Titel-Schlüssel: <title_key>"
-  title_types: "<red>Gültige Titel-Typen: stop_continuous, arrive_stop, terminal_stop, departure"
+  title_types: "<red>Gültige Titel-Typen: stop_continuous, arrive_stop, terminal_stop, departure, waiting"
   title_keys: "<red>Gültige Titel-Schlüssel: title, subtitle, actionbar"
   
   settitle_success: "<green>Benutzerdefinierten Titel erfolgreich für Haltebereich <stop_name> festgelegt: [<title_type>.<title_key>] = \"<title_value>\""

@@ -44,9 +44,9 @@ class StopCommand(
         view.listStops(player, stopService.listStops(), page)
     }
 
-    @Command("m|metro stop|s create <stopId> <name>")
+    @Command("m|metro stop|s create <stopId> [name]")
     @CommandDescription("Create a new metro stop")
-    fun create(player: Player, @Argument("stopId") id: String, @Greedy @Argument("name") name: String) {
+    fun create(player: Player, @Argument("stopId") id: String, @Greedy @Argument("name") name: String?) {
         if (!OwnershipUtil.canCreateStop(player)) {
             player.sendMessage(plugin.languageManager.getMessage("stop.permission_create"))
             return
@@ -61,15 +61,19 @@ class StopCommand(
         val corner1 = selectionManager.getCorner1(player)
         val corner2 = selectionManager.getCorner2(player)
 
-        val result = stopService.createStop(id, name, corner1, corner2, player.uniqueId)
+        val displayName = name ?: id
+        val result = stopService.createStopAtPosition(id, displayName, corner1, corner2, player.uniqueId, player.location)
         when (result.status()) {
             StopCommandService.WriteStatus.SUCCESS ->
                 player.sendMessage(
                     plugin.languageManager.getMessage(
-                        "stop.create_success",
-                        LanguageManager.put(LanguageManager.args(), "stop_name", name),
+                        if (result.stop()?.stopPointLocation != null) "stop.create_ready" else "stop.create_area_only",
+                        mapOf("stop_name" to displayName, "stop_id" to id),
                     ),
                 )
+
+            StopCommandService.WriteStatus.INVALID_SELECTION ->
+                player.sendMessage(plugin.languageManager.getMessage("stop.selection_world_mismatch"))
 
             StopCommandService.WriteStatus.INVALID_ID ->
                 player.sendMessage(
@@ -146,9 +150,10 @@ class StopCommand(
         }
     }
 
-    @Command("m|metro stop|s setcorners <stopId>")
+    @Command("m|metro stop|s setcorners [stopId]")
     @CommandDescription("Set stop corners from current selection")
-    fun setCorners(player: Player, @Argument(value = "stopId", suggestions = "stopIds") id: String) {
+    fun setCorners(player: Player, @Argument(value = "stopId", suggestions = "stopIds") stopId: String?) {
+        val id = stopId ?: guard.requireCurrentStop(player)?.id ?: return
         guard.requireManageableStop(player, id) ?: return
         val selectionManager = plugin.selectionManager
         if (!selectionManager.isSelectionComplete(player)) {
@@ -157,6 +162,10 @@ class StopCommand(
         }
         val corner1 = selectionManager.getCorner1(player) ?: return
         val corner2 = selectionManager.getCorner2(player) ?: return
+        if (corner1.world != player.world || corner2.world != player.world) {
+            player.sendMessage(plugin.languageManager.getMessage("stop.selection_world_mismatch"))
+            return
+        }
         if (stopService.setCorners(id, corner1, corner2) == StopCommandService.WriteStatus.SUCCESS) {
             player.sendMessage(
                 plugin.languageManager.getMessage(
@@ -174,26 +183,11 @@ class StopCommand(
         @Argument(value = "stopId", suggestions = "stopIds") stopId: String?,
         @Argument(value = "yaw", suggestions = "yawValues") yaw: Float?,
     ) {
-        var id = stopId
-        if (id == null) {
-            val containing = stopManager.getStopContainingLocation(player.location)
-            if (containing == null) {
-                player.sendMessage(
-                    plugin.languageManager.getMessage(
-                        "stop.setpoint_not_in_area",
-                        LanguageManager.put(LanguageManager.args(), "stop_name", "unknown"),
-                    ),
-                )
-                return
-            }
-            id = containing.id
-        } else if (guard.requireStop(player, id) == null) {
-            return
-        }
+        val id = stopId ?: guard.requireCurrentStop(player)?.id ?: return
 
         val stop = guard.requireManageableStop(player, id) ?: return
 
-        val result = stopService.setPoint(id, stop, player.location, yaw)
+        val result = stopService.setPoint(id, stop, stopService.resolveStandingRail(player.location) ?: player.location, yaw)
         when (result.status()) {
             StopCommandService.WriteStatus.SUCCESS -> {
                 val args = LanguageManager.args()

@@ -1,4 +1,4 @@
-lang-version: 3
+lang-version: 4
 # Archivo de idioma español del plugin Metro
 
 # Información básica
@@ -40,7 +40,7 @@ line:
   help_setcolor: "<gold>/m line setcolor \\<line_id> \\<color> <white>- Establecer color de línea"
   help_setterminus: "<gold>/m line setterminus \\<line_id> \\<nombre_dirección> <white>- Establecer nombre de dirección terminal de línea"
   help_setmaxspeed: "<gold>/m line setmaxspeed \\<line_id> \\<velocidad> <white>- Establecer velocidad máxima de línea"
-  help_addstop: "<gold>/m line addstop \\<line_id> \\<stop_id> [index] <white>- Añadir área de parada a línea"
+  help_addstop: "<gold>/m line addstop \\<line_id> [stop_id] [index] <white>- Añadir área de parada a línea"
   help_delstop: "<gold>/m line delstop \\<line_id> \\<stop_id> <white>- Eliminar área de parada de línea"
   help_stops: "<gold>/m line stops \\<line_id> [page] <white>- Listar todas las áreas de parada en línea"
   help_addportal: "<gold>/m line addportal \\<line_id> \\<portal_id> <white>- Permitir que la línea use un portal"
@@ -65,7 +65,7 @@ line:
   usage_setcolor: "<red>Uso: /m line setcolor \\<line_id> \\<color>\n<yellow>Ejemplos de color: <green><green>, <aqua><aqua>, <red><red>, <blue><blue> etc. códigos de color de Minecraft"
   usage_setterminus: "<red>Uso: /m line setterminus \\<line_id> \\<nombre_dirección_terminal>"
   usage_setmaxspeed: "<red>Uso: /m line setmaxspeed \\<line_id> \\<velocidad>\n<yellow>La velocidad debe ser un número positivo"
-  usage_addstop: "<red>Uso: /m line addstop \\<line_id> \\<stop_id> [índice_orden]"
+  usage_addstop: "<red>Uso: /m line addstop \\<line_id> [stop_id] [índice_orden]"
   usage_delstop: "<red>Uso: /m line delstop \\<line_id> \\<stop_id>"
   usage_rename: "<red>Uso: /m line rename \\<line_id> \\<nuevo_nombre>"
   usage_stops: "<red>Uso: /m line stops \\<line_id>"
@@ -254,11 +254,16 @@ portal:
 
 # Relacionado con comandos de área de parada
 stop:
+  create_ready: '<prefix><#69DB7C>Parada <stop_name> (<stop_id>) creada con selección, punto de parada y dirección de salida.'
+  create_area_only: '<prefix><#FFE066>Área <stop_name> (<stop_id>) creada. Sitúate sobre un raíl propulsor dentro y usa /m stop setpoint <stop_id>.'
+  selection_world_mismatch: '<prefix><#E63946>Selecciona ambas esquinas en tu mundo actual antes de crear o ajustar una parada.'
+  context_missing: '<prefix><#E63946>No hay ninguna parada aquí. Entra en una o indica su ID.'
+  context_ambiguous: '<prefix><#E63946>Varias paradas se superponen aquí. Indica el ID de la parada.'
   help_header: "<green>===== Comandos de Gestión de Áreas de Parada Metro ====="
   help_create: "<gold>/m stop create \\<stop_id> \\<nombre_mostrar> <white>- Crear nueva área de parada"
   help_delete: "<gold>/m stop delete \\<stop_id> confirm <white>- Eliminar área de parada"
   help_list: "<gold>/m stop list [page] <white>- Listar todas las áreas de parada"
-  help_setcorners: "<gold>/m stop setcorners \\<stop_id> <white>- Actualizar las esquinas de una parada"
+  help_setcorners: "<gold>/m stop setcorners [stop_id] <white>- Actualizar las esquinas de una parada"
   help_setpoint: "<gold>/m stop setpoint [stop_id] [yaw] <white>- Establecer ubicación del punto de parada y dirección de salida"
   help_addtransfer: "<gold>/m stop addtransfer \\<stop_id> \\<transfer_line_id> <white>- Añadir línea de transbordo"
   help_deltransfer: "<gold>/m stop deltransfer \\<stop_id> \\<transfer_line_id> <white>- Eliminar línea de transbordo"
@@ -276,7 +281,7 @@ stop:
   
   usage_create: "<red>Uso: /m stop create \\<stop_id> \\<\"nombre_mostrar\">"
   usage_delete: "<red>Uso: /m stop delete \\<stop_id> confirm"
-  usage_setcorners: "<red>Uso: /m stop setcorners \\<stop_id>"
+  usage_setcorners: "<red>Uso: /m stop setcorners [stop_id]"
   usage_setpoint: "<red>Uso: /m stop setpoint [stop_id] [yaw]"
   usage_tp: "<red>Uso: /m stop tp \\<stop_id>"
   usage_info: "<red>Uso: /m stop info \\<stop_id>"
@@ -365,7 +370,7 @@ stop:
   # Relacionado con títulos personalizados
   title_type_invalid: "<red>Tipo de título inválido: <title_type>"
   title_key_invalid: "<red>Clave de título inválida: <title_key>"
-  title_types: "<red>Tipos de título válidos: stop_continuous, arrive_stop, terminal_stop, departure"
+  title_types: "<red>Tipos de título válidos: stop_continuous, arrive_stop, terminal_stop, departure, waiting"
   title_keys: "<red>Claves de título válidas: title, subtitle, actionbar"
   
   settitle_success: "<green>Título personalizado establecido exitosamente para área de parada <stop_name>: [<title_type>.<title_key>] = \"<title_value>\""

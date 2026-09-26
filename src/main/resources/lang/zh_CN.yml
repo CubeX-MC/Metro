@@ -1,4 +1,4 @@
-lang-version: 3
+lang-version: 4
 # Metro 插件中文语言文件
 
 # 基本信息
@@ -40,7 +40,7 @@ line:
   help_setcolor: "<gold>/m line setcolor \\<line_id> \\<颜色> <white>- 设置线路颜色"
   help_setterminus: "<gold>/m line setterminus \\<line_id> \\<方向名称> <white>- 设置线路终点方向名称"
   help_setmaxspeed: "<gold>/m line setmaxspeed \\<line_id> \\<速度> <white>- 设置线路最大速度"
-  help_addstop: "<gold>/m line addstop \\<line_id> \\<stop_id> [index] <white>- 向线路添加停靠区"
+  help_addstop: "<gold>/m line addstop \\<line_id> [stop_id] [index] <white>- 向线路添加停靠区"
   help_delstop: "<gold>/m line delstop \\<line_id> \\<stop_id> <white>- 从线路移除停靠区"
   help_stops: "<gold>/m line stops \\<line_id> [page] <white>- 列出线路上的所有停靠区"
   help_addportal: "<gold>/m line addportal \\<line_id> \\<portal_id> <white>- 允许线路使用传送门"
@@ -65,7 +65,7 @@ line:
   usage_setcolor: "<red>用法: /m line setcolor \\<line_id> \\<颜色>\n<yellow>颜色示例: <green><green>, <aqua><aqua>, <red><red>, <blue><blue> 等Minecraft颜色代码"
   usage_setterminus: "<red>用法: /m line setterminus \\<line_id> \\<终点方向名称>"
   usage_setmaxspeed: "<red>用法: /m line setmaxspeed \\<line_id> \\<速度>\n<yellow>速度必须为正数"
-  usage_addstop: "<red>用法: /m line addstop \\<line_id> \\<stop_id> [顺序索引]"
+  usage_addstop: "<red>用法: /m line addstop \\<line_id> [stop_id] [顺序索引]"
   usage_delstop: "<red>用法: /m line delstop \\<line_id> \\<stop_id>"
   usage_rename: "<red>用法: /m line rename \\<line_id> \\<新名称>"
   usage_stops: "<red>用法: /m line stops \\<line_id>"
@@ -254,11 +254,16 @@ portal:
 
 # 停靠区命令相关
 stop:
+  create_ready: '<prefix><#69DB7C>站台 <stop_name>（<stop_id>）已创建，选区、停车点和发车朝向已设置。'
+  create_area_only: '<prefix><#FFE066>站台 <stop_name>（<stop_id>）区域已创建。请站在区内动力铁轨上，执行 /m stop setpoint <stop_id> 完成设置。'
+  selection_world_mismatch: '<prefix><#E63946>请在当前世界选取两个角点后，再创建或调整站台。'
+  context_missing: '<prefix><#E63946>当前位置没有站台。请站进站台区域，或明确填写站台 ID。'
+  context_ambiguous: '<prefix><#E63946>当前位置有多个重叠站台，请明确填写站台 ID。'
   help_header: "<green>===== Metro停靠区管理命令 ====="
   help_create: "<gold>/m stop create \\<stop_id> \\<显示名称> <white>- 创建新停靠区"
   help_delete: "<gold>/m stop delete \\<stop_id> confirm <white>- 删除停靠区"
   help_list: "<gold>/m stop list [page] <white>- 列出所有停靠区"
-  help_setcorners: "<gold>/m stop setcorners \\<stop_id> <white>- 更新停靠区的角点"
+  help_setcorners: "<gold>/m stop setcorners [stop_id] <white>- 更新停靠区的角点"
   help_setpoint: "<gold>/m stop setpoint [stop_id] [yaw] <white>- 设置停靠点位置和发车朝向"
   help_addtransfer: "<gold>/m stop addtransfer \\<stop_id> \\<transfer_line_id> <white>- 添加可换乘线路"
   help_deltransfer: "<gold>/m stop deltransfer \\<stop_id> \\<transfer_line_id> <white>- 移除可换乘线路"
@@ -276,7 +281,7 @@ stop:
   
   usage_create: "<red>用法: /m stop create \\<stop_id> \\<\"显示名称\">"
   usage_delete: "<red>用法: /m stop delete \\<stop_id> confirm"
-  usage_setcorners: "<red>用法: /m stop setcorners \\<stop_id>"
+  usage_setcorners: "<red>用法: /m stop setcorners [stop_id]"
   usage_setpoint: "<red>用法: /m stop setpoint [stop_id] [yaw]"
   usage_tp: "<red>用法: /m stop tp \\<stop_id>"
   usage_info: "<red>用法: /m stop info \\<stop_id>"
@@ -365,7 +370,7 @@ stop:
   # 自定义Title相关
   title_type_invalid: "<red>无效的title类型: <title_type>"
   title_key_invalid: "<red>无效的title键: <title_key>"
-  title_types: "<red>有效title类型: stop_continuous, arrive_stop, terminal_stop, departure"
+  title_types: "<red>有效title类型: stop_continuous, arrive_stop, terminal_stop, departure, waiting"
   title_keys: "<red>有效title键: title, subtitle, actionbar"
   
   settitle_success: "<green>成功为停靠区 <stop_name> 设置自定义title: [<title_type>.<title_key>] = \"<title_value>\""

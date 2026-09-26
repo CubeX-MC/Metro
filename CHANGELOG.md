@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Building workflow**: create complete stops from selection, standing powered rail and facing; optional names and contextual stop IDs for linking and editing, with overlap protection and language v4 migration.
 - **Station Titles**: honor arrival enablement and waiting timings/countdown; render custom MiniMessage templates; restore re-entry and cross-world displays; support multi-line templates and arrival/terminal actionbars; publish departure after clearing the waiting display.
 
 - **Experimental minecarts**: detect the world's Minecart Improvements flag without raising the Spigot 1.18.2 / Java 17 build baseline. Use native slope movement, brake before a fast cart crosses a narrow station, and correct powered-rail drift while docked. Paper 26.1.2 runtime results and remaining player/Folia checks are recorded in `docs/minecart-improvements.md`.

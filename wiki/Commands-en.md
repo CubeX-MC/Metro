@@ -8,7 +8,7 @@ Main command: `/m`
 
 | Command | Description |
 | :--- | :--- |
-| `/m line create <line_id> <display_name>` | Create a new line |
+| `/m line create <line_id> [display_name]` | Create a new line |
 | `/m line delete <line_id> confirm` | Delete an existing line |
 | `/m line list` | List all lines |
 | `/m line rename <line_id> <new_name>` | Rename a line |
@@ -22,7 +22,7 @@ Main command: `/m`
 | `/m line setprice reset <line_id>` | Reset to legacy flat pricing |
 | `/m line priceinfo <line_id>` | View pricing details and active discounts |
 | `/m line setstatus <line_id> <normal&#124;suspended&#124;maintenance>` | Set operational status |
-| `/m line addstop <line_id> <stop_id> [index]` | Add a stop to the line (optional position) |
+| `/m line addstop <line_id> [stop_id] [index]` | Add a stop to the line (optional position) |
 | `/m line delstop <line_id> <stop_id>` | Remove a stop from the line |
 | `/m line stops <line_id>` | Show all stops on the line |
 | `/m line addportal <line_id> <portal_id>` | Allow the line to use a portal |
@@ -42,12 +42,12 @@ Main command: `/m`
 
 | Command | Description |
 | :--- | :--- |
-| `/m stop create <stop_id> <display_name>` | Create a new stop |
+| `/m stop create <stop_id> [display_name]` | Create a new stop |
 | `/m stop delete <stop_id> confirm` | Delete a stop and its configuration |
 | `/m stop list` | List all stops |
 | `/m stop rename <stop_id> <new_name>` | Rename a stop |
 | `/m stop info <stop_id>` | Show detailed info for a stop |
-| `/m stop setcorners <stop_id>` | Apply the currently selected region |
+| `/m stop setcorners [stop_id]` | Apply the currently selected region |
 | `/m stop setpoint [stopId] [yaw]` | Set the StopPoint (powered rail) |
 | `/m stop addtransfer <stop_id> <line_id>` | Add a transfer line |
 | `/m stop deltransfer <stop_id> <line_id>` | Remove a transfer line |
@@ -82,4 +82,10 @@ Main command: `/m`
 | `/m gui` | Open the Metro GUI |
 | `/m reload` | Reload all plugin configs and data |
 
+After selecting the area, stand on the powered rail inside it and face the departure direction. `/m stop create central Central Station` saves both corners, the centered stop point and launch direction together. The name defaults to the ID. Without a powered rail beneath the player inside the selection, only the area is created and Metro explains how to finish with `/m stop setpoint`.
+
+`/m line create main` accepts an omitted display name. Inside a unique stop, `/m line addstop main` appends that stop. `/m stop setcorners` applies a new selection to the current stop, and `/m stop setpoint` uses your position and facing. Overlapping stops require an explicit ID; permissions and ownership still apply. Portal creation and destination commands retain their existing position-based behavior.
+
 Waiting Titles honor `interval`, `fade_in`, `stay` and `fade_out`; title, subtitle and actionbar all support `<countdown>` / `{countdown}`, including custom stop templates. Departure displays once; the unused legacy `titles.departure.interval` can be removed. Arrival and terminal displays support `actionbar`; disabling arrival Titles does not mute arrival sounds. Optional `titles.stop_continuous.multi_line.title/subtitle/actionbar` templates support `{count}` and `{routes}`, with localized defaults when absent. `always: false` displays on every re-entry. Re-enter the area after editing station templates to see the changes.
+
+Language files migrate to v4 with contextual feedback in all seven languages and updated optional-argument help, preserving other custom translations.

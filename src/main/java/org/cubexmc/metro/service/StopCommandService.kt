@@ -18,6 +18,7 @@ class StopCommandService(stopManager: StopManager?) {
     enum class WriteStatus {
         SUCCESS,
         INVALID_ID,
+        INVALID_SELECTION,
         INVALID_ACTION,
         INVALID_TITLE_TYPE,
         INVALID_TITLE_KEY,
@@ -58,14 +59,46 @@ class StopCommandService(stopManager: StopManager?) {
         }
     }
 
+    /** Build a complete stop when the creator is standing on a powered rail inside the selection. */
+    fun createStopAtPosition(
+        id: String?, name: String, corner1: Location?, corner2: Location?, ownerId: UUID?, position: Location?,
+    ): CreateStopResult {
+        if (!isValidId(id)) return CreateStopResult(WriteStatus.INVALID_ID, null)
+        if (corner1?.world == null || corner2?.world != corner1.world || position?.world != corner1.world) {
+            return CreateStopResult(WriteStatus.INVALID_SELECTION, null)
+        }
+        val area = Stop(id!!, name)
+        area.corner1 = corner1
+        area.corner2 = corner2
+        val point = resolveStandingRail(position)?.takeIf {
+            it.block.type == Material.POWERED_RAIL && area.isInStop(it)
+        }
+        val stop = if (point == null) {
+            stopManager.createStop(id, name, corner1, corner2, ownerId)
+        } else {
+            stopManager.createStop(id, name, corner1, corner2, ownerId, point, point.yaw)
+        }
+        return CreateStopResult(if (stop == null) WriteStatus.EXISTS else WriteStatus.SUCCESS, stop)
+    }
+
+    /** Reads only the creator's current block and the block immediately below it. */
+    fun resolveStandingRail(position: Location?): Location? {
+        if (position?.world == null) return null
+        val feet = position.block
+        val rail = if (isRail(feet.type)) feet else feet.getRelative(org.bukkit.block.BlockFace.DOWN)
+        if (!isRail(rail.type)) return null
+        return rail.location.add(0.5, 0.1, 0.5).also { it.yaw = position.yaw }
+    }
     fun deleteStop(id: String): WriteStatus = if (stopManager.deleteStop(id)) WriteStatus.SUCCESS else WriteStatus.FAILED
 
     fun listStops(): List<Stop> = stopManager.getAllStopIds()
         .mapNotNull { stopId -> stopManager.getStop(stopId) }
         .sortedBy { stop -> stop.id }
 
-    fun setCorners(id: String, corner1: Location, corner2: Location): WriteStatus =
-        if (stopManager.setStopCorners(id, corner1, corner2)) WriteStatus.SUCCESS else WriteStatus.FAILED
+    fun setCorners(id: String, corner1: Location, corner2: Location): WriteStatus {
+        if (corner1.world == null || corner1.world != corner2.world) return WriteStatus.INVALID_SELECTION
+        return if (stopManager.setStopCorners(id, corner1, corner2)) WriteStatus.SUCCESS else WriteStatus.FAILED
+    }
 
     fun setPoint(id: String, stop: Stop, location: Location, yaw: Float?): SetPointResult {
         val type = location.block.type

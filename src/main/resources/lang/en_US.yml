@@ -1,4 +1,4 @@
-lang-version: 3
+lang-version: 4
 # Metro Plugin English Language File
 
 # Basic Information
@@ -34,13 +34,13 @@ selection:
 # Line Command Related
 line:
   help_header: "<green>===== Metro Line Management Commands ====="
-  help_create: "<gold>/m line create \\<line_id> \\<display_name> <white>- Create new line"
+  help_create: "<gold>/m line create \\<line_id> [display_name] <white>- Create new line"
   help_delete: "<gold>/m line delete \\<line_id> confirm <white>- Delete line"
   help_list: "<gold>/m line list [page] <white>- List all lines"
   help_setcolor: "<gold>/m line setcolor \\<line_id> \\<color> <white>- Set line color"
   help_setterminus: "<gold>/m line setterminus \\<line_id> \\<direction_name> <white>- Set line terminus direction name"
   help_setmaxspeed: "<gold>/m line setmaxspeed \\<line_id> \\<speed> <white>- Set line maximum speed"
-  help_addstop: "<gold>/m line addstop \\<line_id> \\<stop_id> [index] <white>- Add stop to line"
+  help_addstop: "<gold>/m line addstop \\<line_id> [stop_id] [index] <white>- Add stop to line"
   help_delstop: "<gold>/m line delstop \\<line_id> \\<stop_id> <white>- Remove stop from line"
   help_stops: "<gold>/m line stops \\<line_id> [page] <white>- List all stops on line"
   help_addportal: "<gold>/m line addportal \\<line_id> \\<portal_id> <white>- Allow line to use portal"
@@ -60,12 +60,12 @@ line:
   help_setstatus: "<gold>/m line setstatus \\<line_id> \\<normal|suspended|maintenance> <white>- Set line operational status"
   help_priceinfo: "<gold>/m line priceinfo \\<line_id> <white>- View pricing details and active discounts"
   
-  usage_create: "<red>Usage: /m line create \\<line_id> \\<\"display_name\">"
+  usage_create: "<red>Usage: /m line create \\<line_id> [display_name]"
   usage_delete: "<red>Usage: /m line delete \\<line_id> confirm"
   usage_setcolor: "<red>Usage: /m line setcolor \\<line_id> \\<color>\n<yellow>Color examples: <green><green>, <aqua><aqua>, <red><red>, <blue><blue> etc Minecraft color codes"
   usage_setterminus: "<red>Usage: /m line setterminus \\<line_id> \\<terminus_direction_name>"
   usage_setmaxspeed: "<red>Usage: /m line setmaxspeed \\<line_id> \\<speed>\n<yellow>Speed must be a positive number"
-  usage_addstop: "<red>Usage: /m line addstop \\<line_id> \\<stop_id> [order_index]"
+  usage_addstop: "<red>Usage: /m line addstop \\<line_id> [stop_id] [order_index]"
   usage_delstop: "<red>Usage: /m line delstop \\<line_id> \\<stop_id>"
   usage_rename: "<red>Usage: /m line rename \\<line_id> \\<new_name>"
   usage_stops: "<red>Usage: /m line stops \\<line_id>"
@@ -254,11 +254,16 @@ portal:
 
 # Stop Command Related
 stop:
+  create_ready: '<prefix><#69DB7C>Stop <stop_name> (<stop_id>) created with selection, boarding point and facing direction.'
+  create_area_only: '<prefix><#FFE066>Stop <stop_name> (<stop_id>) area created. Stand on a powered rail inside it and run /m stop setpoint <stop_id> to finish.'
+  selection_world_mismatch: '<prefix><#E63946>Select both corners in your current world before creating or resizing a stop.'
+  context_missing: '<prefix><#E63946>No stop at your position. Stand inside one or specify its ID.'
+  context_ambiguous: '<prefix><#E63946>Several stops overlap here. Specify the stop ID.'
   help_header: "<green>===== Metro Stop Management Commands ====="
-  help_create: "<gold>/m stop create \\<stop_id> \\<display_name> <white>- Create new stop"
+  help_create: "<gold>/m stop create \\<stop_id> [display_name] <white>- Create new stop"
   help_delete: "<gold>/m stop delete \\<stop_id> confirm <white>- Delete stop"
   help_list: "<gold>/m stop list [page] <white>- List all stops"
-  help_setcorners: "<gold>/m stop setcorners \\<stop_id> <white>- Update stop's corner points"
+  help_setcorners: "<gold>/m stop setcorners [stop_id] <white>- Update stop's corner points"
   help_setpoint: "<gold>/m stop setpoint [stop_id] [yaw] <white>- Set stopping point position and departure direction"
   help_addtransfer: "<gold>/m stop addtransfer \\<stop_id> \\<transfer_line_id> <white>- Add transferable line"
   help_deltransfer: "<gold>/m stop deltransfer \\<stop_id> \\<transfer_line_id> <white>- Remove transferable line"
@@ -274,9 +279,9 @@ stop:
   help_owner: "<gold>/m stop owner \\<stop_id> \\<player> <white>- Transfer stop ownership"
   help_link: "<gold>/m stop link \\<allow|deny> \\<stop_id> \\<line_id> <white>- Manage line link permissions"
   
-  usage_create: "<red>Usage: /m stop create \\<stop_id> \\<\"display_name\">"
+  usage_create: "<red>Usage: /m stop create \\<stop_id> [display_name]"
   usage_delete: "<red>Usage: /m stop delete \\<stop_id> confirm"
-  usage_setcorners: "<red>Usage: /m stop setcorners \\<stop_id>"
+  usage_setcorners: "<red>Usage: /m stop setcorners [stop_id]"
   usage_setpoint: "<red>Usage: /m stop setpoint [stop_id] [yaw]"
   usage_tp: "<red>Usage: /m stop tp \\<stop_id>"
   usage_info: "<red>Usage: /m stop info \\<stop_id>"
@@ -365,7 +370,7 @@ stop:
   # Custom Title Related
   title_type_invalid: "<red>Invalid title type: <title_type>"
   title_key_invalid: "<red>Invalid title key: <title_key>"
-  title_types: "<red>Valid title types: stop_continuous, arrive_stop, terminal_stop, departure"
+  title_types: "<red>Valid title types: stop_continuous, arrive_stop, terminal_stop, departure, waiting"
   title_keys: "<red>Valid title keys: title, subtitle, actionbar"
   
   settitle_success: "<green>Successfully set custom title for stop <stop_name>: [<title_type>.<title_key>] = \"<title_value>\""

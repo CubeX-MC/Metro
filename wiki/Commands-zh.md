@@ -8,7 +8,7 @@
 
 | 命令 | 描述 |
 | :--- | :--- |
-| `/m line create <line_id> <显示名称>` | 创建新线路 |
+| `/m line create <line_id> [显示名称]` | 创建新线路 |
 | `/m line delete <line_id> confirm` | 删除指定线路 |
 | `/m line list` | 列出所有线路 |
 | `/m line rename <line_id> <新名称>` | 重命名线路 |
@@ -22,7 +22,7 @@
 | `/m line setprice reset <line_id>` | 重置为默认单一票价 |
 | `/m line priceinfo <line_id>` | 查看线路定价详情 |
 | `/m line setstatus <line_id> <normal&#124;suspended&#124;maintenance>` | 设置运营状态 |
-| `/m line addstop <line_id> <stop_id> [位置索引]` | 将停靠区添加到线路 |
+| `/m line addstop <line_id> [stop_id] [位置索引]` | 将停靠区添加到线路 |
 | `/m line delstop <line_id> <stop_id>` | 从线路中移除停靠区 |
 | `/m line stops <line_id>` | 查看线路的所有停靠区 |
 | `/m line addportal <line_id> <portal_id>` | 允许线路使用传送门 |
@@ -42,12 +42,12 @@
 
 | 命令 | 描述 |
 | :--- | :--- |
-| `/m stop create <stop_id> <显示名称>` | 选区后创建新停靠区 |
+| `/m stop create <stop_id> [显示名称]` | 选区后创建新停靠区 |
 | `/m stop delete <stop_id> confirm` | 删除停靠区及其所有配置 |
 | `/m stop list` | 列出所有停靠区 |
 | `/m stop rename <stop_id> <新名称>` | 重命名停靠区 |
 | `/m stop info <stop_id>` | 查看停靠区详细信息 |
-| `/m stop setcorners <stop_id>` | 更新空间对角点 |
+| `/m stop setcorners [stop_id]` | 更新空间对角点 |
 | `/m stop setpoint [stopId] [朝向角度]` | 设置精确停靠点 |
 | `/m stop addtransfer <stop_id> <换乘线路ID>` | 添加可换乘线路 |
 | `/m stop deltransfer <stop_id> <换乘线路ID>` | 移除可换乘线路 |
@@ -82,4 +82,10 @@
 | `/m gui` | 打开图形管理界面 |
 | `/m reload` | 重新加载配置和数据文件 |
 
+选区后，站在选区内准备作为停靠点的红石铁轨上，面向发车方向，执行 `/m stop create central 中央站`，即可一次保存 corners、stoppoint 和发车朝向。省略名称时使用 ID。如果脚下没有选区内的红石铁轨，只创建区域并提示使用 `/m stop setpoint` 补齐，不会猜测附近的轨道。
+
+`/m line create main` 可以省略显示名称；站在唯一站台内执行 `/m line addstop main` 即可按顺序追加当前站台。重新选区后 `/m stop setcorners`、调整站位和朝向后 `/m stop setpoint` 也可省略站台 ID。站台重叠时必须明确填写 ID；权限和所有权检查仍然适用。传送门创建和目标设置继续使用原有的当前位置逻辑。
+
 Title 配置支持站台常驻、到站、终点、发车和等待场景，以及各站台自定义模板。等待场景的 `interval`、`fade_in`、`stay`、`fade_out` 生效，三个文本字段都支持 `<countdown>` / `{countdown}`。发车显示一次，旧 `titles.departure.interval` 无效，可删除。到站和终点支持 `actionbar`；关闭到站 Title 不影响到站声音。多线路站台可配置 `titles.stop_continuous.multi_line.title/subtitle/actionbar`（额外占位符 `{count}`、`{routes}`）；未配置时沿用语言文件提示。`always: false` 每次重新进入都显示。修改站台模板后重新进入区域查看效果。
+
+语言文件自动迁移至 v4，补齐七种语言的操作提示并更新可选参数帮助，保留其他自定义翻译。

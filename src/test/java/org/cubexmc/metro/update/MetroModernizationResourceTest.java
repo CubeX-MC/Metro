@@ -292,6 +292,24 @@ class MetroModernizationResourceTest {
         }
     }
 
+    @Test
+    void buildingLanguageMigrationPreservesCustomTextAndAddsFeedback() throws Exception {
+        Metro plugin = pluginWithResource("lang/en_US.yml", "stop:\n  create_ready: Ready\n");
+        YamlConfiguration yaml = new YamlConfiguration();
+        yaml.set("stop.help_create", "Custom /m stop create \\<stop_id> \\<display_name>");
+        yaml.set("line.help_addstop", "Link \\<line_id> \\<stop_id>");
+        yaml.set("stop.title_types", "Custom: departure");
+        yaml.set("stop.create_success", "My custom success");
+        MetroBuildUxLanguageStep step = new MetroBuildUxLanguageStep(plugin);
+        SimpleMigrationContext context = new SimpleMigrationContext("lang/en_US.yml", yaml);
+        step.migrate(context);
+        step.migrate(context);
+        assertEquals("Custom /m stop create \\<stop_id> [display_name]", yaml.getString("stop.help_create"));
+        assertEquals("Link \\<line_id> [stop_id]", yaml.getString("line.help_addstop"));
+        assertEquals("Custom: departure, waiting", yaml.getString("stop.title_types"));
+        assertEquals("My custom success", yaml.getString("stop.create_success"));
+        assertEquals("Ready", yaml.getString("stop.create_ready"));
+    }
     private YamlConfiguration load(String resourcePath) {
         InputStream inputStream = getClass().getClassLoader().getResourceAsStream(resourcePath);
         assertTrue(inputStream != null, () -> "Missing resource: " + resourcePath);

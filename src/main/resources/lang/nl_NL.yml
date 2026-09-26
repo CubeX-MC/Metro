@@ -1,4 +1,4 @@
-lang-version: 3
+lang-version: 4
 # Metro Plugin Nederlandse Taalbestand
 
 # Basisinformatie
@@ -40,7 +40,7 @@ line:
   help_setcolor: "<gold>/m line setcolor \\<line_id> \\<kleur> <white>- Stel lijnkleur in"
   help_setterminus: "<gold>/m line setterminus \\<line_id> \\<richtingnaam> <white>- Stel lijn eindstation richtingnaam in"
   help_setmaxspeed: "<gold>/m line setmaxspeed \\<line_id> \\<snelheid> <white>- Stel lijn maximumsnelheid in"
-  help_addstop: "<gold>/m line addstop \\<line_id> \\<stop_id> [index] <white>- Voeg stopgebied toe aan lijn"
+  help_addstop: "<gold>/m line addstop \\<line_id> [stop_id] [index] <white>- Voeg stopgebied toe aan lijn"
   help_delstop: "<gold>/m line delstop \\<line_id> \\<stop_id> <white>- Verwijder stopgebied van lijn"
   help_stops: "<gold>/m line stops \\<line_id> [page] <white>- Lijst alle stopgebieden op lijn"
   help_addportal: "<gold>/m line addportal \\<line_id> \\<portal_id> <white>- Sta lijn toe portal te gebruiken"
@@ -65,7 +65,7 @@ line:
   usage_setcolor: "<red>Gebruik: /m line setcolor \\<line_id> \\<kleur>\n<yellow>Kleurvoorbeelden: <green><green>, <aqua><aqua>, <red><red>, <blue><blue> etc. Minecraft kleurcodes"
   usage_setterminus: "<red>Gebruik: /m line setterminus \\<line_id> \\<eindstation_richtingnaam>"
   usage_setmaxspeed: "<red>Gebruik: /m line setmaxspeed \\<line_id> \\<snelheid>\n<yellow>Snelheid moet een positief getal zijn"
-  usage_addstop: "<red>Gebruik: /m line addstop \\<line_id> \\<stop_id> [volgorde_index]"
+  usage_addstop: "<red>Gebruik: /m line addstop \\<line_id> [stop_id] [volgorde_index]"
   usage_delstop: "<red>Gebruik: /m line delstop \\<line_id> \\<stop_id>"
   usage_rename: "<red>Gebruik: /m line rename \\<line_id> \\<nieuwe_naam>"
   usage_stops: "<red>Gebruik: /m line stops \\<line_id>"
@@ -254,11 +254,16 @@ portal:
 
 # Stopgebied commando gerelateerd
 stop:
+  create_ready: '<prefix><#69DB7C>Halte <stop_name> (<stop_id>) aangemaakt met selectie, stoppunt en kijkrichting.'
+  create_area_only: '<prefix><#FFE066>Gebied <stop_name> (<stop_id>) aangemaakt. Ga op een aandrijfrail binnen het gebied staan en gebruik /m stop setpoint <stop_id>.'
+  selection_world_mismatch: '<prefix><#E63946>Selecteer beide hoeken in je huidige wereld voordat je een halte maakt of aanpast.'
+  context_missing: '<prefix><#E63946>Hier is geen halte. Ga in een halte staan of geef de ID op.'
+  context_ambiguous: '<prefix><#E63946>Hier overlappen meerdere haltes. Geef de halte-ID op.'
   help_header: "<green>===== Metro Stopgebiedbeheer Commando's ====="
   help_create: "<gold>/m stop create \\<stop_id> \\<weergavenaam> <white>- Maak nieuw stopgebied"
   help_delete: "<gold>/m stop delete \\<stop_id> confirm <white>- Verwijder stopgebied"
   help_list: "<gold>/m stop list [page] <white>- Lijst alle stopgebieden"
-  help_setcorners: "<gold>/m stop setcorners \\<stop_id> <white>- Update de hoekpunten van een stop"
+  help_setcorners: "<gold>/m stop setcorners [stop_id] <white>- Update de hoekpunten van een stop"
   help_setpoint: "<gold>/m stop setpoint [stop_id] [yaw] <white>- Stel stoppuntlocatie en vertrekrichting in"
   help_addtransfer: "<gold>/m stop addtransfer \\<stop_id> \\<transfer_line_id> <white>- Voeg overstaplijn toe"
   help_deltransfer: "<gold>/m stop deltransfer \\<stop_id> \\<transfer_line_id> <white>- Verwijder overstaplijn"
@@ -276,7 +281,7 @@ stop:
   
   usage_create: "<red>Gebruik: /m stop create \\<stop_id> \\<\"weergavenaam\">"
   usage_delete: "<red>Gebruik: /m stop delete \\<stop_id> confirm"
-  usage_setcorners: "<red>Gebruik: /m stop setcorners \\<stop_id>"
+  usage_setcorners: "<red>Gebruik: /m stop setcorners [stop_id]"
   usage_setpoint: "<red>Gebruik: /m stop setpoint [stop_id] [yaw]"
   usage_tp: "<red>Gebruik: /m stop tp \\<stop_id>"
   usage_info: "<red>Gebruik: /m stop info \\<stop_id>"
@@ -365,7 +370,7 @@ stop:
   # Aangepaste Title gerelateerd
   title_type_invalid: "<red>Ongeldige title type: <title_type>"
   title_key_invalid: "<red>Ongeldige title sleutel: <title_key>"
-  title_types: "<red>Geldige title types: stop_continuous, arrive_stop, terminal_stop, departure"
+  title_types: "<red>Geldige title types: stop_continuous, arrive_stop, terminal_stop, departure, waiting"
   title_keys: "<red>Geldige title sleutels: title, subtitle, actionbar"
   
   settitle_success: "<green>Aangepaste title succesvol ingesteld voor stopgebied <stop_name>: [<title_type>.<title_key>] = \"<title_value>\""

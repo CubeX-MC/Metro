@@ -1,4 +1,4 @@
-lang-version: 3
+lang-version: 4
 # Metro Plugin Türkçe Dil Dosyası AdnanPSD tarafından çevrilmiştir
 
 # Temel Bilgiler
@@ -254,6 +254,11 @@ portal:
 
 # Durak Komutları
 stop:
+  create_ready: '<prefix><#69DB7C><stop_name> (<stop_id>) durağı seçim, durma noktası ve bakış yönüyle oluşturuldu.'
+  create_area_only: '<prefix><#FFE066><stop_name> (<stop_id>) alanı oluşturuldu. Alandaki bir güçlendirilmiş rayın üzerinde durup /m stop setpoint <stop_id> kullanın.'
+  selection_world_mismatch: '<prefix><#E63946>Durak oluşturmadan veya alanını değiştirmeden önce iki köşeyi mevcut dünyanızda seçin.'
+  context_missing: '<prefix><#E63946>Burada durak yok. Bir durağın alanına girin veya kimliğini belirtin.'
+  context_ambiguous: '<prefix><#E63946>Burada birden fazla durak örtüşüyor. Durak kimliğini belirtin.'
   help_header: "<green>===== Metro Durak Yönetim Komutları ====="
   help_create: "<gold>/m stop create \\<durak_id> \\<görünen_ad> <white>- Yeni durak oluştur"
   help_delete: "<gold>/m stop delete \\<durak_id> confirm <white>- Durağı sil"
@@ -365,7 +370,7 @@ stop:
   # Özel Başlık
   title_type_invalid: "<red>Geçersiz başlık türü: <title_type>"
   title_key_invalid: "<red>Geçersiz başlık anahtarı: <title_key>"
-  title_types: "<red>Geçerli başlık türleri: stop_continuous, arrive_stop, terminal_stop, departure"
+  title_types: "<red>Geçerli başlık türleri: stop_continuous, arrive_stop, terminal_stop, departure, waiting"
   title_keys: "<red>Geçerli başlık anahtarları: title, subtitle, actionbar"
 
   settitle_success: '<green><stop_name> durağı için özel başlık başarıyla ayarlandı: [<title_type>.<title_key>] = "<title_value>"'
