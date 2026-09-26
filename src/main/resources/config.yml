@@ -1,4 +1,4 @@
-config-version: 4
+config-version: 5
 # Metro 配置文件
 # Metro Configuration File
 
@@ -229,29 +229,12 @@ speed_control:
   # 控速模式: VANILLA_MOMENTUM (原版推力惯性) 或 BLOCK_BASED (根据铁轨下方方块实时控速)
   # Speed control mode: VANILLA_MOMENTUM (Vanilla momentum) or BLOCK_BASED (Real-time speed control based on blocks below rails)
   mode: VANILLA_MOMENTUM
-  # 巡航控速（实验性）
-  # max_speed / cart_speed 只是速度上限，不是目标速度：原版动力铁轨给矿车的
-  # 加速度与摩擦力平衡后约为 1.5 格/tick（约 30 格/秒），把上限调到 100 也不会
-  # 更快。开启巡航控速后，插件会在区间行驶中主动把车速维持在目标速度，
-  # 从而突破这一平衡点。
-  #
-  # 代价：高速过弯更容易脱轨，且客户端预测会更明显。建议配合直线线路，
-  # 或用上面的 BLOCK_BASED 在弯道处降速。
-  #
-  # Cruise control (experimental)
-  # max_speed / cart_speed are only upper clamps, not targets: vanilla powered
-  # rails settle at about 1.5 blocks/tick (~30 blocks/s) regardless of the
-  # clamp. With cruise control the plugin actively drives the cart at the
-  # target speed between stops, which is the only way past that plateau.
-  # Trade-off: derailing on curves becomes much more likely at high speed.
-  cruise_control:
-    enabled: false
-    # 目标速度（格/tick）。<= 0 表示使用线路 max_speed（未设置时用 settings.cart_speed）
-    # Target speed in blocks/tick. <= 0 uses the line max_speed, falling back to settings.cart_speed
-    target_speed: -1
-    # 控速间隔（tick），越小越平滑，开销也越大
-    # Control interval in ticks; smaller is smoother but costs more
-    interval_ticks: 2
+  # 速度单位为格/tick。旧矿车物理的载人直线速度上限约为 30 格/秒。
+  # 世界启用 Minecart Improvements 后自动使用原生实验物理，线路 max_speed
+  # 和 settings.cart_speed 继续作为单车上限；Metro 不修改世界实验或游戏规则。
+  # Speeds are blocks/tick. Legacy occupied carts cap at about 30 blocks/second.
+  # Worlds with Minecart Improvements use native experimental physics automatically.
+  # Line max_speed / settings.cart_speed remain per-cart caps; world flags/rules are unchanged.
   # 铁轨下方方块速度映射表 (仅在 BLOCK_BASED 开启时有效) 可以按世界分组配置
   # Block speed mapping table (only effective when BLOCK_BASED is enabled). Can be configured per world
   worlds:

@@ -1,0 +1,5 @@
+name: PhysicsProbe
+version: 1.0
+main: PhysicsProbe
+api-version: '1.18'
+depend: [Metro]

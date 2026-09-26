@@ -50,3 +50,11 @@ Smoke tests should cover plugin startup, Cloud command registration, GUI opening
   each scan on that chunk's region scheduler before atomically publishing the
   completed index.
 - On shutdown, Metro cleans active train sessions through its train registry. Paper/Bukkit additionally run a fallback world scan for old Metro minecart leftovers; Folia schedules active train cleanup on each minecart's entity scheduler and skips that fallback scan to avoid unsafe cross-region access.
+
+## Minecart Improvements
+
+Metro reads `World.getFeatureFlags()` reflectively and checks the exact `minecraft:minecart_improvements` key. A missing API/flag uses the legacy movement path. No NMS dependency, world flag mutation, gamerule mutation, or newer compile API is introduced.
+
+In an experimental world, native movement handles slopes, and Metro applies an event-driven station approach limit before the cart enters the stop region. Docked horizontal drift is corrected through the existing `SchedulerUtil.teleportEntity` path. Paper 26.1.2's same-world teleport keeps the rider mounted; older experimental implementations and Folia require their own passenger-retention validation.
+
+See [setup and runtime evidence](minecart-improvements.md). The headless Paper 26.1.2 probe is not a full player, Geyser, Folia, or portal acceptance test. A separate existing startup issue was observed without Vault (`ClassNotFoundException: net.milkbowl.vault.economy.Economy`); physics validation used Vault installed without an economy provider. Standalone startup without Vault remains unresolved by this change.

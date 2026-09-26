@@ -35,6 +35,12 @@ Run `/m` or `/metro` to open the management GUI directly. Use `/m help` for comm
 | **StopPoint** | A powered rail where players board |
 | **Transfer** | Connections from one Stop to other Lines |
 
+## Configuration
+
+Line `max_speed` and `settings.cart_speed` use blocks per tick. Metro detects **Minecart Improvements** in each world and uses native experimental movement, with early station braking and dock drift correction. It does not enable world experiments or change game rules. See [experimental minecart physics](docs/minecart-improvements.md) for setup and verification boundaries. Paper 26.1.2 requires Java 25; Metro retains Java 17 bytecode.
+
+`speed_control.cruise_control` has been removed. Configuration migrates to v5 with an automatic backup; safe-mode stall recovery remains available.
+
 ## Learn More
 
 Full documentation is available on the [Metro Wiki](https://github.com/CubeX-MC/Metro/wiki).

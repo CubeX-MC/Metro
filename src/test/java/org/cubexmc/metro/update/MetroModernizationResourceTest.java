@@ -21,6 +21,33 @@ import org.junit.jupiter.api.Test;
 class MetroModernizationResourceTest {
 
     @Test
+    void cruiseRemovalPreservesSpeedAndStallRecoverySettings() throws Exception {
+        YamlConfiguration yaml = yamlOf("""
+                config-version: 4
+                speed_control:
+                  mode: BLOCK_BASED
+                  cruise_control:
+                    enabled: true
+                    target_speed: 3.0
+                  block_speed_map:
+                    default:
+                      GOLD_BLOCK: 8
+                settings:
+                  cart_speed: 3.0
+                  safe_mode:
+                    movement_assist: true
+                """);
+        MetroRemoveCruiseControlStep step = new MetroRemoveCruiseControlStep();
+        step.migrate(new SimpleMigrationContext("config.yml", yaml));
+        step.migrate(new SimpleMigrationContext("config.yml", yaml));
+        assertFalse(yaml.contains("speed_control.cruise_control"));
+        assertEquals("BLOCK_BASED", yaml.getString("speed_control.mode"));
+        assertEquals(8, yaml.getInt("speed_control.block_speed_map.default.GOLD_BLOCK"));
+        assertEquals(3.0, yaml.getDouble("settings.cart_speed"));
+        assertTrue(yaml.getBoolean("settings.safe_mode.movement_assist"));
+        assertFalse(load("config.yml").contains("speed_control.cruise_control"));
+    }
+    @Test
     void bundledConfigUsesV2OnlyForDisplayWhitelist() {
         YamlConfiguration config = load("config.yml");
 
@@ -95,7 +122,8 @@ class MetroModernizationResourceTest {
         assertEquals(new MetroMidRouteExitFareStep(plugin).toVersion(),
                 new MetroEconomyAccountStep(plugin).fromVersion(),
                 "a version with no step leaves upgraded servers without the new keys");
-        assertEquals(MetroMigrations.CONFIG_VERSION, new MetroEconomyAccountStep(plugin).toVersion());
+        assertEquals(new MetroEconomyAccountStep(plugin).toVersion(), new MetroRemoveCruiseControlStep().fromVersion());
+        assertEquals(MetroMigrations.CONFIG_VERSION, new MetroRemoveCruiseControlStep().toVersion());
     }
 
     @Test

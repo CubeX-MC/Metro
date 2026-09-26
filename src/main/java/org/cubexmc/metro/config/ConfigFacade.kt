@@ -78,9 +78,6 @@ class ConfigFacade(private val plugin: Metro) {
     private var lineSymbol = ""
 
     private var speedControlMode = ""
-    private var cruiseControlEnabled = false
-    private var cruiseControlTargetSpeed = -1.0
-    private var cruiseControlIntervalTicks = 2L
     private var blockSpeedMap: MutableMap<String, MutableMap<String, Double>> = HashMap()
 
     private var mapIntegrationEnabled = false
@@ -241,10 +238,6 @@ class ConfigFacade(private val plugin: Metro) {
         lineSymbol = plugin.config.getString("scoreboard.line_symbol", "❙") ?: "❙"
 
         speedControlMode = plugin.config.getString("speed_control.mode", "VANILLA_MOMENTUM") ?: "VANILLA_MOMENTUM"
-        cruiseControlEnabled = plugin.config.getBoolean("speed_control.cruise_control.enabled", false)
-        cruiseControlTargetSpeed = plugin.config.getDouble("speed_control.cruise_control.target_speed", -1.0)
-        cruiseControlIntervalTicks =
-            plugin.config.getLong("speed_control.cruise_control.interval_ticks", 2L).coerceAtLeast(1L)
         blockSpeedMap = HashMap()
         if (plugin.config.isConfigurationSection("speed_control.worlds")) {
             val worldsSection = plugin.config.getConfigurationSection("speed_control.worlds")
@@ -481,12 +474,6 @@ class ConfigFacade(private val plugin: Metro) {
     fun getLineSymbol(): String = lineSymbol
 
     fun getSpeedControlMode(): String = speedControlMode
-
-    fun isCruiseControlEnabled(): Boolean = cruiseControlEnabled
-
-    fun getCruiseControlTargetSpeed(): Double = cruiseControlTargetSpeed
-
-    fun getCruiseControlIntervalTicks(): Long = cruiseControlIntervalTicks
 
     fun getBlockSpeedMap(): Map<String, Map<String, Double>> = blockSpeedMap
 

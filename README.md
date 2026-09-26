@@ -67,6 +67,12 @@ Metro 是一个 Minecraft 地铁交通系统插件。管理员创建自动化的
 
 完整命令与权限清单见 [Metro Wiki](https://github.com/CubeX-MC/Metro/wiki)。
 
+## 配置
+
+线路 `max_speed` 和 `settings.cart_speed` 的单位是格/tick。世界启用 **Minecart Improvements** 后，Metro 自动适配原生实验物理，支持超过旧物理约 30 格/秒的载人直线速度，并提前减速进站。配置不会自动启用世界实验；新旧世界的启用步骤见 [实验矿车物理](docs/minecart-improvements.md)。
+
+已移除 `speed_control.cruise_control`。升级时配置自动迁移到 v5 并备份旧文件；安全模式的卡停恢复仍保留。26.1.2 运行需要 Java 25，插件产物仍保持 Java 17 字节码。
+
 ## 构建
 
 ```powershell

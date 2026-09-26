@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **Experimental minecarts**: detect the world's Minecart Improvements flag without raising the Spigot 1.18.2 / Java 17 build baseline. Use native slope movement, brake before a fast cart crosses a narrow station, and correct powered-rail drift while docked. Paper 26.1.2 runtime results and remaining player/Folia checks are recorded in `docs/minecart-improvements.md`.
+- **Cruise control removed**: remove the ineffective velocity-based cruise task and its config/getters. Config v4 → v5 removes only `speed_control.cruise_control`, with the migration runner's automatic backup. Safe-mode stall recovery remains.
+
 - **Fare destination**: fares from a line with **no owner** used to be withdrawn
   and destroyed. The new `economy.account` names the server account they are
   paid into instead (player UUID, `name:<account>`, a player name, or

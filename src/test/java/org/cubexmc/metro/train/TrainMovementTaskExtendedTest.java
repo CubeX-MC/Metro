@@ -118,6 +118,26 @@ class TrainMovementTaskExtendedTest {
     }
 
     @Test
+    void experimentalCartBrakesBeforeEnteringANarrowStationRegion() {
+        createLineWithStops("l1", "A", "B", "C");
+        World world = mock(MinecartPhysicsCompatibilityTest.FeatureWorld.class);
+        Minecart cart = createMinecart();
+        when(cart.getWorld()).thenReturn(world);
+        when(cart.getLocation()).thenReturn(new Location(world, 12, 64, 0));
+        when(cart.getMaxSpeed()).thenReturn(3.0);
+        Stop stop = new Stop("B", "Bravo");
+        stop.setStopPointLocation(new Location(world, 16.8, 64, 0));
+        when(stopManager.getStop("B")).thenReturn(stop);
+        TrainMovementTask task = new TrainMovementTask(plugin, cart, createOnlinePlayer("Alice"), "l1", "A",
+                TrainMovementTask.TrainState.MOVING_BETWEEN_STATIONS);
+        try (var compatibility = mockStatic(MinecartPhysicsCompatibility.class)) {
+            compatibility.when(() -> MinecartPhysicsCompatibility.usesExperimentalMovement(world)).thenReturn(true);
+            task.onVehicleMove(new VehicleMoveEvent(cart, new Location(world, 9, 64, 0), cart.getLocation()));
+        }
+        verify(cart).setMaxSpeed(org.mockito.ArgumentMatchers.doubleThat(v -> Math.abs(v - 2.0) < 0.00001));
+        assertEquals(TrainMovementTask.TrainState.MOVING_BETWEEN_STATIONS, task.getSession().getState());
+    }
+    @Test
     void shouldIgnoreEnterStopEventForDifferentMinecart() {
         createLineWithStops("l1", "A", "B", "C");
         Minecart taskCart = createMinecart();
@@ -602,15 +622,17 @@ class TrainMovementTaskExtendedTest {
 
     // --- transitionToStoppedAtStation via onVehicleMove ---
 
-    @Test
-    void shouldTransitionToStoppedWhenCloseToTarget() {
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(booleans = {false, true})
+    void shouldTransitionToStoppedWhenCloseToTarget(boolean experimental) {
         createLineWithStops("l1", "A", "B", "C");
         Minecart cart = createMinecart();
         Player passenger = createOnlinePlayer("Alice");
         when(passenger.getVehicle()).thenReturn(cart);
 
         try (var bukkitMock = mockStatic(org.bukkit.Bukkit.class);
-                var schedulerMock = mockStatic(org.cubexmc.metro.util.SchedulerUtil.class)) {
+                var schedulerMock = mockStatic(org.cubexmc.metro.util.SchedulerUtil.class);
+                var compatibility = mockStatic(MinecartPhysicsCompatibility.class)) {
             org.bukkit.plugin.PluginManager pm = mock(org.bukkit.plugin.PluginManager.class);
             bukkitMock.when(org.bukkit.Bukkit::getPluginManager).thenReturn(pm);
             bukkitMock.when(org.bukkit.Bukkit::getBukkitVersion).thenReturn("1.20.4-R0.1-SNAPSHOT");
@@ -619,6 +641,8 @@ class TrainMovementTaskExtendedTest {
             bukkitMock.when(org.bukkit.Bukkit::getScheduler).thenReturn(mock(org.bukkit.scheduler.BukkitScheduler.class));
 
             World world = mock(World.class);
+            when(cart.getWorld()).thenReturn(world);
+            compatibility.when(() -> MinecartPhysicsCompatibility.usesExperimentalMovement(world)).thenReturn(experimental);
             Location cartLocation = new Location(world, 100, 64, 100);
             Location stopLocation = new Location(world, 100, 64, 100);
             when(cart.getLocation()).thenReturn(cartLocation);
@@ -629,7 +653,8 @@ class TrainMovementTaskExtendedTest {
             when(stopManager.getStop("C")).thenReturn(new Stop("C", "Charlie"));
 
             TrainMovementTask task = new TrainMovementTask(plugin, cart, passenger, "l1", "A",
-                    TrainMovementTask.TrainState.MOVING_IN_STATION);
+                    experimental ? TrainMovementTask.TrainState.MOVING_BETWEEN_STATIONS
+                            : TrainMovementTask.TrainState.MOVING_IN_STATION);
 
             Location from = new Location(world, 99, 64, 99);
             Location to = new Location(world, 100, 64, 100);
@@ -643,6 +668,8 @@ class TrainMovementTaskExtendedTest {
 
             verify(cart).setVelocity(new Vector(0, 0, 0));
             verify(cart).setMaxSpeed(0);
+            assertTrue(task.isStoppedAtStation());
+            assertEquals("B", task.getSession().getCurrentStopId());
             schedulerMock.verify(() -> org.cubexmc.metro.util.SchedulerUtil.teleportEntity(eq(cart),
                     any(Location.class)), never());
         }

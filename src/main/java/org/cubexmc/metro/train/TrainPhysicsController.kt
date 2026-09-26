@@ -16,6 +16,13 @@ import org.cubexmc.metro.util.LocationUtil
  * Minecart speed, launch and stall recovery calculations for train sessions.
  */
 class TrainPhysicsController {
+    private var experimentalBrakeCart: Minecart? = null
+    private var experimentalUnbrakedSpeed = 0.0
+    private var experimentalAppliedLimit = 0.0
+
+    fun resetExperimentalApproachBraking() {
+        experimentalBrakeCart = null
+    }
     fun applyApproachBraking(minecart: Minecart, distance: Double, defaultMaxSpeed: Double) {
         val minSpeed = 0.1
         val speedRatio = min(1.0, distance / 15.0)
@@ -27,6 +34,26 @@ class TrainPhysicsController {
         }
     }
 
+    /** Leave room for the next native tick, including its powered-rail boost. */
+    fun applyExperimentalApproachBraking(minecart: Minecart, distance: Double) {
+        val currentMaxSpeed = minecart.maxSpeed
+        if (currentMaxSpeed <= 0.0) {
+            resetExperimentalApproachBraking()
+            return
+        }
+        // Preserve a cap set by the line or BLOCK_BASED controller. Restore it when
+        // a winding approach moves away from the stop instead of staying slowed forever.
+        if (experimentalBrakeCart !== minecart || currentMaxSpeed != experimentalAppliedLimit) {
+            experimentalUnbrakedSpeed = currentMaxSpeed
+        }
+        experimentalBrakeCart = minecart
+        // Begin outside the station region: one experimental tick can cross it entirely.
+        // A small positive floor lets native rails finish the approach into the 0.8-block stop radius.
+        experimentalAppliedLimit = min(experimentalUnbrakedSpeed, max(0.1, (distance - 0.8) / 2.0))
+        if (experimentalAppliedLimit != currentMaxSpeed) {
+            minecart.maxSpeed = experimentalAppliedLimit
+        }
+    }
     fun initMinecartVelocity(minecart: Minecart, yaw: Float): Vector? {
         val location = minecart.location
         val block = location.block
@@ -63,19 +90,6 @@ class TrainPhysicsController {
         val horizontalSpeed = sqrt(velocity.x * velocity.x + velocity.z * velocity.z)
         return horizontalSpeed < minCruiseSpeed
     }
-
-    /**
-     * Speed cruise control drives the cart at.
-     *
-     * `Minecart.setMaxSpeed` is only an upper clamp: on powered rails vanilla
-     * settles at roughly 1.5 blocks/tick no matter how high the clamp is, so
-     * reaching a higher configured speed requires driving the cart directly.
-     *
-     * @param configuredSpeed explicit target from config, or a value <= 0 to
-     *   use the cart's own max speed (line `max_speed`, else `cart_speed`)
-     */
-    fun resolveCruiseSpeed(minecart: Minecart, configuredSpeed: Double): Double =
-        if (configuredSpeed > 0.0) min(configuredSpeed, minecart.maxSpeed) else minecart.maxSpeed
 
     fun buildAssistVelocity(lastTravelDirection: Vector, targetSpeed: Double): Vector =
         lastTravelDirection.clone().normalize().multiply(targetSpeed)

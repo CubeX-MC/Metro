@@ -153,3 +153,24 @@ settings:
     enabled: true
 ```
 
+
+## Experimental Minecart Regression
+
+On a copied Paper 26.1.2 world with Minecart Improvements enabled:
+
+1. Use a powered straight track and a line cap of 3 blocks/tick. Measure displacement over server ticks; confirm occupied speed exceeds 30 blocks/second at 20 TPS. Repeat without the world flag as the legacy control.
+2. Approach a narrow destination region at high speed; verify braking begins before region entry, arrival settles once, and a winding approach can regain its line cap when moving away from the destination.
+3. Wait through a full departure delay on powered rail next to a solid launch block. Verify no horizontal drift, no dismount, and normal departure. Repeat with player directional input.
+4. Ride slopes, curves, a low-speed BLOCK_BASED section, intermediate/terminal stops, and a portal between legacy/experimental worlds. Ensure departure and transferred carts use the intended line speed.
+5. Repeat boarding/docking with Java and Bedrock clients, and then on Folia with region boundaries near a station. These player/platform checks remain manual; the headless occupied-cart probe does not establish their support.
+6. Upgrade a v4 config containing enabled cruise settings. Verify v5 removes only `speed_control.cruise_control`, preserves speed and safe-mode values, and saves the original under `backups/migrations/`. Repeat reload without creating a new migration.
+
+## Station building and Title verification (2026-09-13)
+
+- `:Metro:build :Metro:jarGate`: 644 tests passed; embedded Java 17 artifact gate passed.
+- BuildingWorkflowTest covers complete creation, area-only fallback, cross-world rejection, permissions, standing rail lookup, implicit linking and overlapping-stop rejection.
+- Title tests cover arrival enablement, waiting MiniMessage/countdown refresh and exit cancellation, configured timings, terminal precedence, re-entry, cross-world teleport, multi-line overrides and quit cleanup.
+- Language migration test covers optional command help, added feedback, custom translation preservation and repeat application.
+- Isolated Paper 26.1.2 build 74 / Java 25: command registration and all seven v3-to-v4 language migrations completed. Vault and the existing physics probe were present. No human client was connected.
+- Before release, manually select an area, stand on a powered rail facing departure, create a stop without a name and verify its point/direction. Add it to a line without supplying a stop ID; repeat inside overlapping stops and check explicit-ID feedback.
+- With a real client, verify waiting countdown, departure visibility, arrival/terminal toggles, custom templates and multi-line station displays; re-enter after editing templates. Repeat scheduler-sensitive flows on Folia. These visual/Folia checks are not established by the unit tests or Paper startup probe.

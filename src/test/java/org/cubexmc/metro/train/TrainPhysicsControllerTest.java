@@ -17,6 +17,50 @@ class TrainPhysicsControllerTest {
     private final TrainPhysicsController controller = new TrainPhysicsController();
 
     @Test
+    void experimentalBrakingRestoresCapOnAWindingApproachAndHonorsExternalChanges() {
+        Minecart cart = mock(Minecart.class);
+        java.util.concurrent.atomic.AtomicReference<Double> cap = new java.util.concurrent.atomic.AtomicReference<>(3.0);
+        when(cart.getMaxSpeed()).thenAnswer(call -> cap.get());
+        org.mockito.Mockito.doAnswer(call -> { cap.set(call.getArgument(0)); return null; })
+                .when(cart).setMaxSpeed(org.mockito.ArgumentMatchers.anyDouble());
+        controller.applyExperimentalApproachBraking(cart, 2.8);
+        assertEquals(1.0, cap.get(), 0.000001);
+        controller.applyExperimentalApproachBraking(cart, 20.0);
+        assertEquals(3.0, cap.get());
+        cap.set(0.4); // BLOCK_BASED or another explicit speed change.
+        controller.applyExperimentalApproachBraking(cart, 20.0);
+        assertEquals(0.4, cap.get());
+        controller.resetExperimentalApproachBraking();
+        cap.set(1.0);
+        controller.applyExperimentalApproachBraking(cart, 20.0);
+        assertEquals(1.0, cap.get());
+    }
+    @Test
+    void experimentalBrakingLeavesRoomBeforeStationEvenAtHighSpeed() {
+        Minecart cart = mock(Minecart.class);
+        when(cart.getMaxSpeed()).thenReturn(10.0);
+        controller.applyExperimentalApproachBraking(cart, 8.8);
+        verify(cart).setMaxSpeed(4.0);
+    }
+
+    @Test
+    void experimentalBrakingPreservesLowCapsAndDockedCarts() {
+        Minecart cart = mock(Minecart.class);
+        when(cart.getMaxSpeed()).thenReturn(0.2, 0.0);
+        controller.applyExperimentalApproachBraking(cart, 4.0);
+        controller.applyExperimentalApproachBraking(cart, 0.5);
+        verify(cart, never()).setMaxSpeed(org.mockito.ArgumentMatchers.anyDouble());
+    }
+
+    @Test
+    void experimentalFinalApproachCanStillReachStopRadius() {
+        Minecart cart = mock(Minecart.class);
+        when(cart.getMaxSpeed()).thenReturn(3.0);
+        controller.applyExperimentalApproachBraking(cart, 0.85);
+        verify(cart).setMaxSpeed(0.1);
+    }
+
+    @Test
     void shouldApplyApproachBrakingWithoutIncreasingFrozenMinecartSpeed() {
         Minecart minecart = mock(Minecart.class);
         when(minecart.getMaxSpeed()).thenReturn(0.0);

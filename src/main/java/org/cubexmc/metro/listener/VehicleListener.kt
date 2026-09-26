@@ -22,6 +22,7 @@ import org.cubexmc.metro.Metro
 import org.cubexmc.metro.event.TrainEnterStopEvent
 import org.cubexmc.metro.event.TrainExitStopEvent
 import org.cubexmc.metro.model.Portal
+import org.cubexmc.metro.train.MinecartPhysicsCompatibility
 import org.cubexmc.metro.train.TrainMovementTask
 import org.cubexmc.metro.util.LocationUtil
 import org.cubexmc.metro.util.MetroConstants
@@ -141,6 +142,19 @@ class VehicleListener(private val plugin: Metro) : Listener {
         val from = event.from
         val to = event.to
 
+        val experimentalMovement = MinecartPhysicsCompatibility.usesExperimentalMovement(to.world)
+        if (minecart.maxSpeed == 0.0 && experimentalMovement && LocationUtil.isOnRail(to)) {
+            // New physics boosts on powered rails AFTER applying maxSpeed, even at zero.
+            // Restore horizontal drift while allowing the native rail-height alignment.
+            minecart.velocity = Vector(0, 0, 0)
+            if (from.world == to.world && (from.x != to.x || from.z != to.z)) {
+                val dockLocation = from.clone()
+                dockLocation.y = to.y
+                SchedulerUtil.teleportEntity(minecart, dockLocation)
+            }
+            return
+        }
+
         handleStopRegionEvents(minecart, to)
 
         if (!LocationUtil.isOnRail(to)) {
@@ -169,10 +183,10 @@ class VehicleListener(private val plugin: Metro) : Listener {
             }
         }
 
-        // 上坡时补推，防止到达坡顶后倒退。
+        // 旧物理上坡时补推；实验物理自行处理坡道和过弯。
         // 不再写死 0.4：线路 max_speed 高于该值时按线路速度推进，
         // 否则任何上坡路段都会把车速强行压到 8 格/秒
-        if (minecart.maxSpeed > 0.0 && to.y > from.y) {
+        if (minecart.maxSpeed > 0.0 && to.y > from.y && !experimentalMovement) {
             val direction = LocationUtil.getDirectionVector(from, to)
             val uphillSpeed = max(UPHILL_PUSH_SPEED, minecart.maxSpeed)
             minecart.velocity = direction.multiply(uphillSpeed)

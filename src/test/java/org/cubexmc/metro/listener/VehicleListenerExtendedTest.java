@@ -117,6 +117,55 @@ class VehicleListenerExtendedTest {
     // ---- VehicleMoveEvent: stop enter/exit events ----
 
     @Test
+    void experimentalDockStillRemovesDerailedCarts() {
+        Minecart cart = metroMinecart();
+        World world = mock(World.class);
+        Location from = new Location(world, 0.5, 64, 0.5);
+        Location to = new Location(world, 0.56, 64, 0.5);
+        try (var compatibility = mockStatic(org.cubexmc.metro.train.MinecartPhysicsCompatibility.class);
+             var rails = mockStatic(LocationUtil.class)) {
+            compatibility.when(() -> org.cubexmc.metro.train.MinecartPhysicsCompatibility.usesExperimentalMovement(world))
+                    .thenReturn(true);
+            rails.when(() -> LocationUtil.isOnRail(to)).thenReturn(false);
+            createListener().onVehicleMove(new VehicleMoveEvent(cart, from, to));
+        }
+        verify(cart).remove();
+    }
+    @Test
+    void experimentalUphillKeepsNativeVelocity() {
+        Minecart cart = metroMinecart();
+        World world = mock(World.class);
+        when(cart.getMaxSpeed()).thenReturn(3.0);
+        Location from = railLocation(Material.RAIL, 64, world);
+        Location to = railLocation(Material.RAIL, 65, world);
+        try (var compatibility = mockStatic(org.cubexmc.metro.train.MinecartPhysicsCompatibility.class)) {
+            compatibility.when(() -> org.cubexmc.metro.train.MinecartPhysicsCompatibility.usesExperimentalMovement(world))
+                    .thenReturn(true);
+            createListener().onVehicleMove(new VehicleMoveEvent(cart, from, to));
+        }
+        verify(cart, never()).setVelocity(any(Vector.class));
+    }
+
+    @Test
+    void experimentalDockRestoresHorizontalDriftWithoutUndoingRailHeightAlignment() {
+        Minecart cart = metroMinecart();
+        World world = mock(World.class);
+        Location from = new Location(world, 0.5, 64.1, 0.5);
+        Location to = new Location(world, 0.56, 64.0625, 0.5);
+        try (var compatibility = mockStatic(org.cubexmc.metro.train.MinecartPhysicsCompatibility.class);
+             var scheduler = mockStatic(org.cubexmc.metro.util.SchedulerUtil.class);
+             var rails = mockStatic(LocationUtil.class)) {
+            rails.when(() -> LocationUtil.isOnRail(to)).thenReturn(true);
+            compatibility.when(() -> org.cubexmc.metro.train.MinecartPhysicsCompatibility.usesExperimentalMovement(world))
+                    .thenReturn(true);
+            createListener().onVehicleMove(new VehicleMoveEvent(cart, from, to));
+            scheduler.verify(() -> org.cubexmc.metro.util.SchedulerUtil.teleportEntity(cart,
+                    new Location(world, 0.5, 64.0625, 0.5)));
+        }
+        verify(cart).setVelocity(new Vector());
+        verify(cart, never()).remove();
+    }
+    @Test
     void shouldFireEnterStopEventWhenMovingIntoStop() {
         VehicleListener listener = createListener();
         Minecart minecart = metroMinecart();

@@ -13,7 +13,7 @@ import org.cubexmc.metro.Metro
  * Owned lines are untouched: their fares still go to the line owner.
  */
 class MetroEconomyAccountStep(plugin: Metro) :
-    MergeBundledDefaultsStep(plugin, 3, MetroMigrations.CONFIG_VERSION, "config") {
+    MergeBundledDefaultsStep(plugin, 3, 4, "config") {
 
     override fun description(): String =
         "Add economy.account (where fares from unowned lines are paid in)."
