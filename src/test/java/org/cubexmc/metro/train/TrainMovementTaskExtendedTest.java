@@ -640,6 +640,8 @@ class TrainMovementTaskExtendedTest {
             bukkitMock.when(org.bukkit.Bukkit::getServer).thenReturn(server);
             bukkitMock.when(org.bukkit.Bukkit::getScheduler).thenReturn(mock(org.bukkit.scheduler.BukkitScheduler.class));
 
+            when(plugin.getTaskScheduler$Metro()).thenReturn(mock(org.cubexmc.scheduler.CubexScheduler.class));
+
             World world = mock(World.class);
             when(cart.getWorld()).thenReturn(world);
             compatibility.when(() -> MinecartPhysicsCompatibility.usesExperimentalMovement(world)).thenReturn(experimental);

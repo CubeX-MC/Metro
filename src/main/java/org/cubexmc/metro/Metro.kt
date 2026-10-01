@@ -44,10 +44,13 @@ import org.cubexmc.metro.util.MetroConstants
 import org.cubexmc.metro.util.MinecartEjector
 import org.cubexmc.metro.util.SchedulerUtil
 import org.cubexmc.metro.util.VersionUtil
+import org.cubexmc.scheduler.CubexScheduler
 import org.incendo.cloud.annotations.AnnotationParser
 import java.io.File
 
 class Metro : CubexPlugin() {
+
+    internal val taskScheduler: CubexScheduler by lazy { CubexScheduler.create(this) }
 
     lateinit var lineManager: LineManager
         private set

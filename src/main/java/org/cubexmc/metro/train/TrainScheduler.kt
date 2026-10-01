@@ -12,7 +12,11 @@ open class TrainScheduler(private val plugin: Metro) {
     private val tasks: MutableSet<Any> = ConcurrentHashMap.newKeySet()
 
     open fun entityRun(entity: Entity, task: Runnable, delay: Long, period: Long): Any? {
-        val taskId = SchedulerUtil.entityRun(plugin, entity, task, delay, period)
+        val taskId = if (period <= 0L) {
+            plugin.taskScheduler.runAtEntityLater(entity, task, delay)
+        } else {
+            SchedulerUtil.entityRun(plugin, entity, task, delay, period)
+        }
         if (taskId != null) {
             tasks.add(taskId)
         }
