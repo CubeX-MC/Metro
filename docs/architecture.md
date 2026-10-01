@@ -44,13 +44,14 @@ flowchart TD
 
 ## Scheduler Policy
 
-Metro supports Paper/Bukkit and Folia through `SchedulerUtil`. Folia APIs are reached by reflection so the plugin can still compile against the Spigot API.
+Metro uses `cubex-scheduler` (`CubexScheduler` backed by FoliaLib) for Paper/Bukkit and Folia. The remaining `SchedulerUtil` calls delegate through `LegacySchedulerAdapter` while call sites migrate to the native API.
 
 - Global tasks are for plugin-level work that does not touch a specific entity or region, such as autosave coordination and delayed map refresh requests.
 - Entity tasks are required when reading or mutating a player, minecart, or other entity. Ride display updates, countdowns, and minecart session tasks should stay on the entity scheduler.
 - Region tasks are required when reading or mutating world or block state at a specific location. Spawning minecarts, portal destination work, and rail/block checks should be scheduled by location.
 - Async tasks are only for file I/O, serialization work on already-created snapshots, or other non-Bukkit work. Async code must not access Bukkit worlds, entities, blocks, inventories, or player state.
-- `SchedulerUtil` logs one warning when Folia reflection fails and it must fall back to Bukkit scheduling. That fallback keeps Paper/Bukkit compatibility but is not considered fully Folia-safe.
+- Chat input callbacks run through the plugin-level `CubexScheduler` on the player's entity scheduler. GUI inventory resynchronization uses the same scheduler with a one-tick delay.
+- Remaining `SchedulerUtil` paths log one warning if a Folia scheduling call returns a Bukkit task. That fallback is not considered fully Folia-safe.
 
 Rail-protection index rebuilds first create immutable coordinate snapshots. On
 Folia, candidate blocks are grouped by world and chunk, read through the region

@@ -1,7 +1,9 @@
 package org.cubexmc.metro.gui;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -16,7 +18,9 @@ import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.cubexmc.metro.Metro;
 import org.cubexmc.metro.manager.LanguageManager;
+import org.cubexmc.scheduler.CubexScheduler;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 class ChatInputManagerTest {
 
@@ -62,18 +66,29 @@ class ChatInputManagerTest {
     }
 
     @Test
-    void shouldDeliverChatInputOnceAndClearPendingState() {
+    void shouldDeliverChatInputOnPlayerSchedulerOnceAndClearPendingState() {
         Metro plugin = mock(Metro.class);
+        CubexScheduler scheduler = mock(CubexScheduler.class);
         Player player = player();
         AtomicReference<String> receivedInput = new AtomicReference<>();
+        when(plugin.getTaskScheduler$Metro()).thenReturn(scheduler);
 
-        ChatInputManager manager = immediateManager(plugin);
+        ChatInputManager manager = new ChatInputManager(plugin);
         manager.requestInput(player, "prompt", receivedInput::set);
 
         AsyncPlayerChatEvent inputEvent = chatEvent(player, "Central Station");
         manager.onPlayerChat(inputEvent);
 
         assertTrue(inputEvent.isCancelled());
+        assertNull(receivedInput.get());
+
+        AsyncPlayerChatEvent duplicateEvent = chatEvent(player, "Central Station");
+        manager.onPlayerChat(duplicateEvent);
+        assertTrue(duplicateEvent.isCancelled());
+
+        ArgumentCaptor<Runnable> callback = ArgumentCaptor.forClass(Runnable.class);
+        verify(scheduler).runAtEntity(eq(player), callback.capture());
+        callback.getValue().run();
         org.junit.jupiter.api.Assertions.assertEquals("Central Station", receivedInput.get());
 
         AsyncPlayerChatEvent laterEvent = chatEvent(player, "ignored");

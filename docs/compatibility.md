@@ -27,7 +27,7 @@ Smoke tests should cover plugin startup, Cloud command registration, GUI opening
 
 - Spigot: supported for core gameplay and administration features.
 - Paper: supported and recommended for production servers.
-- Folia: marked `folia-supported: true`; Metro uses `SchedulerUtil` to route entity, region, global, and async work through Folia APIs when available.
+- Folia: marked `folia-supported: true`; Metro routes entity, region, global, and async work through `cubex-scheduler`, using `CubexScheduler` directly or the remaining `SchedulerUtil` compatibility calls.
 
 ## Optional Dependencies
 

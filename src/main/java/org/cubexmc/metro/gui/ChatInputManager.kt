@@ -12,7 +12,6 @@ import org.cubexmc.gui.chat.ChatInputState
 import org.cubexmc.gui.chat.ChatOutcome
 import org.cubexmc.gui.chat.ModernChatBridge
 import org.cubexmc.metro.Metro
-import org.cubexmc.metro.util.SchedulerUtil
 
 /**
  * 聊天提问的本插件适配层。
@@ -34,7 +33,7 @@ class ChatInputManager(
 
     constructor(plugin: Metro) : this(
         plugin,
-        ChatCallbackScheduler { metro, player, task -> SchedulerUtil.entityRun(metro, player, task, 0L, -1L) },
+        ChatCallbackScheduler { metro, player, task -> metro.taskScheduler.runAtEntity(player, task) },
     )
 
     // 提问没有超时(与下沉前一致);除 cancel 外还认本地化的“取消”。

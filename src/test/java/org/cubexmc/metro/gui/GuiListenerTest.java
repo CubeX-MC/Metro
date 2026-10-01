@@ -1,5 +1,6 @@
 package org.cubexmc.metro.gui;
 
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
@@ -18,8 +19,9 @@ import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.cubexmc.metro.Metro;
-import org.cubexmc.metro.util.SchedulerUtil;
+import org.cubexmc.scheduler.CubexScheduler;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 
 class GuiListenerTest {
@@ -114,6 +116,8 @@ class GuiListenerTest {
     @Test
     void shouldRemoveLeakedGuiItemsWhenMetroGuiCloses() {
         Metro plugin = mock(Metro.class);
+        CubexScheduler scheduler = mock(CubexScheduler.class);
+        when(plugin.getTaskScheduler$Metro()).thenReturn(scheduler);
         GuiListener listener = new GuiListener(plugin);
         InventoryCloseEvent event = mock(InventoryCloseEvent.class);
         Inventory inventory = mock(Inventory.class);
@@ -132,8 +136,7 @@ class GuiListenerTest {
         when(player.getItemOnCursor()).thenReturn(guiItem);
         when(playerInventory.getContents()).thenReturn(new ItemStack[] { ownItem, guiItem });
 
-        try (MockedStatic<GuiItemMarker> itemBuilder = mockStatic(GuiItemMarker.class);
-                MockedStatic<SchedulerUtil> scheduler = mockStatic(SchedulerUtil.class)) {
+        try (MockedStatic<GuiItemMarker> itemBuilder = mockStatic(GuiItemMarker.class)) {
             itemBuilder.when(() -> GuiItemMarker.isGuiItem(guiItem)).thenReturn(true);
             itemBuilder.when(() -> GuiItemMarker.isGuiItem(ownItem)).thenReturn(false);
 
@@ -143,6 +146,12 @@ class GuiListenerTest {
         verify(player).setItemOnCursor(null);
         verify(playerInventory).setItem(1, null);
         verify(playerInventory, never()).setItem(0, null);
+        verify(player, never()).updateInventory();
+
+        ArgumentCaptor<Runnable> refresh = ArgumentCaptor.forClass(Runnable.class);
+        verify(scheduler).runAtEntityLater(eq(player), refresh.capture(), eq(1L));
+        refresh.getValue().run();
+        verify(player).updateInventory();
     }
 
     @Test

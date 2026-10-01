@@ -17,7 +17,6 @@ import org.cubexmc.metro.gui.controller.LineSettingsController
 import org.cubexmc.metro.gui.controller.MainMenuController
 import org.cubexmc.metro.gui.controller.StopListController
 import org.cubexmc.metro.gui.controller.StopSettingsController
-import org.cubexmc.metro.util.SchedulerUtil
 
 /**
  * GUI 事件监听器
@@ -154,6 +153,6 @@ class GuiListener(private val plugin: Metro) : Listener {
 
     @Suppress("DEPRECATION")
     private fun resyncInventory(player: Player) {
-        SchedulerUtil.entityRun(plugin, player, { player.updateInventory() }, 1L, -1L)
+        plugin.taskScheduler.runAtEntityLater(player, Runnable { player.updateInventory() }, 1L)
     }
 }
