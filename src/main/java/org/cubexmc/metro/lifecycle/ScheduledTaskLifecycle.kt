@@ -9,8 +9,9 @@ import org.cubexmc.metro.manager.LineManager
 import org.cubexmc.metro.manager.PortalManager
 import org.cubexmc.metro.manager.StopManager
 import org.cubexmc.metro.util.MetroConstants
-import org.cubexmc.metro.util.SchedulerUtil
 import org.cubexmc.metro.util.VersionUtil
+import org.cubexmc.scheduler.CubexScheduler
+import org.cubexmc.scheduler.CubexTask
 
 /**
  * Owns startup scheduled tasks that are not tied to a single listener.
@@ -42,7 +43,7 @@ class ScheduledTaskLifecycle {
         lineManager,
         stopManager,
         portalManager,
-        SchedulerUtilTaskScheduler(),
+        CubexTaskScheduler(),
         VersionUtil.isFolia(),
     )
 
@@ -111,12 +112,16 @@ class ScheduledTaskLifecycle {
         fun cancel(taskId: Any)
     }
 
-    private class SchedulerUtilTaskScheduler : TaskScheduler {
-        override fun schedule(plugin: Metro, task: Runnable, delay: Long, period: Long): Any? =
-            SchedulerUtil.globalRun(plugin, task, delay, period)
+    private class CubexTaskScheduler : TaskScheduler {
+        private var scheduler: CubexScheduler? = null
+
+        override fun schedule(plugin: Metro, task: Runnable, delay: Long, period: Long): Any {
+            val current = scheduler ?: CubexScheduler.create(plugin).also { scheduler = it }
+            return if (period < 0L) current.runGlobalLater(task, delay) else current.runGlobalTimer(task, delay, period)
+        }
 
         override fun cancel(taskId: Any) {
-            SchedulerUtil.cancelTask(taskId)
+            (taskId as CubexTask).cancel()
         }
     }
 }
