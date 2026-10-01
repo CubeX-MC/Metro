@@ -2,7 +2,8 @@ package org.cubexmc.metro.lifecycle
 
 import org.bukkit.Bukkit
 import org.bukkit.entity.Minecart
-import org.bukkit.persistence.PersistentDataType
+import org.cubexmc.core.hasFlag
+import org.cubexmc.core.setFlag
 import org.cubexmc.metro.Metro
 import org.cubexmc.metro.manager.LineManager
 import org.cubexmc.metro.manager.PortalManager
@@ -95,13 +96,9 @@ class ScheduledTaskLifecycle {
             for (entity in world.getEntitiesByClass(Minecart::class.java)) {
                 if (
                     MetroConstants.METRO_MINECART_NAME == entity.customName &&
-                    !entity.persistentDataContainer.has(minecartKey, PersistentDataType.BYTE)
+                    !entity.persistentDataContainer.hasFlag(minecartKey)
                 ) {
-                    entity.persistentDataContainer.set(
-                        minecartKey,
-                        PersistentDataType.BYTE,
-                        1.toByte(),
-                    )
+                    entity.persistentDataContainer.setFlag(minecartKey)
                     plugin.logger.info("Migrated legacy Metro Minecart to PDC data: " + entity.uniqueId)
                 }
             }

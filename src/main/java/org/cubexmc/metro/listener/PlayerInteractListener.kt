@@ -12,7 +12,8 @@ import org.bukkit.event.Listener
 import org.bukkit.event.block.Action
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.inventory.EquipmentSlot
-import org.bukkit.persistence.PersistentDataType
+import org.cubexmc.core.hasFlag
+import org.cubexmc.core.setFlag
 import org.cubexmc.metro.Metro
 import org.cubexmc.metro.manager.LanguageManager
 import org.cubexmc.metro.model.Line
@@ -259,7 +260,7 @@ class PlayerInteractListener(
     private fun isRidingMetroMinecart(player: Player): Boolean {
         val minecart = player.vehicle as? Minecart ?: return false
         val minecartKey = MetroConstants.getMinecartKey() ?: return false
-        return minecart.persistentDataContainer.has(minecartKey, PersistentDataType.BYTE)
+        return minecart.persistentDataContainer.hasFlag(minecartKey)
     }
 
     private fun beginBoarding(player: Player, stop: Stop, line: Line) {
@@ -438,7 +439,7 @@ class PlayerInteractListener(
             val minecart = world.spawnEntity(spawnLocation, EntityType.MINECART) as Minecart
 
             // 设置矿车属性
-            minecart.persistentDataContainer.set(minecartKey, PersistentDataType.BYTE, 1.toByte())
+            minecart.persistentDataContainer.setFlag(minecartKey)
             minecart.customName = MetroConstants.METRO_MINECART_NAME
             minecart.isCustomNameVisible = false
             minecart.isPersistent = false

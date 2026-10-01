@@ -13,7 +13,8 @@ import org.bukkit.configuration.ConfigurationSection
 import org.bukkit.configuration.file.YamlConfiguration
 import org.bukkit.entity.Minecart
 import org.bukkit.entity.Player
-import org.bukkit.persistence.PersistentDataType
+import org.cubexmc.core.hasFlag
+import org.cubexmc.core.setFlag
 import org.bukkit.util.Vector
 import org.cubexmc.metro.Metro
 import org.cubexmc.metro.model.Portal
@@ -242,7 +243,7 @@ class PortalManager(private val plugin: Metro) {
 
         val sourcePdc = sourceCart.persistentDataContainer
         val minecartKey = MetroConstants.getMinecartKey()
-        val isMetroCart = minecartKey != null && sourcePdc.has(minecartKey, PersistentDataType.BYTE)
+        val isMetroCart = minecartKey != null && sourcePdc.hasFlag(minecartKey)
         val teleportDelay = plugin.configFacade.getPortalTeleportDelay()
 
         SchedulerUtil.entityRun(
@@ -269,7 +270,7 @@ class PortalManager(private val plugin: Metro) {
 
                 val newCart = destWorld.spawn(destination, Minecart::class.java)
                 if (isMetroCart && minecartKey != null) {
-                    newCart.persistentDataContainer.set(minecartKey, PersistentDataType.BYTE, 1.toByte())
+                    newCart.persistentDataContainer.setFlag(minecartKey)
                     newCart.customName = MetroConstants.METRO_MINECART_NAME
                     newCart.isCustomNameVisible = false
                 }

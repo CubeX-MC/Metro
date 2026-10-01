@@ -1,7 +1,7 @@
 package org.cubexmc.metro.gui
 
 import org.bukkit.inventory.ItemStack
-import org.bukkit.persistence.PersistentDataType
+import org.cubexmc.core.hasFlag
 import org.cubexmc.metro.util.MetroConstants
 
 /**
@@ -22,6 +22,6 @@ object GuiItemMarker {
         }
         val itemMeta = stack.itemMeta
         return itemMeta != null &&
-            itemMeta.persistentDataContainer.has(guiItemKey, PersistentDataType.BYTE)
+            itemMeta.persistentDataContainer.hasFlag(guiItemKey)
     }
 }

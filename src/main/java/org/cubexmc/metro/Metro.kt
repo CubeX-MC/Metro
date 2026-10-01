@@ -6,7 +6,7 @@ import net.megavex.scoreboardlibrary.api.noop.NoopScoreboardLibrary
 import org.bukkit.Bukkit
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Minecart
-import org.bukkit.persistence.PersistentDataType
+import org.cubexmc.core.hasFlag
 import org.cubexmc.core.CubexPlugin
 import org.cubexmc.metro.api.MetroAPI
 import org.cubexmc.metro.bedrock.BedrockCompatibility
@@ -307,7 +307,7 @@ class Metro : CubexPlugin() {
         for (world in Bukkit.getWorlds()) {
             for (entity in world.entities) {
                 if (entity is Minecart &&
-                    entity.persistentDataContainer.has(minecartKey, PersistentDataType.BYTE)
+                    entity.persistentDataContainer.hasFlag(minecartKey)
                 ) {
                     MinecartEjector.eject(entity)
                     entity.remove()
