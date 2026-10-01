@@ -6,7 +6,8 @@ import org.cubexmc.metro.integration.BlueMapIntegration
 import org.cubexmc.metro.integration.DynmapIntegration
 import org.cubexmc.metro.integration.MapIntegration
 import org.cubexmc.metro.integration.SquaremapIntegration
-import org.cubexmc.metro.util.SchedulerUtil
+import org.cubexmc.scheduler.CubexScheduler
+import org.cubexmc.scheduler.CubexTask
 
 /**
  * Owns optional web map integrations and their refresh lifecycle.
@@ -23,7 +24,7 @@ class MapIntegrationLifecycle {
     constructor(plugin: Metro) : this(
         plugin,
         IntegrationFactory { provider -> createDefaultIntegration(plugin, provider) },
-        SchedulerUtilRefreshScheduler(),
+        CubexRefreshScheduler(),
     )
 
     constructor(
@@ -168,12 +169,16 @@ class MapIntegrationLifecycle {
         fun cancel(taskId: Any)
     }
 
-    private class SchedulerUtilRefreshScheduler : RefreshScheduler {
-        override fun schedule(plugin: Metro, task: Runnable, delay: Long, period: Long): Any? =
-            SchedulerUtil.globalRun(plugin, task, delay, period)
+    private class CubexRefreshScheduler : RefreshScheduler {
+        private var scheduler: CubexScheduler? = null
+
+        override fun schedule(plugin: Metro, task: Runnable, delay: Long, period: Long): Any {
+            val current = scheduler ?: CubexScheduler.create(plugin).also { scheduler = it }
+            return if (period < 0L) current.runGlobalLater(task, delay) else current.runGlobalTimer(task, delay, period)
+        }
 
         override fun cancel(taskId: Any) {
-            SchedulerUtil.cancelTask(taskId)
+            (taskId as CubexTask).cancel()
         }
     }
 
