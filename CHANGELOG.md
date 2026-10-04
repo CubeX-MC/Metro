@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Scoreboard compatibility**: upgrade the bundled ScoreboardLibrary from 2.7.4 to 2.8.2, adding the upstream Paper/Spigot 26.2 packet adapter support that avoids falling back to an invisible sidebar solely because of the server version. Keep the Java 17 / Spigot 1.18.2 build baseline.
+
 - **Building workflow**: create complete stops from selection, standing powered rail and facing; optional names and contextual stop IDs for linking and editing, with overlap protection and language v4 migration.
 - **Station Titles**: honor arrival enablement and waiting timings/countdown; render custom MiniMessage templates; restore re-entry and cross-world displays; support multi-line templates and arrival/terminal actionbars; publish departure after clearing the waiting display.
 

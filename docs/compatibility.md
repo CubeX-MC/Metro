@@ -23,6 +23,18 @@ Recommended smoke-test matrix before releasing a 26.1.2-compatible build:
 
 Smoke tests should cover plugin startup, Cloud command registration, GUI opening, line/stop management, train departure, passenger billing, and optional map/economy dependencies disabled.
 
+## Scoreboard Packets on Minecraft 26.2
+
+Metro bundles ScoreboardLibrary **2.8.2** (API and implementation). Version 2.7.4 only recognized server versions up to 26.1.2; on 26.2 it threw `NoPacketAdapterAvailableException`, so Metro logged the missing-adapter warning and used `NoopScoreboardLibrary`, leaving ride sidebars invisible. Upstream [2.8.0](https://github.com/vytskalt/scoreboard-library/releases/tag/2.8.0) added Paper/Spigot 26.2 support, and [2.8.2](https://github.com/vytskalt/scoreboard-library/releases/tag/2.8.2) includes a further fix for relocated Adventure on Spigot.
+
+Both library artifacts remain shaded and relocated into Metro's jar. No separate ScoreboardLibrary plugin or JVM override is required. The Java 17 / Spigot API 1.18.2 build baseline stays unchanged. Metro retains the no-op fallback when no compatible packet adapter can be initialized.
+
+`ScoreboardPacketAdapterCompatibilityTest` checks the real dependency's adapter selection for 1.18.2, 1.21.11, 26.1.2 and both Paper/Spigot 26.2 version strings. This verifies version recognition, not NMS packet initialization or client display. Before release, smoke-test startup and ride sidebars on an isolated 26.2 server, including boarding, arrival, terminal and dismount cleanup; also check an older supported server and Folia if included in the release matrix.
+
+Local verification (2026-10-02, R3 dependency/shading change): `:Metro:test --tests "org.cubexmc.metro.train.Scoreboard*Test"` passed; `.\gradlew.bat :Metro:build :Metro:jarGate --console=plain` passed with 651 tests, zero failures/errors/skips. `dependencyInsight` in a fresh Gradle process confirmed both ScoreboardLibrary artifacts resolve to 2.8.2. Final jar inspection confirmed the 26.2 version branch and relocated adapter class name, zero original `net/megavex/scoreboardlibrary/` entries, Java 17 Metro classes, and Java 8 library loader bytecode. Added dependency SHA-256 records in `gradle/verification-metadata.xml`; no verification bypass was retained. No live 26.2 server/client check was run.
+
+This dependency update makes no config/data schema changes. Reverting it restores the old 26.2 sidebar limitation.
+
 ## Server Platforms
 
 - Spigot: supported for core gameplay and administration features.

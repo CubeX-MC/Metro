@@ -15,8 +15,8 @@ dependencies {
     testImplementation("org.mockito:mockito-core:5.18.0")
     testImplementation("org.mockito:mockito-junit-jupiter:5.18.0")
 
-    implementation("net.megavex:scoreboard-library-api:2.7.4")
-    runtimeOnly("net.megavex:scoreboard-library-implementation:2.7.4")
+    implementation("net.megavex:scoreboard-library-api:2.8.2")
+    runtimeOnly("net.megavex:scoreboard-library-implementation:2.8.2")
 
     implementation(platform("net.kyori:adventure-bom:4.25.0"))
     implementation("net.kyori:adventure-api")
